@@ -186,7 +186,7 @@ mode: 湿度                   # 【温度】或者【湿度】
 ### 通用卡片功能1：HA信息卡(手机平板端通用)
 **引用示例**
 ~~~
-type: custom:xiaoshi-update-card
+type: custom:xiaoshi-ha-info-card
 width: 100%
 skip_updates: false    #是否包含已跳过的更新
 theme: on
@@ -194,6 +194,10 @@ exclude_devices:
   - *设备*
 exclude_entities:
   - *shiti*
+~~~
+~~~
+type: custom:xiaoshi-ha-info-button
+## 对应按钮：详见仪表盘配置
 ~~~
 
 ### 通用卡片功能2：电话信息余额卡(手机平板端通用)
@@ -219,6 +223,10 @@ entities:
       unit_of_measurement: ""
       warning: "99"
 ~~~
+~~~
+type: custom:xiaoshi-balance-button
+## 对应按钮：详见仪表盘配置
+~~~
 
 ### 通用卡片功能3：待办事项卡(手机平板端通用)
 **引用示例**
@@ -229,6 +237,10 @@ theme: on
 entities:
   - todo.kuai_di
   - todo.ji_shi_ben
+~~~
+~~~
+type: custom:xiaoshi-todo-button
+## 对应按钮：详见仪表盘配置
 ~~~
 
 ### 通用卡片功能4：耗材信息卡片(手机平板端通用)
@@ -254,7 +266,10 @@ entities:
   - entity_id: input_text.aaa6
   - entity_id: input_text.aaa7
 ~~~
-
+~~~
+type: custom:xiaoshi-consumables-button
+## 对应按钮：详见仪表盘配置
+~~~
 
 
 
