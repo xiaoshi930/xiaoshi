@@ -156,14 +156,14 @@ url:
 ~~~
 
 ## 适用平板端的卡片
-### 手机端功能1：空调卡/加湿器卡/热水器卡/水暖毯卡  
+### 平板端功能1：空调卡/加湿器卡/热水器卡/水暖毯卡  
 **引用示例**  
 ~~~
 type: custom:xiaoshi-pad-climate-card
 详细配置参照可视化编辑器
 ~~~
 
-### 手机端功能2：分布卡(温度分布、湿度分布)
+### 平板端功能2：分布卡(温度分布、湿度分布)
 **引用示例**
 ~~~
 type: custom:xiaoshi-pad-grid-card
@@ -181,6 +181,80 @@ min: 20                      # 当前地区最小值
 max: 80                      # 当前地区最大值
 mode: 湿度                   # 【温度】或者【湿度】
 ~~~
+
+## 适用手机端&平板端的卡片（通用卡片）
+### 通用卡片功能1：HA信息卡(手机平板端通用)
+**引用示例**
+~~~
+type: custom:xiaoshi-update-card
+width: 100%
+skip_updates: false    #是否包含已跳过的更新
+theme: on
+exclude_devices:
+  - *设备*
+exclude_entities:
+  - *shiti*
+~~~
+
+### 通用卡片功能2：电话信息余额卡(手机平板端通用)
+**引用示例**
+~~~
+type: custom:xiaoshi-balance-card
+name: 电话余额信息
+width: 100%
+theme: on
+entities:
+  - entity_id: sensor.999
+    attribute: null
+    overrides:
+      icon: ""
+      name: ""
+      unit_of_measurement: ""
+      warning: ""
+  - entity_id: input_boolean.777
+    attribute: friendly_name
+    overrides:
+      name: ""
+      icon: ""
+      unit_of_measurement: ""
+      warning: "99"
+~~~
+
+### 通用卡片功能3：待办事项卡(手机平板端通用)
+**引用示例**
+~~~
+type: custom:xiaoshi-todo-card
+width: 100%
+theme: on
+entities:
+  - todo.kuai_di
+  - todo.ji_shi_ben
+~~~
+
+### 通用卡片功能4：耗材信息卡片(手机平板端通用)
+**引用示例**
+~~~
+type: custom:xiaoshi-consumables-card
+width: 100%
+global_warning: <8
+columns: "2"
+entities:
+  - entity_id: input_text.aaa
+    overrides:
+      name: 奥斯卡德拉萨达实打实实打实
+      unit_of_measurement: "%"
+      warning: <10
+      conversion: "*2"
+      icon: ""
+  - entity_id: input_text.aaa1
+  - entity_id: input_text.aaa2
+  - entity_id: input_text.aaa3
+  - entity_id: input_text.aaa4
+  - entity_id: input_text.aaa5
+  - entity_id: input_text.aaa6
+  - entity_id: input_text.aaa7
+~~~
+
 
 
 
