@@ -276,20 +276,30 @@ template: 测试模板(最好引用模板，否则大概率会报错)'>
       <label> </label>
     </div>
 
+    <div class="form-group">
+      <label>弹窗宽度：支持像素(px)、百分比(%)和auto，默认auto</label>
+      <input 
+        type="text" 
+        @change=${this._entityChanged}
+        .value=${this.config.popup_width !== undefined ? this.config.popup_width : 'auto'}
+        name="popup_width"
+        placeholder="默认auto"
+      />
+    </div>
+    
+    <div class="form-group">
+      <label>弹窗位置：支持百分比(%)，默认50%居中</label>
+      <input 
+        type="text" 
+        @change=${this._entityChanged}
+        .value=${this.config.popup_top !== undefined ? this.config.popup_top : '50%'}
+        name="popup_top"
+        placeholder="默认50%"
+      />
+    </div>
+
     <!-- button新元素 结束-->
 
-      <div class="form">
-        <div class="form-group">
-          <label>卡片宽度：支持像素(px)和百分比(%)，默认100%</label>
-          <input 
-            type="text" 
-            @change=${this._entityChanged}
-            .value=${this.config.width !== undefined ? this.config.width : '100%'}
-            name="width"
-            placeholder="默认100%"
-          />
-        </div>
-        
         <div class="form-group">
           <label>主题</label>
           <select 
@@ -355,7 +365,7 @@ template: 测试模板(最好引用模板，否则大概率会报错)'>
     if (type === 'checkbox') {
       finalValue = checked;
     } else {
-      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'width' && name !== 'tap_action' && name !== 'display_mode' && name !== 'decimal_precision') return;
+      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top' && name !== 'tap_action' && name !== 'display_mode' && name !== 'decimal_precision') return;
       finalValue = value 
     }
     
@@ -368,8 +378,6 @@ template: 测试模板(最好引用模板，否则大概率会报错)'>
       finalValue = value || '11px';
     } else if (name === 'button_icon_size') {
       finalValue = value || '13px';
-    } else if (name === 'width') {
-      finalValue = value || '100%';
     } else if (name === 'exclude_entities') {
       // 将文本行转换为数组
       finalValue = value ? value.split('\n').filter(line => line.trim()).map(line => line.trim()) : [];
@@ -774,6 +782,71 @@ class XiaoshiHaInfoButton extends LitElement {
         align-items: center;
         border-bottom: 1px solid rgb(150,150,150,0.2);
       }
+
+      /* HA资源占用样式 */
+      .resource-usage-info {
+        padding: 4px 8px;
+        margin: 0 16px 8px 16px;
+        display: flex;
+        gap: 8px;
+        justify-content: space-around;
+        border-bottom: 1px solid rgb(150,150,150,0.2);
+      }
+
+      .resource-item {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .resource-bar-container {
+        width: 10px;
+        height: 32px;
+        background: rgb(150,150,150,0.2);
+        border-radius: 1px;
+        overflow: hidden;
+        display: flex;
+        align-items: flex-end;
+        flex-shrink: 0;
+      }
+
+      .resource-bar-fill {
+        width: 100%;
+        border-radius: 1px;
+        transition: height 0.5s ease;
+      }
+
+      .resource-text-wrap {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .resource-label {
+        font-size: 10px;
+        color: var(--fg-color, #000);
+        text-align: left;
+        white-space: nowrap;
+        line-height: 1.2;
+      }
+
+      .resource-percent {
+        font-size: 10px;
+        color: var(--fg-color, #000);
+        text-align: left;
+        font-weight: bold;
+        line-height: 1.2;
+        white-space: nowrap;
+      }
+
+      .resource-disk-text {
+        font-size: 9px;
+        color: var(--fg-color, #000);
+        text-align: left;
+        white-space: nowrap;
+        line-height: 1.2;
+      }
     `;
   }
 
@@ -786,6 +859,14 @@ class XiaoshiHaInfoButton extends LitElement {
     this._loading = false;
     this._refreshInterval = null;
     this.theme = 'on';
+    // 弹窗
+    this._popupOverlay = null;
+    this._popupElement = null;
+    this._popupCardElement = null;
+    this._popupEscHandler = null;
+    this._popupHassUnsubscribe = null;
+    this._popupUpdatePending = false;
+    this._popupHass = null;
   }
 
   static getConfigElement() {
@@ -829,6 +910,7 @@ class XiaoshiHaInfoButton extends LitElement {
     if (this._refreshInterval) {
       clearInterval(this._refreshInterval);
     }
+    this._closePopup();
   }
 
   async _loadOfflineDevices() {
@@ -1539,13 +1621,139 @@ class XiaoshiHaInfoButton extends LitElement {
     return html`${backupElements}`;
   }
 
+  _renderResourceUsage() {
+    if (!this.hass) return html``;
+
+    // 获取实体状态
+    const coreCpu = this.hass.states['sensor.home_assistant_core_cpu_percent'];
+    const coreMem = this.hass.states['sensor.home_assistant_core_memory_percent'];
+    const supCpu = this.hass.states['sensor.home_assistant_supervisor_cpu_percent'];
+    const supMem = this.hass.states['sensor.home_assistant_supervisor_memory_percent'];
+    const diskUsed = this.hass.states['sensor.home_assistant_host_disk_used'];
+    const diskTotal = this.hass.states['sensor.home_assistant_host_disk_total'];
+
+    // 获取数值的辅助函数
+    const getPercent = (sensor) => {
+      if (!sensor || sensor.state === 'unavailable' || sensor.state === 'unknown') return null;
+      const v = parseFloat(sensor.state);
+      return isNaN(v) ? null : Math.round(v);
+    };
+
+    const coreCpuVal = getPercent(coreCpu);
+    const coreMemVal = getPercent(coreMem);
+    const supCpuVal = getPercent(supCpu);
+    const supMemVal = getPercent(supMem);
+
+    // 根据百分比获取颜色
+    const getBarColor = (pct) => {
+      if (pct >= 80) return 'rgb(255,50,50)';
+      if (pct >= 50) return 'rgb(255,165,0)';
+      return 'rgb(0,200,80)';
+    };
+
+    // 渲染单个竖条进度项
+    const renderBar = (label, value) => {
+      if (value === null) {
+        return html`
+          <div class="resource-item">
+            <div class="resource-bar-container">
+              <div class="resource-bar-fill" style="height: 0%; background: rgb(150,150,150,0.3);"></div>
+            </div>
+            <div class="resource-text-wrap">
+              <div class="resource-label">${label}</div>
+              <div class="resource-percent">N/A</div>
+            </div>
+          </div>
+        `;
+      }
+      return html`
+        <div class="resource-item">
+          <div class="resource-bar-container">
+            <div class="resource-bar-fill" style="height: ${Math.min(100, value)}%; background: ${getBarColor(value)};"></div>
+          </div>
+          <div class="resource-text-wrap">
+            <div class="resource-label">${label}</div>
+            <div class="resource-percent">${value}%</div>
+          </div>
+        </div>
+      `;
+    };
+
+    // 格式化磁盘大小
+    const formatSize = (sensor) => {
+      if (!sensor || sensor.state === 'unavailable' || sensor.state === 'unknown') return null;
+      const v = parseFloat(sensor.state);
+      if (isNaN(v)) return null;
+      const unit = (sensor.attributes && sensor.attributes.unit_of_measurement) || '';
+      const unitLower = unit.toLowerCase();
+
+      if (unitLower.includes('gib') || unitLower.includes('gb')) {
+        return v.toFixed(1) + 'G';
+      }
+      if (unitLower.includes('mib') || unitLower.includes('mb')) {
+        return (v / 1024).toFixed(1) + 'G';
+      }
+      if (unitLower.includes('tib') || unitLower.includes('tb')) {
+        return (v * 1024).toFixed(0) + 'G';
+      }
+      if (unitLower.includes('kib') || unitLower.includes('kb')) {
+        return (v / (1024 * 1024)).toFixed(2) + 'G';
+      }
+      if (v > 1000) {
+        return (v / 1024).toFixed(1) + 'G';
+      }
+      return v.toFixed(1) + 'G';
+    };
+
+    const diskUsedVal = diskUsed ? parseFloat(diskUsed.state) : null;
+    const diskTotalVal = diskTotal ? parseFloat(diskTotal.state) : null;
+    let diskPercent = null;
+    let diskUsedStr = null;
+    let diskTotalStr = null;
+
+    if (diskUsedVal !== null && !isNaN(diskUsedVal) && diskTotalVal !== null && !isNaN(diskTotalVal) && diskTotalVal > 0) {
+      diskPercent = Math.round((diskUsedVal / diskTotalVal) * 100);
+      diskUsedStr = formatSize(diskUsed);
+      diskTotalStr = formatSize(diskTotal);
+    }
+
+    return html`
+      ${renderBar(html`Core<br>cpu`, coreCpuVal)}
+      ${renderBar(html`Core<br>内存`, coreMemVal)}
+      ${renderBar(html`Supervisor<br>cpu`, supCpuVal)}
+      ${renderBar(html`Supervisor<br>内存`, supMemVal)}
+      ${diskPercent !== null && diskUsedStr && diskTotalStr ? html`
+        <div class="resource-item">
+          <div class="resource-bar-container">
+            <div class="resource-bar-fill" style="height: ${Math.min(100, diskPercent)}%; background: ${getBarColor(diskPercent)};"></div>
+          </div>
+          <div class="resource-text-wrap">
+            <div class="resource-label">Disk磁盘</div>
+            <div class="resource-percent">${diskPercent}%</div>
+            <div class="resource-disk-text">${diskUsedStr} / ${diskTotalStr}</div>
+          </div>
+        </div>
+      ` : html`
+        <div class="resource-item">
+          <div class="resource-bar-container">
+            <div class="resource-bar-fill" style="height: 0%; background: rgb(150,150,150,0.3);"></div>
+          </div>
+          <div class="resource-text-wrap">
+            <div class="resource-label">Disk</div>
+            <div class="resource-percent">N/A</div>
+          </div>
+        </div>
+      `}
+    `;
+  }
+
   /*button新元素 开始*/
   _handleButtonClick() {
     const tapAction = this.config.tap_action;
     
     if (!tapAction || tapAction !== 'none') {
       // 默认 tap_action 行为：弹出垂直堆叠卡片
-      const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'show_preview', 'tap_action'];
+      const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'show_preview', 'tap_action', 'popup_top', 'popup_width'];
       
       // 构建垂直堆叠卡片的内容
       const cards = [];
@@ -1592,20 +1800,7 @@ class XiaoshiHaInfoButton extends LitElement {
         cards: cards
       };
       
-      const popupStyle = this.config.popup_style || `
-        --mdc-theme-surface: rgb(0,0,0,0); 
-        --dialog-backdrop-filter: blur(10px) brightness(1);
-        --ha-dialog-scrim-backdrop-filter: blur(10px) brightness(1);
-      `;
-      
-      if (window.browser_mod) {
-        window.browser_mod.service('popup', { 
-          style: popupStyle,
-          content: popupContent
-        });
-      } else {
-        console.warn('browser_mod not available, cannot show popup');
-      }
+      this._showNativePopup(popupContent);
     }
     this._handleClick();
   }
@@ -1761,6 +1956,172 @@ class XiaoshiHaInfoButton extends LitElement {
 
   /*button新元素 结束*/
 
+  // ==========================================
+  // 原生弹窗方法
+  // ==========================================
+  static _injectPopupStyles() {
+    if (XiaoshiHaInfoButton._stylesInjected) return;
+    XiaoshiHaInfoButton._stylesInjected = true;
+    const style = document.createElement('style');
+    style.id = 'xiaoshi-button-popup-style';
+    style.textContent = `
+      @keyframes xiaoshiButtonPopupIn {
+        from { opacity: 0; scale: 0.95; }
+        to   { opacity: 1; scale: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  _showNativePopup(popupContent) {
+    this.constructor._injectPopupStyles();
+
+    const haRoot = document.querySelector('home-assistant');
+    const hassObj = haRoot?.hass || haRoot?.shadowRoot?.querySelector('home-assistant-main')?.hass;
+    if (!hassObj) {
+      console.error('[XiaoshiHaInfoButton] 无法获取 hass 对象');
+      return;
+    }
+
+    if (this._popupOverlay) {
+      this._closePopup();
+    }
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      pointer-events: auto;
+    `;
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) this._closePopup();
+    });
+
+    const popupTop = this.config.popup_top || '50%';
+    const popupWidth = this.config.popup_width || 'auto';
+    const popupTransform = popupTop === '50%' ? 'translate(-50%, -50%)' : 'translateX(-50%)';
+
+    const popup = document.createElement('div');
+    popup.style.cssText = `
+      position: fixed;
+      top: ${popupTop}; left: 50%;
+      transform: ${popupTransform};
+      z-index: 1005;
+      background: transparent;
+      padding: 0;
+      width: ${popupWidth};
+      max-width: 100vw;
+      max-height: 100vh;
+      overflow: hidden;
+      box-sizing: border-box;
+      animation: xiaoshiButtonPopupIn 0.2s ease-out;
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(popup);
+
+    this._popupOverlay = overlay;
+    this._popupElement = popup;
+
+    this._createPopupCard(popup, popupContent, hassObj);
+
+    this._popupEscHandler = (e) => {
+      if (e.key === 'Escape') this._closePopup();
+    };
+    window.addEventListener('keydown', this._popupEscHandler);
+  }
+
+  async _createPopupCard(container, cardConfig, hassObj) {
+    try {
+      const helpers = await window.loadCardHelpers?.();
+      if (helpers) {
+        const cardElement = await helpers.createCardElement(cardConfig);
+        cardElement.hass = hassObj;
+        container.appendChild(cardElement);
+        this._popupCardElement = cardElement;
+        this._startPopupHassWatcher(hassObj);
+      } else {
+        container.innerHTML = '<div style="color:red;padding:20px;">loadCardHelpers 不可用</div>';
+      }
+    } catch (err) {
+      console.error('[XiaoshiHaInfoButton] 创建弹窗卡片失败:', err);
+      container.innerHTML = `<div style="color:red;padding:20px;">加载失败: ${err.message}</div>`;
+    }
+  }
+
+  _closePopup() {
+    if (this._popupOverlay) {
+      this._popupOverlay.remove();
+      this._popupOverlay = null;
+    }
+    if (this._popupElement) {
+      this._popupElement.remove();
+      this._popupElement = null;
+    }
+    this._popupCardElement = null;
+    if (this._popupEscHandler) {
+      window.removeEventListener('keydown', this._popupEscHandler);
+      this._popupEscHandler = null;
+    }
+    if (this._popupHassUnsubscribe) {
+      this._popupHassUnsubscribe();
+      this._popupHassUnsubscribe = null;
+    }
+    this._popupUpdatePending = false;
+    this._popupHass = null;
+  }
+
+  _startPopupHassWatcher(hassObj) {
+    if (this._popupHassUnsubscribe) return;
+    this._popupHass = hassObj;
+    if (!hassObj || !hassObj.connection) {
+      setTimeout(() => this._startPopupHassWatcher(hassObj), 500);
+      return;
+    }
+    try {
+      hassObj.connection.subscribeMessage(
+        () => {
+          if (!this._popupCardElement) return;
+          this._schedulePopupUpdate();
+        },
+        { type: 'subscribe_events', event_type: 'state_changed' }
+      ).then((unsub) => {
+        this._popupHassUnsubscribe = unsub;
+      });
+    } catch (err) {
+      console.error('[XiaoshiHaInfoButton] 订阅状态变化失败:', err);
+    }
+  }
+
+  _schedulePopupUpdate() {
+    if (this._popupUpdatePending) return;
+    this._popupUpdatePending = true;
+    requestAnimationFrame(() => {
+      this._popupUpdatePending = false;
+      if (!this._popupCardElement) return;
+      const haRoot = document.querySelector('home-assistant');
+      const newHass = haRoot?.hass || haRoot?.shadowRoot?.querySelector('home-assistant-main')?.hass;
+      if (!newHass) return;
+      if (newHass === this._popupHass) return;
+      this._popupHass = newHass;
+      this._updatePopupCard();
+    });
+  }
+
+  _updatePopupCard() {
+    if (this._popupCardElement && this._popupHass) {
+      try {
+        this._popupCardElement.hass = this._popupHass;
+      } catch (err) {
+        console.warn('[XiaoshiHaInfoButton] 弹窗卡片更新失败:', err.message);
+      }
+    }
+  }
+
   render() {
     if (!this.hass) {
       return html`<div class="loading">等待Home Assistant连接...</div>`;
@@ -1878,6 +2239,26 @@ class XiaoshiHaInfoButton extends LitElement {
         </div>
         <div class="ha-version-info">
           ${this._renderHAVersionInfo()}
+        </div>
+
+        <!-- HA资源占用 -->
+        <div class="section-divider">
+          <div class="section-title">
+            <span> • HA资源占用</span>
+          </div>
+        </div>
+        <div class="resource-usage-info">
+          ${this._renderResourceUsage()}
+        </div>
+
+        <!-- 备份信息 -->
+        <div class="section-divider">
+          <div class="section-title">
+            <span> • 备份信息</span>
+          </div>
+        </div>
+        <div class="backup-info">
+          ${this._renderBackupInfo()}
         </div>
 
         <div class="devices-list">
@@ -2000,16 +2381,6 @@ class XiaoshiHaInfoButton extends LitElement {
               `
           }
         </div>
-        
-        <!-- 备份信息 -->
-        <div class="section-divider">
-          <div class="section-title">
-            <span> • 备份信息</span>
-          </div>
-        </div>
-        <div class="backup-info">
-          ${this._renderBackupInfo()}
-        </div>
 
       </ha-card>
       ` : html``}
@@ -2051,8 +2422,8 @@ class XiaoshiHaInfoButton extends LitElement {
     }
     
     // 设置卡片宽度（控制原来的 UI）
-    if (config.width) {
-      this.style.setProperty('--card-width', config.width);
+    if (config.popup_width) {
+      this.style.setProperty('--card-width', config.popup_width);
     } else {
       this.style.setProperty('--card-width', '100%');
     }

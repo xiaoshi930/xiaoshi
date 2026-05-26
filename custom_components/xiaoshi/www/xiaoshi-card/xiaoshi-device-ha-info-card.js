@@ -452,6 +452,71 @@ class XiaoshiHaInfoCard extends LitElement {
         align-items: center;
         border-bottom: 1px solid rgb(150,150,150,0.2);
       }
+
+      /* HA资源占用样式 */
+      .resource-usage-info {
+        padding: 4px 8px;
+        margin: 0 16px 8px 16px;
+        display: flex;
+        gap: 8px;
+        justify-content: space-around;
+        border-bottom: 1px solid rgb(150,150,150,0.2);
+      }
+
+      .resource-item {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .resource-bar-container {
+        width: 10px;
+        height: 32px;
+        background: rgb(150,150,150,0.2);
+        border-radius: 1px;
+        overflow: hidden;
+        display: flex;
+        align-items: flex-end;
+        flex-shrink: 0;
+      }
+
+      .resource-bar-fill {
+        width: 100%;
+        border-radius: 1px;
+        transition: height 0.5s ease;
+      }
+
+      .resource-text-wrap {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .resource-label {
+        font-size: 10px;
+        color: var(--fg-color, #000);
+        text-align: left;
+        white-space: nowrap;
+        line-height: 1.2;
+      }
+
+      .resource-percent {
+        font-size: 10px;
+        color: var(--fg-color, #000);
+        text-align: left;
+        font-weight: bold;
+        line-height: 1.2;
+        white-space: nowrap;
+      }
+
+      .resource-disk-text {
+        font-size: 9px;
+        color: var(--fg-color, #000);
+        text-align: left;
+        white-space: nowrap;
+        line-height: 1.2;
+      }
     `;
   }
 
@@ -1215,6 +1280,132 @@ class XiaoshiHaInfoCard extends LitElement {
     return html`${backupElements}`;
   }
 
+  _renderResourceUsage() {
+    if (!this.hass) return html``;
+
+    // 获取实体状态
+    const coreCpu = this.hass.states['sensor.home_assistant_core_cpu_percent'];
+    const coreMem = this.hass.states['sensor.home_assistant_core_memory_percent'];
+    const supCpu = this.hass.states['sensor.home_assistant_supervisor_cpu_percent'];
+    const supMem = this.hass.states['sensor.home_assistant_supervisor_memory_percent'];
+    const diskUsed = this.hass.states['sensor.home_assistant_host_disk_used'];
+    const diskTotal = this.hass.states['sensor.home_assistant_host_disk_total'];
+
+    // 获取数值的辅助函数
+    const getPercent = (sensor) => {
+      if (!sensor || sensor.state === 'unavailable' || sensor.state === 'unknown') return null;
+      const v = parseFloat(sensor.state);
+      return isNaN(v) ? null : Math.round(v);
+    };
+
+    const coreCpuVal = getPercent(coreCpu);
+    const coreMemVal = getPercent(coreMem);
+    const supCpuVal = getPercent(supCpu);
+    const supMemVal = getPercent(supMem);
+
+    // 根据百分比获取颜色
+    const getBarColor = (pct) => {
+      if (pct >= 80) return 'rgb(255,50,50)';
+      if (pct >= 50) return 'rgb(255,165,0)';
+      return 'rgb(0,200,80)';
+    };
+
+    // 渲染单个竖条进度项
+    const renderBar = (label, value) => {
+      if (value === null) {
+        return html`
+          <div class="resource-item">
+            <div class="resource-bar-container">
+              <div class="resource-bar-fill" style="height: 0%; background: rgb(150,150,150,0.3);"></div>
+            </div>
+            <div class="resource-text-wrap">
+              <div class="resource-label">${label}</div>
+              <div class="resource-percent">N/A</div>
+            </div>
+          </div>
+        `;
+      }
+      return html`
+        <div class="resource-item">
+          <div class="resource-bar-container">
+            <div class="resource-bar-fill" style="height: ${Math.min(100, value)}%; background: ${getBarColor(value)};"></div>
+          </div>
+          <div class="resource-text-wrap">
+            <div class="resource-label">${label}</div>
+            <div class="resource-percent">${value}%</div>
+          </div>
+        </div>
+      `;
+    };
+
+    // 格式化磁盘大小
+    const formatSize = (sensor) => {
+      if (!sensor || sensor.state === 'unavailable' || sensor.state === 'unknown') return null;
+      const v = parseFloat(sensor.state);
+      if (isNaN(v)) return null;
+      const unit = (sensor.attributes && sensor.attributes.unit_of_measurement) || '';
+      const unitLower = unit.toLowerCase();
+
+      if (unitLower.includes('gib') || unitLower.includes('gb')) {
+        return v.toFixed(1) + 'G';
+      }
+      if (unitLower.includes('mib') || unitLower.includes('mb')) {
+        return (v / 1024).toFixed(1) + 'G';
+      }
+      if (unitLower.includes('tib') || unitLower.includes('tb')) {
+        return (v * 1024).toFixed(0) + 'G';
+      }
+      if (unitLower.includes('kib') || unitLower.includes('kb')) {
+        return (v / (1024 * 1024)).toFixed(2) + 'G';
+      }
+      if (v > 1000) {
+        return (v / 1024).toFixed(1) + 'G';
+      }
+      return v.toFixed(1) + 'G';
+    };
+
+    const diskUsedVal = diskUsed ? parseFloat(diskUsed.state) : null;
+    const diskTotalVal = diskTotal ? parseFloat(diskTotal.state) : null;
+    let diskPercent = null;
+    let diskUsedStr = null;
+    let diskTotalStr = null;
+
+    if (diskUsedVal !== null && !isNaN(diskUsedVal) && diskTotalVal !== null && !isNaN(diskTotalVal) && diskTotalVal > 0) {
+      diskPercent = Math.round((diskUsedVal / diskTotalVal) * 100);
+      diskUsedStr = formatSize(diskUsed);
+      diskTotalStr = formatSize(diskTotal);
+    }
+
+    return html`
+      ${renderBar(html`Core<br>cpu`, coreCpuVal)}
+      ${renderBar(html`Core<br>内存`, coreMemVal)}
+      ${renderBar(html`Supervisor<br>cpu`, supCpuVal)}
+      ${renderBar(html`Supervisor<br>内存`, supMemVal)}
+      ${diskPercent !== null && diskUsedStr && diskTotalStr ? html`
+        <div class="resource-item">
+          <div class="resource-bar-container">
+            <div class="resource-bar-fill" style="height: ${Math.min(100, diskPercent)}%; background: ${getBarColor(diskPercent)};"></div>
+          </div>
+          <div class="resource-text-wrap">
+            <div class="resource-label">Disk磁盘</div>
+            <div class="resource-percent">${diskPercent}%</div>
+            <div class="resource-disk-text">${diskUsedStr} / ${diskTotalStr}</div>
+          </div>
+        </div>
+      ` : html`
+        <div class="resource-item">
+          <div class="resource-bar-container">
+            <div class="resource-bar-fill" style="height: 0%; background: rgb(150,150,150,0.3);"></div>
+          </div>
+          <div class="resource-text-wrap">
+            <div class="resource-label">Disk</div>
+            <div class="resource-percent">N/A</div>
+          </div>
+        </div>
+      `}
+    `;
+  }
+
   render() {
     if (!this.hass) {
       return html`<div class="loading">等待Home Assistant连接...</div>`;
@@ -1250,6 +1441,26 @@ class XiaoshiHaInfoCard extends LitElement {
         </div>
         <div class="ha-version-info">
           ${this._renderHAVersionInfo()}
+        </div>
+
+        <!-- HA资源占用 -->
+        <div class="section-divider">
+          <div class="section-title">
+            <span> • HA资源占用</span>
+          </div>
+        </div>
+        <div class="resource-usage-info">
+          ${this._renderResourceUsage()}
+        </div>
+
+        <!-- 备份信息 -->
+        <div class="section-divider">
+          <div class="section-title">
+            <span> • 备份信息</span>
+          </div>
+        </div>
+        <div class="backup-info">
+          ${this._renderBackupInfo()}
         </div>
 
         <div class="devices-list">
@@ -1371,16 +1582,6 @@ class XiaoshiHaInfoCard extends LitElement {
                   `)}\n                ` : ''}
               `
           }
-        </div>
-        
-        <!-- 备份信息 -->
-        <div class="section-divider">
-          <div class="section-title">
-            <span> • 备份信息</span>
-          </div>
-        </div>
-        <div class="backup-info">
-          ${this._renderBackupInfo()}
         </div>
 
       </ha-card>

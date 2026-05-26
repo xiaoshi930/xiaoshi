@@ -396,19 +396,30 @@ class XiaoshiTodoButtonEditor extends LitElement {
           <label> </label>
         </div>
 
-        <!-- button新元素 结束-->
-
         <div class="form-group">
-          <label>卡片宽度：支持像素(px)和百分比(%)，默认100%</label>
+          <label>弹窗宽度：支持像素(px)、百分比(%)和auto，默认auto</label>
           <input 
             type="text" 
             @change=${this._entityChanged}
-            .value=${this.config.width !== undefined ? this.config.width : '100%'}
-            name="width"
-            placeholder="默认100%"
+            .value=${this.config.popup_width !== undefined ? this.config.popup_width : 'auto'}
+            name="popup_width"
+            placeholder="默认auto"
           />
         </div>
         
+        <div class="form-group">
+          <label>弹窗位置：支持百分比(%)，默认50%居中</label>
+          <input 
+            type="text" 
+            @change=${this._entityChanged}
+            .value=${this.config.popup_top !== undefined ? this.config.popup_top : '50%'}
+            name="popup_top"
+            placeholder="默认50%"
+          />
+        </div>
+
+        <!-- button新元素 结束-->
+
         <div class="form-group">
           <label>主题</label>
           <select 
@@ -492,7 +503,7 @@ class XiaoshiTodoButtonEditor extends LitElement {
     if (type === 'checkbox') {
       finalValue = checked;
     } else {
-      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'width' && name !== 'tap_action') return;
+      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top' && name !== 'tap_action') return;
       finalValue = value 
     }
     
@@ -505,8 +516,6 @@ class XiaoshiTodoButtonEditor extends LitElement {
       finalValue = value || '11px';
     } else if (name === 'button_icon_size') {
       finalValue = value || '13px';
-    } else if (name === 'width') {
-      finalValue = value || '100%';
     } else if (name === 'tap_action') {
       // 处理 tap_action 的特殊逻辑
       if (value === 'tap_action') {
@@ -1111,6 +1120,14 @@ class XiaoshiTodoButton extends LitElement {
     this.theme = 'on';
     this._editingItem = null;
     this._expandedAddForm = {};
+    // 弹窗
+    this._popupOverlay = null;
+    this._popupElement = null;
+    this._popupCardElement = null;
+    this._popupEscHandler = null;
+    this._popupHassUnsubscribe = null;
+    this._popupUpdatePending = false;
+    this._popupHass = null;
   }
 
   static getConfigElement() {
@@ -1219,6 +1236,7 @@ class XiaoshiTodoButton extends LitElement {
     if (this._refreshInterval) {
       clearInterval(this._refreshInterval);
     }
+    this._closePopup();
   }
 
   async _loadTodoData() {
@@ -1304,7 +1322,7 @@ class XiaoshiTodoButton extends LitElement {
     
     if (!tapAction || tapAction !== 'none') {
       // 默认 tap_action 行为：弹出垂直堆叠卡片
-      const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'show_preview', 'tap_action'];
+      const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'show_preview', 'tap_action', 'popup_top', 'popup_width'];
       
       // 构建垂直堆叠卡片的内容
       const cards = [];
@@ -1351,20 +1369,7 @@ class XiaoshiTodoButton extends LitElement {
         cards: cards
       };
       
-      const popupStyle = this.config.popup_style || `
-        --mdc-theme-surface: rgb(0,0,0,0); 
-        --dialog-backdrop-filter: blur(10px) brightness(1);
-        --ha-dialog-scrim-backdrop-filter: blur(10px) brightness(1);
-      `;
-      
-      if (window.browser_mod) {
-        window.browser_mod.service('popup', { 
-          style: popupStyle,
-          content: popupContent
-        });
-      } else {
-        console.warn('browser_mod not available, cannot show popup');
-      }
+      this._showNativePopup(popupContent);
     }
     this._handleClick();
   }
@@ -1519,7 +1524,173 @@ class XiaoshiTodoButton extends LitElement {
   }
 
   /*button新元素 结束*/
-  
+
+  // ==========================================
+  // 原生弹窗方法
+  // ==========================================
+  static _injectPopupStyles() {
+    if (XiaoshiTodoButton._stylesInjected) return;
+    XiaoshiTodoButton._stylesInjected = true;
+    const style = document.createElement('style');
+    style.id = 'xiaoshi-button-popup-style';
+    style.textContent = `
+      @keyframes xiaoshiButtonPopupIn {
+        from { opacity: 0; scale: 0.95; }
+        to   { opacity: 1; scale: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  _showNativePopup(popupContent) {
+    this.constructor._injectPopupStyles();
+
+    const haRoot = document.querySelector('home-assistant');
+    const hassObj = haRoot?.hass || haRoot?.shadowRoot?.querySelector('home-assistant-main')?.hass;
+    if (!hassObj) {
+      console.error('[XiaoshiTodoButton] 无法获取 hass 对象');
+      return;
+    }
+
+    if (this._popupOverlay) {
+      this._closePopup();
+    }
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      pointer-events: auto;
+    `;
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) this._closePopup();
+    });
+
+    const popupTop = this.config.popup_top || '50%';
+    const popupWidth = this.config.popup_width || 'auto';
+    const popupTransform = popupTop === '50%' ? 'translate(-50%, -50%)' : 'translateX(-50%)';
+
+    const popup = document.createElement('div');
+    popup.style.cssText = `
+      position: fixed;
+      top: ${popupTop}; left: 50%;
+      transform: ${popupTransform};
+      z-index: 1005;
+      background: transparent;
+      padding: 0;
+      width: ${popupWidth};
+      max-width: 100vw;
+      max-height: 100vh;
+      overflow: hidden;
+      box-sizing: border-box;
+      animation: xiaoshiButtonPopupIn 0.2s ease-out;
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(popup);
+
+    this._popupOverlay = overlay;
+    this._popupElement = popup;
+
+    this._createPopupCard(popup, popupContent, hassObj);
+
+    this._popupEscHandler = (e) => {
+      if (e.key === 'Escape') this._closePopup();
+    };
+    window.addEventListener('keydown', this._popupEscHandler);
+  }
+
+  async _createPopupCard(container, cardConfig, hassObj) {
+    try {
+      const helpers = await window.loadCardHelpers?.();
+      if (helpers) {
+        const cardElement = await helpers.createCardElement(cardConfig);
+        cardElement.hass = hassObj;
+        container.appendChild(cardElement);
+        this._popupCardElement = cardElement;
+        this._startPopupHassWatcher(hassObj);
+      } else {
+        container.innerHTML = '<div style="color:red;padding:20px;">loadCardHelpers 不可用</div>';
+      }
+    } catch (err) {
+      console.error('[XiaoshiTodoButton] 创建弹窗卡片失败:', err);
+      container.innerHTML = `<div style="color:red;padding:20px;">加载失败: ${err.message}</div>`;
+    }
+  }
+
+  _closePopup() {
+    if (this._popupOverlay) {
+      this._popupOverlay.remove();
+      this._popupOverlay = null;
+    }
+    if (this._popupElement) {
+      this._popupElement.remove();
+      this._popupElement = null;
+    }
+    this._popupCardElement = null;
+    if (this._popupEscHandler) {
+      window.removeEventListener('keydown', this._popupEscHandler);
+      this._popupEscHandler = null;
+    }
+    if (this._popupHassUnsubscribe) {
+      this._popupHassUnsubscribe();
+      this._popupHassUnsubscribe = null;
+    }
+    this._popupUpdatePending = false;
+    this._popupHass = null;
+  }
+
+  _startPopupHassWatcher(hassObj) {
+    if (this._popupHassUnsubscribe) return;
+    this._popupHass = hassObj;
+    if (!hassObj || !hassObj.connection) {
+      setTimeout(() => this._startPopupHassWatcher(hassObj), 500);
+      return;
+    }
+    try {
+      hassObj.connection.subscribeMessage(
+        () => {
+          if (!this._popupCardElement) return;
+          this._schedulePopupUpdate();
+        },
+        { type: 'subscribe_events', event_type: 'state_changed' }
+      ).then((unsub) => {
+        this._popupHassUnsubscribe = unsub;
+      });
+    } catch (err) {
+      console.error('[XiaoshiTodoButton] 订阅状态变化失败:', err);
+    }
+  }
+
+  _schedulePopupUpdate() {
+    if (this._popupUpdatePending) return;
+    this._popupUpdatePending = true;
+    requestAnimationFrame(() => {
+      this._popupUpdatePending = false;
+      if (!this._popupCardElement) return;
+      const haRoot = document.querySelector('home-assistant');
+      const newHass = haRoot?.hass || haRoot?.shadowRoot?.querySelector('home-assistant-main')?.hass;
+      if (!newHass) return;
+      if (newHass === this._popupHass) return;
+      this._popupHass = newHass;
+      this._updatePopupCard();
+    });
+  }
+
+  _updatePopupCard() {
+    if (this._popupCardElement && this._popupHass) {
+      try {
+        this._popupCardElement.hass = this._popupHass;
+      } catch (err) {
+        console.warn('[XiaoshiTodoButton] 弹窗卡片更新失败:', err.message);
+      }
+    }
+  }
+
   async _addTodoItem(entityId, item, description = '', due = '') {
     try {
       const params = {
@@ -1980,8 +2151,8 @@ class XiaoshiTodoButton extends LitElement {
     }
     
     // 设置卡片宽度（控制原来的 UI）
-    if (config.width) {
-      this.style.setProperty('--card-width', config.width);
+    if (config.popup_width) {
+      this.style.setProperty('--card-width', config.popup_width);
     } else {
       this.style.setProperty('--card-width', '100%');
     }

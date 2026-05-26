@@ -137,4 +137,4 @@ const cardConfigs = [
 ];
 
 loadCards();
-console.info("%c 消逝卡-汇总卡 \n%c        v 1.0 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
+console.info("%c 消逝卡-汇总卡 \n%c        v 1.1 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
