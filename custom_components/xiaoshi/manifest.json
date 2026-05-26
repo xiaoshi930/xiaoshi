@@ -1,0 +1,10 @@
+{
+  "domain": "xiaoshi",
+  "name": "消逝汇总卡片",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://github.com/xiaoshi930/xiaoshi",
+  "dependencies": [],
+  "integration_type": "device",
+  "version": "1.0"
+}

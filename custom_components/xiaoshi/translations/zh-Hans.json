@@ -1,0 +1,12 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "消逝汇总卡片"
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "已配置：只能创建一个消逝汇总卡片实例。"
+    }
+  }
+}
