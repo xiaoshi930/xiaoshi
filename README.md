@@ -271,6 +271,33 @@ type: custom:xiaoshi-consumables-button
 ## 对应按钮：详见仪表盘配置
 ~~~
 
+## 移植重置卡kiosk-mode
+~~~
+原作者：https://github.com/NemesisRE/kiosk-mode
+~~~
 
+## 移植重置卡popup-card
+~~~
+原作者：https://bbs.hassbian.com/thread-32007-1-1.html
+~~~
+~~~
+type: button
+name: 打开控制面板
+tap_action:
+  action: call-service
+  service: popup_card.show
+  service_data:
+    title: 控制面板             # 可选
+    hide_header: false         # 可选
+    width: 400px               # 弹出得宽度
+    top: 10%                   # 弹出得位置
+    background: rgb(0,0,0,0)   # 重定义背景的颜色
+    gap: 0                     # 重定义垂直卡片的间距
+    card:                      # 必填，支持单个对象或数组
+      type: entities
+      entities:
+        - entity: light.kitchen
+        - entity: sensor.humidity
+~~~
 
 
