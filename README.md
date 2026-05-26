@@ -253,7 +253,7 @@ columns: "2"
 entities:
   - entity_id: input_text.aaa
     overrides:
-      name: 奥斯卡德拉萨达实打实实打实
+      name: 名称
       unit_of_measurement: "%"
       warning: <10
       conversion: "*2"
