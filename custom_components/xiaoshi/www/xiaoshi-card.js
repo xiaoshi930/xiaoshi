@@ -20,7 +20,6 @@ const loadCards = () => {
     import('./xiaoshi-pad/xiaoshi-pad-climate-card.js');
     import('./xiaoshi-pad/xiaoshi-pad-grid-card.js');
     
-    import('./kiosk-mode/kiosk-mode.js');
     import('./popup-card/popup-card.js');
 
     window.customCards = window.customCards || [];
@@ -137,4 +136,4 @@ const cardConfigs = [
 ];
 
 loadCards();
-console.info("%c 消逝卡-汇总卡 \n%c        v 1.2 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
+console.info("%c 消逝卡-汇总卡 \n%c        v 1.3 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
