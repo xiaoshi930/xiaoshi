@@ -6,6 +6,8 @@ import('./xiaoshi-card/todo-button.js');
 import('./xiaoshi-card/todo-card.js');
 import('./xiaoshi-card/consumables-button.js');
 import('./xiaoshi-card/consumables-card.js');
+import('./xiaoshi-card/chart-button.js');
+import('./xiaoshi-card/chart-card.js');
 
 import('./xiaoshi-phone/climate-card.js');
 import('./xiaoshi-phone/humidifier-card.js');
