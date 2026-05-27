@@ -4,7 +4,9 @@ class XiaoshiHaInfoButtonEditor extends LitElement {
   static get properties() {
     return {
       hass: { type: Object },
-      config: { type: Object }
+      config: { type: Object },
+      _searchText: { type: String },
+      _showDropdown: { type: Boolean }
     };
   }
 
@@ -37,6 +39,104 @@ class XiaoshiHaInfoButtonEditor extends LitElement {
         color: #666;
         margin-top: 4px;
       }
+
+      .entity-selector { position: relative; }
+      .entity-search-input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #555;
+        border-radius: 4px;
+        box-sizing: border-box;
+        background: #333;
+        color: #fff;
+      }
+      .entity-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        max-height: 300px;
+        overflow-y: auto;
+        background: #333;
+        border: 1px solid #555;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        z-index: 1000;
+        margin-top: 2px;
+      }
+      .entity-option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #555;
+      }
+      .entity-option:hover { background: #444; }
+      .entity-option.selected { background: #1a3a5c; }
+      .entity-info { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: space-between; }
+      .entity-details { flex: 1; }
+      .entity-name { font-weight: 500; font-size: 14px; color: #fff; }
+      .entity-id { font-size: 12px; color: #aaa; font-family: monospace; }
+      .check-icon { color: #4CAF50; }
+      .no-results { padding: 12px; text-align: center; color: #aaa; font-style: italic; }
+      .selected-entities { margin-top: 8px; }
+      .selected-label { font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #ccc; }
+      .selected-entity-config {
+        margin-bottom: 8px;
+        border: 1px solid #555;
+        border-radius: 4px;
+        padding: 8px;
+        background: #2a2a2a;
+      }
+      .selected-entity {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 8px;
+        font-size: 12px;
+        color: #fff;
+        justify-content: space-between;
+      }
+      .attribute-config {
+        margin-top: 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .override-config {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 2px;
+      }
+      .override-checkbox { margin-right: 4px; }
+      .override-input {
+        flex: 1;
+        padding: 2px 6px;
+        border: 1px solid #555;
+        border-radius: 3px;
+        font-size: 11px;
+        box-sizing: border-box;
+        background: #333;
+        color: #fff;
+      }
+      .override-label {
+        font-size: 11px;
+        color: #aaa;
+        white-space: nowrap;
+      }
+      .remove-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        color: #aaa;
+        margin-left: auto;
+      }
+      .remove-btn:hover { color: #f44336; }
 
       /*button新元素 开始*/
       .checkbox-group {
@@ -350,6 +450,96 @@ template: 测试模板(最好引用模板，否则大概率会报错)'>
             支持通配符匹配，例如 sensor.* 会匹配所有以 sensor. 开头的实体
           </div>
         </div>
+
+        <div class="form-group">
+          <label>HA加载项实体：选择要监控加载项资源占用的实体</label>
+          <div class="entity-selector">
+            <input 
+              type="text"
+              class="entity-search-input"
+              @input=${this._handleEntitySearch}
+              @focus=${this._handleEntitySearch}
+              .value=${this._searchText || ''}
+              placeholder="搜索实体..."
+            />
+            ${this._showDropdown ? html`
+              <div class="entity-dropdown">
+                ${this._getFilteredEntities().length > 0 ? 
+                  this._getFilteredEntities().map(entity => html`
+                    <div class="entity-option ${this.config.addon_entities?.some(e => e.entity_id === entity.entity_id) ? 'selected' : ''}" 
+                         @click=${() => this._selectEntity(entity)}>
+                      <div class="entity-info">
+                        <div class="entity-details">
+                          <div class="entity-name">${entity.name || entity.entity_id}</div>
+                          <div class="entity-id">${entity.entity_id}</div>
+                        </div>
+                        ${this.config.addon_entities?.some(e => e.entity_id === entity.entity_id) ? 
+                          html`<ha-icon class="check-icon" icon="mdi:check"></ha-icon>` : ''}
+                      </div>
+                    </div>
+                  `) : 
+                  html`<div class="no-results">未找到匹配的实体</div>`
+                }
+              </div>
+            ` : ''}
+          </div>
+        </div>
+
+        ${this.config.addon_entities && this.config.addon_entities.length > 0 ? html`
+          <div class="selected-entities">
+            <div class="selected-label">已选择的加载项实体：</div>
+            ${this.config.addon_entities.map((entityConfig, index) => {
+              const entity = this.hass.states[entityConfig.entity_id];
+              return html`
+                <div class="selected-entity-config">
+                  <div class="selected-entity">
+                    <span>${entity?.attributes.friendly_name || entityConfig.entity_id}</span>
+                    <ha-icon icon="${entity?.attributes.icon || 'mdi:help-circle'}"></ha-icon>
+                    <button class="remove-btn" @click=${() => this._removeEntity(index)}>
+                      <ha-icon icon="mdi:close"></ha-icon>
+                    </button>
+                  </div>
+                  <div class="attribute-config">
+                    <div class="override-config">
+                      <input 
+                        type="checkbox" 
+                        class="override-checkbox"
+                        @change=${(e) => this._updateEntityOverride(index, 'name', e.target.checked)}
+                        .checked=${entityConfig.overrides?.name !== undefined}
+                      />
+                      <span class="override-label">名称:</span>
+                      <input 
+                        type="text" 
+                        class="override-input"
+                        @change=${(e) => this._updateEntityOverrideValue(index, 'name', e.target.value)}
+                        .value=${entityConfig.overrides?.name || ''}
+                        placeholder="自定义名称"
+                        ?disabled=${entityConfig.overrides?.name === undefined}
+                      />
+                    </div>
+                    <div class="override-config">
+                      <input 
+                        type="checkbox" 
+                        class="override-checkbox"
+                        @change=${(e) => this._updateEntityOverride(index, 'label', e.target.checked)}
+                        .checked=${entityConfig.overrides?.label !== undefined}
+                      />
+                      <span class="override-label">标签:</span>
+                      <input 
+                        type="text" 
+                        class="override-input"
+                        @change=${(e) => this._updateEntityOverrideValue(index, 'label', e.target.value)}
+                        .value=${entityConfig.overrides?.label || ''}
+                        placeholder="自定义标签"
+                        ?disabled=${entityConfig.overrides?.label === undefined}
+                      />
+                    </div>
+                  </div>
+                </div>
+              `;
+            })}
+          </div>
+        ` : ''}
       </div>
 
     `;
@@ -399,6 +589,114 @@ template: 测试模板(最好引用模板，否则大概率会报错)'>
       ...this.config,
       [name]: finalValue
     };
+    
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config: this.config },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
+  _handleEntitySearch(e) {
+    this._searchText = e.target.value || '';
+    this._showDropdown = true;
+  }
+
+  _getFilteredEntities() {
+    if (!this.hass) return [];
+    const states = Object.values(this.hass.states);
+    if (!this._searchText) return states.slice(0, 50);
+    const search = this._searchText.toLowerCase();
+    return states.filter(s => 
+      s.entity_id.toLowerCase().includes(search) || 
+      (s.attributes.friendly_name && s.attributes.friendly_name.toLowerCase().includes(search))
+    ).slice(0, 50);
+  }
+
+  _selectEntity(entity) {
+    const currentEntities = this.config.addon_entities || [];
+    if (currentEntities.some(e => e.entity_id === entity.entity_id)) return;
+    
+    // 自动从实体ID中提取名称和标签
+    const entityId = entity.entity_id;
+    const dotIdx = entityId.indexOf('.');
+    const rest = dotIdx >= 0 ? entityId.substring(dotIdx + 1) : entityId;
+    const memIdx = rest.toLowerCase().indexOf('memory');
+    const cpuIdx = rest.toLowerCase().indexOf('cpu');
+    
+    let autoName = entity.attributes?.friendly_name || entityId;
+    let autoLabel = '';
+    
+    if (memIdx >= 0 && (cpuIdx < 0 || memIdx < cpuIdx)) {
+      autoName = rest.substring(0, memIdx).replace(/_/g, ' ').trim() || autoName;
+      autoLabel = '内存';
+    } else if (cpuIdx >= 0) {
+      autoName = rest.substring(0, cpuIdx).replace(/_/g, ' ').trim() || autoName;
+      autoLabel = 'cpu';
+    }
+    
+    this.config = {
+      ...this.config,
+      addon_entities: [...currentEntities, { entity_id: entity.entity_id, overrides: { name: autoName, label: autoLabel } }]
+    };
+    this._searchText = '';
+    this._showDropdown = false;
+    
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config: this.config },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
+  _removeEntity(index) {
+    const currentEntities = [...(this.config.addon_entities || [])];
+    currentEntities.splice(index, 1);
+    
+    this.config = {
+      ...this.config,
+      addon_entities: currentEntities
+    };
+    
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config: this.config },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
+  _updateEntityOverride(index, field, checked) {
+    const currentEntities = [...(this.config.addon_entities || [])];
+    if (checked) {
+      currentEntities[index] = {
+        ...currentEntities[index],
+        overrides: { ...currentEntities[index].overrides, [field]: '' }
+      };
+    } else {
+      const { [field]: _, ...rest } = (currentEntities[index].overrides || {});
+      currentEntities[index] = {
+        ...currentEntities[index],
+        overrides: Object.keys(rest).length > 0 ? rest : undefined
+      };
+    }
+    
+    this.config = { ...this.config, addon_entities: currentEntities };
+    
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config: this.config },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
+  _updateEntityOverrideValue(index, field, value) {
+    const currentEntities = [...(this.config.addon_entities || [])];
+    currentEntities[index] = {
+      ...currentEntities[index],
+      overrides: { ...currentEntities[index].overrides, [field]: value }
+    };
+    
+    this.config = { ...this.config, addon_entities: currentEntities };
     
     this.dispatchEvent(new CustomEvent('config-changed', {
       detail: { config: this.config },
@@ -592,7 +890,7 @@ class XiaoshiHaInfoButton extends LitElement {
       /*2级标题*/
       .section-divider {
         margin: 0 0 8px 0;
-        padding: 8px 8px;
+        padding: 8px 16px;
         background: var(--bg-color, #fff);
         font-weight: 500;
         color: var(--fg-color, #000);
@@ -785,11 +1083,11 @@ class XiaoshiHaInfoButton extends LitElement {
 
       /* HA资源占用样式 */
       .resource-usage-info {
-        padding: 4px 8px;
-        margin: 0 16px 8px 16px;
+        padding: 4px 16px;
+        margin: 0 16px 8px 24px;
         display: flex;
         gap: 8px;
-        justify-content: space-around;
+        justify-content: flex-start;
         border-bottom: 1px solid rgb(150,150,150,0.2);
       }
 
@@ -1594,26 +1892,26 @@ class XiaoshiHaInfoButton extends LitElement {
     
     // 上次备份信息
     const lastBackupEntity = this.hass.states['sensor.backup_last_successful_automatic_backup'];
-    if (lastBackupEntity) {
+    if (lastBackupEntity && lastBackupEntity.state !== 'unavailable' && lastBackupEntity.state !== 'unknown') {
       const lastBackupTime = this._formatDateTime(lastBackupEntity.state);
       const lastBackupRelative = this._getRelativeTime(lastBackupEntity.state, false);
       const lastBackupCombined = lastBackupRelative !== '无' ? `${lastBackupTime}（${lastBackupRelative}）` : lastBackupTime;
       
       backupElements.push(html`
-        <div class="backup-label">HA上次备份</div>
+        <div class="backup-label">上次备份</div>
         <div class="backup-time" style="grid-column: 2 / -1;">${lastBackupCombined}</div>
       `);
     }
     
     // 下次备份信息
     const nextBackupEntity = this.hass.states['sensor.backup_next_scheduled_automatic_backup'];
-    if (nextBackupEntity) {
+    if (nextBackupEntity && nextBackupEntity.state !== 'unavailable' && nextBackupEntity.state !== 'unknown') {
       const nextBackupTime = this._formatDateTime(nextBackupEntity.state);
       const nextBackupRelative = this._getRelativeTime(nextBackupEntity.state, true);
       const nextBackupCombined = nextBackupRelative !== '无' ? `${nextBackupTime}（${nextBackupRelative}）` : nextBackupTime;
       
       backupElements.push(html`
-        <div class="backup-label">HA下次备份</div>
+        <div class="backup-label">下次备份</div>
         <div class="backup-time" style="grid-column: 2 / -1;">${nextBackupCombined}</div>
       `);
     }
@@ -1652,7 +1950,7 @@ class XiaoshiHaInfoButton extends LitElement {
     };
 
     // 渲染单个竖条进度项
-    const renderBar = (label, value) => {
+    const renderBar = (name, label, value) => {
       if (value === null) {
         return html`
           <div class="resource-item">
@@ -1660,6 +1958,7 @@ class XiaoshiHaInfoButton extends LitElement {
               <div class="resource-bar-fill" style="height: 0%; background: rgb(150,150,150,0.3);"></div>
             </div>
             <div class="resource-text-wrap">
+              <div class="resource-label">${name}</div>
               <div class="resource-label">${label}</div>
               <div class="resource-percent">N/A</div>
             </div>
@@ -1672,6 +1971,7 @@ class XiaoshiHaInfoButton extends LitElement {
             <div class="resource-bar-fill" style="height: ${Math.min(100, value)}%; background: ${getBarColor(value)};"></div>
           </div>
           <div class="resource-text-wrap">
+            <div class="resource-label">${name}</div>
             <div class="resource-label">${label}</div>
             <div class="resource-percent">${value}%</div>
           </div>
@@ -1718,10 +2018,10 @@ class XiaoshiHaInfoButton extends LitElement {
     }
 
     return html`
-      ${renderBar(html`Core<br>cpu`, coreCpuVal)}
-      ${renderBar(html`Core<br>内存`, coreMemVal)}
-      ${renderBar(html`Supervisor<br>cpu`, supCpuVal)}
-      ${renderBar(html`Supervisor<br>内存`, supMemVal)}
+      ${renderBar('Core', 'cpu', coreCpuVal)}
+      ${renderBar('Core', '内存', coreMemVal)}
+      ${renderBar('Supervisor', 'cpu', supCpuVal)}
+      ${renderBar('Supervisor', '内存', supMemVal)}
       ${diskPercent !== null && diskUsedStr && diskTotalStr ? html`
         <div class="resource-item">
           <div class="resource-bar-container">
@@ -1729,7 +2029,7 @@ class XiaoshiHaInfoButton extends LitElement {
           </div>
           <div class="resource-text-wrap">
             <div class="resource-label">Disk磁盘</div>
-            <div class="resource-percent">${diskPercent}%</div>
+            <div class="resource-label">${diskPercent}%</div>
             <div class="resource-disk-text">${diskUsedStr} / ${diskTotalStr}</div>
           </div>
         </div>
@@ -1739,12 +2039,49 @@ class XiaoshiHaInfoButton extends LitElement {
             <div class="resource-bar-fill" style="height: 0%; background: rgb(150,150,150,0.3);"></div>
           </div>
           <div class="resource-text-wrap">
-            <div class="resource-label">Disk</div>
+            <div class="resource-label">Disk磁盘</div>
             <div class="resource-percent">N/A</div>
           </div>
         </div>
       `}
     `;
+  }
+
+  _renderAddonUsage() {
+    if (!this.hass || !this.config.addon_entities || this.config.addon_entities.length === 0) {
+      return html`<div class="no-devices" style="font-size:10px;">未配置加载项实体</div>`;
+    }
+
+    const getBarColor = (pct) => {
+      if (pct >= 80) return 'rgb(255,50,50)';
+      if (pct >= 50) return 'rgb(255,165,0)';
+      return 'rgb(0,200,80)';
+    };
+
+    return this.config.addon_entities.map(entityConfig => {
+      const entity = this.hass.states[entityConfig.entity_id];
+      const name = entityConfig.overrides?.name || entity?.attributes?.friendly_name || entityConfig.entity_id;
+      const label = entityConfig.overrides?.label || '';
+      const rawValue = entity ? entity.state : 'N/A';
+      const unit = entity?.attributes?.unit_of_measurement || '';
+
+      const numVal = parseFloat(rawValue);
+      const isNum = !isNaN(numVal);
+      const barHeight = isNum ? Math.min(100, numVal) : 0;
+
+      return html`
+        <div class="resource-item">
+          <div class="resource-bar-container">
+            <div class="resource-bar-fill" style="height: ${barHeight}%; background: ${isNum ? getBarColor(numVal) : 'rgb(150,150,150,0.3)'};"></div>
+          </div>
+          <div class="resource-text-wrap">
+            <div class="resource-label">${name}</div>
+            ${label ? html`<div class="resource-label">${label}</div>` : ''}
+            <div class="resource-percent">${rawValue}${unit ? ' ' + unit : ''}</div>
+          </div>
+        </div>
+      `;
+    });
   }
 
   /*button新元素 开始*/
@@ -2247,18 +2584,38 @@ class XiaoshiHaInfoButton extends LitElement {
             <span> • HA资源占用</span>
           </div>
         </div>
-        <div class="resource-usage-info">
+        <div class="resource-usage-info" style="justify-content: space-between;">
           ${this._renderResourceUsage()}
         </div>
 
-        <!-- 备份信息 -->
+        <!-- HA加载项占用 -->
+        ${this.config.addon_entities && this.config.addon_entities.length > 0 ? html`
         <div class="section-divider">
           <div class="section-title">
-            <span> • 备份信息</span>
+            <span> • HA加载项占用</span>
+          </div>
+        </div>
+        <div class="resource-usage-info" style="gap: 16px; flex-wrap: wrap;">
+          ${this._renderAddonUsage()}
+        </div>
+        ` : ''}
+
+        <!-- 备份信息 -->
+        ${(() => {
+          const lastBackup = this.hass.states['sensor.backup_last_successful_automatic_backup'];
+          const nextBackup = this.hass.states['sensor.backup_next_scheduled_automatic_backup'];
+          const lastAvail = lastBackup && lastBackup.state !== 'unavailable' && lastBackup.state !== 'unknown';
+          const nextAvail = nextBackup && nextBackup.state !== 'unavailable' && nextBackup.state !== 'unknown';
+          return (lastAvail || nextAvail) ? html`
+        <div class="section-divider">
+          <div class="section-title">
+            <span> • HA备份信息</span>
           </div>
         </div>
         <div class="backup-info">
           ${this._renderBackupInfo()}
+        </div>
+        ` : ''; })()}
         </div>
 
         <div class="devices-list">
