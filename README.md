@@ -3,7 +3,7 @@
 1、【xiaoshi-phone-card】https://github.com/xiaoshi930/xiaoshi-phone-card  
 2、【xiaoshi-pad-card】https://github.com/xiaoshi930/xiaoshi-pad-card  
 3、【xiaoshi-card】https://github.com/xiaoshi930/xiaoshi-card  
-5、【popup-card】https://github.com/xiaoshi930/popup-card  
+4、【popup-card】https://github.com/xiaoshi930/popup-card  
 
 ## 移除资源配置以下条目：
 ~~~
