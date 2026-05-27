@@ -3,7 +3,6 @@
 1、【xiaoshi-phone-card】https://github.com/xiaoshi930/xiaoshi-phone-card  
 2、【xiaoshi-pad-card】https://github.com/xiaoshi930/xiaoshi-pad-card  
 3、【xiaoshi-card】https://github.com/xiaoshi930/xiaoshi-card  
-4、【kiosk-mode】https://github.com/xiaoshi930/kiosk-mode  
 5、【popup-card】https://github.com/xiaoshi930/popup-card  
 
 ## 移除资源配置以下条目：
@@ -13,8 +12,6 @@
 - url: /hacsfiles/xiaoshi-pad-card/xiaoshi-pad-card.js
   type: module
 - url: /hacsfiles/xiaoshi-card/xiaoshi-card.js
-  type: module
-- url: /hacsfiles/kiosk-mode/kiosk-mode.js
   type: module
 - url: /hacsfiles/popup-card/popup-card.js
   type: module
@@ -271,9 +268,21 @@ type: custom:xiaoshi-consumables-button
 ## 对应按钮：详见仪表盘配置
 ~~~
 
-## 移植重置卡kiosk-mode
+### 通用卡片功能5：曲线卡片(手机平板端通用)
+**引用示例**
 ~~~
-原作者：https://github.com/NemesisRE/kiosk-mode
+type: custom:xiaoshi-chart-card
+entities:
+  - entity: sensor.jinghuaqi_pm25_keting
+    name: 客厅净化器
+    color: "#d71919"
+  - entity: sensor.jinghuaqi_pm25_zhuwo
+    name: 主卧净化器
+    color: "#220dbf"
+~~~
+~~~
+type: custom:xiaoshi-chart-button
+## 对应按钮：详见仪表盘配置
 ~~~
 
 ## 移植重置卡popup-card
