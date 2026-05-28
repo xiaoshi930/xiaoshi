@@ -22,10 +22,10 @@ class XiaoshChartCardEditor extends LitElement {
 
   get _entities() { return this.config?.entities || []; }
   get _merge() { return this.config?.merge === true; }
-  get _mergeName() { return this.config?._mergeName || ""; }
-  get _mergeColor() { return this.config?._mergeColor || ""; }
+  get _mergeName() { return this.config?.mergename || ""; }
+  get _mergeColor() { return this.config?.mergecolor || ""; }
   get _theme() { return this.config?.theme || "on"; }
-  get _unit() { return this.config?._unit || ""; }
+  get _unit() { return this.config?.unit || ""; }
   get _filterText() { return this.config?._filterText || ""; }
 
   _themeChanged(ev) {
@@ -33,7 +33,7 @@ class XiaoshChartCardEditor extends LitElement {
   }
 
   _unitChanged(ev) {
-    this._update({ _unit: ev.target.value });
+    this._update({ unit: ev.target.value });
   }
 
   _toggleMerge(ev) {
@@ -41,11 +41,11 @@ class XiaoshChartCardEditor extends LitElement {
   }
 
   _mergeNameChanged(ev) {
-    this._update({ _mergeName: ev.target.value });
+    this._update({ mergename: ev.target.value });
   }
 
   _mergeColorChanged(ev) {
-    this._update({ _mergeColor: ev.target.value });
+    this._update({ mergecolor: ev.target.value });
   }
 
   _filterChanged(ev) {
@@ -150,7 +150,7 @@ class XiaoshChartCardEditor extends LitElement {
                 .value=${this._mergeColor}
                 @input=${this._mergeColorChanged} />
               ${this._mergeColor ? html`
-                <button class="custom-reset" @click=${() => this._update({ _mergeColor: "" })} title="恢复默认颜色">↺</button>
+                <button class="custom-reset" @click=${() => this._update({ mergecolor: "" })} title="恢复默认颜色">↺</button>
               ` : ""}
             </div>
           </div>
@@ -401,7 +401,7 @@ class XiaoshChartCard extends LitElement {
 
   _getUnit() {
     // 优先自定义单位
-    if (this.config?._unit) return this.config._unit;
+    if (this.config?.unit) return this.config.unit;
     // 自动从第一个实体获取 unit_of_measurement
     const eid = (this.config?.entities || [])[0]?.entity;
     if (eid && this.hass) {
@@ -461,7 +461,6 @@ class XiaoshChartCard extends LitElement {
       let series;
 
       if (this.config.merge && entityIds.length > 1) {
-        // 直接取所有实体的平均值
         const allPoints = [];
 
         for (const eid of entityIds) {
@@ -477,19 +476,33 @@ class XiaoshChartCard extends LitElement {
         const buckets = {};
         for (const pt of allPoints) {
           const key = Math.floor(pt.t / bucketMs) * bucketMs;
-          if (!buckets[key]) buckets[key] = { sum: 0, count: 0 };
+          if (!buckets[key]) buckets[key] = { sum: 0, count: 0, min: pt.v, max: pt.v };
           buckets[key].sum += pt.v;
           buckets[key].count++;
+          if (pt.v < buckets[key].min) buckets[key].min = pt.v;
+          if (pt.v > buckets[key].max) buckets[key].max = pt.v;
         }
-        const avgValues = Object.entries(buckets)
-          .map(([key, { sum, count }]) => ({ t: parseInt(key), v: sum / count }))
-          .sort((a, b) => a.t - b.t);
+        const avgValues = [];
+        const rangeMinValues = [];
+        const rangeMaxValues = [];
+        Object.entries(buckets).forEach(([key, { sum, count, min, max }]) => {
+          const t = parseInt(key);
+          const avg = sum / count;
+          avgValues.push({ t, v: avg });
+          rangeMinValues.push({ t, v: min });
+          rangeMaxValues.push({ t, v: max });
+        });
+        avgValues.sort((a, b) => a.t - b.t);
+        rangeMinValues.sort((a, b) => a.t - b.t);
+        rangeMaxValues.sort((a, b) => a.t - b.t);
 
-        const mergeColor = this.config._mergeColor || XiaoshChartCard.COLORS[0];
+        const mergeColor = this.config.mergecolor || XiaoshChartCard.COLORS[0];
         series = [{
           entityId: "_average_",
-          name: this.config._mergeName || "平均值",
+          name: this.config.mergename || "平均值",
           values: avgValues,
+          rangeMin: rangeMinValues,
+          rangeMax: rangeMaxValues,
           color: mergeColor,
         }];
       } else {
@@ -542,23 +555,117 @@ class XiaoshChartCard extends LitElement {
     const cw = width - pad.left - pad.right;
     const ch = height - pad.top - pad.bottom;
 
-    // 全局时间 / 值 范围
-    let t0 = Infinity, t1 = -Infinity, vLo = Infinity, vHi = -Infinity;
+    // 全局时间范围（从原始数据取）
+    let t0 = Infinity, t1 = -Infinity;
     series.forEach(s => {
       if (s.values.length === 0) return;
       if (s.values[0].t < t0) t0 = s.values[0].t;
       if (s.values[s.values.length - 1].t > t1) t1 = s.values[s.values.length - 1].t;
-      s.values.forEach(p => { if (p.v < vLo) vLo = p.v; if (p.v > vHi) vHi = p.v; });
     });
     if (t0 >= t1) t1 = t0 + 60000;
-    if (vLo >= vHi) { vLo -= 1; vHi += 1; }
-    const vPad = (vHi - vLo) * 0.15 || 1;
-
-    // Y 轴整数范围
-    const vRangeLo = Math.floor(vLo - vPad);
-    const vRangeHi = Math.ceil(vHi + vPad);
+    // 补齐终点：所有曲线延长到全局 t1，保持时间轴对齐
+    series.forEach(s => {
+      if (s.values.length > 0 && s.values[s.values.length - 1].t < t1 - 60000) {
+        s.values.push({ t: t1, v: s.values[s.values.length - 1].v });
+      }
+      if (s.rangeMax && s.rangeMax.length > 0 && s.rangeMax[s.rangeMax.length - 1].t < t1 - 60000) {
+        s.rangeMax.push({ t: t1, v: s.rangeMax[s.rangeMax.length - 1].v });
+      }
+      if (s.rangeMin && s.rangeMin.length > 0 && s.rangeMin[s.rangeMin.length - 1].t < t1 - 60000) {
+        s.rangeMin.push({ t: t1, v: s.rangeMin[s.rangeMin.length - 1].v });
+      }
+    });
 
     const x = (t) => pad.left + ((t - t0) / (t1 - t0)) * cw;
+
+    // 辅助函数：构建平滑路径（Catmull-Rom 插值）
+    const _buildSmoothPath = (ctx, pts, yFn) => {
+      const n = pts.length;
+      if (n === 0) return;
+      const px = i => x(pts[i].t);
+      const py = i => yFn(pts[i].v);
+      ctx.moveTo(px(0), py(0));
+      if (n === 1) return;
+      if (n === 2) { ctx.lineTo(px(1), py(1)); return; }
+      for (let i = 1; i < n - 1; i++) {
+        const cx = px(i), cy = py(i);
+        const mx = (px(i) + px(i + 1)) / 2;
+        const my = (py(i) + py(i + 1)) / 2;
+        ctx.quadraticCurveTo(cx, cy, mx, my);
+      }
+      ctx.lineTo(px(n - 1), py(n - 1));
+    };
+
+    // 时间间隔重采样：将密集数据按固定间隔取平均
+    const _resample = (pts, intervalMs) => {
+      if (!pts || pts.length < 3) return pts;
+      const result = [];
+      let segStart = pts[0].t;
+      let segSum = 0, segCount = 0;
+      for (let i = 0; i < pts.length; i++) {
+        if (pts[i].t - segStart >= intervalMs) {
+          if (segCount > 0) result.push({ t: segStart + intervalMs / 2, v: segSum / segCount });
+          segStart = pts[i].t;
+          segSum = 0; segCount = 0;
+        }
+        segSum += pts[i].v;
+        segCount++;
+      }
+      if (segCount > 0) result.push({ t: segStart + intervalMs / 2, v: segSum / segCount });
+      return result.length >= 2 ? result : pts;
+    };
+
+    // 移动平均平滑
+    const _smooth = (pts, window = 3) => {
+      if (!pts || pts.length <= window) return pts;
+      const half = Math.floor(window / 2);
+      const result = [];
+      for (let i = 0; i < pts.length; i++) {
+        let sum = 0, count = 0;
+        for (let j = Math.max(0, i - half); j <= Math.min(pts.length - 1, i + half); j++) {
+          sum += pts[j].v;
+          count++;
+        }
+        result.push({ t: pts[i].t, v: sum / count });
+      }
+      return result;
+    };
+
+    const sampleMs = 10 * 60 * 1000;
+
+    // 预处理所有 series，收集处理后的点用于计算 Y 轴范围
+    let vLo = Infinity, vHi = -Infinity;
+    const processedSeries = [];
+    for (const s of series) {
+      if (s.values.length < 2) continue;
+      let pts = _resample(s.values, sampleMs);
+      if (pts.length < 2) continue;
+      pts = _smooth(pts, 3);
+      let rMin = null, rMax = null;
+      if (s.rangeMin && s.rangeMax && s.rangeMin.length > 1 && s.rangeMax.length > 1) {
+        rMin = _resample(s.rangeMin, sampleMs);
+        rMax = _resample(s.rangeMax, sampleMs);
+        if (rMin.length > 1 && rMax.length > 1) {
+          rMin = _smooth(rMin, 3);
+          rMax = _smooth(rMax, 3);
+        } else {
+          rMin = rMax = null;
+        }
+      }
+      processedSeries.push({ s, pts, rMin, rMax });
+      // 从处理后数据取 min/max
+      pts.forEach(p => { if (p.v < vLo) vLo = p.v; if (p.v > vHi) vHi = p.v; });
+      if (rMax) rMax.forEach(p => { if (p.v > vHi) vHi = p.v; });
+      if (rMin) rMin.forEach(p => { if (p.v < vLo) vLo = p.v; });
+    }
+
+    if (vLo >= vHi) { vLo -= 1; vHi += 1; }
+    const vPad = (vHi - vLo) * 0.05 || 1;
+
+    // Y 轴范围：从处理后数据计算，加 5% 边距
+    const vRangeLo = vLo - vPad;
+    const vRangeHi = vHi + vPad;
+
     const y = (v) => pad.top + ch - ((v - vRangeLo) / (vRangeHi - vRangeLo)) * ch;
 
     // 主题色
@@ -569,7 +676,7 @@ class XiaoshChartCard extends LitElement {
 
     ctx.font = "10px sans-serif";
 
-    // --- Y 轴刻度 & 网格线（整数） ---
+    // --- Y 轴刻度 & 网格线（1位小数） ---
     const yTicks = 4;
     for (let i = 0; i <= yTicks; i++) {
       const v = vRangeLo + (vRangeHi - vRangeLo) * i / yTicks;
@@ -582,7 +689,7 @@ class XiaoshChartCard extends LitElement {
       ctx.stroke();
       ctx.fillStyle = labelColor;
       ctx.textAlign = "right";
-      ctx.fillText(Math.round(v).toString(), pad.left - 4, yy + 4);
+      ctx.fillText(v.toFixed(1), pad.left - 4, yy + 4);
     }
 
     // --- X 轴标签 ---
@@ -613,7 +720,7 @@ class XiaoshChartCard extends LitElement {
     let lastLabelX = -9999;
     for (const lb of xLabels) {
       const xx = x(lb.t);
-      if (xx - lastLabelX < minLabelSpacing) continue;
+      if (xx - lastLabelX < minLabelSpacing && lb !== xLabels[xLabels.length - 1]) continue;
       lastLabelX = xx;
       ctx.fillStyle = labelColor;
       ctx.textAlign = "center";
@@ -634,44 +741,24 @@ class XiaoshChartCard extends LitElement {
     ctx.textAlign = "left";
     ctx.fillText(yUnit, pad.left + 2, pad.top - 2);
 
-    // 辅助函数：构建平滑路径
-    const _buildSmoothPath = (ctx, pts) => {
-      const n = pts.length;
-      const p0x = x(pts[0].t), p0y = y(pts[0].v);
-      ctx.moveTo(p0x, p0y);
-      if (n === 2) {
-        ctx.lineTo(x(pts[1].t), y(pts[1].v));
-        return;
+    // --- 绘制所有 series（使用预处理后的数据） ---
+    for (const { s, pts, rMin, rMax } of processedSeries) {
+      // 合并模式：填充最高与最低之间的区域
+      if (rMin && rMax) {
+        const rgb = this._hexToRgb(s.color);
+        ctx.beginPath();
+        _buildSmoothPath(ctx, rMax, y);
+        for (let i = rMin.length - 1; i >= 0; i--) {
+          ctx.lineTo(x(rMin[i].t), y(rMin[i].v));
+        }
+        ctx.closePath();
+        ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},0.15)`;
+        ctx.fill();
       }
-      for (let i = 1; i < n - 1; i++) {
-        const cx = x(pts[i].t), cy = y(pts[i].v);
-        const mx = (cx + x(pts[i + 1].t)) / 2;
-        const my = (cy + y(pts[i + 1].v)) / 2;
-        ctx.quadraticCurveTo(cx, cy, mx, my);
-      }
-      ctx.lineTo(x(pts[n - 1].t), y(pts[n - 1].v));
-    };
 
-    // --- 绘制所有 series ---
-    for (const s of series) {
-      if (s.values.length < 2) continue;
-
-      const pts = s.values;
-      const rgb = this._hexToRgb(s.color);
-      const fillColor = `rgba(${rgb.r},${rgb.g},${rgb.b},0.12)`;
-
-      // 填充区域（到图表底部）
+      // 绘制曲线线条
       ctx.beginPath();
-      _buildSmoothPath(ctx, pts);
-      ctx.lineTo(x(pts[pts.length - 1].t), pad.top + ch);
-      ctx.lineTo(x(pts[0].t), pad.top + ch);
-      ctx.closePath();
-      ctx.fillStyle = fillColor;
-      ctx.fill();
-
-      // 线条
-      ctx.beginPath();
-      _buildSmoothPath(ctx, pts);
+      _buildSmoothPath(ctx, pts, y);
       ctx.strokeStyle = s.color;
       ctx.lineWidth = 2;
       ctx.lineJoin = "round";
@@ -706,7 +793,7 @@ class XiaoshChartCard extends LitElement {
       const vals = entityIds.map(eid => this._getValue(eid)).filter(v => v !== null && !isNaN(v));
       const avg = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
       v1 = avg; v2 = null;
-      n1 = this.config._mergeName || "平均值"; n2 = "";
+      n1 = this.config.mergename || "平均值"; n2 = "";
     } else {
       const e1 = entityIds[0], e2 = entityIds[1];
       v1 = e1 ? this._getValue(e1) : null;
@@ -742,7 +829,8 @@ class XiaoshChartCard extends LitElement {
               : html`<canvas id="chart-canvas" class="chart-canvas"></canvas>`}
           </div>
 
-          <!-- 图例 -->
+          <!-- 图例：合并模式下不显示 -->
+          ${!merge ? html`
           <div class="legend">
             ${(this._chartSeries.length ? this._chartSeries : entityIds.map((eid, i) => ({
               entityId: eid, name: this._getName(eid), color: this._getColor(eid, XiaoshChartCard.COLORS[i % XiaoshChartCard.COLORS.length])
@@ -753,6 +841,7 @@ class XiaoshChartCard extends LitElement {
               </div>
             `)}
           </div>
+          ` : ""}
 
         </div>
       </ha-card>
@@ -804,7 +893,7 @@ class XiaoshChartCard extends LitElement {
       /* 曲线 */
       .chart-wrap {
         width: 100%;
-        height: 180px;
+        height: 144px;
         overflow: hidden;
       }
       .chart-canvas {

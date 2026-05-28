@@ -22,17 +22,17 @@ class XiaoshChartButtonEditor extends LitElement {
 
   get _entities() { return this.config?.entities || []; }
   get _merge() { return this.config?.merge === true; }
-  get _mergeName() { return this.config?._mergeName || ""; }
-  get _mergeColor() { return this.config?._mergeColor || ""; }
+  get _mergeName() { return this.config?.mergename || ""; }
+  get _mergeColor() { return this.config?.mergecolor || ""; }
   get _theme() { return this.config?.theme || "on"; }
-  get _unit() { return this.config?._unit || ""; }
+  get _unit() { return this.config?.unit || ""; }
   get _filterText() { return this.config?._filterText || ""; }
 
   _themeChanged(ev) { this._update({ theme: ev.target.value }); }
-  _unitChanged(ev) { this._update({ _unit: ev.target.value }); }
+  _unitChanged(ev) { this._update({ unit: ev.target.value }); }
   _toggleMerge(ev) { this._update({ merge: ev.target.checked }); }
-  _mergeNameChanged(ev) { this._update({ _mergeName: ev.target.value }); }
-  _mergeColorChanged(ev) { this._update({ _mergeColor: ev.target.value }); }
+  _mergeNameChanged(ev) { this._update({ mergename: ev.target.value }); }
+  _mergeColorChanged(ev) { this._update({ mergecolor: ev.target.value }); }
   _filterChanged(ev) { this._update({ _filterText: ev.target.value }); }
 
   _addEntity(eid) {
@@ -330,7 +330,7 @@ template: 测试模板(最好引用模板，否则大概率会报错)'>
                 .value=${this._mergeColor}
                 @input=${this._mergeColorChanged} />
               ${this._mergeColor ? html`
-                <button class="custom-reset" @click=${() => this._update({ _mergeColor: "" })} title="恢复默认颜色">↺</button>
+                <button class="custom-reset" @click=${() => this._update({ mergecolor: "" })} title="恢复默认颜色">↺</button>
               ` : ""}
             </div>
           </div>
@@ -624,7 +624,7 @@ class XiaoshChartButton extends LitElement {
   }
 
   _getUnit() {
-    if (this.config?._unit) return this.config._unit;
+    if (this.config?.unit) return this.config.unit;
     const eid = (this.config?.entities || [])[0]?.entity;
     if (eid && this.hass) {
       return this.hass.states[eid]?.attributes?.unit_of_measurement || "";
@@ -695,19 +695,33 @@ class XiaoshChartButton extends LitElement {
         const buckets = {};
         for (const pt of allPoints) {
           const key = Math.floor(pt.t / bucketMs) * bucketMs;
-          if (!buckets[key]) buckets[key] = { sum: 0, count: 0 };
+          if (!buckets[key]) buckets[key] = { sum: 0, count: 0, min: pt.v, max: pt.v };
           buckets[key].sum += pt.v;
           buckets[key].count++;
+          if (pt.v < buckets[key].min) buckets[key].min = pt.v;
+          if (pt.v > buckets[key].max) buckets[key].max = pt.v;
         }
-        const avgValues = Object.entries(buckets)
-          .map(([key, { sum, count }]) => ({ t: parseInt(key), v: sum / count }))
-          .sort((a, b) => a.t - b.t);
+        const avgValues = [];
+        const rangeMinValues = [];
+        const rangeMaxValues = [];
+        Object.entries(buckets).forEach(([key, { sum, count, min, max }]) => {
+          const t = parseInt(key);
+          const avg = sum / count;
+          avgValues.push({ t, v: avg });
+          rangeMinValues.push({ t, v: min });
+          rangeMaxValues.push({ t, v: max });
+        });
+        avgValues.sort((a, b) => a.t - b.t);
+        rangeMinValues.sort((a, b) => a.t - b.t);
+        rangeMaxValues.sort((a, b) => a.t - b.t);
 
-        const mergeColor = this.config._mergeColor || XiaoshChartCard.COLORS[0];
+        const mergeColor = this.config.mergecolor || XiaoshChartCard.COLORS[0];
         series = [{
           entityId: "_average_",
-          name: this.config._mergeName || "平均值",
+          name: this.config.mergename || "平均值",
           values: avgValues,
+          rangeMin: rangeMinValues,
+          rangeMax: rangeMaxValues,
           color: mergeColor,
         }];
       } else {
@@ -758,21 +772,111 @@ class XiaoshChartButton extends LitElement {
     const cw = width - pad.left - pad.right;
     const ch = height - pad.top - pad.bottom;
 
-    let t0 = Infinity, t1 = -Infinity, vLo = Infinity, vHi = -Infinity;
+    let t0 = Infinity, t1 = -Infinity;
     series.forEach(s => {
       if (s.values.length === 0) return;
       if (s.values[0].t < t0) t0 = s.values[0].t;
       if (s.values[s.values.length - 1].t > t1) t1 = s.values[s.values.length - 1].t;
-      s.values.forEach(p => { if (p.v < vLo) vLo = p.v; if (p.v > vHi) vHi = p.v; });
     });
     if (t0 >= t1) t1 = t0 + 60000;
-    if (vLo >= vHi) { vLo -= 1; vHi += 1; }
-    const vPad = (vHi - vLo) * 0.15 || 1;
-
-    const vRangeLo = Math.floor(vLo - vPad);
-    const vRangeHi = Math.ceil(vHi + vPad);
+    // 补齐终点：所有曲线延长到全局 t1，保持时间轴对齐
+    series.forEach(s => {
+      if (s.values.length > 0 && s.values[s.values.length - 1].t < t1 - 60000) {
+        s.values.push({ t: t1, v: s.values[s.values.length - 1].v });
+      }
+      if (s.rangeMax && s.rangeMax.length > 0 && s.rangeMax[s.rangeMax.length - 1].t < t1 - 60000) {
+        s.rangeMax.push({ t: t1, v: s.rangeMax[s.rangeMax.length - 1].v });
+      }
+      if (s.rangeMin && s.rangeMin.length > 0 && s.rangeMin[s.rangeMin.length - 1].t < t1 - 60000) {
+        s.rangeMin.push({ t: t1, v: s.rangeMin[s.rangeMin.length - 1].v });
+      }
+    });
 
     const x = (t) => pad.left + ((t - t0) / (t1 - t0)) * cw;
+
+    const _buildSmoothPath = (ctx, pts, yFn) => {
+      const n = pts.length;
+      if (n === 0) return;
+      const px = i => x(pts[i].t);
+      const py = i => yFn(pts[i].v);
+      ctx.moveTo(px(0), py(0));
+      if (n === 1) return;
+      if (n === 2) { ctx.lineTo(px(1), py(1)); return; }
+      for (let i = 1; i < n - 1; i++) {
+        const cx = px(i), cy = py(i);
+        const mx = (px(i) + px(i + 1)) / 2;
+        const my = (py(i) + py(i + 1)) / 2;
+        ctx.quadraticCurveTo(cx, cy, mx, my);
+      }
+      ctx.lineTo(px(n - 1), py(n - 1));
+    };
+
+    const _resample = (pts, intervalMs) => {
+      if (!pts || pts.length < 3) return pts;
+      const result = [];
+      let segStart = pts[0].t;
+      let segSum = 0, segCount = 0;
+      for (let i = 0; i < pts.length; i++) {
+        if (pts[i].t - segStart >= intervalMs) {
+          if (segCount > 0) result.push({ t: segStart + intervalMs / 2, v: segSum / segCount });
+          segStart = pts[i].t;
+          segSum = 0; segCount = 0;
+        }
+        segSum += pts[i].v;
+        segCount++;
+      }
+      if (segCount > 0) result.push({ t: segStart + intervalMs / 2, v: segSum / segCount });
+      return result.length >= 2 ? result : pts;
+    };
+
+    const _smooth = (pts, window = 3) => {
+      if (!pts || pts.length <= window) return pts;
+      const half = Math.floor(window / 2);
+      const result = [];
+      for (let i = 0; i < pts.length; i++) {
+        let sum = 0, count = 0;
+        for (let j = Math.max(0, i - half); j <= Math.min(pts.length - 1, i + half); j++) {
+          sum += pts[j].v;
+          count++;
+        }
+        result.push({ t: pts[i].t, v: sum / count });
+      }
+      return result;
+    };
+
+    const sampleMs = 10 * 60 * 1000;
+
+    let vLo = Infinity, vHi = -Infinity;
+    const processedSeries = [];
+    for (const s of series) {
+      if (s.values.length < 2) continue;
+      let pts = _resample(s.values, sampleMs);
+      if (pts.length < 2) continue;
+      pts = _smooth(pts, 3);
+      let rMin = null, rMax = null;
+      if (s.rangeMin && s.rangeMax && s.rangeMin.length > 1 && s.rangeMax.length > 1) {
+        rMin = _resample(s.rangeMin, sampleMs);
+        rMax = _resample(s.rangeMax, sampleMs);
+        if (rMin.length > 1 && rMax.length > 1) {
+          rMin = _smooth(rMin, 3);
+          rMax = _smooth(rMax, 3);
+        } else {
+          rMin = rMax = null;
+        }
+      }
+      processedSeries.push({ s, pts, rMin, rMax });
+      pts.forEach(p => { if (p.v < vLo) vLo = p.v; if (p.v > vHi) vHi = p.v; });
+      if (rMax) rMax.forEach(p => { if (p.v > vHi) vHi = p.v; });
+      if (rMin) rMin.forEach(p => { if (p.v < vLo) vLo = p.v; });
+    }
+
+    if (vLo >= vHi) { vLo -= 1; vHi += 1; }
+    const vPad = (vHi - vLo) * 0.05 || 1;
+
+    // Y 轴范围：从处理后数据计算，加 5% 边距
+    const vRangeLo = vLo - vPad;
+    const vRangeHi = vHi + vPad;
+
     const y = (v) => pad.top + ch - ((v - vRangeLo) / (vRangeHi - vRangeLo)) * ch;
 
     const theme = this._evaluateTheme();
@@ -794,7 +898,7 @@ class XiaoshChartButton extends LitElement {
       ctx.stroke();
       ctx.fillStyle = labelColor;
       ctx.textAlign = "right";
-      ctx.fillText(Math.round(v).toString(), pad.left - 4, yy + 4);
+      ctx.fillText(v.toFixed(1), pad.left - 4, yy + 4);
     }
 
     const yUnit = this._getUnit();
@@ -823,7 +927,7 @@ class XiaoshChartButton extends LitElement {
     let lastLabelX = -9999;
     for (const lb of xLabels) {
       const xx = x(lb.t);
-      if (xx - lastLabelX < minLabelSpacing) continue;
+      if (xx - lastLabelX < minLabelSpacing && lb !== xLabels[xLabels.length - 1]) continue;
       lastLabelX = xx;
       ctx.fillStyle = labelColor;
       ctx.textAlign = "center";
@@ -842,42 +946,25 @@ class XiaoshChartButton extends LitElement {
     ctx.textAlign = "left";
     ctx.fillText(yUnit, pad.left + 2, pad.top - 2);
 
-    const _buildSmoothPath = (ctx, pts) => {
-      const n = pts.length;
-      const p0x = x(pts[0].t), p0y = y(pts[0].v);
-      ctx.moveTo(p0x, p0y);
-      if (n === 2) {
-        ctx.lineTo(x(pts[1].t), y(pts[1].v));
-        return;
+    // --- 绘制所有 series（使用预处理后的数据） ---
+    for (const { s, pts, rMin, rMax } of processedSeries) {
+      if (rMin && rMax) {
+        const hex = s.color;
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        ctx.beginPath();
+        _buildSmoothPath(ctx, rMax, y);
+        for (let i = rMin.length - 1; i >= 0; i--) {
+          ctx.lineTo(x(rMin[i].t), y(rMin[i].v));
+        }
+        ctx.closePath();
+        ctx.fillStyle = `rgba(${r},${g},${b},0.15)`;
+        ctx.fill();
       }
-      for (let i = 1; i < n - 1; i++) {
-        const cx = x(pts[i].t), cy = y(pts[i].v);
-        const mx = (cx + x(pts[i + 1].t)) / 2;
-        const my = (cy + y(pts[i + 1].v)) / 2;
-        ctx.quadraticCurveTo(cx, cy, mx, my);
-      }
-      ctx.lineTo(x(pts[n - 1].t), y(pts[n - 1].v));
-    };
-
-    for (const s of series) {
-      if (s.values.length < 2) continue;
-      const pts = s.values;
-      const hex = s.color;
-      const r = parseInt(hex.slice(1, 3), 16);
-      const g = parseInt(hex.slice(3, 5), 16);
-      const b = parseInt(hex.slice(5, 7), 16);
-      const fillColor = `rgba(${r},${g},${b},0.12)`;
 
       ctx.beginPath();
-      _buildSmoothPath(ctx, pts);
-      ctx.lineTo(x(pts[pts.length - 1].t), pad.top + ch);
-      ctx.lineTo(x(pts[0].t), pad.top + ch);
-      ctx.closePath();
-      ctx.fillStyle = fillColor;
-      ctx.fill();
-
-      ctx.beginPath();
-      _buildSmoothPath(ctx, pts);
+      _buildSmoothPath(ctx, pts, y);
       ctx.strokeStyle = s.color;
       ctx.lineWidth = 2;
       ctx.lineJoin = "round";
@@ -1344,7 +1431,7 @@ class XiaoshChartButton extends LitElement {
       const vals = entityIds.map(eid => this._getValue(eid)).filter(v => v !== null && !isNaN(v));
       const avg = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
       v1 = avg; v2 = null;
-      n1 = this.config._mergeName || "平均值"; n2 = "";
+      n1 = this.config.mergename || "平均值"; n2 = "";
     } else {
       const e1 = entityIds[0], e2 = entityIds[1];
       v1 = e1 ? this._getValue(e1) : null;
@@ -1511,7 +1598,7 @@ class XiaoshChartButton extends LitElement {
       /* 曲线 */
       .chart-wrap {
         width: 100%;
-        height: 180px;
+        height: 144px;
         overflow: hidden;
       }
       .chart-canvas {
