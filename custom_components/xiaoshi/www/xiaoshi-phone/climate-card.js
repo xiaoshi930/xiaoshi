@@ -120,20 +120,24 @@ class XiaoshiPhoneClimateCardEditor extends LitElement {
     };
 
     // 如果用户没有手动配置显示选项，则根据自动识别结果设置默认值
+    const updates = {};
     if (this.config.show_hvac_modes === undefined) {
-      this.config.show_hvac_modes = this._availableModes.hasHvacModes;
+      updates.show_hvac_modes = this._availableModes.hasHvacModes;
     }
     if (this.config.show_fan_modes === undefined) {
-      this.config.show_fan_modes = this._availableModes.hasFanModes;
+      updates.show_fan_modes = this._availableModes.hasFanModes;
     }
     if (this.config.show_swing_modes === undefined) {
-      this.config.show_swing_modes = this._availableModes.hasSwingModes;
+      updates.show_swing_modes = this._availableModes.hasSwingModes;
     }
     if (this.config.show_preset_modes === undefined) {
-      this.config.show_preset_modes = this._availableModes.hasPresetModes;
+      updates.show_preset_modes = this._availableModes.hasPresetModes;
     }
     if (this.config.show_water_modes === undefined) {
-      this.config.show_water_modes = this._availableModes.hasWaterModes;
+      updates.show_water_modes = this._availableModes.hasWaterModes;
+    }
+    if (Object.keys(updates).length > 0) {
+      this.config = { ...this.config, ...updates };
     }
   }
 

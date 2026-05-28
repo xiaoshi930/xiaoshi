@@ -18,6 +18,10 @@ import('./xiaoshi-phone/switch-card.js');
 import('./xiaoshi-phone/video-card.js');
 import('./xiaoshi-phone/image-card.js');
 
+import('./xiaoshi-small/climate-card.js');
+import('./xiaoshi-small/humidifier-card.js');
+import('./xiaoshi-small/purifier-card.js');
+
 import('./xiaoshi-pad/climate-card.js');
 import('./xiaoshi-pad/grid-card.js');
 

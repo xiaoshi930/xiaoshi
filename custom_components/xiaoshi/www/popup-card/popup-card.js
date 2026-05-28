@@ -15,30 +15,32 @@ window.GlobalPopupController = {
     this._startHassWatcher();
   },
 
-  // 从卡片配置中递归提取所有关联的实体ID
+  // 判断字符串是否像 Home Assistant 实体ID
+  _isEntityId(str) {
+    return typeof str === 'string' && /^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$/.test(str);
+  },
+
+  // 从卡片配置中递归提取所有关联的实体ID（深度扫描所有字段）
   _extractEntities(config) {
     const entities = new Set();
-    if (!config || typeof config !== 'object') return entities;
+    if (!config) return entities;
 
-    if (config.entity) {
-      entities.add(config.entity);
+    if (typeof config === 'string') {
+      if (this._isEntityId(config)) entities.add(config);
+      return entities;
     }
-    if (config.entities) {
-      const list = Array.isArray(config.entities) ? config.entities : Object.keys(config.entities);
-      list.forEach(e => {
-        if (typeof e === 'string') entities.add(e);
-        else if (e && e.entity) entities.add(e.entity);
-      });
+
+    if (Array.isArray(config)) {
+      config.forEach(item => this._extractEntities(item).forEach(e => entities.add(e)));
+      return entities;
     }
-    if (config.cards) {
-      config.cards.forEach(c => this._extractEntities(c).forEach(e => entities.add(e)));
-    }
-    if (config.elements) {
-      Object.values(config.elements).forEach(el => {
-        if (el && typeof el === 'object') {
-          this._extractEntities(el).forEach(e => entities.add(e));
-        }
-      });
+
+    if (typeof config === 'object') {
+      for (const [key, value] of Object.entries(config)) {
+        // 跳过 type、theme 等非实体字段
+        if (key === 'type' || key === 'theme') continue;
+        this._extractEntities(value).forEach(e => entities.add(e));
+      }
     }
 
     return entities;

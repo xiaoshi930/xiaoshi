@@ -2214,8 +2214,18 @@ class XiaoshiPhonePurifierCard extends LitElement {
     
     const isOn = fanEntity?.state !== 'off';
     
+    const modeIconMap = {
+      '自动': 'mdi:fan-auto',
+      '最爱': 'mdi:heart',
+      '睡眠': 'mdi:power-sleep',
+      'auto': 'mdi:fan-auto',
+      'favorite': 'mdi:heart',
+      'sleep': 'mdi:power-sleep'
+    };
+
     return actualFanModes.map((mode) => {
         const isActive = mode === actualCurrentFanMode && isOn;
+        const modeIcon = modeIconMap[mode] || 'mdi:fan';
         
         return html`
             <button 
@@ -2226,7 +2236,7 @@ class XiaoshiPhonePurifierCard extends LitElement {
                 <div class="fan-button">
                     <ha-icon 
                         class="fan-button-icon" 
-                        icon="mdi:fan" 
+                        icon="${modeIcon}" 
                         style="color: ${isActive ? 'var(--active-color)' : ''}"
                     ></ha-icon>
                     <span class="fan-text">${this._translateFanMode(mode)}</span>
