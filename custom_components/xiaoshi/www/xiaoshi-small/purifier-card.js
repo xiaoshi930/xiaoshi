@@ -947,6 +947,11 @@ class XiaoshiSmallPurifierCard extends LitElement {
     // 获取风速数值（对应空调的设置温度）
     const fanSpeedDisplay = this._getFanSpeedDisplay();
 
+    // 判断是否显示风速调节区域：有风速传感器且主实体和传感器均非离线状态
+    const fanSpeedEntity = this._fanSpeedNumberEntity ? this.hass.states[this._fanSpeedNumberEntity] : null;
+    const isFanSpeedAvailable = fanSpeedEntity && fanSpeedEntity.state !== 'unavailable' && state !== 'unavailable';
+    const showSpeedArea = !!(this._fanSpeedNumberEntity && isFanSpeedAvailable);
+
     // 获取模式列表
     let fanModes = [];
     let currentFanMode = '';
@@ -981,8 +986,8 @@ class XiaoshiSmallPurifierCard extends LitElement {
     const modeIcons = {};
     // 动态为模式生成图标和颜色
     const fanModeColors = [
-      'rgb(33,150,243)', 'rgb(254,111,33)', 'rgb(255,151,0)',
-      'rgb(0,188,213)', 'rgb(147,112,219)', 'rgb(76,175,80)',
+      'rgb(76,175,80)', 'rgb(254,111,33)', 'rgb(255,151,0)',
+      'rgb(0,188,213)', 'rgb(147,112,219)', 'rgb(33,150,243)',
       'rgb(233,30,99)', 'rgb(0,150,136)'
     ];
     const modeIconMap = {
@@ -1005,6 +1010,10 @@ class XiaoshiSmallPurifierCard extends LitElement {
     if (isOn && currentFanMode && modeStatusColors[currentFanMode]) {
       statusColor = modeStatusColors[currentFanMode];
       linearColor = modeStatusColors[currentFanMode];
+    } else if (isOn) {
+      // 没有模式时使用默认主题色
+      statusColor = 'rgb(76,175,80)';
+      linearColor = 'rgb(76,175,80)';
     }
 
     // 图标背景色
@@ -1057,7 +1066,7 @@ class XiaoshiSmallPurifierCard extends LitElement {
                 <div class="status-text">${translatedState}${pm25Value ? ' · ' + pm25Value : ''}</div>
             </div>
             <div class="right-section">
-                <div class="speed-area ${this._showModes ? 'hidden' : ''}">
+                ${showSpeedArea ? html`<div class="speed-area ${this._showModes ? 'hidden' : ''}">
                     <div class="speed-card">
                         <button class="speed-adjust-button" @click=${() => this._setFanNumberPrevious()}>
                             <ha-icon icon="mdi:minus" style="color: var(--speed-control-color);"></ha-icon>
@@ -1067,7 +1076,7 @@ class XiaoshiSmallPurifierCard extends LitElement {
                             <ha-icon icon="mdi:plus" style="color: var(--speed-control-color);"></ha-icon>
                         </button>
                     </div>
-                </div>
+                </div>` : ''}
                 <div class="modes-area ${this._showModes ? '' : 'hidden'}">
                     ${hasFanModes ? fanModes.map(mode => {
                         const isActive = currentFanMode === mode && isOn;
@@ -1135,6 +1144,35 @@ class XiaoshiSmallPurifierCard extends LitElement {
     if (!entity) return;
     const isOn = entity.state !== 'off' && entity.state !== 'unavailable' && entity.state !== 'unknown';
     const deviceType = this._getDeviceType();
+
+    // 如果没有模式传感器，点击直接开启或关闭
+    if (!this._fanModeSelectEntity) {
+      if (isOn) {
+        switch (deviceType) {
+          case 'fan':
+            this._callService('fan', 'turn_off', { entity_id: this.config.entity });
+            break;
+          case 'switch':
+            this._callService('switch', 'turn_off', { entity_id: this.config.entity });
+            break;
+          default:
+            this._callService('switch', 'turn_off', { entity_id: this.config.entity });
+        }
+      } else {
+        switch (deviceType) {
+          case 'fan':
+            this._callService('fan', 'turn_on', { entity_id: this.config.entity });
+            break;
+          case 'switch':
+            this._callService('switch', 'turn_on', { entity_id: this.config.entity });
+            break;
+          default:
+            this._callService('switch', 'turn_on', { entity_id: this.config.entity });
+        }
+      }
+      this._handleClick();
+      return;
+    }
 
     if (this._showModes) {
       if (isOn) {

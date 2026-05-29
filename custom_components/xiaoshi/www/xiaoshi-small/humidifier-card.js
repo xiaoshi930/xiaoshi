@@ -755,6 +755,11 @@ class XiaoshiSmallHumidifierCard extends LitElement {
     }
     if (currentFanMode === 'unavailable') currentFanMode = '';
 
+    // 判断是否显示风机档位调节区域：有风机挡位传感器且主实体和传感器均非离线状态
+    const fanModeEntity = this._fanModeSelectEntity ? this.hass.states[this._fanModeSelectEntity] : null;
+    const isFanModeAvailable = fanModeEntity && fanModeEntity.state !== 'unavailable' && fanModeEntity.state !== 'unknown' && state !== 'unavailable';
+    const showSpeedArea = !!(this._fanModeSelectEntity && isFanModeAvailable);
+
     // 颜色变量
     const fgColor = theme === 'on' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'on' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
@@ -791,6 +796,10 @@ class XiaoshiSmallHumidifierCard extends LitElement {
     if (isOn && currentFanMode && modeStatusColors[currentFanMode]) {
       statusColor = modeStatusColors[currentFanMode];
       linearColor = modeStatusColors[currentFanMode];
+    } else if (isOn) {
+      // 没有风机挡位时使用默认主题色
+      statusColor = 'rgb(33,150,243)';
+      linearColor = 'rgb(33,150,243)';
     }
 
     // 图标背景色
@@ -845,7 +854,7 @@ class XiaoshiSmallHumidifierCard extends LitElement {
                 <div class="status-text">${translatedState}${currentHumidity ? ' · ' + currentHumidity : ''}</div>
             </div>
             <div class="right-section">
-                <div class="speed-area ${this._showModes ? 'hidden' : ''}">
+                ${showSpeedArea ? html`<div class="speed-area ${this._showModes ? 'hidden' : ''}">
                     <div class="speed-card">
                         <button class="speed-adjust-button" @click=${() => this._setFanOptionPrevious()}>
                             <ha-icon icon="mdi:minus" style="color: var(--speed-control-color);"></ha-icon>
@@ -855,7 +864,7 @@ class XiaoshiSmallHumidifierCard extends LitElement {
                             <ha-icon icon="mdi:plus" style="color: var(--speed-control-color);"></ha-icon>
                         </button>
                     </div>
-                </div>
+                </div>` : ''}
                 <div class="modes-area ${this._showModes ? '' : 'hidden'}">
                     ${hasFanModes ? fanModes.map(mode => {
                         const isActive = currentFanMode === mode && isOn;
@@ -913,6 +922,17 @@ class XiaoshiSmallHumidifierCard extends LitElement {
     const entity = this.hass.states[this.config.entity];
     if (!entity) return;
     const isOn = entity.state !== 'off' && entity.state !== 'unavailable' && entity.state !== 'unknown';
+
+    // 如果没有风机档位传感器，点击直接开启或关闭
+    if (!this._fanModeSelectEntity) {
+      if (isOn) {
+        this._callService('humidifier', 'turn_off', { entity_id: this.config.entity });
+      } else {
+        this._callService('humidifier', 'turn_on', { entity_id: this.config.entity });
+      }
+      this._handleClick();
+      return;
+    }
 
     if (this._showModes) {
       if (isOn) {
