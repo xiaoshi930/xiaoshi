@@ -27,4 +27,4 @@ import('./xiaoshi-pad/grid-card.js');
 
 import('./popup-card/popup-card.js');
 
-console.info("%c 消逝卡-汇总卡 \n%c        v 1.6 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
+console.info("%c 消逝卡-汇总卡 \n%c        v 1.7 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
