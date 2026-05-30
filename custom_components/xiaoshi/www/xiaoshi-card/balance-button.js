@@ -297,9 +297,9 @@ class XiaoshiBalanceButtonEditor extends LitElement {
         <input 
           type="text" 
           @change=${this._entityChanged}
-          .value=${this.config.button_icon !== undefined ? this.config.button_icon : 'mdi:cellphone'}
+          .value=${this.config.button_icon !== undefined ? this.config.button_icon : '📱'}
           name="button_icon"
-          placeholder="mdi:cellphone"
+          placeholder="📱"
         /></label>
       </div>
 
@@ -1016,8 +1016,9 @@ class XiaoshiBalanceButton extends LitElement {
         position: relative;
       }
 
-      .status-icon {
-        --mdc-icon-size: var(--button-icon-size, 13px);
+      .status-emoji {
+        font-size: var(--button-icon-size, 13px);
+        line-height: 1;
         color: var(--fg-color, #000);
         margin-right: 3px;
       }
@@ -1830,7 +1831,7 @@ class XiaoshiBalanceButton extends LitElement {
     const transparentBg = this.config.transparent_bg === true;
     const hideIcon = this.config.hide_icon === true;
     const lockWhiteFg = this.config.lock_white_fg === true;
-    const buttonIcon = this.config.button_icon || 'mdi:cellphone';
+    const buttonIcon = this.config.button_icon || '📱';
     
     // 设置背景颜色
     const buttonBgColor = transparentBg ? 'transparent' : theme === 'on' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
@@ -1930,7 +1931,7 @@ class XiaoshiBalanceButton extends LitElement {
     // 渲染按钮
     const buttonHtml = html`
       <div class="balance-status" style="--fg-color: ${numberColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
-      ${!hideIcon ? html`<ha-icon class="status-icon" style="color: ${iconColor};" icon="${buttonIcon}"></ha-icon>` : ''}
+      ${!hideIcon ? html`<span class="status-emoji" style="color: ${iconColor};">${buttonIcon}</span>` : ''}
         <span style="color: ${numberColor};">${displayText}</span>
       </div>
     `;

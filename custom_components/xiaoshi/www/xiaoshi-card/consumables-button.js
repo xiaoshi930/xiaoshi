@@ -286,9 +286,9 @@ class XiaoshiConsumablesButtonEditor extends LitElement {
           <input 
             type="text" 
             @change=${this._entityChanged}
-            .value=${this.config.button_icon !== undefined ? this.config.button_icon : 'mdi:battery-sync'}
+            .value=${this.config.button_icon !== undefined ? this.config.button_icon : '🔋'}
             name="button_icon"
-            placeholder="mdi:battery-sync"
+            placeholder="🔋"
           /></label>
         </div>
 
@@ -969,8 +969,9 @@ class XiaoshiConsumablesButton extends LitElement {
         position: relative;
       }
 
-      .status-icon {
-        --mdc-icon-size: var(--button-icon-size, 13px);
+      .status-emoji {
+        font-size: var(--button-icon-size, 13px);
+        line-height: 1;
         color: var(--fg-color, #000);
         margin-right: 3px;
       }
@@ -987,12 +988,12 @@ class XiaoshiConsumablesButton extends LitElement {
         justify-content: center;
       }
 
-      .consumables-status.badge-mode .status-icon {
+      .consumables-status.badge-mode .status-emoji {
         color: rgb(128, 128, 128);
         transition: color 0.2s;
       }
 
-      .consumables-status.badge-mode.has-warning .status-icon {
+      .consumables-status.badge-mode.has-warning .status-emoji {
         color: rgb(255, 0, 0);
       }
 
@@ -2037,7 +2038,7 @@ class XiaoshiConsumablesButton extends LitElement {
     const autoHide = this.config.auto_hide === true;
     const lockWhiteFg = this.config.lock_white_fg === true;
     const buttonText = this.config.button_text || '耗材';
-    const buttonIcon = this.config.button_icon || 'mdi:battery-sync';
+    const buttonIcon = this.config.button_icon || '🔋';
     
     // 设置背景颜色
     const buttonBgColor = transparentBg ? 'transparent' : theme === 'on' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
@@ -2057,7 +2058,7 @@ class XiaoshiConsumablesButton extends LitElement {
       const hasWarning = warningCount > 0;
       buttonHtml = html`
         <div class="consumables-status badge-mode ${hasWarning ? 'has-warning' : ''}" style="--bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
-          <ha-icon class="status-icon" icon="${buttonIcon}"></ha-icon>
+          <span class="status-emoji">${buttonIcon}</span>
           ${hasWarning ? html`<div class="badge-number">${warningCount}</div>` : ''}
         </div>
       `;
@@ -2095,7 +2096,7 @@ class XiaoshiConsumablesButton extends LitElement {
       
       buttonHtml = html`
         <div class="consumables-status" style="--fg-color: ${textColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
-          ${!hideIcon ? html`<ha-icon class="status-icon" style="color: ${iconColor};" icon="${buttonIcon}"></ha-icon>` : ''}
+          ${!hideIcon ? html`<span class="status-emoji" style="color: ${iconColor};">${buttonIcon}</span>` : ''}
           ${displayText}
         </div>
       `;

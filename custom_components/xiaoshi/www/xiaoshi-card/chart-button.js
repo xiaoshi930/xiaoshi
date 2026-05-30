@@ -81,7 +81,7 @@ class XiaoshChartButtonEditor extends LitElement {
         && name !== 'popup_width' && name !== 'popup_top' && name !== 'tap_action') return;
       finalValue = value;
     }
-    if (name === 'button_width') { finalValue = value || '65px'; }
+    if (name === 'button_width') { finalValue = value || '16.8vw'; }
     else if (name === 'button_height') { finalValue = value || '24px'; }
     else if (name === 'button_font_size') { finalValue = value || '11px'; }
     else if (name === 'button_icon_size') { finalValue = value || '13px'; }
@@ -180,13 +180,13 @@ class XiaoshChartButtonEditor extends LitElement {
       </div>
 
       <div class="form-group">
-        <label>按钮宽度：默认65px, 支持像素(px)和百分比(%)</label>
+        <label>按钮宽度：默认16.8vw, 支持像素(px)和百分比(%)</label>
         <input
           type="text"
           @change=${this._entityChanged}
-          .value=${this.config.button_width !== undefined ? this.config.button_width : '65px'}
+          .value=${this.config.button_width !== undefined ? this.config.button_width : '16.8vw'}
           name="button_width"
-          placeholder="默认65px"
+          placeholder="默认16.8vw"
         />
       </div>
 
@@ -538,7 +538,7 @@ class XiaoshChartButton extends LitElement {
     if (config.button_width) {
       this.style.setProperty('--button-width', config.button_width);
     } else {
-      this.style.setProperty('--button-width', '65px');
+      this.style.setProperty('--button-width', '16.8vw');
     }
 
     if (config.button_height) {
@@ -1518,7 +1518,7 @@ class XiaoshChartButton extends LitElement {
 
       /*button新元素 开始*/
       .chart-status {
-        width: var(--button-width, 65px);
+        width: var(--button-width, 16.8vw);
         height: var(--button-height, 24px);
         padding: 0;
         margin: 0;

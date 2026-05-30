@@ -237,9 +237,9 @@ class XiaoshiTodoButtonEditor extends LitElement {
           <input 
             type="text" 
             @change=${this._entityChanged}
-            .value=${this.config.button_icon !== undefined ? this.config.button_icon : 'mdi:clipboard-list'}
+            .value=${this.config.button_icon !== undefined ? this.config.button_icon : '📝'}
             name="button_icon"
-            placeholder="mdi:clipboard-list"
+            placeholder="📝"
           /></label>
         </div>
 
@@ -683,8 +683,9 @@ class XiaoshiTodoButton extends LitElement {
         position: relative;
       }
 
-      .status-icon {
-        --mdc-icon-size: var(--button-icon-size, 13px);
+      .status-emoji {
+        font-size: var(--button-icon-size, 13px);
+        line-height: 1;
         color: var(--fg-color, #000);
         margin-right: 3px;
       }
@@ -701,12 +702,12 @@ class XiaoshiTodoButton extends LitElement {
         justify-content: center;
       }
 
-      .todo-status.badge-mode .status-icon {
+      .todo-status.badge-mode .status-emoji {
         color: rgb(128, 128, 128);
         transition: color 0.2s;
       }
 
-      .todo-status.badge-mode.has-warning .status-icon {
+      .todo-status.badge-mode.has-warning .status-emoji {
         color: rgb(255, 0, 0);
       }
 
@@ -1803,7 +1804,7 @@ class XiaoshiTodoButton extends LitElement {
     const autoHide = this.config.auto_hide === true;
     const lockWhiteFg = this.config.lock_white_fg === true;
     const buttonText = this.config.button_text || '待办';
-    const buttonIcon = this.config.button_icon || 'mdi:clipboard-list';
+    const buttonIcon = this.config.button_icon || '📝';
     
     // 设置背景颜色
     const buttonBgColor = transparentBg ? 'transparent' : theme === 'on' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
@@ -1825,7 +1826,7 @@ class XiaoshiTodoButton extends LitElement {
       const hasWarning = totalIncompleteCount > 0;
       buttonHtml = html`
         <div class="todo-status badge-mode ${hasWarning ? 'has-warning' : ''}" style="--bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
-          <ha-icon class="status-icon" icon="${buttonIcon}"></ha-icon>
+          <span class="status-emoji">${buttonIcon}</span>
           ${hasWarning ? html`<div class="badge-number">${totalIncompleteCount}</div>` : ''}
         </div>
       `;
@@ -1863,7 +1864,7 @@ class XiaoshiTodoButton extends LitElement {
       
       buttonHtml = html`
         <div class="todo-status" style="--fg-color: ${textColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
-          ${!hideIcon ? html`<ha-icon class="status-icon" style="color: ${iconColor};" icon="${buttonIcon}"></ha-icon>` : ''}
+          ${!hideIcon ? html`<span class="status-emoji" style="color: ${iconColor};">${buttonIcon}</span>` : ''}
           ${displayText}
         </div>
       `;

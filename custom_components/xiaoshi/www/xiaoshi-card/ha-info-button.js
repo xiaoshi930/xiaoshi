@@ -217,9 +217,9 @@ class XiaoshiHaInfoButtonEditor extends LitElement {
       <input 
         type="text" 
         @change=${this._entityChanged}
-        .value=${this.config.button_icon !== undefined ? this.config.button_icon : 'mdi:home-assistant'}
+        .value=${this.config.button_icon !== undefined ? this.config.button_icon : './icon/homeassistant.svg'}
         name="button_icon"
-        placeholder="mdi:home-assistant"
+        placeholder="./icon/homeassistant.svg"
       /></label>
     </div>
 
@@ -763,10 +763,18 @@ class XiaoshiHaInfoButton extends LitElement {
         position: relative;
       }
 
-      .status-icon {
-        --mdc-icon-size: var(--button-icon-size, 13px);
+      .status-emoji {
+        font-size: var(--button-icon-size, 13px);
+        line-height: 1;
         color: var(--fg-color, #000);
-        margin-right: 3px;
+        margin-right: 6px;
+      }
+
+      .status-emoji img {
+        width: var(--button-icon-size, 13px);
+        height: var(--button-icon-size, 13px);
+        vertical-align: middle;
+        object-fit: contain;
       }
 
       /* 角标模式样式 */
@@ -781,12 +789,12 @@ class XiaoshiHaInfoButton extends LitElement {
         justify-content: center;
       }
 
-      .ha-info-status.badge-mode .status-icon {
+      .ha-info-status.badge-mode .status-emoji {
         color: rgb(128, 128, 128);
         transition: color 0.2s;
       }
 
-      .ha-info-status.badge-mode.has-warning .status-icon {
+      .ha-info-status.badge-mode.has-warning .status-emoji {
         color: rgb(255, 0, 0);
       }
 
@@ -2489,7 +2497,7 @@ class XiaoshiHaInfoButton extends LitElement {
     const autoHide = this.config.auto_hide === true;
     const lockWhiteFg = this.config.lock_white_fg === true;
     const buttonText = this.config.button_text || 'HA';
-    const buttonIcon = this.config.button_icon || 'mdi:home-assistant';
+    const buttonIcon = this.config.button_icon || '/xiaoshi/xiaoshi-card/icon/homeassistant.svg';
     
     // 设置背景颜色
     const buttonBgColor = transparentBg ? 'transparent' : theme === 'on' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
@@ -2509,7 +2517,7 @@ class XiaoshiHaInfoButton extends LitElement {
       const hasWarning = warningCount > 0;
       buttonHtml = html`
         <div class="ha-info-status badge-mode ${hasWarning ? 'has-warning' : ''}" style="--bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
-          <ha-icon class="status-icon" icon="${buttonIcon}"></ha-icon>
+          <span class="status-emoji">${buttonIcon.startsWith('./') || buttonIcon.startsWith('/') || buttonIcon.startsWith('http') ? html`<img src="${buttonIcon}" />` : buttonIcon}</span>
           ${hasWarning ? html`<div class="badge-number">${warningCount}</div>` : ''}
         </div>
       `;
@@ -2547,7 +2555,7 @@ class XiaoshiHaInfoButton extends LitElement {
       
       buttonHtml = html`
         <div class="ha-info-status" style="--fg-color: ${textColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
-          ${!hideIcon ? html`<ha-icon class="status-icon" style="color: ${iconColor};" icon="${buttonIcon}"></ha-icon>` : ''}
+          ${!hideIcon ? html`<span class="status-emoji" style="color: ${iconColor};">${buttonIcon.startsWith('./') || buttonIcon.startsWith('/') || buttonIcon.startsWith('http') ? html`<img src="${buttonIcon}" />` : buttonIcon}</span>` : ''}
           ${displayText}
         </div>
       `;
