@@ -231,7 +231,7 @@ class XiaoshiPhoneComputerCard extends LitElement {
       super();
       this.hass = {};
       this.config = {};
-      this.theme = 'on';
+      this.theme = 'system';
       this.width = '100%';
       this.cpuData = [];
       this.memoryData = [];
@@ -253,18 +253,22 @@ class XiaoshiPhoneComputerCard extends LitElement {
   
   _evaluateTheme() {
       try {
-          if (!this.config || !this.config.theme) return 'on';
-          if (typeof this.config.theme === 'function') {
-              return this.config.theme();
+          const mode = this.config ? this.config.theme : 'system';
+          if (mode === 'light') return 'light';
+          if (mode === 'dark') return 'dark';
+          if (mode === 'system' || !mode) {
+              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              return 'light';
           }
-          if (typeof this.config.theme === 'string' && 
-                  (this.config.theme.includes('return') || this.config.theme.includes('=>'))) {
-              return (new Function(`return ${this.config.theme}`))();
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+              if (typeof window.theme === 'function') {
+                  return window.theme() || 'light';
+              }
+            return 'light';
           }
-          return this.config.theme;
-      } catch(e) {
-          console.error('计算主题时出错:', e);
-          return 'on';
+          return mode;
+      } catch (e) {
+          return 'light';
       }
   }
   
@@ -449,7 +453,7 @@ drawLineChart(ctx, data, fillColor, strokeColor) {
       const strokeDasharray = value !== undefined ? `${value} 100` : '0 100';
       const size = 'min(48px, 13vw)'; 
       const theme = this._evaluateTheme();
-      const fgColor = theme === 'on' ? 'rgb(50, 50, 50)' : 'rgb(240, 240, 240)';
+      const fgColor = theme === 'light' ? 'rgb(50, 50, 50)' : 'rgb(240, 240, 240)';
       return html`
           <div class="ring-container">
               <svg class="ring-circle" 
@@ -509,8 +513,8 @@ drawLineChart(ctx, data, fillColor, strokeColor) {
       }
 
       const theme = this._evaluateTheme();
-      const fgColor = theme === 'on' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-      const bgColor = theme === 'on' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+      const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+      const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
       const statusColor = isOn ? '#2196f3' : '';
       const linearColor = isOn ? '#2196f3' : '';
       const ringEntities = [];

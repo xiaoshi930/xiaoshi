@@ -443,11 +443,12 @@ class XiaoshiPhoneSwitchCardEditor extends LitElement {
           <label>主题</label>
           <select
             @change=${this._valueChanged}
-            .value=${this.config.theme !== undefined ? this.config.theme : 'off'}
+            .value=${this.config.theme !== undefined ? this.config.theme : 'system'}
             name="theme"
           >
-            <option value="off">深色主题</option>
-            <option value="on">浅色主题</option>
+            <option value="system">跟随系统</option>
+            <option value="light">浅色主题（白底黑字）</option>
+            <option value="dark">深色主题（黑底白字）</option>
           </select>
         </div>
 
@@ -527,7 +528,7 @@ class XiaoshiPhoneSwitchCard extends LitElement {
   static getStubConfig() {
     return {
       entities: [],
-      theme: "off",
+      theme: "system",
       total: "on",
       columns: 1,
       width: "100%",
@@ -675,7 +676,7 @@ class XiaoshiPhoneSwitchCard extends LitElement {
       width: config.width || '100%',
       height: config.height || '60px',
       entities: config.entities || [],
-      theme: config.theme || 'off',
+      theme: config.theme || 'system',
       total: config.total !== undefined ? config.total : 'on',
       columns: config.columns || 1
     };
@@ -683,15 +684,24 @@ class XiaoshiPhoneSwitchCard extends LitElement {
   }
 
   _evaluateTheme() {
-    try {
-      if (typeof this._config.theme === 'function') return this._config.theme();
-      if (typeof this._config.theme === 'string' && this._config.theme.includes('theme()')) {
-        return (new Function('return theme()'))();
+      try {
+          const mode = this.config ? this.config.theme : 'system';
+          if (mode === 'light') return 'light';
+          if (mode === 'dark') return 'dark';
+          if (mode === 'system' || !mode) {
+              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+              if (typeof window.theme === 'function') {
+                  return window.theme() || 'light';
+              }
+            return 'light';
+          }
+          return mode;
+      } catch (e) {
+          return 'light';
       }
-      return this._config.theme || 'off';
-    } catch(e) {
-      return 'off';
-    }
   }
 
   _handleClick(){
@@ -707,11 +717,11 @@ class XiaoshiPhoneSwitchCard extends LitElement {
   _getBackground(state) {
     const theme = this._evaluateTheme();
     if (state === 'on') {
-      return theme === 'off' 
+      return theme === 'dark' 
         ? 'linear-gradient(90deg, #c8191d 0%, #323232 100%)' 
         : 'linear-gradient(90deg, #c8191d 0%, #FFFFFF 100%)';
     }
-    return theme === 'off' ? '#323232' : '#FFFFFF';
+    return theme === 'dark' ? '#323232' : '#FFFFFF';
   }
 
   _parseEntityConfig(config) {
@@ -738,7 +748,7 @@ class XiaoshiPhoneSwitchCard extends LitElement {
       }
     });
     const themeMode = this._evaluateTheme();
-    const textColor = themeMode === 'on' ? '#333' : '#FFF';
+    const textColor = themeMode === 'light' ? '#333' : '#FFF';
     return html`
       <div class="stats-container"\n 
         style="color: ${textColor}">
@@ -792,12 +802,12 @@ class XiaoshiPhoneSwitchCard extends LitElement {
           }
         }
         const themeMode = this._evaluateTheme();
-        const textColor = themeMode === 'on' ? '#333' : '#FFF';
+        const textColor = themeMode === 'light' ? '#333' : '#FFF';
         const bgColor = state === 'on' 
-          ? (themeMode === 'off' ? '#323232' : '#FFFFFF')
-          : (themeMode === 'off' ? '#323232' : '#FFFFFF');
+          ? (themeMode === 'dark' ? '#323232' : '#FFFFFF')
+          : (themeMode === 'dark' ? '#323232' : '#FFFFFF');
         const bgImage = state === 'on'
-          ? (themeMode === 'off'
+          ? (themeMode === 'dark'
               ? 'linear-gradient(90deg, #c8191d 0%, #323232 100%)'
               : 'linear-gradient(90deg, #c8191d 0%, #FFFFFF 100%)')
           : 'none';

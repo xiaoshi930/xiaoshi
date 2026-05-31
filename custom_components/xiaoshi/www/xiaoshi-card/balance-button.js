@@ -507,11 +507,12 @@ template: 测试模板(最好引用模板，否则大概率会报错)'>
           <label>主题</label>
           <select 
             @change=${this._entityChanged}
-            .value=${this.config.theme !== undefined ? this.config.theme : 'on'}
+            .value=${this.config.theme !== undefined ? this.config.theme : 'system'}
             name="theme"
           >
-            <option value="on">浅色主题（白底黑字）</option>
-            <option value="off">深色主题（深灰底白字）</option>
+            <option value="system">跟随系统</option>
+            <option value="light">浅色主题（白底黑字）</option>
+            <option value="dark">深色主题（黑底白字）</option>
           </select>
         </div>
         
@@ -1236,7 +1237,7 @@ class XiaoshiBalanceButton extends LitElement {
     this._oilPriceData = [];
     this._loading = false;
     this._refreshInterval = null;
-    this.theme = 'on';
+    this. theme = 'system';
     // 弹窗
     this._popupOverlay = null;
     this._popupElement = null;
@@ -1265,20 +1266,24 @@ class XiaoshiBalanceButton extends LitElement {
   }
 
   _evaluateTheme() {
-    try {
-      if (!this.config || !this.config.theme) return 'on';
-      if (typeof this.config.theme === 'function') {
-          return this.config.theme();
+      try {
+          const mode = this.config ? this.config.theme : 'system';
+          if (mode === 'light') return 'light';
+          if (mode === 'dark') return 'dark';
+          if (mode === 'system' || !mode) {
+              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+              if (typeof window.theme === 'function') {
+                  return window.theme() || 'light';
+              }
+            return 'light';
+          }
+          return mode;
+      } catch (e) {
+          return 'light';
       }
-      if (typeof this.config.theme === 'string' && 
-              (this.config.theme.includes('return') || this.config.theme.includes('=>'))) {
-          return (new Function(`return ${this.config.theme}`))();
-      }
-      return this.config.theme;
-    } catch(e) {
-      console.error('计算主题时出错:', e);
-      return 'on';
-    }
   }
 
   disconnectedCallback() {
@@ -1820,8 +1825,8 @@ class XiaoshiBalanceButton extends LitElement {
     }
     // 获取主题和颜色
     const theme = this._evaluateTheme();
-    const fgColor = theme === 'on' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-    const bgColor = theme === 'on' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
     
 
     /*button新元素 前9行和最后1行开始*/
@@ -1834,7 +1839,7 @@ class XiaoshiBalanceButton extends LitElement {
     const buttonIcon = this.config.button_icon || '📱';
     
     // 设置背景颜色
-    const buttonBgColor = transparentBg ? 'transparent' : theme === 'on' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
+    const buttonBgColor = transparentBg ? 'transparent' : theme === 'light' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
     
     // 获取显示模式
     const displayMode = this.config.display_mode || 'min_value';

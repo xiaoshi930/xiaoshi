@@ -354,11 +354,12 @@ class XiaoshiPhonelightCardEditor extends LitElement {
           <label>主题</label>
           <select
             @change=${this._valueChanged}
-            .value=${this.config.theme !== undefined ? this.config.theme : 'off'}
+            .value=${this.config.theme !== undefined ? this.config.theme : 'system'}
             name="theme"
           >
-            <option value="off">深色主题</option>
-            <option value="on">浅色主题</option>
+            <option value="system">跟随系统</option>
+            <option value="light">浅色主题（白底黑字）</option>
+            <option value="dark">深色主题（黑底白字）</option>
           </select>
         </div>
 
@@ -456,7 +457,7 @@ class XiaoshiPhonelightCard extends LitElement {
     return {
       entities: [],
       rgb: false,
-      theme: "off",
+      theme: "system",
       show: "always",
       total: "on",
       columns: 1,
@@ -715,7 +716,7 @@ class XiaoshiPhonelightCard extends LitElement {
     this._config = {
       entities: normalizedEntities,
       rgb: configCopy.rgb,
-      theme: configCopy.theme || 'off',
+      theme: configCopy.theme || 'system',
       width: configCopy.width || '100%',
       height: configCopy.height || '60px',
       show: configCopy.show,
@@ -747,15 +748,24 @@ class XiaoshiPhonelightCard extends LitElement {
   }
 
   _evaluateTheme() {
-    try {
-      if (typeof this._config.theme === 'function') return this._config.theme();
-      if (typeof this._config.theme === 'string' && this._config.theme.includes('theme()')) {
-        return (new Function('return theme()'))();
+      try {
+          const mode = this.config ? this.config.theme : 'system';
+          if (mode === 'light') return 'light';
+          if (mode === 'dark') return 'dark';
+          if (mode === 'system' || !mode) {
+              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+              if (typeof window.theme === 'function') {
+                  return window.theme() || 'light';
+              }
+            return 'light';
+          }
+          return mode;
+      } catch (e) {
+          return 'light';
       }
-      return this._config.theme || 'off';
-    } catch(e) {
-      return 'off';
-    }
   }
 
   _handleClick(){
@@ -771,11 +781,11 @@ class XiaoshiPhonelightCard extends LitElement {
   _getBackground(state) {
     const theme = this._evaluateTheme();
     if (state === 'on') {
-      return theme === 'off' 
+      return theme === 'dark' 
         ? 'linear-gradient(90deg, #FE6F21 -30%, #323232 50%)'
         : 'linear-gradient(90deg, #FE6F21 -30%, #FFF 50%)';
     }
-    return theme === 'off' ? '#323232' : '#FFF';
+    return theme === 'dark' ? '#323232' : '#FFF';
   }
 
   _renderHeader() {
@@ -814,15 +824,15 @@ class XiaoshiPhonelightCard extends LitElement {
     const hasScenes = attributes.effect_list && attributes.effect_list.length > 0;
     return html`
       <div class="entity-container"\n
-        style="width: 100%;height: ${this._config.height};background: ${this._getBackground(state)};box-shadow: ${this._evaluateTheme() === 'off' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'};display: ${showCard ? 'flex' : 'none'};">
+        style="width: 100%;height: ${this._config.height};background: ${this._getBackground(state)};box-shadow: ${this._evaluateTheme() === 'dark' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'};display: ${showCard ? 'flex' : 'none'};">
         <div class="device-name-area"\n 
-          style="color: ${this._evaluateTheme() === 'off' ? '#FFF' : '#333'}">
+          style="color: ${this._evaluateTheme() === 'dark' ? '#FFF' : '#333'}">
           <div class="device-name">
             ${attributes.friendly_name || entity}
           </div>
           ${hasScenes ? html`
             <div class="scene-mode-button"\n 
-              style="color: ${this._evaluateTheme() === 'off' ? '#FFF' : '#333'}"\n
+              style="color: ${this._evaluateTheme() === 'dark' ? '#FFF' : '#333'}"\n
               @click=${() => this._toggleSceneMode(entity)}>
               情景模式
             </div>
@@ -838,7 +848,7 @@ class XiaoshiPhonelightCard extends LitElement {
   }
 
   _renderControls(entity, isActive, attributes) {
-    const themeColor = this._evaluateTheme() === 'on' ? '#333' : '#FFF';
+    const themeColor = this._evaluateTheme() === 'light' ? '#333' : '#FFF';
     const controls = [];
     if (attributes.brightness !== undefined) {
       const brightness = Math.max(5, Math.min(255, attributes.brightness || 5));
@@ -918,7 +928,7 @@ class XiaoshiPhonelightCard extends LitElement {
           <div 
             class="scene-button"\n
             @click=${() => this._activateScene(entity, scene)}\n
-            style="color: ${this._evaluateTheme() === 'off' ? '#FFF' : '#333'}"\n
+            style="color: ${this._evaluateTheme() === 'dark' ? '#FFF' : '#333'}"\n
             title=${scene}
           >
             ${scene}

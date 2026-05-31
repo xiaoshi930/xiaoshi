@@ -24,7 +24,7 @@ class XiaoshChartCardEditor extends LitElement {
   get _merge() { return this.config?.merge === true; }
   get _mergeName() { return this.config?.mergename || ""; }
   get _mergeColor() { return this.config?.mergecolor || ""; }
-  get _theme() { return this.config?.theme || "on"; }
+  get _theme() { return this.config?.theme !== undefined ? this.config.theme : "system"; }
   get _unit() { return this.config?.unit || ""; }
   get _filterText() { return this.config?._filterText || ""; }
 
@@ -118,8 +118,9 @@ class XiaoshChartCardEditor extends LitElement {
         <div class="field">
           <label class="label">主题</label>
           <select class="select" .value=${this._theme} @change=${this._themeChanged}>
-            <option value="on">亮色 (Light)</option>
-            <option value="off">暗色 (Dark)</option>
+            <option value="system">跟随系统</option>
+            <option value="light">浅色主题（白底黑字）</option>
+            <option value="dark">深色主题（黑底白字）</option>
           </select>
         </div>
 
@@ -351,22 +352,26 @@ class XiaoshChartCard extends LitElement {
   }
 
   /* ---------- 主题 ---------- */
-  _evaluateTheme() {
-    try {
-      if (!this.config || !this.config.theme) return 'on';
-      if (typeof this.config.theme === 'function') {
-          return this.config.theme();
-      }
-      if (typeof this.config.theme === 'string' && 
-              (this.config.theme.includes('return') || this.config.theme.includes('=>'))) {
-          return (new Function(`return ${this.config.theme}`))();
-      }
-      return this.config.theme;
-    } catch(e) {
-      console.error('计算主题时出错:', e);
-      return 'on';
+    _evaluateTheme() {
+        try {
+            const mode = this.config ? this.config.theme : 'system';
+            if (mode === 'light') return 'light';
+            if (mode === 'dark') return 'dark';
+            if (mode === 'system' || !mode) {
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+                return 'light';
+            }
+            if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+                if (typeof window.theme === 'function') {
+                    return window.theme() || 'light';
+                }
+              return 'light';
+            }
+            return mode;
+        } catch (e) {
+            return 'light';
+        }
     }
-  }
 
   /* ---------- 数据工具 ---------- */
   _getValue(entityId, hassObj) {
@@ -670,9 +675,9 @@ class XiaoshChartCard extends LitElement {
 
     // 主题色
     const theme = this._evaluateTheme();
-    const labelColor = theme === "on" ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)";
-    const gridColor  = theme === "on" ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)";
-    const axisColor  = theme === "on" ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.25)";
+    const labelColor = theme === "light" ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)";
+    const gridColor  = theme === "light" ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)";
+    const axisColor  = theme === "light" ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.25)";
 
     ctx.font = "10px sans-serif";
 
@@ -779,8 +784,8 @@ class XiaoshChartCard extends LitElement {
     if (!this.config || !this.hass) return html``;
 
     const theme = this._evaluateTheme();
-    const bg = theme === "on" ? "rgb(255, 255, 255)" : "rgb(50, 50, 50)";
-    const fg = theme === "on" ? "rgb(0, 0, 0)" : "rgb(255, 255, 255)";
+    const bg = theme === "light" ? "rgb(255, 255, 255)" : "rgb(50, 50, 50)";
+    const fg = theme === "light" ? "rgb(0, 0, 0)" : "rgb(255, 255, 255)";
 
     const entityIds = (this.config.entities || []).map(item => item.entity);
     const unit = this._getUnit();

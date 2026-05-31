@@ -2489,20 +2489,24 @@ class XiaoshiPadClimateCard extends LitElement {
   }
 
   _evaluateTheme() {
-    try {
-      if (!this.config || !this.config.theme) return 'on';
-      if (typeof this.config.theme === 'function') {
-          return this.config.theme();
+      try {
+          const mode = this.config ? this.config.theme : 'system';
+          if (mode === 'light') return 'on';
+          if (mode === 'dark') return 'off';
+          if (mode === 'system' || !mode) {
+              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'off';
+              return 'on';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+              if (typeof window.theme === 'function') {
+                  return window.theme() || 'on';
+              }
+            return 'on';
+          }
+          return mode;
+      } catch (e) {
+          return 'on';
       }
-      if (typeof this.config.theme === 'string' && 
-              (this.config.theme.includes('return') || this.config.theme.includes('=>'))) {
-          return (new Function(`return ${this.config.theme}`))();
-      }
-      return this.config.theme;
-    } catch(e) {
-      console.error('计算主题时出错:', e);
-      return 'on';
-    }
   }
 
   async firstUpdated() {

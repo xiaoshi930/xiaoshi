@@ -443,7 +443,7 @@ class XiaoshiSmallHumidifierCard extends LitElement {
   static getStubConfig() {
     return {
       entity: "",
-      theme: "on",
+      theme: "light",
       width: "100%"
     };
   }
@@ -695,26 +695,30 @@ class XiaoshiSmallHumidifierCard extends LitElement {
     super();
     this.hass = {};
     this.config = {};
-    this.theme = 'on';
+    this.theme = 'light';
     this.width = '100%';
     this._showModes = false;
   }
 
   _evaluateTheme() {
-    try {
-      if (!this.config || !this.config.theme) return 'on';
-      if (typeof this.config.theme === 'function') {
-          return this.config.theme();
+      try {
+          const mode = this.config ? this.config.theme : 'system';
+          if (mode === 'light') return 'light';
+          if (mode === 'dark') return 'dark';
+          if (mode === 'system' || !mode) {
+              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+              if (typeof window.theme === 'function') {
+                  return window.theme() || 'light';
+              }
+            return 'light';
+          }
+          return mode;
+      } catch (e) {
+          return 'light';
       }
-      if (typeof this.config.theme === 'string' && 
-              (this.config.theme.includes('return') || this.config.theme.includes('=>'))) {
-          return (new Function(`return ${this.config.theme}`))();
-      }
-      return this.config.theme;
-    } catch(e) {
-      console.error('计算主题时出错:', e);
-      return 'on';
-    }
   }
 
   render() {
@@ -761,9 +765,9 @@ class XiaoshiSmallHumidifierCard extends LitElement {
     const showSpeedArea = !!(this._fanModeSelectEntity && isFanModeAvailable);
 
     // 颜色变量
-    const fgColor = theme === 'on' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-    const bgColor = theme === 'on' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
-    const shadowColor = theme === 'on' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(150, 150, 150, 0.2)';
+    const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    const shadowColor = theme === 'light' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(150, 150, 150, 0.2)';
     let statusColor = fgColor;
     let linearColor = fgColor;
     const speedControlColor = isOn ? statusColor : fgColor;

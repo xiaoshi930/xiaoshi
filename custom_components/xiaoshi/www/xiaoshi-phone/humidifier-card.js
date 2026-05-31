@@ -507,14 +507,15 @@ class XiaoshiPhoneHumidifierCardEditor extends LitElement {
         <!-- 主题选择 -->
         <div class="row">
           <div class="label">主题模式</div>
-          <ha-switch
-            .checked=${this.config.theme === 'on'}
-            @change=${this._themeSwitchChanged}
-            .configValue=${'theme'}
-          ></ha-switch>
-          <span style="margin-left: 8px">
-            ${this.config.theme === 'on' ? '亮色(on)' : '暗色(off)'}
-          </span>
+          <select
+            .value=${this.config.theme || 'system'}
+            @change=${this._themeSelectChanged}
+            style="margin-left: 8px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--primary-color); background: var(--secondary-background-color); color: var(--primary-text-color);"
+          >
+            <option value="system" ?selected=${!this.config.theme || this.config.theme === 'system'}>跟随系统(system)</option>
+            <option value="light" ?selected=${this.config.theme === 'light'}>亮色(light)</option>
+            <option value="dark" ?selected=${this.config.theme === 'dark'}>暗色(dark)</option>
+          </select>
         </div>
 
         <!-- 附加按钮 -->
@@ -625,9 +626,9 @@ class XiaoshiPhoneHumidifierCardEditor extends LitElement {
     this._fireEvent();
   }
 
-  _themeSwitchChanged(ev) {
+  _themeSelectChanged(ev) {
     if (!this.config) return;
-    const theme = ev.target.checked ? 'on' : 'off';
+    const theme = ev.target.value;
     
     this.config = { 
       ...this.config,
@@ -689,7 +690,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     return {
       entity: "",
       timer: "",
-      theme: "on",
+      theme: "system",
       buttons: [],
       auto_show: false,
       width: "100%"
@@ -1120,7 +1121,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     this.hass = {};
     this.config = {};
     this.buttons = [];
-    this.theme = 'on';
+    this.theme = 'system';
     this.width = '100%';
     this._timerInterval = null;
     this.humidifierData = [];
@@ -1129,20 +1130,24 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
   }
 
   _evaluateTheme() {
-    try {
-      if (!this.config || !this.config.theme) return 'on';
-      if (typeof this.config.theme === 'function') {
-          return this.config.theme();
+      try {
+          const mode = this.config ? this.config.theme : 'system';
+          if (mode === 'light') return 'light';
+          if (mode === 'dark') return 'dark';
+          if (mode === 'system' || !mode) {
+              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+              if (typeof window.theme === 'function') {
+                  return window.theme() || 'light';
+              }
+            return 'light';
+          }
+          return mode;
+      } catch (e) {
+          return 'light';
       }
-      if (typeof this.config.theme === 'string' && 
-              (this.config.theme.includes('return') || this.config.theme.includes('=>'))) {
-          return (new Function(`return ${this.config.theme}`))();
-      }
-      return this.config.theme;
-    } catch(e) {
-      console.error('计算主题时出错:', e);
-      return 'on';
-    }
   }
 
   async firstUpdated() {
@@ -1242,7 +1247,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     const theme = this._evaluateTheme();
     
     // 确定颜色
-    let statusColor = theme === 'on' ? '#888888' : '#aaaaaa';
+    let statusColor = theme === 'light' ? '#888888' : '#aaaaaa';
     if (state === 'on') statusColor = '#2ba0f3';
     
     // 获取画布尺寸（CSS像素）
@@ -1416,9 +1421,9 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     
     
     const theme = this._evaluateTheme();
-    const fgColor = theme === 'on' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-    const bgColor = theme === 'on' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
-    const buttonBg = theme === 'on' ? 'rgb(50,50,50)' : 'rgb(120,120,120)';
+    const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    const buttonBg = theme === 'light' ? 'rgb(50,50,50)' : 'rgb(120,120,120)';
     const buttonFg = 'rgb(250,250,250)';
 
     let statusColor = 'rgb(250,250,250)';
@@ -1745,8 +1750,8 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
       
       const state = entity?.state || 'off';
       const theme = this._evaluateTheme();
-      const fgColor = theme === 'on' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-      let activeColor = theme === 'on' ? 'rgba(00, 80, 80)' : 'rgba(180, 230, 230)';
+      const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+      let activeColor = theme === 'light' ? 'rgba(00, 80, 80)' : 'rgba(180, 230, 230)';
       if (state === 'on') activeColor = 'rgb(33,150,243)';
 
       return buttonsToShow.map(buttonEntityId => {
