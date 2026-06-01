@@ -400,7 +400,6 @@ class XiaoshiPhoneCard extends LitElement {
                 cursor: pointer;
                 border: none;
                 background: transparent;
-                color: var(--primary-text-color, #333);
                 font-size: 18px;
                 padding: 0;
                 opacity: 0.6;
@@ -715,7 +714,7 @@ class XiaoshiPhoneCard extends LitElement {
                         <div class="dynamic-area">
                             ${dynamicCards.map(el => html`<div class="card-slot">${el}</div>`)}
                         </div>
-                        <button class="fullscreen-btn" @click="${this._toggleFullscreen}" title="全屏切换实体">
+                        <button class="fullscreen-btn" style="color: ${theme === 'dark' ? '#fff' : '#000'}" @click="${this._toggleFullscreen}" title="全屏切换实体">
                             ${this._isKioskOn() ? '⤓' : '⤢'}
                         </button>
                     </div>
