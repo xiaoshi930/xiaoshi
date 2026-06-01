@@ -245,6 +245,10 @@ class XiaoshiPhoneCardEditor extends LitElement {
                     </select>
                 </div>
                 <div class="form-row">
+                    <label>全屏实体</label>
+                    <input type="text" name="kiosk_entity" .value="${c.kiosk_entity || 'switch.phone_full'}" @change="${this._valueChanged}" placeholder="switch.phone_full" />
+                </div>
+                <div class="form-row">
                     <label>背景</label>
                     <select .value="${(c.background && c.background.type) || 'none'}" @change="${this._bgTypeChanged}">
                         <option value="none" .selected="${!c.background || c.background.type === 'none' || !c.background.type}">无</option>
@@ -372,13 +376,38 @@ class XiaoshiPhoneCard extends LitElement {
                 flex-shrink: 1;
                 min-width: 0;
             }
-            .dynamic-area {
+            .dynamic-row {
+                display: flex;
                 width: 100vw;
+                height: 5vh;
+                flex-shrink: 0;
+            }
+            .dynamic-area {
+                width: 90vw;
+                height: 5vh;
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                flex-shrink: 0;
+            }
+            .fullscreen-btn {
+                width: 10vw;
                 height: 5vh;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
+                cursor: pointer;
+                border: none;
+                background: transparent;
+                color: var(--primary-text-color, #333);
+                font-size: 18px;
+                padding: 0;
+                opacity: 0.6;
+                transition: opacity 0.2s;
+            }
+            .fullscreen-btn:hover {
+                opacity: 1;
             }
             .room-area {
                 width: 100vw;
@@ -449,6 +478,27 @@ class XiaoshiPhoneCard extends LitElement {
             clearInterval(this._bgTimer);
             this._bgTimer = null;
         }
+    }
+
+
+
+    _isKioskOn() {
+        const entityId = this.config.kiosk_entity || 'switch.phone_full';
+        return this._hass && this._hass.states[entityId] && this._hass.states[entityId].state === 'on';
+    }
+
+    _toggleFullscreen() {
+        const entityId = this.config.kiosk_entity || 'switch.phone_full';
+        if (!this._hass) return;
+        const currentState = this._hass.states[entityId];
+        if (!currentState) {
+            console.warn('[xiaoshi-phone-card] 实体不存在:', entityId);
+            return;
+        }
+        const newState = currentState.state === 'on' ? false : true;
+        this._hass.callService('switch', 'turn_' + (newState ? 'on' : 'off'), {
+            entity_id: entityId
+        });
     }
 
     _startBgRotation(urls) {
@@ -568,20 +618,20 @@ class XiaoshiPhoneCard extends LitElement {
     _evaluateTheme() {
         try {
             const mode = this.config ? this.config.theme : 'system';
-            if (mode === 'light') return 'light';
-            if (mode === 'dark') return 'dark';
-            if (mode === 'system' || !mode) {
-                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-                return 'light';
+            let result;
+            if (mode === 'light') result = 'light';
+            else if (mode === 'dark') result = 'dark';
+            else if (mode === 'system' || !mode) {
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) result = 'dark';
+                else result = 'light';
+            } else {
+                result = mode;
             }
-            if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
-                if (typeof window.theme === 'function') {
-                    return window.theme() || 'light';
-                }
-              return 'light';
-            }
-            return mode;
+            // 注册全局 theme() 函数，返回当前主题 light/dark
+            window.theme = () => result;
+            return result;
         } catch (e) {
+            window.theme = () => 'light';
             return 'light';
         }
     }
@@ -661,8 +711,13 @@ class XiaoshiPhoneCard extends LitElement {
                             `)}
                         </div>
                     </div>
-                    <div class="dynamic-area">
-                        ${dynamicCards.map(el => html`<div class="card-slot">${el}</div>`)}
+                    <div class="dynamic-row">
+                        <div class="dynamic-area">
+                            ${dynamicCards.map(el => html`<div class="card-slot">${el}</div>`)}
+                        </div>
+                        <button class="fullscreen-btn" @click="${this._toggleFullscreen}" title="全屏切换实体">
+                            ${this._isKioskOn() ? '⤓' : '⤢'}
+                        </button>
                     </div>
                     <div class="room-area" style="grid-template-rows: repeat(${roomRows}, 1fr)">
                         ${roomCards.map(el => html`<div class="card-slot">${el}</div>`)}

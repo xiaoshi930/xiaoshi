@@ -560,7 +560,7 @@ class XiaoshiDynamicCard extends LitElement {
         });
 
         return html`
-            <div class="areas-grid" style="width:${this.config.card_width || '100vw'};height:${this.config.card_height || '5vh'};">
+            <div class="areas-grid" style="width:${this.config.card_width || '90vw'};height:${this.config.card_height || '5vh'};">
                 ${areasHtml}
             </div>
         `;
