@@ -306,7 +306,7 @@ class XiaoshiPhoneCard extends LitElement {
                 display: block;
                 width: 100vw;
                 height: 100vh;
-                overflow: hidden;
+                overflow: visible;
             }
             .phone-container {
                 width: 100%;
@@ -342,31 +342,31 @@ class XiaoshiPhoneCard extends LitElement {
             .top-row {
                 display: flex;
                 width: 100%;
-                height: 13vh;
+                height: 14vh;
                 flex-shrink: 0;
-                overflow: hidden;
+                overflow: visible;
             }
             .avatar-area {
-                padding: 1vh 2.5vw;
+                padding: 1vh 4vw 1vh 7.5vw;
                 width: 20vw;
-                height: 13vh;
+                height: 14vh;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
                 box-sizing: border-box;
-                overflow: hidden;
+                overflow: visible;
             }
             .header-info-area {
                 padding: 1vh 2.5vw;
                 width: 80vw;
-                height: 13vh;
+                height: 14vh;
                 display: grid;
                 grid-template-columns: repeat(4, 1fr);
                 grid-template-rows: repeat(3, 1fr);
                 gap: 1vh 2vw;
                 box-sizing: border-box;
-                overflow: hidden;
+                overflow: visible;
                 align-items: center;
                 justify-items: center;
                 flex-shrink: 1;
@@ -382,7 +382,7 @@ class XiaoshiPhoneCard extends LitElement {
             }
             .room-area {
                 width: 100vw;
-                height: 78vh;
+                height: 77vh;
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
                 gap: 1vh 3vw;
@@ -417,7 +417,7 @@ class XiaoshiPhoneCard extends LitElement {
                 height: 100%;
                 min-width: 0;
                 min-height: 0;
-                overflow: hidden;
+                overflow: visible;
             }
             .header-info-area .card-slot {
                 max-width: 100%;

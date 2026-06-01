@@ -1,5 +1,4 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-console.info("%c 消逝卡-xxxx \n%c  xxxxxxxxx2 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
 
 window.customCards = window.customCards || [];
 window.customCards.push({
@@ -127,18 +126,6 @@ class XiaoshiAvatarCardEditor extends LitElement {
     _addPerson() {
         const persons = [...(this.config.persons || [])];
         persons.push({
-            person_entity: '',
-            tracker_entity: '',
-            distance_method: 'nav',
-            nav_entity: '',
-            commute_mode: 'driving',
-            gps_tracker_entity: '',
-            zone_entity: '',
-            calendar_entity: '',
-            birthday_index: 0,
-            battery_entity: '',
-            storage_entity: '',
-            ring_type: 'none'
         });
         this.config = { ...this.config, persons };
         this._fireConfigChanged();
@@ -258,16 +245,16 @@ class XiaoshiAvatarCardEditor extends LitElement {
                         <option value="dark" .selected="${c.theme === 'dark'}">暗色 (dark)</option>
                     </select>
                     <label style="min-width:auto">在家</label>
-                    <input type="color" name="home_color" .value="${c.home_color || '#2196f3'}" @change="${this._valueChanged}" title="在家颜色" />
+                    <input type="color" name="home_color" .value="${c.home_color || '#20bef3'}" @change="${this._valueChanged}" title="在家颜色" />
                     <label style="min-width:auto">离家</label>
                     <input type="color" name="away_color" .value="${c.away_color || '#f44336'}" @change="${this._valueChanged}" title="离家颜色" />
                 </div>
 
                 <div class="form-row">
                     <label>卡片宽度</label>
-                    <input type="text" name="card_width" .value="${c.card_width || ''}" @change="${this._valueChanged}" placeholder="100%" style="max-width:100px" />
+                    <input type="text" name="card_width" .value="${c.card_width || ''}" @change="${this._valueChanged}" placeholder="20vw" style="max-width:100px" />
                     <label style="min-width:auto">卡片高度</label>
-                    <input type="text" name="card_height" .value="${c.card_height || ''}" @change="${this._valueChanged}" placeholder="auto" style="max-width:100px" />
+                    <input type="text" name="card_height" .value="${c.card_height || ''}" @change="${this._valueChanged}" placeholder="12.5vh" style="max-width:100px" />
                 </div>
 
                 <div class="form-row">
@@ -325,7 +312,7 @@ class XiaoshiAvatarCard extends LitElement {
             }
             ha-card {
                 border-radius: 6vw !important;
-                overflow: hidden;
+                overflow: visible;
             }
             .card-wrapper {
                 position: relative;
@@ -345,6 +332,8 @@ class XiaoshiAvatarCard extends LitElement {
                 font-family: var(--paper-font-body1_-_font-family);
                 width: 60%;
                 height: 100%;
+                max-height: 100%;
+                box-sizing: border-box;
                 transform-origin: top center;
                 transition: left 0.35s ease, transform 0.35s ease, opacity 0.35s ease, background-color 0.35s ease;
                 cursor: pointer;
@@ -394,7 +383,7 @@ class XiaoshiAvatarCard extends LitElement {
             }
             .status-text {
                 position: relative;
-                font-size: 3.5vw;
+                font-size: 2.5vw;
                 font-weight: bold;
                 color: #fff;
                 margin-top: 2%;
@@ -408,19 +397,24 @@ class XiaoshiAvatarCard extends LitElement {
                 color: #333;
                 font-size: 2vw;
                 font-weight: bold;
-                min-width: 1.2em;
-                height: 1.2em;
-                line-height: 1.2em;
+                min-width: 1.4em;
+                width: 1.4em;
+                height: 1.4em;
+                line-height: 1.4em;
                 text-align: center;
                 border-radius: 50%;
-                padding: 0 0.2em;
+                padding: 0;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.3);
             }
             .info-text {
-                font-size: 2.5vw;
+                font-size: 2vw;
                 color: rgba(255,255,255,0.9);
                 margin-top: 1%;
                 text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 100%;
             }
         `;
     }
@@ -431,25 +425,6 @@ class XiaoshiAvatarCard extends LitElement {
 
     static getStubConfig() {
         return {
-            show_popup_map: 'true',
-            home_color: '#2196f3',
-            away_color: '#f44336',
-            persons: [
-                {
-                    person_entity: '',
-                    tracker_entity: '',
-                    distance_method: 'nav',
-                    nav_entity: '',
-                    commute_mode: 'driving',
-                    gps_tracker_entity: '',
-                    zone_entity: '',
-                    calendar_entity: '',
-                    birthday_index: 0,
-                    battery_entity: '',
-                    storage_entity: '',
-                    ring_type: 'none'
-                }
-            ]
         };
     }
 
@@ -594,16 +569,23 @@ class XiaoshiAvatarCard extends LitElement {
         return deg * Math.PI / 180;
     }
 
-    _hexToRgb(hex) {
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return { r, g, b };
+    _parseColor(color) {
+        if (color.startsWith('#')) {
+            const r = parseInt(color.slice(1, 3), 16);
+            const g = parseInt(color.slice(3, 5), 16);
+            const b = parseInt(color.slice(5, 7), 16);
+            return { r, g, b };
+        }
+        const match = color.match(/(\d+)/g);
+        if (match && match.length >= 3) {
+            return { r: parseInt(match[0]), g: parseInt(match[1]), b: parseInt(match[2]) };
+        }
+        return { r: 0, g: 0, b: 0 };
     }
 
     // 改淡：将颜色向白色混合，amount 0~1
-    _lightenColor(hex, amount) {
-        const { r, g, b } = this._hexToRgb(hex);
+    _lightenColor(color, amount) {
+        const { r, g, b } = this._parseColor(color);
         const lr = Math.round(r + (255 - r) * amount);
         const lg = Math.round(g + (255 - g) * amount);
         const lb = Math.round(b + (255 - b) * amount);
@@ -611,8 +593,8 @@ class XiaoshiAvatarCard extends LitElement {
     }
 
     // 改暗：将颜色向黑色混合，amount 0~1
-    _darkenColor(hex, amount) {
-        const { r, g, b } = this._hexToRgb(hex);
+    _darkenColor(color, amount) {
+        const { r, g, b } = this._parseColor(color);
         const dr = Math.round(r * (1 - amount));
         const dg = Math.round(g * (1 - amount));
         const db = Math.round(b * (1 - amount));
@@ -852,11 +834,11 @@ class XiaoshiAvatarCard extends LitElement {
             if (data && data.isHome === true) {
                 bg = isMain
                     ? (currentTheme === 'dark' ? this._darkenColor(homeColor, 0.3) : homeColor)
-                    : (currentTheme === 'dark' ? this._lightenColor(this._darkenColor(homeColor, 0.3), 0.3) : this._lightenColor(homeColor, 0.3));
+                    : (currentTheme === 'dark' ? this._darkenColor(homeColor, 0.5) : this._lightenColor(homeColor, 0.3));
             } else if (data && data.isHome === false) {
                 bg = isMain
                     ? (currentTheme === 'dark' ? this._darkenColor(awayColor, 0.3) : awayColor)
-                    : (currentTheme === 'dark' ? this._lightenColor(this._darkenColor(awayColor, 0.3), 0.3) : this._lightenColor(awayColor, 0.3));
+                    : (currentTheme === 'dark' ? this._darkenColor(awayColor, 0.5) : this._lightenColor(awayColor, 0.3));
             }
 
             let position, left, scale, zIndex;
@@ -886,7 +868,7 @@ class XiaoshiAvatarCard extends LitElement {
         });
 
         return html`
-            <div class="card-wrapper" style="width:${this.config.card_width || '100%'};height:${this.config.card_height || '100%'};"
+            <div class="card-wrapper" style="width:${this.config.card_width || '20vw'};height:${this.config.card_height || '12.5vh'};"
                 @touchstart="${this._onTouchStart}"
                 @touchend="${this._onTouchEnd}"
                 @mousedown="${this._onMouseDown}"
@@ -937,6 +919,9 @@ class XiaoshiAvatarCard extends LitElement {
             this._activeIndex = (this._activeIndex - 1 + total) % total;
         }
         this.requestUpdate();
+
+        // 滑动后延迟重置标志，避免第一次点击被拦截
+        setTimeout(() => { this._swipeDetected = false; }, 300);
     }
 
     /**
@@ -944,10 +929,7 @@ class XiaoshiAvatarCard extends LitElement {
      */
     _onCardClick(personConfig, isMain) {
         if (!isMain) return;
-        if (this._swipeDetected) {
-            this._swipeDetected = false;
-            return;
-        }
+        if (this._swipeDetected) return;
 
         const cards = [];
         const persons = this._getPersons();
@@ -969,7 +951,7 @@ class XiaoshiAvatarCard extends LitElement {
                 type: 'map',
                 entities: mapEntities,
                 aspect_ratio: '16:9',
-                theme_mode: 'auto'
+                theme_mode: this._evaluateTheme()
             });
         }
 
@@ -1038,7 +1020,7 @@ class XiaoshiAvatarCard extends LitElement {
             const commuteMode = personConfig ? (personConfig.commute_mode || 'driving') : 'driving';
             const modeIcons = { driving: '🚗', transit: '🚌', cycling: '🚲', walking: '🚶' };
             const distIcon = data.distance.is_straight_line ? '🚗' : (modeIcons[commuteMode] || '🚗');
-            const distValue = (data.distance.distance || '').replace('公里', 'km').replace('千米', 'km');
+            const distValue = (data.distance.distance || '').replace(/([\d.]+)(公里|千米|km)/i, (_, n) => Math.round(parseFloat(n)) + 'km').replace('公里', 'km').replace('千米', 'km');
             const timeValue = (data.distance.time || '').replace('分钟', 'min').replace('小时', 'h');
 
             distanceHtml = html`<div class="info-text">${distIcon} ${distValue}</div>`;
@@ -1106,7 +1088,7 @@ class XiaoshiAvatarCard extends LitElement {
             : html`<div class="avatar-placeholder" style="width:${avatarInnerSize};height:${avatarInnerSize};font-size:30px;">${(data.person.name || '?')[0]}</div>`;
 
         return html`
-            <div class="avatar-container" style="width:80%;aspect-ratio:1/1;">
+            <div class="avatar-container" style="width:80%;aspect-ratio:1/1;max-height:55%;">
                 ${showRing ? html`
                     <svg class="avatar-ring-svg" viewBox="0 0 ${size} ${size}">
                         <circle class="avatar-ring-bg" cx="${size/2}" cy="${size/2}" r="${radius}" stroke-width="${strokeWidth}" />

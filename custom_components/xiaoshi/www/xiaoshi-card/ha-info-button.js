@@ -294,13 +294,13 @@ class XiaoshiHaInfoButtonEditor extends LitElement {
     </div>
 
     <div class="form-group">
-      <label>按钮宽度：默认65px, 支持像素(px)和百分比(%)</label>
+      <label>按钮宽度：默认16.8vw, 支持像素(px)和百分比(%)</label>
       <input 
         type="text" 
         @change=${this._entityChanged}
-        .value=${this.config.button_width !== undefined ? this.config.button_width : '65px'}
+        .value=${this.config.button_width !== undefined ? this.config.button_width : '16.8vw'}
         name="button_width"
-        placeholder="默认65px"
+        placeholder="默认16.8vw"
       />
     </div>
 
@@ -385,24 +385,24 @@ template: 测试模板(最好引用模板，否则大概率会报错)'>
     </div>
 
     <div class="form-group">
-      <label>弹窗宽度：支持像素(px)、百分比(%)和auto，默认auto</label>
+      <label>弹窗宽度：支持像素(px)、百分比(%)和auto，默认95%</label>
       <input 
         type="text" 
         @change=${this._entityChanged}
-        .value=${this.config.popup_width !== undefined ? this.config.popup_width : 'auto'}
+        .value=${this.config.popup_width !== undefined ? this.config.popup_width : '95%'}
         name="popup_width"
-        placeholder="默认auto"
+        placeholder="默认95%"
       />
     </div>
     
     <div class="form-group">
-      <label>弹窗位置：支持百分比(%)，默认50%居中</label>
+      <label>弹窗位置：支持百分比(%)和像素(px)，默认20px</label>
       <input 
         type="text" 
         @change=${this._entityChanged}
-        .value=${this.config.popup_top !== undefined ? this.config.popup_top : '50%'}
+        .value=${this.config.popup_top !== undefined ? this.config.popup_top : '20px'}
         name="popup_top"
-        placeholder="默认50%"
+        placeholder="默认20px"
       />
     </div>
 
@@ -570,7 +570,7 @@ template: 测试模板(最好引用模板，否则大概率会报错)'>
     
     // 处理不同字段的默认值
     if (name === 'button_width') {
-      finalValue = value || '100%';
+      finalValue = value || '16.8vw';
     } else if (name === 'button_height') {
       finalValue = value || '24px';
     } else if (name === 'button_font_size') {
@@ -2359,8 +2359,8 @@ class XiaoshiHaInfoButton extends LitElement {
       if (e.target === overlay) this._closePopup();
     });
 
-    const popupTop = this.config.popup_top || '50%';
-    const popupWidth = this.config.popup_width || 'auto';
+    const popupTop = this.config.popup_top || '20px';
+    const popupWidth = this.config.popup_width || '95%';
     const popupTransform = popupTop === '50%' ? 'translate(-50%, -50%)' : 'translateX(-50%)';
 
     const popup = document.createElement('div');
@@ -2775,7 +2775,7 @@ class XiaoshiHaInfoButton extends LitElement {
     if (config.button_width) {
       this.style.setProperty('--button-width', config.button_width);
     } else {
-      this.style.setProperty('--button-width', '65px');
+      this.style.setProperty('--button-width', '16.8vw');
     }
     
     // 设置按钮高度（只控制 ha-info-status）

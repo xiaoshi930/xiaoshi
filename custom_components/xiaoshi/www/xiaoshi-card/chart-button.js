@@ -271,24 +271,24 @@ template: 测试模板(最好引用模板，否则大概率会报错)'>
         </div>
 
         <div class="form-group">
-          <label>弹窗宽度：支持像素(px)、百分比(%)和auto，默认auto</label>
+          <label>弹窗宽度：支持像素(px)、百分比(%)和auto，默认95%</label>
           <input
             type="text"
             @change=${this._entityChanged}
-            .value=${this.config.popup_width !== undefined ? this.config.popup_width : 'auto'}
+            .value=${this.config.popup_width !== undefined ? this.config.popup_width : '95%'}
             name="popup_width"
-            placeholder="默认auto"
+            placeholder="默认95%"
           />
         </div>
 
         <div class="form-group">
-          <label>弹窗位置：支持百分比(%)，默认50%居中</label>
+          <label>弹窗位置：支持百分比(%)和像素(px)，默认20px</label>
           <input
             type="text"
             @change=${this._entityChanged}
-            .value=${this.config.popup_top !== undefined ? this.config.popup_top : '50%'}
+            .value=${this.config.popup_top !== undefined ? this.config.popup_top : '20px'}
             name="popup_top"
-            placeholder="默认50%"
+            placeholder="默认20px"
           />
         </div>
 
@@ -1254,8 +1254,8 @@ class XiaoshChartButton extends LitElement {
       if (e.target === overlay) this._closePopup();
     });
 
-    const popupTop = this.config.popup_top || '50%';
-    const popupWidth = this.config.popup_width || 'auto';
+    const popupTop = this.config.popup_top || '20px';
+    const popupWidth = this.config.popup_width || '95%';
     const popupTransform = popupTop === '50%' ? 'translate(-50%, -50%)' : 'translateX(-50%)';
 
     const popup = document.createElement('div');

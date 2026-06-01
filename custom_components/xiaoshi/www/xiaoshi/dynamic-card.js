@@ -1,5 +1,4 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-console.info("%c 消逝动态区域卡 \n%c  多区域版 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
 
 window.customCards = window.customCards || [];
 window.customCards.push({
@@ -9,16 +8,16 @@ window.customCards.push({
     preview: true
 });
 
-// 预置的"开启"状态列表
 const PRESET_ON_STATES = [
     // 通用
-    'on', 'open', 'home', 'playing', 'active', 'running',
-    'detected', 'occupied', 'locked', 'unlocked',
+    'on', 'open', 'opening','home', 'playing', 'active', 'running',
+    'detected', 'occupied', 'locked', 'unlocked', 'cleaning',
     'charging', 'idle',
     // 空调/HVAC
     'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
     'auto', 'heat_cool', 'heat_cool', 'fan_only',
-    // 其他
+    // 人在
+    '有人', '2～5分钟无人移动'
 ];
 
 class XiaoshiDynamicCardEditor extends LitElement {
@@ -143,14 +142,6 @@ class XiaoshiDynamicCardEditor extends LitElement {
     _addArea() {
         const areas = [...(this.config.areas || [])];
         areas.push({
-            icon: 'mdi:lightbulb',
-            on_color: '#f57c00',
-            off_color: '#666666',
-            entities: '',
-            condition_mode: '',
-            status_conditions: '',
-            auto_hide: 'false',
-            popup_cards: ''
         });
         this.config = { ...this.config, areas };
         this._fireConfigChanged();
@@ -308,8 +299,8 @@ class XiaoshiDynamicCard extends LitElement {
             }
             .areas-grid {
                 display: flex;
-                gap: 24px;
-                padding: 0;
+                gap: 2.5vw;
+                padding: 0 2.5vw 1vh 2.5vw;
                 width: 100%;
                 height: 100%;
                 box-sizing: border-box;
@@ -317,7 +308,7 @@ class XiaoshiDynamicCard extends LitElement {
             }
             .area-tile {
                 position: relative;
-                border-radius: 16px;
+                border-radius: 10px;
                 flex-shrink: 0;
                 height: 80%;
                 aspect-ratio: 1 / 1;
@@ -359,14 +350,14 @@ class XiaoshiDynamicCard extends LitElement {
             }
             .area-badge {
                 position: absolute;
-                top: calc(-15% + 2px);
-                right: calc(-15% + 2px);
+                top: calc(-20% + 2px);
+                right: calc(-20% + 2px);
                 background: #f57c00;
                 color: #fff;
                 font-size: 14px;
                 font-weight: bold;
-                width: 30%;
-                aspect-ratio: 1 / 1;
+                width: 45%;
+                height: 45%;
                 border-radius: 50%;
                 align-items: center;
                 justify-content: center;
@@ -431,20 +422,6 @@ class XiaoshiDynamicCard extends LitElement {
 
     static getStubConfig() {
         return {
-            theme: 'system',
-            popup_width: '95%',
-            popup_top: '20px',
-            areas: [
-                {
-                    name: '灯光',
-                    icon: 'mdi:lightbulb',
-                    on_color: '#f57c00',
-                    off_color: '#666666',
-                    entities: '',
-                    status_conditions: 'on',
-                    popup_cards: ''
-                }
-            ]
         };
     }
 
@@ -583,7 +560,7 @@ class XiaoshiDynamicCard extends LitElement {
         });
 
         return html`
-            <div class="areas-grid" style="width:${this.config.card_width || '100%'};height:${this.config.card_height || 'auto'};">
+            <div class="areas-grid" style="width:${this.config.card_width || '100vw'};height:${this.config.card_height || '5vh'};">
                 ${areasHtml}
             </div>
         `;
@@ -609,7 +586,19 @@ class XiaoshiDynamicCard extends LitElement {
             }
         }
 
-        if (cards.length === 0) return;
+        // 无弹窗配置时，自动为实体生成弹窗
+        if (cards.length === 0) {
+            const entities = (areaConfig.entities || '').split(/[\n,]/).map(e => e.trim()).filter(Boolean);
+            if (entities.length === 0) return;
+            const entityCards = entities.map(entityId => ({
+                type: 'entity',
+                entity: entityId,
+                state_color: true
+            }));
+            const popupContent = entityCards.length === 1 ? entityCards[0] : { type: 'vertical-stack', cards: entityCards };
+            this._showPopup(popupContent);
+            return;
+        }
 
         const popupContent = cards.length === 1 ? cards[0] : { type: 'vertical-stack', cards };
         this._showPopup(popupContent);

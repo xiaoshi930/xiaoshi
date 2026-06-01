@@ -8,6 +8,18 @@ window.customCards.push({
     preview: true
 });
 
+const PRESET_ON_STATES = [
+    // 通用
+    'on', 'open', 'opening','home', 'playing', 'active', 'running',
+    'detected', 'occupied', 'locked', 'unlocked', 'cleaning',
+    'charging', 'idle',
+    // 空调/HVAC
+    'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
+    'auto', 'heat_cool', 'heat_cool', 'fan_only',
+    // 人在
+    '有人', '2～5分钟无人移动'
+];
+
 class XiaoshiRoomCardEditor extends LitElement {
     static get properties() {
         return {
@@ -689,12 +701,7 @@ customElements.define('xiaoshi-room-card-editor', XiaoshiRoomCardEditor);
 class XiaoshiRoomCard extends LitElement {
 
     static get ON_STATES() {
-        return new Set([
-            'on', 'cool', 'fan_only', 'heat', 'auto', 'dry',
-            'playing', 'open', 'opening', 'home', 'active',
-            'charging', 'locked', 'unlocked', 'cleaning',
-            '有人', '2～5分钟无人移动'
-        ]);
+        return new Set(PRESET_ON_STATES);
     }
 
     static get properties() {
@@ -948,7 +955,8 @@ class XiaoshiRoomCard extends LitElement {
         if (entities.length === 0) return;
         const cards = entities.map(entityId => ({
             type: 'entity',
-            entity: entityId
+            entity: entityId,
+            state_color: true
         }));
         const popupContent = cards.length === 1 ? cards[0] : { type: 'vertical-stack', cards };
         this._showPopup(popupContent);
