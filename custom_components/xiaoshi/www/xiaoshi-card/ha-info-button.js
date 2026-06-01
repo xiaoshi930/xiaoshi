@@ -1162,6 +1162,39 @@ class XiaoshiHaInfoButton extends LitElement {
         white-space: nowrap;
         line-height: 1.2;
       }
+
+      /* 重启按钮样式 */
+      .ha-restart-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+        margin-right: -12px;
+      }
+
+      .ha-restart-btn {
+        font-size: 10px;
+        padding: 3px 8px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        white-space: nowrap;
+        transition: opacity 0.2s;
+      }
+
+      .ha-restart-btn:hover {
+        opacity: 0.85;
+      }
+
+      .ha-restart-btn.yellow {
+        background: rgba(255, 193, 7, 0.9);
+        color: #333;
+      }
+
+      .ha-restart-btn.red {
+        background: rgba(244, 67, 54, 0.9);
+        color: #fff;
+      }
     `;
   }
 
@@ -1182,6 +1215,20 @@ class XiaoshiHaInfoButton extends LitElement {
     this._popupHassUnsubscribe = null;
     this._popupUpdatePending = false;
     this._popupHass = null;
+    this._injectConfirmStyles();
+  }
+
+  _injectConfirmStyles() {
+    if (document.getElementById('xiaoshi-habtn-confirm-dialog-style')) return;
+    const style = document.createElement('style');
+    style.id = 'xiaoshi-habtn-confirm-dialog-style';
+    style.textContent = `
+      @keyframes xiaoshiConfirmIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to   { opacity: 1; transform: scale(1); }
+      }
+    `;
+    document.head.appendChild(style);
   }
 
   static getConfigElement() {
@@ -2105,6 +2152,119 @@ class XiaoshiHaInfoButton extends LitElement {
     });
   }
 
+  _handleRestartHA() {
+    this._handleClick();
+    this._showConfirmDialog(
+      '确认重启Home Assistant',
+      '重启HA将会短暂中断所有服务，确定要继续吗？',
+      'homeassistant', 'restart'
+    );
+  }
+
+  _handleRestartHost() {
+    this._handleClick();
+    this._showConfirmDialog(
+      '确认重启主机系统',
+      '重启主机系统将会关闭并重新启动整个设备，确定要继续吗？',
+      'hassio', 'host_reboot'
+    );
+  }
+
+  _showConfirmDialog(title, message, domain, service) {
+    const theme = this._evaluateTheme();
+    const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    const borderColor = theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+    const isHA = domain === 'homeassistant';
+    const confirmBg = isHA ? 'rgba(255, 193, 7, 0.9)' : 'rgba(244, 67, 54, 0.9)';
+    const confirmColor = isHA ? '#333' : '#fff';
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-backdrop-filter: blur(5px);
+      backdrop-filter: blur(5px);
+    `;
+
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+      background: ${bgColor};
+      color: ${fgColor};
+      border-radius: 12px;
+      padding: 24px;
+      min-width: 280px;
+      max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      text-align: center;
+      animation: xiaoshiConfirmIn 0.2s ease-out;
+    `;
+
+    dialog.innerHTML = `
+      <div style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">${title}</div>
+      <div style="font-size: 13px; margin-bottom: 20px; opacity: 0.8; line-height: 1.5;">${message}</div>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button id="xiaoshi-confirm-cancel" style="
+          padding: 8px 24px;
+          border: 1px solid ${borderColor};
+          border-radius: 8px;
+          background: transparent;
+          color: ${fgColor};
+          cursor: pointer;
+          font-size: 13px;
+        ">取消</button>
+        <button id="xiaoshi-confirm-ok" style="
+          padding: 8px 24px;
+          border: none;
+          border-radius: 8px;
+          background: ${confirmBg};
+          color: ${confirmColor};
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 500;
+        ">确认</button>
+      </div>
+    `;
+
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    const close = () => {
+      overlay.remove();
+    };
+
+    dialog.querySelector('#xiaoshi-confirm-cancel').addEventListener('click', close);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) close();
+    });
+
+    dialog.querySelector('#xiaoshi-confirm-ok').addEventListener('click', () => {
+      close();
+      this._executeRestartService(domain, service);
+    });
+
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        close();
+        window.removeEventListener('keydown', escHandler);
+      }
+    };
+    window.addEventListener('keydown', escHandler);
+  }
+
+  _executeRestartService(domain, service) {
+    try {
+      this.hass.callService(domain, service, {});
+    } catch (error) {
+      console.error(`调用重启服务失败: ${domain}.${service}`, error);
+    }
+  }
+
   /*button新元素 开始*/
   _handleButtonClick() {
     const tapAction = this.config.tap_action;
@@ -2593,6 +2753,10 @@ class XiaoshiHaInfoButton extends LitElement {
         <div class="section-divider">
           <div class="section-title">
             <span> • HA版本信息</span>
+            <div class="ha-restart-buttons">
+              <button class="ha-restart-btn yellow" @click=${this._handleRestartHA}>重启HA</button>
+              <button class="ha-restart-btn red" @click=${this._handleRestartHost}>重启主机</button>
+            </div>
           </div>
         </div>
         <div class="ha-version-info">
