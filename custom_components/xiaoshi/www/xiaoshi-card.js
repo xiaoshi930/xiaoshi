@@ -33,4 +33,4 @@ import('./xiaoshi-pad/climate-card.js');
 import('./xiaoshi-pad/grid-card.js');
 
 
-console.info("%c 消逝卡-汇总卡 \n%c        v 1.8 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
+console.info("%c 消逝卡-汇总卡 \n%c        v 1.9 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
