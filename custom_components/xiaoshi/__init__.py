@@ -23,12 +23,14 @@ class StaticPathConfig:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """通过 UI 配置流程设置"""
     await _register_static_resources(hass)
+    await hass.config_entries.async_forward_entry_setups(entry, ["switch"])
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """卸载集成条目"""
-    return True
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, ["switch"])
+    return unload_ok
 
 
 async def _register_static_resources(hass: HomeAssistant):
