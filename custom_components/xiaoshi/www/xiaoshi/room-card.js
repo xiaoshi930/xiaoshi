@@ -711,6 +711,10 @@ class XiaoshiRoomCard extends LitElement {
                 height: 100%;
                 min-height: 0;
             }
+            ha-card {
+                border: none;
+                box-shadow: none;
+            }
             .card {
                 background: transparent;
                 border-radius: 3.5vw;
@@ -933,21 +937,21 @@ class XiaoshiRoomCard extends LitElement {
     /**
      * 点击设备：切换第一个实体（或所有实体）
      */
-    _toggleDevice(device) {
-        if (!device || !this.hass) return;
-        const entities = device.entities || (device.entity ? [device.entity] : []);
-        if (entities.length === 0) return;
-        // 切换第一个主实体
-        const mainEntity = entities[0];
-        const isOn = this._isEntityOn(mainEntity);
-        const domain = mainEntity.split('.')[0];
-        let service = 'toggle';
-        if (domain === 'cover') {
-            service = isOn ? 'close_cover' : 'open_cover';
-        } else if (domain === 'media_player') {
-            service = isOn ? 'media_stop' : 'media_play';
+    _onDeviceClick(device) {
+        if (!device) return;
+        if (device.popup) {
+            this._showPopup(device.popup);
+            return;
         }
-        this.hass.callService(domain, service, { entity_id: mainEntity });
+        // 无弹窗配置时，自动为实体生成弹窗
+        const entities = device.entities || [];
+        if (entities.length === 0) return;
+        const cards = entities.map(entityId => ({
+            type: 'entity',
+            entity: entityId
+        }));
+        const popupContent = cards.length === 1 ? cards[0] : { type: 'vertical-stack', cards };
+        this._showPopup(popupContent);
     }
 
     /**
@@ -1115,13 +1119,12 @@ class XiaoshiRoomCard extends LitElement {
         const iconColor = isOn ? (device.icon_color || 'white') : defaultOffIcon;
         // 角标：只有当有开启的实体时显示
         const showBadge = activeCount > 0;
-        const hasPopup = !!device.popup;
 
         return html`
             <button
                 class="device-btn ${isOn ? 'active' : ''}"
                 style="background:${bgColor}; color:${iconColor}"
-                @click="${() => hasPopup ? this._showPopup(device.popup) : this._toggleDevice(device)}"
+                @click="${() => this._onDeviceClick(device)}"
             >
                 <ha-icon icon="${icon}" style="--mdc-icon-size:${device.icon_size || 2.8}vh;width:${device.icon_size || 2.8}vh;height:${device.icon_size || 2.8}vh"></ha-icon>
                 ${showBadge ? html`<span class="badge" style="background:${device.badge_color || '#f44336'}">${activeCount}</span>` : html`<span class="badge hidden"></span>`}
