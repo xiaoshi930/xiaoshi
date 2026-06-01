@@ -17,13 +17,13 @@ SWITCHES = [
         "key": "pad_full",
         "name": "平板全屏",
         "icon": "mdi:fullscreen",
-        "default": False,
+        "default": True,
     },
     {
         "key": "phone_full",
         "name": "手机全屏",
         "icon": "mdi:cellphone-screenshot",
-        "default": False,
+        "default": True,
     },
 ]
 
