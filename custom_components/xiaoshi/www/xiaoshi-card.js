@@ -1,6 +1,8 @@
 import('./xiaoshi/phone-card.js');
+import('./xiaoshi/avatar-card.js');
+import('./xiaoshi/dynamic-card.js');
 import('./xiaoshi/room-card.js');
-import('./xiaoshi/popup-card.js');
+import('./xiaoshi/popup-card.js')
 
 import('./xiaoshi-card/todo-button.js');
 import('./xiaoshi-card/chart-button.js');
