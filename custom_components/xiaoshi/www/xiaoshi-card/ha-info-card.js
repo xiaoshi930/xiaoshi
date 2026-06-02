@@ -857,6 +857,11 @@ class XiaoshiHaInfoCard extends LitElement {
         background: rgba(244, 67, 54, 0.9);
         color: #fff;
       }
+
+      .ha-restart-btn.blue {
+        background: rgba(33, 150, 243, 0.9);
+        color: #fff;
+      }
     `;
   }
 
@@ -1821,13 +1826,23 @@ class XiaoshiHaInfoCard extends LitElement {
     );
   }
 
+  _handleBackup() {
+    this._handleClick();
+    this._showConfirmDialog(
+      '确认创建备份',
+      '创建备份可能需要较长时间，期间系统资源占用较高，确定要继续吗？',
+      'hassio', 'backup_full'
+    );
+  }
+
   _showConfirmDialog(title, message, domain, service) {
     const theme = this._evaluateTheme();
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
     const borderColor = theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
     const isHA = domain === 'homeassistant';
-    const confirmBg = isHA ? 'rgba(255, 193, 7, 0.9)' : 'rgba(244, 67, 54, 0.9)';
+    const isBackup = domain === 'backup';
+    const confirmBg = isHA ? 'rgba(255, 193, 7, 0.9)' : isBackup ? 'rgba(33, 150, 243, 0.9)' : 'rgba(244, 67, 54, 0.9)';
     const confirmColor = isHA ? '#333' : '#fff';
 
     const overlay = document.createElement('div');
@@ -1980,21 +1995,17 @@ class XiaoshiHaInfoCard extends LitElement {
         ` : ''}
 
         <!-- 备份信息 -->
-        ${(() => {
-          const lastBackup = this.hass.states['sensor.backup_last_successful_automatic_backup'];
-          const nextBackup = this.hass.states['sensor.backup_next_scheduled_automatic_backup'];
-          const lastAvail = lastBackup && lastBackup.state !== 'unavailable' && lastBackup.state !== 'unknown';
-          const nextAvail = nextBackup && nextBackup.state !== 'unavailable' && nextBackup.state !== 'unknown';
-          return (lastAvail || nextAvail) ? html`
         <div class="section-divider">
           <div class="section-title">
             <span> • HA备份信息</span>
+            <div class="ha-restart-buttons">
+              <button class="ha-restart-btn blue" @click=${this._handleBackup}>创建备份</button>
+            </div>
           </div>
         </div>
         <div class="backup-info">
           ${this._renderBackupInfo()}
         </div>
-        ` : ''; })()}
 
         <div class="devices-list">
           ${this._loading ? 
