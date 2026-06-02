@@ -1796,6 +1796,18 @@ class XiaoshiTodoButton extends LitElement {
     // 计算总待办数量
     const totalIncompleteCount = this._todoData.reduce((sum, todo) => sum + todo.incomplete_count, 0);
 
+    // 计算是否有逾期未完成的待办（截止日期在今天或今天以前）
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
+    const hasOverdueItems = this._todoData.some(todo => 
+      todo.items.some(item => {
+        if (item.status !== 'needs_action' || !item.due) return false;
+        const dueDate = new Date(item.due);
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate <= todayDate;
+      })
+    );
+
 
     /*button新元素 前9行和最后1行开始*/
     const showPreview = this.config.no_preview === true;
@@ -1827,8 +1839,8 @@ class XiaoshiTodoButton extends LitElement {
   
     // 数据加载完成后
     if (badgeMode) {
-      // 角标模式：只显示图标，根据数量显示角标
-      const hasWarning = totalIncompleteCount > 0;
+      // 角标模式：只显示图标，根据逾期数量显示角标
+      const hasWarning = hasOverdueItems;
       buttonHtml = html`
         <div class="todo-status badge-mode ${hasWarning ? 'has-warning' : ''}" style="--bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
           <span class="status-emoji">${buttonIcon}</span>
@@ -1839,13 +1851,13 @@ class XiaoshiTodoButton extends LitElement {
       // 普通模式：显示文本和数量
       // 应用锁定白色功能，但预警颜色（红色）不受影响
       let textColor, iconColor;
-      if (totalIncompleteCount === 0) {
-        // 非预警状态：根据锁定白色设置决定颜色
-        textColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
+      if (hasOverdueItems) {
+        // 有逾期预警：使用红色，不受锁定白色影响
+        textColor = 'rgb(255, 0, 0)';
         iconColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
       } else {
-        // 预警状态：始终使用红色，不受锁定白色影响
-        textColor = 'rgb(255, 0, 0)';
+        // 非预警状态：根据主题显示黑色或白色
+        textColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
         iconColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
       }
       
