@@ -332,7 +332,7 @@ class XiaoshiDynamicCard extends LitElement {
             }
             .area-tile {
                 position: relative;
-                border-radius: 10px;
+                border-radius: 8px;
                 flex-shrink: 0;
                 height: 80%;
                 aspect-ratio: 1 / 1;
@@ -378,7 +378,7 @@ class XiaoshiDynamicCard extends LitElement {
                 right: calc(-20% + 2px);
                 background: #f57c00;
                 color: #fff;
-                font-size: 14px;
+                font-size: 10px;
                 font-weight: bold;
                 width: 45%;
                 height: 45%;
