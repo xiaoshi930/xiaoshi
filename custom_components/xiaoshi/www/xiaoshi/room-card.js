@@ -178,7 +178,7 @@ class XiaoshiRoomCardEditor extends LitElement {
                 font-size: 13px;
                 color: var(--primary-text-color);
                 white-space: nowrap;
-                min-width: 40px;
+                min-width: 50px;
             }
             .device-section input[type="text"] {
                 flex: 1;
@@ -610,8 +610,15 @@ class XiaoshiRoomCardEditor extends LitElement {
                 </div>
 
                 <div class="form-row">
-                    <label>人在状态</label>
-                    <input type="text" name="person_home_state" .value="${c.person_home_state || ''}" @change="${this._valueChanged}" placeholder="人在状态覆盖，如：有人" />
+                    <label>人在条件</label>
+                    <select name="person_condition_mode" @change="${this._valueChanged}" style="flex:none;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
+                        <option value="" .selected="${!c.person_condition_mode}">预置条件</option>
+                        <option value="append" .selected="${c.person_condition_mode === 'append'}">新增条件</option>
+                        <option value="override" .selected="${c.person_condition_mode === 'override'}">覆盖条件</option>
+                    </select>
+                    ${c.person_condition_mode ? html`
+                    <input type="text" name="person_status_conditions" .value="${c.person_status_conditions || ''}" @change="${this._valueChanged}" placeholder="on,home,有人" style="flex:1" />
+                    ` : ''}
                 </div>
 
                 <div class="form-row">
@@ -642,23 +649,13 @@ class XiaoshiRoomCardEditor extends LitElement {
                                 .value="${dev.icon || ''}"
                                 @change="${(e) => this._deviceFieldChanged(i, 'icon', e.target.value)}"
                                 placeholder="mdi图标"
-                                style="width:125px;flex:none"
+                                style="width:130px;flex:none"
                             />
                             <input type="text"
                                 .value="${dev.icon_size || ''}"
                                 @change="${(e) => this._deviceFieldChanged(i, 'icon_size', e.target.value)}"
-                                placeholder="大小"
-                                style="width:35px;flex:none"
-                            />
-                            <input type="text"
-                                .value="${(dev.on_states || []).join(',') || ''}"
-                                @change="${(e) => {
-                                    const val = e.target.value.trim();
-                                    const states = val ? val.split(',').map(s => s.trim()).filter(Boolean) : [];
-                                    this._deviceFieldChanged(i, 'on_states', states);
-                                }}"
-                                placeholder="开启状态覆盖"
-                                style="width:35px;flex:none"
+                                placeholder="大小:2.8vh"
+                                style="width:80px;flex:none"
                             />
                             <input type="color"
                                 .value="${dev.icon_color || '#ffffff'}"
@@ -680,6 +677,26 @@ class XiaoshiRoomCardEditor extends LitElement {
                                 @change="${(e) => this._deviceFieldChanged(i, 'badge_color', e.target.value)}"
                                 title="角标颜色"
                             />
+                        </div>
+                        <div class="device-row">
+                            <label style="font-weight:bold;font-size:13px;min-width: 50px;white-space:nowrap">条件</label>
+                            <select
+                                .value="${dev.condition_mode || ''}"
+                                @change="${(e) => this._deviceFieldChanged(i, 'condition_mode', e.target.value)}"
+                                style="flex:none;padding:5px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px"
+                            >
+                                <option value="" .selected="${!dev.condition_mode}">预置条件</option>
+                                <option value="append" .selected="${dev.condition_mode === 'append'}">新增条件</option>
+                                <option value="override" .selected="${dev.condition_mode === 'override'}">覆盖条件</option>
+                            </select>
+                            ${dev.condition_mode ? html`
+                            <input type="text"
+                                .value="${dev.status_conditions || ''}"
+                                @change="${(e) => this._deviceFieldChanged(i, 'status_conditions', e.target.value)}"
+                                placeholder="on,open,home"
+                                style="flex:1;min-width:0;padding:5px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px"
+                            />
+                            ` : ''}
                         </div>
                         <div class="device-row">
                             <label style="font-weight:bold;font-size:12px;white-space:nowrap">实体列表</label>
@@ -724,10 +741,6 @@ class XiaoshiRoomCardEditor extends LitElement {
 customElements.define('xiaoshi-room-card-editor', XiaoshiRoomCardEditor);
 
 class XiaoshiRoomCard extends LitElement {
-
-    static get ON_STATES() {
-        return new Set(PRESET_ON_STATES);
-    }
 
     static get properties() {
         return {
@@ -977,18 +990,25 @@ class XiaoshiRoomCard extends LitElement {
     }
 
     /**
-     * 判断实体是否处于"开启"状态
-     * @param {string} entityId - 实体ID
-     * @param {Array} onStates - 自定义开启状态列表，为空则使用默认
+     * 根据设备的条件模式获取生效的状态条件列表
+     * @param {Object} device - 设备配置
      */
-    _isEntityOn(entityId, onStates) {
-        if (!entityId || !this.hass) return false;
-        const state = this.hass.states[entityId];
-        if (!state) return false;
-        const states = onStates && onStates.length > 0
-            ? new Set(onStates)
-            : XiaoshiRoomCard.ON_STATES;
-        return states.has(state.state);
+    _getDeviceConditions(device) {
+        const conditionMode = device.condition_mode || '';
+        if (conditionMode === 'override') {
+            // 覆盖：仅使用用户自定义条件
+            return (device.status_conditions || '')
+                .split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+        } else if (conditionMode === 'append') {
+            // 新增：预置条件 + 用户自定义条件
+            const preset = PRESET_ON_STATES.map(s => s.toLowerCase());
+            const custom = (device.status_conditions || '')
+                .split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+            return [...new Set([...preset, ...custom])];
+        } else {
+            // 默认（空）：仅使用预置条件
+            return PRESET_ON_STATES.map(s => s.toLowerCase());
+        }
     }
 
     /**
@@ -997,10 +1017,13 @@ class XiaoshiRoomCard extends LitElement {
     _countActiveEntities(device) {
         if (!device || !this.hass) return 0;
         const entities = device.entities || (device.entity ? [device.entity] : []);
-        const onStates = device.on_states || [];
+        const conditions = this._getDeviceConditions(device);
         let count = 0;
         for (const eid of entities) {
-            if (this._isEntityOn(eid, onStates)) count++;
+            const state = this.hass.states[eid];
+            if (state && conditions.includes(state.state.toLowerCase())) {
+                count++;
+            }
         }
         return count;
     }
@@ -1097,13 +1120,25 @@ class XiaoshiRoomCard extends LitElement {
         const humiEntity = this.config.humidity;
         const pm25Entity = this.config.pm25;
         const personEntity = this.config.person;
-        const personHomeState = this.config.person_home_state || 'on';
         const devices = this.config.devices || [];
 
-        // 人在判断
+        // 人在判断（与设备条件模式一致）
         const personState = personEntity && this.hass.states[personEntity]
             ? this.hass.states[personEntity].state : null;
-        const isHome = personState === personHomeState;
+        const personConditionMode = this.config.person_condition_mode || '';
+        let personConditions;
+        if (personConditionMode === 'override') {
+            personConditions = (this.config.person_status_conditions || '')
+                .split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+        } else if (personConditionMode === 'append') {
+            const preset = PRESET_ON_STATES.map(s => s.toLowerCase());
+            const custom = (this.config.person_status_conditions || '')
+                .split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+            personConditions = [...new Set([...preset, ...custom])];
+        } else {
+            personConditions = PRESET_ON_STATES.map(s => s.toLowerCase());
+        }
+        const isHome = personState && personConditions.some(c => personState.toLowerCase().includes(c) || c.includes(personState.toLowerCase()));
 
         // 构建传感器列表（温度、湿度、pm2.5 按顺序，有实体才显示）
         const sensorItems = [];
