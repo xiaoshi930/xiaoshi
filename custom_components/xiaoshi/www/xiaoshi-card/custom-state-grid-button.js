@@ -183,10 +183,10 @@ class XiaoshiStateGridButtonEditor extends LitElement {
                   <div class="entity-option ${this.config.entities && this.config.entities.some(e => e.entity_id === entity.entity_id) ? 'selected' : ''}" @click=${() => this._toggleEntity(entity.entity_id)}>
                     <div class="entity-info">
                       <div class="entity-details">
-                        <div class="entity-name">${entity.attributes.friendly_name || entity.entity_id}</div>
+                        <div class="entity-name">${entity.attributes?.friendly_name || entity.entity_id}</div>
                         <div class="entity-id">${entity.entity_id}</div>
                       </div>
-                      <ha-icon icon="${entity.attributes.icon || 'mdi:help-circle'}"></ha-icon>
+                      <ha-icon icon="${entity.attributes?.icon || 'mdi:help-circle'}"></ha-icon>
                     </div>
                     ${this.config.entities && this.config.entities.some(e => e.entity_id === entity.entity_id) ? html`<ha-icon icon="mdi:check" class="check-icon"></ha-icon>` : ''}
                   </div>
@@ -203,8 +203,8 @@ class XiaoshiStateGridButtonEditor extends LitElement {
                 return html`
                   <div class="selected-entity-config">
                     <div class="selected-entity">
-                      <span>${entity?.attributes.friendly_name || entityConfig.entity_id}</span>
-                      <ha-icon icon="${entity?.attributes.icon || 'mdi:help-circle'}"></ha-icon>
+                      <span>${entity?.attributes?.friendly_name || entityConfig.entity_id}</span>
+                      <ha-icon icon="${entity?.attributes?.icon || 'mdi:help-circle'}"></ha-icon>
                       <button class="remove-btn" @click=${() => this._removeEntity(index)}><ha-icon icon="mdi:close"></ha-icon></button>
                     </div>
                     <div class="attribute-config">
@@ -275,7 +275,7 @@ class XiaoshiStateGridButtonEditor extends LitElement {
     const allEntities = Object.values(this.hass.states);
     this._filteredEntities = allEntities.filter(entity => {
       const entityId = entity.entity_id.toLowerCase();
-      const friendlyName = (entity.attributes.friendly_name || '').toLowerCase();
+      const friendlyName = (entity.attributes?.friendly_name || '').toLowerCase();
       return entityId.includes(searchTerm) || friendlyName.includes(searchTerm);
     }).slice(0, 50);
     this.requestUpdate();
@@ -469,9 +469,9 @@ class XiaoshiStateGridButton extends LitElement {
         const entity = this.hass.states[entityId];
         if (!entity) continue;
         let value = entity.state;
-        let unit = entity.attributes.unit_of_measurement || '';
-        let friendlyName = entity.attributes.friendly_name || entityId;
-        let icon = entity.attributes.icon || 'mdi:flash';
+        let unit = entity.attributes?.unit_of_measurement || '';
+        let friendlyName = entity.attributes?.friendly_name || entityId;
+        let icon = entity.attributes?.icon || 'mdi:flash';
         let warningThreshold = undefined;
         if (entityConfig.overrides) {
           if (entityConfig.overrides.name) friendlyName = entityConfig.overrides.name;
