@@ -10,14 +10,19 @@ window.customCards.push({
 
 const PRESET_ON_STATES = [
     // 通用
-    'on', 'open', 'opening','home', 'playing', 'active', 'running',
-    'detected', 'occupied', 'locked', 'unlocked', 'cleaning',
-    'charging', 'idle',
+    'on', 'open', 'opening','home',  'active', 'running',
+    'detected', 'occupied', 'locked', 'unlocked', 
+    // 媒体
+    'Playing','playing', '播放中',
     // 空调/HVAC
     'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
     'auto', 'heat_cool', 'heat_cool', 'fan_only',
     // 人在
-    '有人', '2～5分钟无人移动'
+    '有人', '2～5分钟无人移动',
+    // 扫地机器人
+    '正在拖地','正在扫地','启动','cleaning',
+    // 厨房
+    '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm'
 ];
 
 class XiaoshiDynamicCardEditor extends LitElement {
@@ -154,6 +159,25 @@ class XiaoshiDynamicCardEditor extends LitElement {
         this._fireConfigChanged();
     }
 
+    _entitiesToDisplay(entities) {
+        if (!entities) return '';
+        // 兼容字符串和数组格式
+        const list = Array.isArray(entities)
+            ? entities
+            : entities.split(/[\n,]/).map(e => e.trim().replace(/^-\s*/, '')).filter(e => e);
+        return list.map(e => `- ${e}`).join('\n');
+    }
+
+    _areaEntitiesChanged(index, e) {
+        const value = e.target.value;
+        // 存储为数组，YAML 序列化时输出列表格式
+        const entities = value.split(/[\n,]/).map(e => e.trim().replace(/^-\s*/, '')).filter(e => e);
+        const areas = [...(this.config.areas || [])];
+        areas[index] = { ...(areas[index] || {}), entities };
+        this.config = { ...this.config, areas };
+        this._fireConfigChanged();
+    }
+
     _fireConfigChanged() {
         this.dispatchEvent(new CustomEvent('config-changed', {
             detail: { config: this.config },
@@ -199,8 +223,8 @@ class XiaoshiDynamicCardEditor extends LitElement {
                 </div>
                 ` : ''}
                 <div class="form-row" style="flex-direction:column;align-items:stretch;">
-                    <label style="margin-bottom:4px;">实体列表（回车分隔）</label>
-                    <textarea name="entities" .value="${area.entities || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="light.xxx&#10;switch.xxx&#10;binary_sensor.xxx"></textarea>
+                    <label style="margin-bottom:4px;">实体列表</label>
+                    <textarea name="entities" .value="${this._entitiesToDisplay(area.entities)}" @change="${(e) => this._areaEntitiesChanged(index, e)}" placeholder="- light.xxx&#10;- switch.xxx&#10;- binary_sensor.xxx"></textarea>
                 </div>
                 <div class="form-row" style="flex-direction:column;align-items:stretch;">
                     <label style="margin-bottom:4px;">弹窗卡片（YAML格式）</label>
@@ -461,31 +485,67 @@ class XiaoshiDynamicCard extends LitElement {
         }
     }
 
+    _parseColor(color) {
+        if (!color) return { r: 0, g: 0, b: 0, a: 1 };
+        color = color.trim();
+        // hex 格式: #rgb, #rrggbb
+        if (color.startsWith('#')) {
+            let hex = color.slice(1);
+            if (hex.length === 3) {
+                hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+            }
+            const r = parseInt(hex.slice(0, 2), 16);
+            const g = parseInt(hex.slice(2, 4), 16);
+            const b = parseInt(hex.slice(4, 6), 16);
+            return { r, g, b, a: 1 };
+        }
+        // rgba 格式
+        const rgbaMatch = color.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$/i);
+        if (rgbaMatch) {
+            return {
+                r: parseInt(rgbaMatch[1]),
+                g: parseInt(rgbaMatch[2]),
+                b: parseInt(rgbaMatch[3]),
+                a: rgbaMatch[4] !== undefined ? parseFloat(rgbaMatch[4]) : 1
+            };
+        }
+        // rgb 格式
+        const rgbMatch = color.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i);
+        if (rgbMatch) {
+            return {
+                r: parseInt(rgbMatch[1]),
+                g: parseInt(rgbMatch[2]),
+                b: parseInt(rgbMatch[3]),
+                a: 1
+            };
+        }
+        // 无法解析时返回黑色
+        return { r: 0, g: 0, b: 0, a: 1 };
+    }
+
     _hexToRgb(hex) {
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
+        const { r, g, b } = this._parseColor(hex);
         return { r, g, b };
     }
 
-    _lightenColor(hex, amount) {
-        const { r, g, b } = this._hexToRgb(hex);
+    _lightenColor(color, amount) {
+        const { r, g, b } = this._parseColor(color);
         const lr = Math.round(r + (255 - r) * amount);
         const lg = Math.round(g + (255 - g) * amount);
         const lb = Math.round(b + (255 - b) * amount);
         return `rgb(${lr},${lg},${lb})`;
     }
 
-    _darkenColor(hex, amount) {
-        const { r, g, b } = this._hexToRgb(hex);
+    _darkenColor(color, amount) {
+        const { r, g, b } = this._parseColor(color);
         const dr = Math.round(r * (1 - amount));
         const dg = Math.round(g * (1 - amount));
         const db = Math.round(b * (1 - amount));
         return `rgb(${dr},${dg},${db})`;
     }
 
-    _colorWithAlpha(hex, alpha) {
-        const { r, g, b } = this._hexToRgb(hex);
+    _colorWithAlpha(color, alpha) {
+        const { r, g, b } = this._parseColor(color);
         return `rgba(${r},${g},${b},${alpha})`;
     }
 
@@ -493,7 +553,9 @@ class XiaoshiDynamicCard extends LitElement {
     _getAreaActiveCount(areaConfig) {
         if (!areaConfig.entities || !this.hass) return 0;
 
-        const entityIds = areaConfig.entities.split(/[\n,]/).map(e => e.trim()).filter(e => e);
+        const entityIds = Array.isArray(areaConfig.entities)
+            ? areaConfig.entities
+            : areaConfig.entities.split(/[\n,]/).map(e => e.trim().replace(/^-\s*/, '')).filter(e => e);
         if (entityIds.length === 0) return 0;
 
         const conditionMode = areaConfig.condition_mode || '';
@@ -588,7 +650,9 @@ class XiaoshiDynamicCard extends LitElement {
 
         // 无弹窗配置时，自动为实体生成弹窗
         if (cards.length === 0) {
-            const entities = (areaConfig.entities || '').split(/[\n,]/).map(e => e.trim()).filter(Boolean);
+            const entities = Array.isArray(areaConfig.entities)
+                ? areaConfig.entities
+                : (areaConfig.entities || '').split(/[\n,]/).map(e => e.trim().replace(/^-\s*/, '')).filter(Boolean);
             if (entities.length === 0) return;
             const entityCards = entities.map(entityId => ({
                 type: 'entity',

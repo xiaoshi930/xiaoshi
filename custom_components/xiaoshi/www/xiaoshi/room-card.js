@@ -10,14 +10,19 @@ window.customCards.push({
 
 const PRESET_ON_STATES = [
     // 通用
-    'on', 'open', 'opening','home', 'playing', 'active', 'running',
-    'detected', 'occupied', 'locked', 'unlocked', 'cleaning',
-    'charging', 'idle',
+    'on', 'open', 'opening','home',  'active', 'running',
+    'detected', 'occupied', 'locked', 'unlocked', 
+    // 媒体
+    'Playing','playing', '播放中',
     // 空调/HVAC
     'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
     'auto', 'heat_cool', 'heat_cool', 'fan_only',
     // 人在
-    '有人', '2～5分钟无人移动'
+    '有人', '2～5分钟无人移动',
+    // 扫地机器人
+    '正在拖地','正在扫地','启动','cleaning',
+    // 厨房
+    '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm'
 ];
 
 class XiaoshiRoomCardEditor extends LitElement {
@@ -609,6 +614,26 @@ class XiaoshiRoomCardEditor extends LitElement {
                     <input type="text" name="person_home_state" .value="${c.person_home_state || ''}" @change="${this._valueChanged}" placeholder="人在状态覆盖，如：有人" />
                 </div>
 
+                <div class="form-row">
+                    <label>开启动画</label>
+                    <select name="active_animation" @change="${this._valueChanged}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
+                        <option value="true" .selected="${c.active_animation !== 'false'}">是</option>
+                        <option value="false" .selected="${c.active_animation === 'false'}">否</option>
+                    </select>
+                </div>
+
+                ${c.active_animation !== 'false' ? html`
+                <div class="form-row">
+                    <label>动画效果</label>
+                    <select name="animation_type" @change="${this._valueChanged}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
+                        <option value="swing_bottom" .selected="${!c.animation_type || c.animation_type === 'swing_bottom'}">底部摇摆</option>
+                        <option value="swing_top" .selected="${c.animation_type === 'swing_top'}">顶部摇摆</option>
+                        <option value="shake_x" .selected="${c.animation_type === 'shake_x'}">左右晃动</option>
+                        <option value="shake_y" .selected="${c.animation_type === 'shake_y'}">上下晃动</option>
+                    </select>
+                </div>
+                ` : ''}
+
                 ${devices.map((dev, i) => html`
                     <div class="device-section">
                         <div class="device-row">
@@ -856,6 +881,52 @@ class XiaoshiRoomCard extends LitElement {
                 background: transparent;
                 cursor: default;
             }
+            @keyframes swingBottom {
+                0% { transform: rotate(0deg); }
+                15% { transform: rotate(15deg); }
+                30% { transform: rotate(-10deg); }
+                45% { transform: rotate(6deg); }
+                60% { transform: rotate(-3deg); }
+                75% { transform: rotate(1deg); }
+                100% { transform: rotate(0deg); }
+            }
+            @keyframes swingTop {
+                0% { transform: rotate(0deg); }
+                15% { transform: rotate(15deg); }
+                30% { transform: rotate(-10deg); }
+                45% { transform: rotate(6deg); }
+                60% { transform: rotate(-3deg); }
+                75% { transform: rotate(1deg); }
+                100% { transform: rotate(0deg); }
+            }
+            @keyframes shakeX {
+                0%, 100% { transform: translateX(0); }
+                20% { transform: translateX(-6px); }
+                40% { transform: translateX(6px); }
+                60% { transform: translateX(-4px); }
+                80% { transform: translateX(4px); }
+            }
+            @keyframes shakeY {
+                0%, 100% { transform: translateY(0); }
+                20% { transform: translateY(-6px); }
+                40% { transform: translateY(6px); }
+                60% { transform: translateY(-4px); }
+                80% { transform: translateY(4px); }
+            }
+            .device-btn ha-icon.anim-swing-bottom {
+                animation: swingBottom 2s ease-in-out infinite;
+                transform-origin: bottom center;
+            }
+            .device-btn ha-icon.anim-swing-top {
+                animation: swingTop 2s ease-in-out infinite;
+                transform-origin: top center;
+            }
+            .device-btn ha-icon.anim-shake-x {
+                animation: shakeX 1.5s ease-in-out infinite;
+            }
+            .device-btn ha-icon.anim-shake-y {
+                animation: shakeY 1.5s ease-in-out infinite;
+            }
             /* 右上角圆形角标 */
             .badge {
                 position: absolute;
@@ -1086,7 +1157,7 @@ class XiaoshiRoomCard extends LitElement {
                         <div class="corner-label" style="border-color:${this.config.name_color || '#00bcd4'} transparent transparent transparent"></div>
                         <div class="corner-text" style="transform:rotate(-45deg);${this.config.name_size ? 'font-size:' + this.config.name_size + 'vw' : ''}">${name}</div>
                         <!-- 人在图标：有人时闪烁，没人时显示off图标 -->
-                        <div class="person-icon ${isHome ? 'person-home' : ''}" style="color:${isHome ? (this.config.person_color || '#ff5722') : '#888'}">
+                        <div class="person-icon ${!personEntity ? 'person-hidden' : ''} ${isHome ? 'person-home' : ''}" style="color:${isHome ? (this.config.person_color || '#ff5722') : '#888'}">
                             <ha-icon icon="${isHome ? (this.config.person_icon || 'mdi:motion-sensor') : 'mdi:motion-sensor-off'}"></ha-icon>
                         </div>
                         <!-- 传感器条 -->
@@ -1127,6 +1198,7 @@ class XiaoshiRoomCard extends LitElement {
         const iconColor = isOn ? (device.icon_color || 'white') : defaultOffIcon;
         // 角标：只有当有开启的实体时显示
         const showBadge = activeCount > 0;
+        const animateClass = (this.config.active_animation !== 'false' && isOn) ? 'anim-' + (this.config.animation_type || 'swing_bottom').replace(/_/g, '-') : '';
 
         return html`
             <button
@@ -1134,7 +1206,7 @@ class XiaoshiRoomCard extends LitElement {
                 style="background:${bgColor}; color:${iconColor}"
                 @click="${() => this._onDeviceClick(device)}"
             >
-                <ha-icon icon="${icon}" style="--mdc-icon-size:${device.icon_size || 2.8}vh;width:${device.icon_size || 2.8}vh;height:${device.icon_size || 2.8}vh"></ha-icon>
+                <ha-icon icon="${icon}" class="${animateClass}" style="--mdc-icon-size:${device.icon_size || 2.8}vh;width:${device.icon_size || 2.8}vh;height:${device.icon_size || 2.8}vh"></ha-icon>
                 ${showBadge ? html`<span class="badge" style="background:${device.badge_color || '#f44336'}">${activeCount}</span>` : html`<span class="badge hidden"></span>`}
             </button>
         `;
