@@ -1429,6 +1429,9 @@ class XiaoshChartButton extends LitElement {
     // 设置背景颜色
     const buttonBgColor = transparentBg ? 'transparent' : theme === 'light' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
     const unit = this._getUnit();
+    // 按钮上简写单位：µg/m³ 等显示为 µg
+    const unitLower = unit.toLowerCase();
+    const buttonUnit = (unitLower === 'µg/m³' || unitLower === 'μg/m³' || unitLower === 'μg/m3' || unitLower === 'ug/m3') ? 'µg' : unit;
     const merge = this.config?.merge && entityIds.length > 1;
 
     let v1, v2, n1, n2;
@@ -1457,7 +1460,7 @@ class XiaoshChartButton extends LitElement {
     const buttonHtml = html`
       <div class="chart-status" style="--fg-color: ${numberColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
       ${!hideIcon ? html`<span class="status-emoji">${buttonIcon}</span>` : ''}
-        <span style="color: ${numberColor};">${buttonValue}${unit}</span>
+        <span style="color: ${numberColor};">${buttonValue}${buttonUnit}</span>
       </div>
     `;
 
