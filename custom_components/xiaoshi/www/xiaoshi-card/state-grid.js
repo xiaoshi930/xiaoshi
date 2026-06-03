@@ -71,7 +71,11 @@ const UTILITY_CONFIG = {
     dayButtonLabel: '用水',
     monthButtonLabel: '用水',
     ladderUsageKey: '水',
-    svgpath:'/xiaoshi/xiaoshi-card/icon/water.png'
+    svgpath:'/xiaoshi/xiaoshi-card/icon/water.png',
+    dayUsageKey: 'f_water',
+    dayCostKey: 'e_water',
+    monthUsageKey: 'f_water_total',
+    monthCostKey: 'e_water_total'
   },
   gas: {
     emoji: '🔥',
@@ -103,12 +107,115 @@ const UTILITY_CONFIG = {
     dayButtonLabel: '用气',
     monthButtonLabel: '用气',
     ladderUsageKey: '气',
-    svgpath:'/xiaoshi/xiaoshi-card/icon/gas.png'
+    svgpath:'/xiaoshi/xiaoshi-card/icon/gas.png',
+    dayUsageKey: 'f_gas',
+    dayCostKey: 'e_gas',
+    monthUsageKey: 'f_gas_total',
+    monthCostKey: 'e_gas_total'
   }
 };
 
 function getUtilityConfig(utilityType) {
   return UTILITY_CONFIG[utilityType || 'electric'] || UTILITY_CONFIG.electric;
+}
+
+/**
+ * 归一化日数据项：将 f_gas/e_gas、f_water/e_water 等字段映射到 dayEleNum/dayEleCost
+ */
+function normalizeDayItem(item, uc) {
+  if (!item) return item;
+  if (!uc.dayUsageKey) return item; // electric 使用标准格式
+  return {
+    ...item,
+    dayEleNum: item[uc.dayUsageKey] ?? item.dayEleNum ?? 0,
+    dayEleCost: item[uc.dayCostKey] ?? item.dayEleCost ?? 0,
+  };
+}
+
+/**
+ * 从 monthly_summary 构建月度列表（monthlist 格式）
+ * 如果某年月不在 monthly_summary 中，则从 daylist 汇总计算
+ */
+function buildMonthlistFromSummary(attrs, uc) {
+  // 如果 monthlist 已存在且有数据，直接归一化后返回
+  if (attrs.monthlist && attrs.monthlist.length > 0) {
+    return attrs.monthlist.map(item => normalizeMonthItem(item, uc));
+  }
+  // 从 monthly_summary 构建
+  if (attrs.monthly_summary) {
+    const summary = attrs.monthly_summary;
+    const monthlist = [];
+    for (const [yearMonth, data] of Object.entries(summary)) {
+      monthlist.push({
+        month: yearMonth,
+        monthEleNum: data[uc.monthUsageKey] ?? 0,
+        monthEleCost: data[uc.monthCostKey] ?? 0,
+      });
+    }
+    // 补充 monthly_summary 中缺失的月份（从 daylist 汇总）
+    if (attrs.daylist && uc.dayUsageKey) {
+      const existingMonths = new Set(monthlist.map(m => m.month));
+      const daylistMonths = new Set();
+      attrs.daylist.forEach(item => {
+        if (item?.day) {
+          const ym = item.day.substring(0, 7); // "2026-06"
+          daylistMonths.add(ym);
+        }
+      });
+      for (const ym of daylistMonths) {
+        if (!existingMonths.has(ym)) {
+          const monthDays = attrs.daylist.filter(item => item?.day && item.day.startsWith(ym));
+          let totalUsage = 0, totalCost = 0;
+          monthDays.forEach(item => {
+            totalUsage += Number(item[uc.dayUsageKey]) || 0;
+            totalCost += Number(item[uc.dayCostKey]) || 0;
+          });
+          monthlist.push({
+            month: ym,
+            monthEleNum: totalUsage,
+            monthEleCost: totalCost,
+          });
+        }
+      }
+    }
+    monthlist.sort((a, b) => b.month.localeCompare(a.month));
+    return monthlist;
+  }
+  return attrs.monthlist || [];
+}
+
+/**
+ * 归一化月数据项：将 f_gas_total/e_gas_total 等映射到 monthEleNum/monthEleCost
+ */
+function normalizeMonthItem(item, uc) {
+  if (!item) return item;
+  if (!uc.monthUsageKey) return item;
+  return {
+    ...item,
+    monthEleNum: item[uc.monthUsageKey] ?? item.monthEleNum ?? 0,
+    monthEleCost: item[uc.monthCostKey] ?? item.monthEleCost ?? 0,
+  };
+}
+
+/**
+ * 从 monthlist（已归一化）构建 yearlist
+ * 如果 yearlist 已存在，直接返回；否则从 monthlist 汇总
+ */
+function buildYearlistFromMonthlist(attrs, uc) {
+  if (attrs.yearlist && attrs.yearlist.length > 0) return attrs.yearlist;
+  const monthlistSource = buildMonthlistFromSummary(attrs, uc);
+  if (!monthlistSource || monthlistSource.length === 0) return [];
+  const yearMap = {};
+  monthlistSource.forEach(item => {
+    if (!item?.month) return;
+    const year = item.month.substring(0, 4);
+    if (!yearMap[year]) {
+      yearMap[year] = { year, yearEleNum: 0, yearEleCost: 0 };
+    }
+    yearMap[year].yearEleNum += Number(item.monthEleNum) || 0;
+    yearMap[year].yearEleCost += Number(item.monthEleCost) || 0;
+  });
+  return Object.values(yearMap).sort((a, b) => b.year.localeCompare(a.year));
 }
 
 class XiaoshiStateGridButtonEditor extends LitElement {
@@ -2702,7 +2809,8 @@ class  XiaoshiStateGridInfo extends LitElement {
     const uc = this._getUC();
 
     if (!selectedEntity?.attributes?.daylist) return null;
-    const daylist = selectedEntity.attributes.daylist;
+    const rawDaylist = selectedEntity.attributes.daylist;
+    const daylist = rawDaylist.map(item => normalizeDayItem(item, uc));
 
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -2859,12 +2967,13 @@ class  XiaoshiStateGridInfo extends LitElement {
     const lastYear  = (new Date().getFullYear() - 1).toString();
     const currentYear = new Date().getFullYear().toString();
 
-    if (!selectedEntity?.attributes?.monthlist) return null;
- 
-    const lastYearBills = selectedEntity.attributes.monthlist.filter(item =>
+    if (!selectedEntity?.attributes?.monthlist && !selectedEntity?.attributes?.monthly_summary) return null;
+
+    const monthlistSource = buildMonthlistFromSummary(selectedEntity.attributes, uc);
+    const lastYearBills = monthlistSource.filter(item =>
       item?.month && item.month.startsWith(lastYear)
     ) || [];
-    const thisYearBills = selectedEntity.attributes.monthlist.filter(item =>
+    const thisYearBills = monthlistSource.filter(item =>
       item?.month && item.month.startsWith(currentYear)
     ) || [];
     const lastmonthlist = [...lastYearBills ].slice(0, 12).reverse();
@@ -4018,14 +4127,16 @@ class  XiaoshiStateGridInfo extends LitElement {
     if (this.hass && selectedEntityId) {
       const entityObj = this.hass.states[selectedEntityId];
       if (entityObj && entityObj.attributes) {
+        const uc = this._getUC();
         if (entityObj.attributes.daylist) {
-          this.dayData = entityObj.attributes.daylist;
+          this.dayData = entityObj.attributes.daylist.map(item => normalizeDayItem(item, uc));
         } else {
           this.dayData = [];
         }
-        if (entityObj.attributes.monthlist) {
+        const monthlistSource = buildMonthlistFromSummary(entityObj.attributes, uc);
+        if (monthlistSource && monthlistSource.length > 0) {
           const monthStr = `${this.year}-${this.month.toString().padStart(2, '0')}`;
-          this.monthData = entityObj.attributes.monthlist.find(item => item.month === monthStr);
+          this.monthData = monthlistSource.find(item => item.month === monthStr);
         } else {
           this.monthData = null;
         }
@@ -4411,7 +4522,7 @@ class  XiaoshiStateGridInfo extends LitElement {
         selectedEntity.attributes.计费标准?.当前月阶梯档?.replace('第', '').replace('档', '')
       );
     
-    let electricityTypes = this.getElectricityType(selectedEntity.attributes?.monthlist || []);
+    let electricityTypes = this.getElectricityType(buildMonthlistFromSummary(selectedEntity.attributes, uc) || []);
     if (!electricityTypes) electricityTypes = this._calcElectricityTypes(selectedEntity.attributes?.yearlist, 'year');
     const prices = currentLevel ? this.getElectricityPrices(billingStandard, currentLevel, electricityTypes) : {};
 
@@ -4469,7 +4580,7 @@ class  XiaoshiStateGridInfo extends LitElement {
         const constrainedArrowPosition = Math.max(minArrowPosition, Math.min(maxArrowPosition, bubblePosition));
         
         // 先从月度数据判断用电类型，为空则从年度数据判断
-        let electricityTypes = this.getElectricityType(selectedEntity.attributes.monthlist);
+        let electricityTypes = this.getElectricityType(buildMonthlistFromSummary(selectedEntity.attributes, uc) || []);
         if (!electricityTypes) {
           electricityTypes = this._calcElectricityTypes(selectedEntity.attributes.yearlist, 'year');
         }
@@ -4519,6 +4630,10 @@ class  XiaoshiStateGridInfo extends LitElement {
       }
     }
     
+    // 归一化日/月数据（供后续渲染使用）
+    const normalizedDaylist = (selectedEntity.attributes?.daylist || []).map(item => normalizeDayItem(item, uc));
+    const normalizedMonthlist = buildMonthlistFromSummary(selectedEntity.attributes, uc);
+
     // 渲染价格区域内容
     let priceContent = '';
     if (selectedEntity.attributes && selectedEntity.attributes.计费标准) {
@@ -4529,17 +4644,17 @@ class  XiaoshiStateGridInfo extends LitElement {
           selectedEntity.attributes.计费标准?.当前月阶梯档?.replace('第', '').replace('档', '')
         );
       
-      let electricityTypes = this.getElectricityType(selectedEntity.attributes?.monthlist || []);
+      let electricityTypes = this.getElectricityType(normalizedMonthlist || []);
       if (!electricityTypes) electricityTypes = this._calcElectricityTypes(selectedEntity.attributes?.yearlist, 'year');
       const prices = currentLevel ? this.getElectricityPrices(billingStandard, currentLevel, electricityTypes) : {};
       const currentMonth = this.getCurrentMonth();
       const previousMonth = this.getPreviousMonth();
       const currentYear = new Date().getFullYear();
 
-      const currentDayUsage = selectedEntity.attributes?.daylist?.[0];
-      const currentMonthUsage = this.getMonthUsage(selectedEntity.attributes?.monthlist || [], currentMonth);
-      const previousMonthUsage = this.getMonthUsage(selectedEntity.attributes?.monthlist || [], previousMonth);
-      const yearUsage = this.getYearUsage(selectedEntity.attributes?.yearlist || [], currentYear);
+      const currentDayUsage = normalizedDaylist[0];
+      const currentMonthUsage = this.getMonthUsage(normalizedMonthlist || [], currentMonth);
+      const previousMonthUsage = this.getMonthUsage(normalizedMonthlist || [], previousMonth);
+      const yearUsage = this.getYearUsage(buildYearlistFromMonthlist(selectedEntity.attributes, uc) || [], currentYear);
       
       // 渲染价格区域内容
      priceContent = html`
@@ -4602,7 +4717,7 @@ class  XiaoshiStateGridInfo extends LitElement {
         `;
       }
         
-    const daydate = selectedEntity.attributes?.daylist[0]?.day || '无';
+    const daydate = normalizedDaylist[0]?.day || selectedEntity.attributes?.daylist?.[0]?.day || '无';
     return html`
         <div class="card-main" style="background: ${BgColor}; color: ${Color}">
           <div class="top-section">
