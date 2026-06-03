@@ -1082,20 +1082,6 @@ template: 测试模板(最好引用模板，否则大概率会报错)'>
         </textarea>
       </div>
 
-      <div class="checkbox-group">
-        <input
-          type="checkbox"
-          class="checkbox-input"
-          @change=${this._entityChanged}
-          .checked=${this.config.no_preview === true}
-          name="no_preview"
-          id="no_preview"
-        />
-        <label for="no_preview" class="checkbox-label" style="color: red;">
-          📻显示预览📻（ 请先勾选测试显示效果 ）
-        </label>
-      </div>
-
       <div class="form-group">
         <label> </label>
         <label>👇👇👇下方是弹出的主卡配置项👇👇👇</label>
@@ -1216,11 +1202,11 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
   _handleButtonClick() {
     const tapAction = this.config.tap_action;
     if (!tapAction || tapAction !== 'none') {
-      const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'show_preview', 'tap_action', 'popup_top', 'popup_width'];
+      const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'popup_top', 'popup_width'];
       const cards = [];
       const chartCardConfig = {};
       Object.keys(this.config).forEach(key => {
-        if (!excludedParams.includes(key) && key !== 'other_cards' && key !== 'no_preview') {
+        if (!excludedParams.includes(key) && key !== 'other_cards') {
           chartCardConfig[key] = this.config[key];
         }
       });
@@ -1384,7 +1370,6 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
 
-    const showPreview = this.config.no_preview === true;
     const transparentBg = this.config.transparent_bg === true;
     const hideIcon = this.config.hide_icon === true;
     const lockWhiteFg = this.config.lock_white_fg === true;
@@ -1441,12 +1426,6 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
 
     return html`
       ${buttonHtml}
-      ${showPreview ? html`
-      <div class="form-group">
-        <label>👇👇👇下面是弹出卡片内容👇👇👇</label>
-      </div>
-      ${this._renderCardContent(headerData, bgColor, fgColor)}
-      ` : html``}
     `;
   }
 

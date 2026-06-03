@@ -87,6 +87,22 @@ const editorCommonStyles = css`
     flex-direction: column;
     gap: 5px;
   }
+  .form-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .form-row label {
+    font-weight: bold;
+    white-space: nowrap;
+    min-width: 80px;
+  }
+  .form-row input {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
   label {
     font-weight: bold;
   }
@@ -1215,35 +1231,23 @@ class XiaoshiTodoButtonEditor extends TodoEditorMixin(LitElement) {
   render() {
     if (!this.hass) return html``;
     return html`
+      
       <div class="form">
-        <div class="checkbox-group">
-          <input 
-            type="checkbox" 
-            class="checkbox-input"
-            @change=${this._entityChanged}
-            .checked=${this.config.badge_mode === true}
-            name="badge_mode"
-            id="badge_mode"
-          />
-          <label for="badge_mode" class="checkbox-label" style="color: orange; font-weight: bold;"> 
-            🏷️ 角标模式（勾选后只显示图标，数量>0时显示红色角标）
-          </label>
-        </div>
+        ${this._renderEntitySelector()}
 
-        <div class="checkbox-group">
-          <input 
-            type="checkbox" 
-            class="checkbox-input"
+        <div class="form-group">
+          <label>主题</label>
+          <select 
             @change=${this._entityChanged}
-            .checked=${this.config.auto_hide === true}
-            name="auto_hide"
-            id="auto_hide"
-          />
-          <label for="auto_hide" class="checkbox-label" style="color: orange; font-weight: bold;"> 
-            🚫 自动隐藏（勾选后数量为0时完全不显示）
-          </label>
+            .value=${this.config.theme !== undefined ? this.config.theme : 'system'}
+            name="theme"
+          >
+            <option value="system">跟随系统</option>
+            <option value="light">浅色主题（白底黑字）</option>
+            <option value="dark">深色主题（黑底白字）</option>
+          </select>
         </div>
-
+        
         <div class="form-group">
           <label>按钮显示文本
           <input 
@@ -1294,48 +1298,6 @@ class XiaoshiTodoButtonEditor extends TodoEditorMixin(LitElement) {
           </label>
         </div>
     
-        <div class="checkbox-group">
-          <input 
-            type="checkbox" 
-            class="checkbox-input"
-            @change=${this._entityChanged}
-            .checked=${this.config.hide_icon === true}
-            name="hide_icon"
-            id="hide_icon"
-          />
-          <label for="hide_icon" class="checkbox-label"> 
-          （ 平板端特性）隐藏图标（勾选后隐藏图标）
-          </label>
-        </div>
-    
-        <div class="checkbox-group">
-          <input 
-            type="checkbox" 
-            class="checkbox-input"
-            @change=${this._entityChanged}
-            .checked=${this.config.hide_colon === true}
-            name="hide_colon"
-            id="hide_colon"
-          />
-          <label for="hide_colon" class="checkbox-label"> 
-          （平板端特性）隐藏冒号（勾选后不显示冒号，改为空格）
-          </label>
-        </div>
-    
-        <div class="checkbox-group">
-          <input 
-            type="checkbox" 
-            class="checkbox-input"
-            @change=${this._entityChanged}
-            .checked=${this.config.hide_zero === true}
-            name="hide_zero"
-            id="hide_zero"
-          />
-          <label for="hide_zero" class="checkbox-label"> 
-          （平板端特性）隐藏0值（勾选后数量为0时不显示数量）
-          </label>
-        </div>
-
         <div class="form-group">
           <label>按钮宽度：默认16.8vw, 支持像素(px)和百分比(%)</label>
           <input 
@@ -1381,18 +1343,6 @@ class XiaoshiTodoButtonEditor extends TodoEditorMixin(LitElement) {
         </div>
 
         <div class="form-group">
-          <label>点击动作：点击按钮时触发的动作</label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.tap_action !== 'none' ? 'tap_action' : 'none'}
-            name="tap_action"
-          >
-            <option value="tap_action">弹出待办信息卡片（默认）</option>
-            <option value="none">无动作</option>
-          </select>
-        </div>
-
-        <div class="form-group">
           <label>👇👇👇下方弹出的卡片可增加的其他卡片👇👇👇</label>
           <textarea 
             @change=${this._entityChanged}
@@ -1404,20 +1354,6 @@ class XiaoshiTodoButtonEditor extends TodoEditorMixin(LitElement) {
 - type: custom:button-card
   template: 测试模板(最好引用模板，否则大概率会报错)'>
           </textarea>
-        </div>
-
-        <div class="checkbox-group">
-          <input 
-            type="checkbox" 
-            class="checkbox-input"
-            @change=${this._entityChanged}
-            .checked=${this.config.no_preview === true}
-            name="no_preview"
-            id="no_preview"
-          />
-          <label for="no_preview" class="checkbox-label" style="color: red;"> 
-            📻显示预览📻（ 请先勾选测试显示效果 ）
-          </label>
         </div>
 
         <div class="form-group">
@@ -1447,20 +1383,6 @@ class XiaoshiTodoButtonEditor extends TodoEditorMixin(LitElement) {
             placeholder="默认20px"
           />
         </div>
-
-        <div class="form-group">
-          <label>主题</label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.theme !== undefined ? this.config.theme : 'system'}
-            name="theme"
-          >
-            <option value="system">跟随系统</option>
-            <option value="light">浅色主题（白底黑字）</option>
-            <option value="dark">深色主题（黑底白字）</option>
-          </select>
-        </div>
-        ${this._renderEntitySelector()}
       </div>
     `;
   }
@@ -1471,7 +1393,7 @@ class XiaoshiTodoButtonEditor extends TodoEditorMixin(LitElement) {
     if (type === 'checkbox') {
       finalValue = checked;
     } else {
-      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top' && name !== 'tap_action') return;
+      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top') return;
       finalValue = value;
     }
     if (name === 'button_width') {
@@ -1482,12 +1404,6 @@ class XiaoshiTodoButtonEditor extends TodoEditorMixin(LitElement) {
       finalValue = value || '11px';
     } else if (name === 'button_icon_size') {
       finalValue = value || '13px';
-    } else if (name === 'tap_action') {
-      if (value === 'tap_action') {
-        finalValue = undefined;
-      } else {
-        finalValue = value;
-      }
     }
     this.config = { ...this.config, [name]: finalValue };
     this.dispatchEvent(new CustomEvent('config-changed', {
@@ -1537,41 +1453,6 @@ class XiaoshiTodoButton extends TodoBaseMixin(LitElement) {
           line-height: 1;
           color: var(--fg-color, #000);
           margin-right: 3px;
-        }
-        .todo-status.badge-mode {
-          width: var(--button-width, 65px);
-          height: var(--button-height, 24px);
-          border-radius: 10px;
-          padding: 0;
-          margin: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .todo-status.badge-mode .status-emoji {
-          color: rgb(128, 128, 128);
-          transition: color 0.2s;
-        }
-        .todo-status.badge-mode.has-warning .status-emoji {
-          color: rgb(255, 0, 0);
-        }
-        .badge-number {
-          position: absolute;
-          top: -6px;
-          right: -6px;
-          min-width: 12px;
-          height: 12px;
-          background: rgb(255, 0, 0);
-          color: rgb(255, 255, 255);
-          border-radius: 50%;
-          font-size: 8px;
-          font-weight: bold;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0;
-          box-sizing: border-box;
-          line-height: 1;
         }
       `
     ];
@@ -1623,41 +1504,38 @@ class XiaoshiTodoButton extends TodoBaseMixin(LitElement) {
   }
 
   _handleButtonClick() {
-    const tapAction = this.config.tap_action;
-    if (!tapAction || tapAction !== 'none') {
-      const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'show_preview', 'tap_action', 'popup_top', 'popup_width'];
-      const cards = [];
-      const todoCardConfig = {};
-      Object.keys(this.config).forEach(key => {
-        if (!excludedParams.includes(key) && key !== 'other_cards' && key !== 'no_preview') {
-          todoCardConfig[key] = this.config[key];
-        }
-      });
-      cards.push({
-        type: 'custom:xiaoshi-todo-card',
-        ...todoCardConfig
-      });
-      if (this.config.other_cards && this.config.other_cards.trim()) {
-        try {
-          const additionalCardsConfig = this._parseYamlCards(this.config.other_cards);
-          const cardsWithTheme = additionalCardsConfig.map(card => {
-            if (!card.theme && this.config.theme) {
-              return { ...card, theme: this.config.theme };
-            }
-            return card;
-          });
-          cards.push(...cardsWithTheme);
-        } catch (error) {
-          console.error('解析附加卡片配置失败:', error);
-        }
+    const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'popup_top', 'popup_width'];
+    const cards = [];
+    const todoCardConfig = {};
+    Object.keys(this.config).forEach(key => {
+      if (!excludedParams.includes(key) && key !== 'other_cards') {
+        todoCardConfig[key] = this.config[key];
       }
-      const serviceData = { card: cards };
-      const popupWidth = this.config.popup_width || '95%';
-      const popupTop = this.config.popup_top || '20px';
-      if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
-      if (popupTop !== '20px') serviceData.popup_top = popupTop;
-      this.hass.callService('popup_card', 'show', serviceData);
+    });
+    cards.push({
+      type: 'custom:xiaoshi-todo-card',
+      ...todoCardConfig
+    });
+    if (this.config.other_cards && this.config.other_cards.trim()) {
+      try {
+        const additionalCardsConfig = this._parseYamlCards(this.config.other_cards);
+        const cardsWithTheme = additionalCardsConfig.map(card => {
+          if (!card.theme && this.config.theme) {
+            return { ...card, theme: this.config.theme };
+          }
+          return card;
+        });
+        cards.push(...cardsWithTheme);
+      } catch (error) {
+        console.error('解析附加卡片配置失败:', error);
+      }
     }
+    const serviceData = { card: cards };
+    const popupWidth = this.config.popup_width || '95%';
+    const popupTop = this.config.popup_top || '20px';
+    if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+    if (popupTop !== '20px') serviceData.popup_top = popupTop;
+    this.hass.callService('popup_card', 'show', serviceData);
     this._handleClick();
   }
 
@@ -1804,87 +1682,31 @@ class XiaoshiTodoButton extends TodoBaseMixin(LitElement) {
       })
     );
 
-    const showPreview = this.config.no_preview === true;
-    const badgeMode = this.config.badge_mode === true;
     const transparentBg = this.config.transparent_bg === true;
-    const hideIcon = this.config.hide_icon === true;
-    const hideColon = this.config.hide_colon === true;
-    const hideZero = this.config.hide_zero === true;
-    const autoHide = this.config.auto_hide === true;
     const lockWhiteFg = this.config.lock_white_fg === true;
     const buttonText = this.config.button_text || '待办';
     const buttonIcon = this.config.button_icon || '📝';
     const buttonBgColor = transparentBg ? 'transparent' : theme === 'light' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
-    const shouldAutoHide = autoHide && totalIncompleteCount === 0;
-
-    if (shouldAutoHide) {
-      return html`<div></div>`;
-    }
 
     let buttonHtml;
-    if (badgeMode) {
-      const hasWarning = hasOverdueItems;
-      buttonHtml = html`
-        <div class="todo-status badge-mode ${hasWarning ? 'has-warning' : ''}" style="--bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
-          <span class="status-emoji">${buttonIcon}</span>
-          ${hasWarning ? html`<div class="badge-number">${totalIncompleteCount}</div>` : ''}
-        </div>
-      `;
+    let textColor, iconColor;
+    if (hasOverdueItems) {
+      textColor = 'rgb(255, 0, 0)';
+      iconColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
     } else {
-      let textColor, iconColor;
-      if (hasOverdueItems) {
-        textColor = 'rgb(255, 0, 0)';
-        iconColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
-      } else {
-        textColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
-        iconColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
-      }
-      let displayText = buttonText;
-      if (!hideColon) {
-        displayText += ':';
-      } else {
-        displayText += ' ';
-      }
-      if (hideZero && totalIncompleteCount === 0) {
-        displayText += '\u2002';
-      } else {
-        displayText += ` ${totalIncompleteCount}`;
-      }
-      buttonHtml = html`
-        <div class="todo-status" style="--fg-color: ${textColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
-          ${!hideIcon ? html`<span class="status-emoji" style="color: ${iconColor};">${buttonIcon}</span>` : ''}
-          ${displayText}
-        </div>
-      `;
+      textColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
+      iconColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
     }
+    let displayText = buttonText + ':' + ` ${totalIncompleteCount}`;
+    buttonHtml = html`
+      <div class="todo-status" style="--fg-color: ${textColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
+        <span class="status-emoji" style="color: ${iconColor};">${buttonIcon}</span>
+        ${displayText}
+      </div>
+    `;
 
     return html`
       ${buttonHtml}
-      ${showPreview ? html`
-      <div class="form-group">
-        <label>👇👇👇下面是弹出卡片内容👇👇👇</label>
-      </div>
-      <ha-card style="--fg-color: ${fgColor}; --bg-color: ${bgColor};">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="offline-indicator"></span>
-            待办事项
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px; ">
-            <span class="device-count">${totalIncompleteCount}</span>
-            <button class="refresh-btn" @click=${this._handleRefresh}>刷新</button>
-          </div>
-        </div>
-        <div class="devices-list">
-          ${this._loading ? 
-            html`<div class="loading">加载中...</div>` :
-            this._todoData.length === 0 ? 
-              html`<div class="no-devices">请配置待办事项实体</div>` :
-              html`${this._renderTodoItems(this._todoData)}`
-          }
-        </div>
-      </ha-card>
-      ` : html``}
     `;
   }
 

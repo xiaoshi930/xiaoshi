@@ -294,6 +294,22 @@ const editorCommonStyles = css`
     flex-direction: column;
     gap: 5px;
   }
+  .form-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .form-row label {
+    font-weight: bold;
+    white-space: nowrap;
+    min-width: 80px;
+  }
+  .form-row input {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
   label {
     font-weight: bold;
   }
@@ -595,6 +611,7 @@ const HaInfoEditorMixin = (superClass) => class extends superClass {
 
   _renderCommonEditorFields() {
     return html`
+      
       <div class="form-group">
         <label>主题</label>
         <select
@@ -607,6 +624,8 @@ const HaInfoEditorMixin = (superClass) => class extends superClass {
           <option value="dark">深色主题（黑底白字）</option>
         </select>
       </div>
+
+      ${this._renderEntitySelector()}
 
       <div class="form-group">
         <label>
@@ -633,7 +652,7 @@ const HaInfoEditorMixin = (superClass) => class extends superClass {
 
       <div class="form-group">
         <label>排除离线实体：每行一个实体ID，支持通配符(*)</label>
-        <textarea
+        <textarea 
           @change=${this._entityChanged}
           .value=${this.config.exclude_entities ? this.config.exclude_entities.join('\n') : ''}
           name="exclude_entities"
@@ -641,8 +660,6 @@ const HaInfoEditorMixin = (superClass) => class extends superClass {
         ></textarea>
         <div class="help-text">支持通配符匹配，例如 sensor.* 会匹配所有以 sensor. 开头的实体</div>
       </div>
-
-      ${this._renderEntitySelector()}
     `;
   }
 };
@@ -741,46 +758,12 @@ class XiaoshiHaInfoButtonEditor extends HaInfoEditorMixin(LitElement) {
     if (!this.hass) return html``;
 
     return html`
-      <div class="checkbox-group">
-        <input type="checkbox" class="checkbox-input"
-          @change=${this._entityChanged}
-          .checked=${this.config.badge_mode === true}
-          name="badge_mode" id="badge_mode"
-        />
-        <label for="badge_mode" class="checkbox-label" style="color: orange; font-weight: bold;">
-          🏷️ 角标模式（勾选后只显示图标，数量>0时显示红色角标）
-        </label>
-      </div>
 
-      <div class="checkbox-group">
-        <input type="checkbox" class="checkbox-input"
-          @change=${this._entityChanged}
-          .checked=${this.config.auto_hide === true}
-          name="auto_hide" id="auto_hide"
-        />
-        <label for="auto_hide" class="checkbox-label" style="color: orange; font-weight: bold;">
-          🚫 自动隐藏（勾选后数量为0时完全不显示）
-        </label>
-      </div>
+      ${this._renderCommonEditorFields()}
 
       <div class="form-group">
-        <label>按钮显示文本
-        <input type="text"
-          @change=${this._entityChanged}
-          .value=${this.config.button_text !== undefined ? this.config.button_text : 'HA'}
-          name="button_text" placeholder="HA"
-        /></label>
+        <label>👇👇👇下方是按钮配置项👇👇👇</label>
       </div>
-
-      <div class="form-group">
-        <label>按钮显示图标
-        <input type="text"
-          @change=${this._entityChanged}
-          .value=${this.config.button_icon !== undefined ? this.config.button_icon : './icon/homeassistant.svg'}
-          name="button_icon" placeholder="./icon/homeassistant.svg"
-        /></label>
-      </div>
-
       <div class="checkbox-group">
         <input type="checkbox" class="checkbox-input"
           @change=${this._entityChanged}
@@ -788,7 +771,7 @@ class XiaoshiHaInfoButtonEditor extends HaInfoEditorMixin(LitElement) {
           name="transparent_bg" id="transparent_bg"
         />
         <label for="transparent_bg" class="checkbox-label">
-          （平板端特性）透明背景（勾选后按钮背景透明）
+          （平板端特性）锁定透明背景（勾选后按钮背景透明）
         </label>
       </div>
 
@@ -799,93 +782,76 @@ class XiaoshiHaInfoButtonEditor extends HaInfoEditorMixin(LitElement) {
           name="lock_white_fg" id="lock_white_fg"
         />
         <label for="lock_white_fg" class="checkbox-label">
-          （平板端特性）白色图标文字（勾选后锁定显示白色）
+          （平板端特性）锁定白色字体（勾选后锁定显示白色）
         </label>
       </div>
 
-      <div class="checkbox-group">
-        <input type="checkbox" class="checkbox-input"
+      <div class="form-row">
+        <label>按钮显示文本</label>
+        <input type="text"
           @change=${this._entityChanged}
-          .checked=${this.config.hide_icon === true}
-          name="hide_icon" id="hide_icon"
-        />
-        <label for="hide_icon" class="checkbox-label">
-          （平板端特性）隐藏图标（勾选后隐藏图标）
-        </label>
-      </div>
-
-      <div class="checkbox-group">
-        <input type="checkbox" class="checkbox-input"
+          .value=${this.config.button_text !== undefined ? this.config.button_text : 'HA'}
+          name="button_text" placeholder="HA" style="width:113px"
+        /></label>
+        <label>按钮显示图标</label>
+        <input type="text"
           @change=${this._entityChanged}
-          .checked=${this.config.hide_colon === true}
-          name="hide_colon" id="hide_colon"
-        />
-        <label for="hide_colon" class="checkbox-label">
-          （平板端特性）隐藏冒号（勾选后不显示冒号，改为空格）
-        </label>
+          .value=${this.config.button_icon !== undefined ? this.config.button_icon : './icon/homeassistant.svg'}
+          name="button_icon" placeholder="./icon/homeassistant.svg" style="width:150px"
+        /></label>
       </div>
 
-      <div class="checkbox-group">
-        <input type="checkbox" class="checkbox-input"
-          @change=${this._entityChanged}
-          .checked=${this.config.hide_zero === true}
-          name="hide_zero" id="hide_zero"
-        />
-        <label for="hide_zero" class="checkbox-label">
-          （平板端特性）隐藏0值（勾选后数量为0时不显示数量）
-        </label>
-      </div>
 
-      <div class="form-group">
-        <label>按钮宽度：默认16.8vw, 支持像素(px)和百分比(%)</label>
+      <div class="form-row">
+        <label>按钮宽度</label>
         <input type="text"
           @change=${this._entityChanged}
           .value=${this.config.button_width !== undefined ? this.config.button_width : '16.8vw'}
-          name="button_width" placeholder="默认16.8vw"
+          name="button_width" placeholder="默认16.8vw" style="width:113px"
         />
-      </div>
-
-      <div class="form-group">
-        <label>按钮高度：支持像素(px)、百分比(%)和视窗高度(vh)，默认24px</label>
+        <label>按钮高度</label>
         <input type="text"
           @change=${this._entityChanged}
           .value=${this.config.button_height !== undefined ? this.config.button_height : '24px'}
-          name="button_height" placeholder="默认24px"
+          name="button_height" placeholder="默认24px" style="width:150px"
         />
       </div>
 
-      <div class="form-group">
-        <label>按钮文字大小：支持像素(px)，默认11px</label>
+      <div class="form-row">
+        <label>按钮文字大小</label>
         <input type="text"
           @change=${this._entityChanged}
           .value=${this.config.button_font_size !== undefined ? this.config.button_font_size : '11px'}
-          name="button_font_size" placeholder="默认11px"
+          name="button_font_size" placeholder="默认11px" style="width:113px"
         />
-      </div>
-
-      <div class="form-group">
-        <label>按钮图标大小：支持像素(px)，默认13px</label>
+        <label>按钮图标大小</label>
         <input type="text"
           @change=${this._entityChanged}
           .value=${this.config.button_icon_size !== undefined ? this.config.button_icon_size : '13px'}
-          name="button_icon_size" placeholder="默认13px"
+          name="button_icon_size" placeholder="默认13px" style="width:150px"
         />
       </div>
 
       <div class="form-group">
-        <label>点击动作：点击按钮时触发的动作</label>
-        <select
+        <label>👇👇👇下方是弹出的主卡配置项👇👇👇</label>
+      </div>
+      <div class="form-row">
+        <label>弹窗宽度</label>
+        <input type="text"
           @change=${this._entityChanged}
-          .value=${this.config.tap_action !== 'none' ? 'tap_action' : 'none'}
-          name="tap_action"
-        >
-          <option value="tap_action">弹出HA信息卡片（默认）</option>
-          <option value="none">无动作</option>
-        </select>
+          .value=${this.config.popup_width !== undefined ? this.config.popup_width : '100%'}
+          name="popup_width" placeholder="默认100%" style="width:113px"
+        />
+        <label>弹窗位置</label>
+        <input type="text"
+          @change=${this._entityChanged}
+          .value=${this.config.popup_top !== undefined ? this.config.popup_top : '20px'}
+          name="popup_top" placeholder="默认20px" style="width:150px"
+        />
       </div>
 
       <div class="form-group">
-        <label>👇👇👇下方弹出的卡片可增加的其他卡片👇👇👇</label>
+        <label>弹出的卡片增加的其他卡片：</label>
         <textarea
           @change=${this._entityChanged}
           .value=${this.config.other_cards || ''}
@@ -897,30 +863,6 @@ template: 测试模板(最好引用模板，否则大概率会报错)
 template: 测试模板(最好引用模板，否则大概率会报错)'
         ></textarea>
       </div>
-
-      <div class="form-group">
-        <label>👇👇👇下方是弹出的主卡配置项👇👇👇</label>
-      </div>
-
-      <div class="form-group">
-        <label>弹窗宽度：支持像素(px)、百分比(%)和auto，默认100%</label>
-        <input type="text"
-          @change=${this._entityChanged}
-          .value=${this.config.popup_width !== undefined ? this.config.popup_width : '100%'}
-          name="popup_width" placeholder="默认100%"
-        />
-      </div>
-
-      <div class="form-group">
-        <label>弹窗位置：支持百分比(%)和像素(px)，默认20px</label>
-        <input type="text"
-          @change=${this._entityChanged}
-          .value=${this.config.popup_top !== undefined ? this.config.popup_top : '20px'}
-          name="popup_top" placeholder="默认20px"
-        />
-      </div>
-
-      ${this._renderCommonEditorFields()}
     `;
   }
 
@@ -931,7 +873,7 @@ template: 测试模板(最好引用模板，否则大概率会报错)'
     if (type === 'checkbox') {
       finalValue = checked;
     } else {
-      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top' && name !== 'tap_action' && name !== 'display_mode' && name !== 'decimal_precision') return;
+      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top' && name !== 'display_mode' && name !== 'decimal_precision') return;
       finalValue = value;
     }
 
@@ -947,12 +889,6 @@ template: 测试模板(最好引用模板，否则大概率会报错)'
       finalValue = value ? value.split('\n').filter(line => line.trim()).map(line => line.trim()) : [];
     } else if (name === 'exclude_devices') {
       finalValue = value ? value.split('\n').filter(line => line.trim()).map(line => line.trim()) : [];
-    } else if (name === 'tap_action') {
-      if (value === 'tap_action') {
-        finalValue = undefined;
-      } else {
-        finalValue = value;
-      }
     }
 
     this.config = { ...this.config, [name]: finalValue };
@@ -1001,23 +937,6 @@ class XiaoshiHaInfoButton extends HaInfoBaseMixin(LitElement) {
         vertical-align: middle;
         object-fit: contain;
       }
-      .ha-info-status.badge-mode {
-        width: var(--button-width, 65px);
-        height: var(--button-height, 24px);
-        border-radius: 10px;
-        padding: 0; margin: 0;
-        display: flex; align-items: center; justify-content: center;
-      }
-      .ha-info-status.badge-mode .status-emoji { color: rgb(128, 128, 128); transition: color 0.2s; }
-      .ha-info-status.badge-mode.has-warning .status-emoji { color: rgb(255, 0, 0); }
-      .badge-number {
-        position: absolute; top: -6px; right: -6px;
-        min-width: 12px; height: 12px;
-        background: rgb(255, 0, 0); color: rgb(255, 255, 255);
-        border-radius: 50%; font-size: 8px; font-weight: bold;
-        display: flex; align-items: center; justify-content: center;
-        padding: 0; box-sizing: border-box; line-height: 1;
-      }
     `;
   }
 
@@ -1026,36 +945,33 @@ class XiaoshiHaInfoButton extends HaInfoBaseMixin(LitElement) {
   }
 
   _handleButtonClick() {
-    const tapAction = this.config.tap_action;
-    if (!tapAction || tapAction !== 'none') {
-      const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'show_preview', 'tap_action', 'popup_top', 'popup_width', 'badge_mode', 'auto_hide', 'button_text', 'button_icon', 'transparent_bg', 'lock_white_fg', 'hide_icon', 'hide_colon', 'hide_zero', 'other_cards'];
-      const cards = [];
-      const hainfoCardConfig = {};
-      Object.keys(this.config).forEach(key => {
-        if (!excludedParams.includes(key)) hainfoCardConfig[key] = this.config[key];
-      });
-      cards.push({ type: 'custom:xiaoshi-ha-info-card', ...hainfoCardConfig });
+    const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'popup_top', 'popup_width', 'button_text', 'button_icon', 'transparent_bg', 'lock_white_fg', 'other_cards'];
+    const cards = [];
+    const hainfoCardConfig = {};
+    Object.keys(this.config).forEach(key => {
+      if (!excludedParams.includes(key)) hainfoCardConfig[key] = this.config[key];
+    });
+    cards.push({ type: 'custom:xiaoshi-ha-info-card', ...hainfoCardConfig });
 
-      if (this.config.other_cards && this.config.other_cards.trim()) {
-        try {
-          const additionalCardsConfig = this._parseYamlCards(this.config.other_cards);
-          const cardsWithTheme = additionalCardsConfig.map(card => {
-            if (!card.theme && this.config.theme) return { ...card, theme: this.config.theme };
-            return card;
-          });
-          cards.push(...cardsWithTheme);
-        } catch (error) {
-          console.error('解析附加卡片配置失败:', error);
-        }
+    if (this.config.other_cards && this.config.other_cards.trim()) {
+      try {
+        const additionalCardsConfig = this._parseYamlCards(this.config.other_cards);
+        const cardsWithTheme = additionalCardsConfig.map(card => {
+          if (!card.theme && this.config.theme) return { ...card, theme: this.config.theme };
+          return card;
+        });
+        cards.push(...cardsWithTheme);
+      } catch (error) {
+        console.error('解析附加卡片配置失败:', error);
       }
-
-      const serviceData = { card: cards };
-      const popupWidth = this.config.popup_width || '95%';
-      const popupTop = this.config.popup_top || '20px';
-      if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
-      if (popupTop !== '20px') serviceData.popup_top = popupTop;
-      this.hass.callService('popup_card', 'show', serviceData);
     }
+
+    const serviceData = { card: cards };
+    const popupWidth = this.config.popup_width || '95%';
+    const popupTop = this.config.popup_top || '20px';
+    if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+    if (popupTop !== '20px') serviceData.popup_top = popupTop;
+    this.hass.callService('popup_card', 'show', serviceData);
     this._handleClick();
   }
 
@@ -1187,47 +1103,28 @@ class XiaoshiHaInfoButton extends HaInfoBaseMixin(LitElement) {
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const warningCount = this._haUpdates.length + this._otherUpdates.length + this._offlineDevices.length + this._offlineEntities.length;
 
-    const badgeMode = this.config.badge_mode === true;
     const transparentBg = this.config.transparent_bg === true;
-    const hideIcon = this.config.hide_icon === true;
-    const hideColon = this.config.hide_colon === true;
-    const hideZero = this.config.hide_zero === true;
-    const autoHide = this.config.auto_hide === true;
     const lockWhiteFg = this.config.lock_white_fg === true;
     const buttonText = this.config.button_text || 'HA';
     const buttonIcon = this.config.button_icon || '/xiaoshi/xiaoshi-card/icon/homeassistant.svg';
     const buttonBgColor = transparentBg ? 'transparent' : theme === 'light' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
 
-    if (autoHide && warningCount === 0) return html`<div></div>`;
-
-    if (badgeMode) {
-      const hasWarning = warningCount > 0;
-      return html`
-        <div class="ha-info-status badge-mode ${hasWarning ? 'has-warning' : ''}" style="--bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
-          <span class="status-emoji">${buttonIcon.startsWith('./') || buttonIcon.startsWith('/') || buttonIcon.startsWith('http') ? html`<img src="${buttonIcon}" />` : buttonIcon}</span>
-          ${hasWarning ? html`<div class="badge-number">${warningCount}</div>` : ''}
-        </div>
-      `;
+    let textColor, iconColor;
+    if (warningCount === 0) {
+      textColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
+      iconColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
     } else {
-      let textColor, iconColor;
-      if (warningCount === 0) {
-        textColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
-        iconColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
-      } else {
-        textColor = 'rgb(255, 0, 0)';
-        iconColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
-      }
-      let displayText = buttonText;
-      displayText += hideColon ? ' ' : ':';
-      displayText += (hideZero && warningCount === 0) ? '\u2002' : ` ${warningCount}`;
-
-      return html`
-        <div class="ha-info-status" style="--fg-color: ${textColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
-          ${!hideIcon ? html`<span class="status-emoji" style="color: ${iconColor};">${buttonIcon.startsWith('./') || buttonIcon.startsWith('/') || buttonIcon.startsWith('http') ? html`<img src="${buttonIcon}" />` : buttonIcon}</span>` : ''}
-          ${displayText}
-        </div>
-      `;
+      textColor = 'rgb(255, 0, 0)';
+      iconColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
     }
+    let displayText = buttonText + ':' + ` ${warningCount}`;
+
+    return html`
+      <div class="ha-info-status" style="--fg-color: ${textColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
+        <span class="status-emoji" style="color: ${iconColor};">${buttonIcon.startsWith('./') || buttonIcon.startsWith('/') || buttonIcon.startsWith('http') ? html`<img src="${buttonIcon}" />` : buttonIcon}</span>
+        ${displayText}
+      </div>
+    `;
   }
 
   setConfig(config) {

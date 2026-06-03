@@ -1052,20 +1052,6 @@ class XiaoshiPetroChinaButtonEditor extends PetroChinaEditorMixin(LitElement) {
           </textarea>
         </div>
 
-        <div class="checkbox-group">
-          <input
-            type="checkbox"
-            class="checkbox-input"
-            @change=${this._entityChanged}
-            .checked=${this.config.no_preview === true}
-            name="no_preview"
-            id="no_preview"
-          />
-          <label for="no_preview" class="checkbox-label" style="color: red;">
-            📻显示预览📻（ 请先勾选测试显示效果 ）
-          </label>
-        </div>
-
         <div class="form-group">
           <label> </label>
           <label>👇👇👇下方是弹出的主卡配置项👇👇👇</label>
@@ -1227,11 +1213,11 @@ class XiaoshiPetroChinaButton extends PetroChinaBaseMixin(LitElement) {
   _handleButtonClick() {
     const tapAction = this.config.tap_action;
     if (!tapAction || tapAction !== 'none') {
-      const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'show_preview', 'tap_action', 'popup_top', 'popup_width'];
+      const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'popup_top', 'popup_width'];
       const cards = [];
       const balanceCardConfig = {};
       Object.keys(this.config).forEach(key => {
-        if (!excludedParams.includes(key) && key !== 'other_cards' && key !== 'no_preview') {
+        if (!excludedParams.includes(key) && key !== 'other_cards') {
           balanceCardConfig[key] = this.config[key];
         }
       });
@@ -1397,7 +1383,6 @@ class XiaoshiPetroChinaButton extends PetroChinaBaseMixin(LitElement) {
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
 
-    const showPreview = this.config.no_preview === true;
     const transparentBg = this.config.transparent_bg === true;
     const hideIcon = this.config.hide_icon === true;
     const lockWhiteFg = this.config.lock_white_fg === true;
@@ -1471,87 +1456,6 @@ class XiaoshiPetroChinaButton extends PetroChinaBaseMixin(LitElement) {
 
     return html`
       ${buttonHtml}
-      ${showPreview ? html`
-      <div class="form-group">
-        <label>👇👇👇下面是弹出卡片内容👇👇👇</label>
-      </div>
-
-      <ha-card style="--fg-color: ${fgColor}; --bg-color: ${bgColor};">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="offline-indicator" style="background: rgb(255,165,0); animation: pulse 2s infinite"></span>
-            中国油价信息
-          </div>
-        </div>
-        <div class="devices-list">
-          ${this._loading ?
-            html`<div class="loading">加载中...</div>` :
-            this._oilPriceData.length === 0 ?
-              html`<div class="no-devices">请配置油价实体</div>` :
-              html`
-                ${this._oilPriceData.map(oilData => html`
-                  <div class="section-divider">
-                    <div class="section-title">
-                      <span>${oilData.province}：<span style="color: ${this._getPriceColor(oilData.expected_adjustment)}">${oilData.expected_adjustment}</span></span>
-                    </div>
-                  </div>
-                  <div class="device-item" @click=${() => this._handleEntityClick(oilData)}>
-                    <div class="device-info">
-                      <div class="device-details" style="margin-bottom: 8px;">
-                        当前油价：<ha-icon icon="mdi:gas-station"></ha-icon> 92#: ¥${oilData.gasoline92}&emsp;<ha-icon icon="mdi:gas-station"></ha-icon> 95#: ¥${oilData.gasoline95}&emsp;<ha-icon icon="mdi:gas-station"></ha-icon> 98#: ¥${oilData.gasoline98}&emsp;<ha-icon icon="mdi:gas-station"></ha-icon> 柴油: ¥${oilData.diesel}
-                      </div>
-                      ${oilData.current_adjustment_time ? html`
-                      <div class="device-details" style="margin-bottom: 2px;">
-                        本轮油价： ${oilData.current_adjustment_time}
-                      </div>
-                      ${oilData.current_adjustment_price ? html`
-                        ${oilData.current_adjustment_price.split(',').map(price => html`
-                        <div class="device-details" style="margin-bottom: 2px;">
-                          　　　${price.trim()}
-                        </div>
-                        `)}
-                      ` : ''}
-                      ` : ''}
-                      <div class="device-details" style="margin-bottom: 2px;">
-                        下轮油价： ${oilData.next_adjustment_time}
-                      </div>
-                      ${oilData.next_adjustment_price ? html`
-                        ${oilData.next_adjustment_price.split(',').map(price => html`
-                        <div class="device-details" style="margin-bottom: 2px;">
-                          　　　${price.trim()}
-                        </div>
-                        `)}
-                      ` : ''}
-                    </div>
-                  </div>
-                  ${oilData.全国油价排序 && this.config.show_province_rank !== false ? html`
-                  <div class="section-divider" style="margin-top: 16px;">
-                    <div class="section-title">
-                      <span>🏆 油价省份排名（价格由低到高，92#与95#均价排行）</span>
-                    </div>
-                  </div>
-                  <div class="device-item">
-                    <div class="device-info">
-                      ${oilData.全国油价排序.slice(0, 5).map((item, index) => html`
-                        <div class="device-details" style="margin-bottom: 4px;">
-                          <span style="display: inline-block; width: 60px; color: ${index < 3 ? '#FFD700' : 'inherit'}; font-weight: bold;">${index + 1}.${item.省份}</span><span style="display: inline-block; width: 75px;">92#: ¥${item['92#汽油']}</span><span style="display: inline-block; width: 75px;">95#: ¥${item['95#汽油']}</span><span style="display: inline-block; width: 75px;">柴油: ¥${item['00#柴油']}</span>
-                        </div>
-                      `)}
-                      <div class="device-details" style="margin-bottom: 4px; color: #888;">......</div>
-                      ${oilData.全国油价排序.slice(-5).map((item, index) => html`
-                        <div class="device-details" style="margin-bottom: 4px;">
-                          <span style="display: inline-block; width: 60px; font-weight: bold;">${oilData.全国油价排序.length - 4 + index}.${item.省份}</span><span style="display: inline-block; width: 75px;">92#: ¥${item['92#汽油']}</span><span style="display: inline-block; width: 75px;">95#: ¥${item['95#汽油']}</span><span style="display: inline-block; width: 75px;">柴油: ¥${item['00#柴油']}</span>
-                        </div>
-                      `)}
-                    </div>
-                  </div>
-                  ` : ''}
-                `)}
-              `
-          }
-        </div>
-      </ha-card>
-      ` : html``}
     `;
   }
 

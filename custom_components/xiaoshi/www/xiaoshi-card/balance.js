@@ -1159,17 +1159,6 @@ class XiaoshiBalanceButtonEditor extends BalanceEditorMixin(LitElement) {
           </label>
         </div>
 
-        <div class="checkbox-group">
-          <input type="checkbox" class="checkbox-input"
-            @change=${this._entityChanged}
-            .checked=${this.config.hide_icon === true}
-            name="hide_icon" id="hide_icon"
-          />
-          <label for="hide_icon" class="checkbox-label">
-            （平板端特性）隐藏图标（勾选后隐藏图标）
-          </label>
-        </div>
-
         <div class="form-group">
           <label>按钮宽度：默认16.8vw, 支持像素(px)和百分比(%)</label>
           <input
@@ -1212,18 +1201,6 @@ class XiaoshiBalanceButtonEditor extends BalanceEditorMixin(LitElement) {
             name="button_icon_size"
             placeholder="默认13px"
           />
-        </div>
-
-        <div class="form-group">
-          <label>点击动作：点击按钮时触发的动作</label>
-          <select
-            @change=${this._entityChanged}
-            .value=${this.config.tap_action !== 'none' ? 'tap_action' : 'none'}
-            name="tap_action"
-          >
-            <option value="tap_action">弹出余额信息卡片（默认）</option>
-            <option value="none">无动作</option>
-          </select>
         </div>
 
         <div class="form-group">
@@ -1347,7 +1324,7 @@ template: 测试模板(最好引用模板，否则大概率会报错)'
     if (type === 'checkbox') {
       finalValue = checked;
     } else {
-      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top' && name !== 'tap_action' && name !== 'display_mode' && name !== 'decimal_precision') return;
+      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top' && name !== 'display_mode' && name !== 'decimal_precision') return;
       finalValue = value;
     }
     if (name === 'button_width') {
@@ -1372,12 +1349,6 @@ template: 测试模板(最好引用模板，否则大概率会报错)'
       }
     } else if (name === 'decimal_precision') {
       finalValue = value !== undefined ? parseInt(value) : 1;
-    } else if (name === 'tap_action') {
-      if (value === 'tap_action') {
-        finalValue = undefined;
-      } else {
-        finalValue = value;
-      }
     }
     this.config = { ...this.config, [name]: finalValue };
     this._fireConfigChanged();
@@ -1438,41 +1409,38 @@ class XiaoshiBalanceButton extends BalanceBaseMixin(LitElement) {
   }
 
   _handleButtonClick() {
-    const tapAction = this.config.tap_action;
-    if (!tapAction || tapAction !== 'none') {
-      const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'tap_action', 'popup_top', 'popup_width', 'display_mode', 'decimal_precision', 'specific_entity_id', 'button_icon', 'transparent_bg', 'lock_white_fg', 'hide_icon', 'other_cards'];
-      const cards = [];
-      const balanceCardConfig = {};
-      Object.keys(this.config).forEach(key => {
-        if (!excludedParams.includes(key)) {
-          balanceCardConfig[key] = this.config[key];
-        }
-      });
-      cards.push({
-        type: 'custom:xiaoshi-balance-card',
-        ...balanceCardConfig
-      });
-      if (this.config.other_cards && this.config.other_cards.trim()) {
-        try {
-          const additionalCardsConfig = this._parseYamlCards(this.config.other_cards);
-          const cardsWithTheme = additionalCardsConfig.map(card => {
-            if (!card.theme && this.config.theme) {
-              return { ...card, theme: this.config.theme };
-            }
-            return card;
-          });
-          cards.push(...cardsWithTheme);
-        } catch (error) {
-          console.error('解析附加卡片配置失败:', error);
-        }
+    const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'popup_top', 'popup_width', 'display_mode', 'decimal_precision', 'specific_entity_id', 'button_icon', 'transparent_bg', 'lock_white_fg', 'other_cards'];
+    const cards = [];
+    const balanceCardConfig = {};
+    Object.keys(this.config).forEach(key => {
+      if (!excludedParams.includes(key)) {
+        balanceCardConfig[key] = this.config[key];
       }
-      const serviceData = { card: cards };
-      const popupWidth = this.config.popup_width || '95%';
-      const popupTop = this.config.popup_top || '20px';
-      if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
-      if (popupTop !== '20px') serviceData.popup_top = popupTop;
-      this.hass.callService('popup_card', 'show', serviceData);
+    });
+    cards.push({
+      type: 'custom:xiaoshi-balance-card',
+      ...balanceCardConfig
+    });
+    if (this.config.other_cards && this.config.other_cards.trim()) {
+      try {
+        const additionalCardsConfig = this._parseYamlCards(this.config.other_cards);
+        const cardsWithTheme = additionalCardsConfig.map(card => {
+          if (!card.theme && this.config.theme) {
+            return { ...card, theme: this.config.theme };
+          }
+          return card;
+        });
+        cards.push(...cardsWithTheme);
+      } catch (error) {
+        console.error('解析附加卡片配置失败:', error);
+      }
     }
+    const serviceData = { card: cards };
+    const popupWidth = this.config.popup_width || '95%';
+    const popupTop = this.config.popup_top || '20px';
+    if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+    if (popupTop !== '20px') serviceData.popup_top = popupTop;
+    this.hass.callService('popup_card', 'show', serviceData);
     this._handleClick();
   }
 
@@ -1608,7 +1576,6 @@ class XiaoshiBalanceButton extends BalanceBaseMixin(LitElement) {
     const theme = this._evaluateTheme();
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const transparentBg = this.config.transparent_bg === true;
-    const hideIcon = this.config.hide_icon === true;
     const lockWhiteFg = this.config.lock_white_fg === true;
     const buttonIcon = this.config.button_icon || '📱';
     const buttonBgColor = transparentBg ? 'transparent' : theme === 'light' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
@@ -1684,7 +1651,7 @@ class XiaoshiBalanceButton extends BalanceBaseMixin(LitElement) {
 
     return html`
       <div class="balance-status" style="--fg-color: ${numberColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
-      ${!hideIcon ? html`<span class="status-emoji" style="color: ${iconColor};">${buttonIcon}</span>` : ''}
+      <span class="status-emoji" style="color: ${iconColor};">${buttonIcon}</span>
         <span style="color: ${numberColor};">${displayText}</span>
       </div>
     `;

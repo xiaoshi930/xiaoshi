@@ -275,6 +275,20 @@ const editorCommonStyles = css`
   .remove-btn:hover {
     color: #f44336;
   }
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+  }
+  .checkbox-input {
+    margin: 0;
+  }
+  .checkbox-label {
+    font-weight: normal;
+    margin: 0;
+  }
 `;
 
 const cardCommonStyles = css`
@@ -335,7 +349,7 @@ const cardCommonStyles = css`
     background: rgb(2, 250, 250, 0.5);
   }
   .device-count.zero {
-    background: rgb(0, 205, 0);
+    background: rgb(250, 20, 0);
   }
   .refresh-btn {
     color: var(--fg-color, #fff);
@@ -871,6 +885,31 @@ const ConsumablesBaseMixin = (superClass) => class extends superClass {
     }
     return false;
   }
+
+  _handleEntityClick(entity) {
+    this._handleClick();
+    if (entity.entity_id) {
+      const evt = new Event('hass-more-info', { composed: true });
+      evt.detail = { entityId: entity.entity_id };
+      this.dispatchEvent(evt);
+    }
+  }
+
+  _renderDeviceItem(consumablesData) {
+    const isWarning = this._isWarning(consumablesData);
+    return html`
+      <div class="device-item" @click=${() => this._handleEntityClick(consumablesData)}>
+        <div class="device-left">
+          <ha-icon class="device-icon" icon="${consumablesData.icon}"></ha-icon>
+          <div class="device-name">${consumablesData.friendly_name}</div>
+        </div>
+        <div class="device-value ${isWarning ? 'warning' : ''}">
+          ${consumablesData.value}
+          <span class="device-unit ${isWarning ? 'warning' : ''}">${consumablesData.unit}</span>
+        </div>
+      </div>
+    `;
+  }
 };
 
 // ==================== 消逝耗材卡编辑器 ====================
@@ -1030,31 +1069,6 @@ class XiaoshiConsumablesCard extends ConsumablesBaseMixin(LitElement) {
     this._loadOilPriceData();
   }
 
-  _handleEntityClick(entity) {
-    this._handleClick();
-    if (entity.entity_id) {
-      const evt = new Event('hass-more-info', { composed: true });
-      evt.detail = { entityId: entity.entity_id };
-      this.dispatchEvent(evt);
-    }
-  }
-
-  _renderDeviceItem(consumablesData) {
-    const isWarning = this._isWarning(consumablesData);
-    return html`
-      <div class="device-item" @click=${() => this._handleEntityClick(consumablesData)}>
-        <div class="device-left">
-          <ha-icon class="device-icon" icon="${consumablesData.icon}"></ha-icon>
-          <div class="device-name">${consumablesData.friendly_name}</div>
-        </div>
-        <div class="device-value ${isWarning ? 'warning' : ''}">
-          ${consumablesData.value}
-          <span class="device-unit ${isWarning ? 'warning' : ''}">${consumablesData.unit}</span>
-        </div>
-      </div>
-    `;
-  }
-
   render() {
     if (!this.hass) {
       return html`<div class="loading">等待Home Assistant连接...</div>`;
@@ -1071,7 +1085,7 @@ class XiaoshiConsumablesCard extends ConsumablesBaseMixin(LitElement) {
             <span class="offline-indicator" style="background: ${warningCount === 0 ? 'rgb(0,255,0)' : 'rgb(255,0,0)'}; animation: pulse 2s infinite"></span>
             ${this.config.name || '耗材信息统计'}
           </div>
-          <div class="device-count ${warningCount > 0 ? 'non-zero' : 'zero'}">
+          <div class="device-count ${warningCount > 0 ? 'zero' : 'non-zero'}">
             ${warningCount}
           </div>
         </div>
@@ -1252,13 +1266,24 @@ class XiaoshiConsumablesButtonEditor extends ConsumablesEditorMixin(LitElement) 
         </div>
 
         <div class="form-group">
+          <label>按钮显示文本
+          <input
+            type="text"
+            @change=${this._entityChanged}
+            .value=${this.config.button_text !== undefined ? this.config.button_text : '耗材'}
+            name="button_text"
+            placeholder="耗材"
+          /></label>
+        </div>
+
+        <div class="form-group">
           <label>按钮显示图标
           <input
             type="text"
             @change=${this._entityChanged}
-            .value=${this.config.button_icon !== undefined ? this.config.button_icon : '🧴'}
+            .value=${this.config.button_icon !== undefined ? this.config.button_icon : '🔋'}
             name="button_icon"
-            placeholder="🧴"
+            placeholder="🔋"
           /></label>
         </div>
 
@@ -1281,17 +1306,6 @@ class XiaoshiConsumablesButtonEditor extends ConsumablesEditorMixin(LitElement) 
           />
           <label for="lock_white_fg" class="checkbox-label">
             （平板端特性）白色图标文字（勾选后锁定显示白色）
-          </label>
-        </div>
-
-        <div class="checkbox-group">
-          <input type="checkbox" class="checkbox-input"
-            @change=${this._entityChanged}
-            .checked=${this.config.hide_icon === true}
-            name="hide_icon" id="hide_icon"
-          />
-          <label for="hide_icon" class="checkbox-label">
-            （平板端特性）隐藏图标（勾选后隐藏图标）
           </label>
         </div>
 
@@ -1337,18 +1351,6 @@ class XiaoshiConsumablesButtonEditor extends ConsumablesEditorMixin(LitElement) 
             name="button_icon_size"
             placeholder="默认13px"
           />
-        </div>
-
-        <div class="form-group">
-          <label>点击动作：点击按钮时触发的动作</label>
-          <select
-            @change=${this._entityChanged}
-            .value=${this.config.tap_action !== 'none' ? 'tap_action' : 'none'}
-            name="tap_action"
-          >
-            <option value="tap_action">弹出耗材信息卡片（默认）</option>
-            <option value="none">无动作</option>
-          </select>
         </div>
 
         <div class="form-group">
@@ -1472,7 +1474,7 @@ template: 测试模板(最好引用模板，否则大概率会报错)'
     if (type === 'checkbox') {
       finalValue = checked;
     } else {
-      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top' && name !== 'tap_action' && name !== 'display_mode' && name !== 'decimal_precision') return;
+      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top' && name !== 'display_mode' && name !== 'decimal_precision' && name !== 'button_text') return;
       finalValue = value;
     }
     if (name === 'button_width') {
@@ -1497,12 +1499,6 @@ template: 测试模板(最好引用模板，否则大概率会报错)'
       }
     } else if (name === 'decimal_precision') {
       finalValue = value !== undefined ? parseInt(value) : 1;
-    } else if (name === 'tap_action') {
-      if (value === 'tap_action') {
-        finalValue = undefined;
-      } else {
-        finalValue = value;
-      }
     }
     this.config = { ...this.config, [name]: finalValue };
     this._fireConfigChanged();
@@ -1525,7 +1521,7 @@ class XiaoshiConsumablesButton extends ConsumablesBaseMixin(LitElement) {
   }
 
   static get styles() {
-    return css`
+    return [cardCommonStyles, css`
       :host {
         display: block;
         width: var(--card-width, 100%);
@@ -1556,49 +1552,80 @@ class XiaoshiConsumablesButton extends ConsumablesBaseMixin(LitElement) {
         color: var(--fg-color, #000);
         margin-right: 3px;
       }
-    `;
+    `];
+  }
+
+  constructor() {
+    super();
+    this._popupOverlay = null;
+    this._popupElement = null;
+    this._popupCardElement = null;
+    this._popupEscHandler = null;
+    this._popupHassUnsubscribe = null;
+    this._popupUpdatePending = false;
+    this._popupHass = null;
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._closePopup();
   }
 
   static getConfigElement() {
     return document.createElement("xiaoshi-consumables-button-editor");
   }
 
-  _handleButtonClick() {
-    const tapAction = this.config.tap_action;
-    if (!tapAction || tapAction !== 'none') {
-      const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'tap_action', 'popup_top', 'popup_width', 'display_mode', 'decimal_precision', 'specific_entity_id', 'button_icon', 'transparent_bg', 'lock_white_fg', 'hide_icon', 'other_cards'];
-      const cards = [];
-      const consumablesCardConfig = {};
-      Object.keys(this.config).forEach(key => {
-        if (!excludedParams.includes(key)) {
-          consumablesCardConfig[key] = this.config[key];
-        }
-      });
-      cards.push({
-        type: 'custom:xiaoshi-consumables-card',
-        ...consumablesCardConfig
-      });
-      if (this.config.other_cards && this.config.other_cards.trim()) {
-        try {
-          const additionalCardsConfig = this._parseYamlCards(this.config.other_cards);
-          const cardsWithTheme = additionalCardsConfig.map(card => {
-            if (!card.theme && this.config.theme) {
-              return { ...card, theme: this.config.theme };
-            }
-            return card;
-          });
-          cards.push(...cardsWithTheme);
-        } catch (error) {
-          console.error('解析附加卡片配置失败:', error);
-        }
+  static _injectPopupStyles() {
+    if (XiaoshiConsumablesButton._stylesInjected) return;
+    XiaoshiConsumablesButton._stylesInjected = true;
+    const style = document.createElement('style');
+    style.id = 'xiaoshi-button-popup-style';
+    style.textContent = `
+      @keyframes xiaoshiButtonPopupIn {
+        from { opacity: 0; scale: 0.95; }
+        to   { opacity: 1; scale: 1; }
       }
-      const serviceData = { card: cards };
-      const popupWidth = this.config.popup_width || '95%';
-      const popupTop = this.config.popup_top || '20px';
-      if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
-      if (popupTop !== '20px') serviceData.popup_top = popupTop;
-      this.hass.callService('popup_card', 'show', serviceData);
+    `;
+    document.head.appendChild(style);
+  }
+
+  _handleButtonClick() {
+    const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'popup_top', 'popup_width', 'display_mode', 'decimal_precision', 'specific_entity_id', 'button_icon', 'button_text', 'transparent_bg', 'lock_white_fg', 'other_cards'];
+    
+    const cards = [];
+    const consumablesCardConfig = {};
+    Object.keys(this.config).forEach(key => {
+      if (!excludedParams.includes(key)) {
+        consumablesCardConfig[key] = this.config[key];
+      }
+    });
+    
+    cards.push({
+      type: 'custom:xiaoshi-consumables-card',
+      ...consumablesCardConfig
+    });
+    
+    if (this.config.other_cards && this.config.other_cards.trim()) {
+      try {
+        const additionalCardsConfig = this._parseYamlCards(this.config.other_cards);
+        const cardsWithTheme = additionalCardsConfig.map(card => {
+          if (!card.theme && this.config.theme) {
+            return { ...card, theme: this.config.theme };
+          }
+          return card;
+        });
+        cards.push(...cardsWithTheme);
+      } catch (error) {
+        console.error('解析附加卡片配置失败:', error);
+      }
     }
+    
+    const popupContent = {
+      type: 'vertical-stack',
+      cards: cards
+    };
+    
+    this._showNativePopup(popupContent);
     this._handleClick();
   }
 
@@ -1727,19 +1754,172 @@ class XiaoshiConsumablesButton extends ConsumablesBaseMixin(LitElement) {
     current[keys[keys.length - 1]] = value;
   }
 
+  _showNativePopup(popupContent) {
+    this.constructor._injectPopupStyles();
+
+    const haRoot = document.querySelector('home-assistant');
+    const hassObj = haRoot?.hass || haRoot?.shadowRoot?.querySelector('home-assistant-main')?.hass;
+    if (!hassObj) {
+      console.error('[XiaoshiConsumablesButton] 无法获取 hass 对象');
+      return;
+    }
+
+    if (this._popupOverlay) {
+      this._closePopup();
+    }
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      pointer-events: auto;
+    `;
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) this._closePopup();
+    });
+
+    const popupTop = this.config.popup_top || '20px';
+    const popupWidth = this.config.popup_width || '95%';
+    const popupTransform = popupTop === '50%' ? 'translate(-50%, -50%)' : 'translateX(-50%)';
+
+    const popup = document.createElement('div');
+    popup.style.cssText = `
+      position: fixed;
+      top: ${popupTop}; left: 50%;
+      transform: ${popupTransform};
+      z-index: 1005;
+      background: transparent;
+      padding: 0;
+      width: ${popupWidth};
+      max-width: 100vw;
+      max-height: 100vh;
+      overflow: hidden;
+      box-sizing: border-box;
+      animation: xiaoshiButtonPopupIn 0.2s ease-out;
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(popup);
+
+    this._popupOverlay = overlay;
+    this._popupElement = popup;
+
+    this._createPopupCard(popup, popupContent, hassObj);
+
+    this._popupEscHandler = (e) => {
+      if (e.key === 'Escape') this._closePopup();
+    };
+    window.addEventListener('keydown', this._popupEscHandler);
+  }
+
+  async _createPopupCard(container, cardConfig, hassObj) {
+    try {
+      const helpers = await window.loadCardHelpers?.();
+      if (helpers) {
+        const cardElement = await helpers.createCardElement(cardConfig);
+        cardElement.hass = hassObj;
+        container.appendChild(cardElement);
+        this._popupCardElement = cardElement;
+        this._startPopupHassWatcher(hassObj);
+      } else {
+        container.innerHTML = '<div style="color:red;padding:20px;">loadCardHelpers 不可用</div>';
+      }
+    } catch (err) {
+      console.error('[XiaoshiConsumablesButton] 创建弹窗卡片失败:', err);
+      container.innerHTML = `<div style="color:red;padding:20px;">加载失败: ${err.message}</div>`;
+    }
+  }
+
+  _closePopup() {
+    if (this._popupOverlay) {
+      this._popupOverlay.remove();
+      this._popupOverlay = null;
+    }
+    if (this._popupElement) {
+      this._popupElement.remove();
+      this._popupElement = null;
+    }
+    this._popupCardElement = null;
+    if (this._popupEscHandler) {
+      window.removeEventListener('keydown', this._popupEscHandler);
+      this._popupEscHandler = null;
+    }
+    if (this._popupHassUnsubscribe) {
+      this._popupHassUnsubscribe();
+      this._popupHassUnsubscribe = null;
+    }
+    this._popupUpdatePending = false;
+    this._popupHass = null;
+  }
+
+  _startPopupHassWatcher(hassObj) {
+    if (this._popupHassUnsubscribe) return;
+    this._popupHass = hassObj;
+    if (!hassObj || !hassObj.connection) {
+      setTimeout(() => this._startPopupHassWatcher(hassObj), 500);
+      return;
+    }
+    try {
+      hassObj.connection.subscribeMessage(
+        () => {
+          if (!this._popupCardElement) return;
+          this._schedulePopupUpdate();
+        },
+        { type: 'subscribe_events', event_type: 'state_changed' }
+      ).then((unsub) => {
+        this._popupHassUnsubscribe = unsub;
+      });
+    } catch (err) {
+      console.error('[XiaoshiConsumablesButton] 订阅状态变化失败:', err);
+    }
+  }
+
+  _schedulePopupUpdate() {
+    if (this._popupUpdatePending) return;
+    this._popupUpdatePending = true;
+    requestAnimationFrame(() => {
+      this._popupUpdatePending = false;
+      if (!this._popupCardElement) return;
+      const haRoot = document.querySelector('home-assistant');
+      const newHass = haRoot?.hass || haRoot?.shadowRoot?.querySelector('home-assistant-main')?.hass;
+      if (!newHass) return;
+      if (newHass === this._popupHass) return;
+      this._popupHass = newHass;
+      this._updatePopupCard();
+    });
+  }
+
+  _updatePopupCard() {
+    if (this._popupCardElement && this._popupHass) {
+      try {
+        this._popupCardElement.hass = this._popupHass;
+      } catch (err) {
+        console.warn('[XiaoshiConsumablesButton] 弹窗卡片更新失败:', err.message);
+      }
+    }
+  }
+
   render() {
     if (!this.hass) {
       return html`<div></div>`;
     }
     const theme = this._evaluateTheme();
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
     const transparentBg = this.config.transparent_bg === true;
-    const hideIcon = this.config.hide_icon === true;
     const lockWhiteFg = this.config.lock_white_fg === true;
-    const buttonIcon = this.config.button_icon || '🧴';
+    const buttonIcon = this.config.button_icon || '🔋';
+    const buttonText = this.config.button_text || '耗材';
     const buttonBgColor = transparentBg ? 'transparent' : theme === 'light' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
     const displayMode = this.config.display_mode || 'min_value';
     const decimalPrecision = this.config.decimal_precision !== undefined ? parseInt(this.config.decimal_precision) : 1;
+
+    // 计算预警数量
+    const warningCount = this._oilPriceData.filter(d => this._isWarning(d)).length;
 
     let displayValue = null;
     let displayUnit = '';
@@ -1797,11 +1977,17 @@ class XiaoshiConsumablesButton extends ConsumablesBaseMixin(LitElement) {
       formattedDisplayValue = displayValue;
     }
 
-    const displayText = formattedDisplayValue !== null && displayUnit ? `${formattedDisplayValue}${displayUnit}` : formattedDisplayValue;
     const warningColor = this.config.warning_color || 'rgb(255, 0, 0)';
 
+    // 渲染按钮
+    let buttonHtml;
+    const displayValueText = formattedDisplayValue !== null && displayUnit ? `${formattedDisplayValue}${displayUnit}` : formattedDisplayValue;
     let numberColor, iconColor;
-    if (isWarning) {
+    if (warningCount > 0) {
+      // 预警数量>0时，文字变红
+      numberColor = warningColor;
+      iconColor = warningColor;
+    } else if (isWarning) {
       numberColor = warningColor;
       iconColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
     } else {
@@ -1809,11 +1995,18 @@ class XiaoshiConsumablesButton extends ConsumablesBaseMixin(LitElement) {
       iconColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
     }
 
-    return html`
+    // 构建显示文本
+    let textContent = buttonText + ':' + ` ${warningCount}`;
+
+    buttonHtml = html`
       <div class="balance-status" style="--fg-color: ${numberColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
-      ${!hideIcon ? html`<span class="status-emoji" style="color: ${iconColor};">${buttonIcon}</span>` : ''}
-        <span style="color: ${numberColor};">${displayText}</span>
+        <span class="status-emoji" style="color: ${iconColor};">${buttonIcon}</span>
+        <span style="color: ${numberColor};">${textContent}</span>
       </div>
+    `;
+
+    return html`
+      ${buttonHtml}
     `;
   }
 
