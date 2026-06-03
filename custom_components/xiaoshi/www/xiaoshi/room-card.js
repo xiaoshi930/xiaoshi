@@ -11,18 +11,33 @@ window.customCards.push({
 const PRESET_ON_STATES = [
     // 通用
     'on', 'open', 'opening','home',  'active', 'running',
-    'detected', 'occupied', 'locked', 'unlocked', 
+    'detected', 'occupied', 'unlocked', 
     // 媒体
     'Playing','playing', '播放中',
     // 空调/HVAC
     'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
-    'auto', 'heat_cool', 'heat_cool', 'fan_only',
+    'auto', 'heat_cool', 'fan_only',
     // 人在
     '有人', '2～5分钟无人移动',
     // 扫地机器人
     '正在拖地','正在扫地','启动','cleaning',
     // 厨房
     '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm'
+];
+const PRESET_OFF_STATES = [
+    // 通用
+    'off', 'closed', 'closing', 'not_home', 'unavailable', 'unknown', 'idle', 'standby',
+    'unlocked',
+    // 人在
+    '无人',
+    // 媒体
+    'Paused', 'paused', '停止',
+    // 空调/HVAC
+    'off',
+    // 扫地机器人
+    'docked', 'charging', 'error', 'returning',
+    // 厨房
+    'Idle', 'Shut Off'
 ];
 
 class XiaoshiRoomCardEditor extends LitElement {
@@ -622,6 +637,14 @@ class XiaoshiRoomCardEditor extends LitElement {
                 </div>
 
                 <div class="form-row">
+                    <label>设备布局</label>
+                    <select name="device_layout" @change="${this._valueChanged}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
+                        <option value="top_right" .selected="${!c.device_layout || c.device_layout === 'top_right'}">右上布局</option>
+                        <option value="bottom_right" .selected="${c.device_layout === 'bottom_right'}">右下布局</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
                     <label>开启动画</label>
                     <select name="active_animation" @change="${this._valueChanged}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
                         <option value="true" .selected="${c.active_animation !== 'false'}">是</option>
@@ -1017,11 +1040,19 @@ class XiaoshiRoomCard extends LitElement {
         if (!device || !this.hass) return 0;
         const entities = device.entities || (device.entity ? [device.entity] : []);
         const conditions = this._getDeviceConditions(device);
+        const offStates = PRESET_OFF_STATES.map(s => s.toLowerCase());
         let count = 0;
         for (const eid of entities) {
             const state = this.hass.states[eid];
-            if (state && conditions.includes(state.state.toLowerCase())) {
-                count++;
+            if (state) {
+                const stateLower = state.state.toLowerCase();
+                // PRESET_OFF_STATES 优先排除：模糊匹配到OFF条件则不计入开启
+                if (offStates.some(c => stateLower.includes(c) || c.includes(stateLower))) {
+                    continue;
+                }
+                if (conditions.includes(stateLower)) {
+                    count++;
+                }
             }
         }
         return count;
@@ -1157,26 +1188,34 @@ class XiaoshiRoomCard extends LitElement {
         } else {
             personConditions = PRESET_ON_STATES.map(s => s.toLowerCase());
         }
-        const isHome = personState && personConditions.some(c => personState.toLowerCase().includes(c) || c.includes(personState.toLowerCase()));
+        // PRESET_OFF_STATES 优先排除（模糊匹配）
+        const presetOffStates = PRESET_OFF_STATES.map(s => s.toLowerCase());
+        const isPersonOff = personState && presetOffStates.some(c => personState.toLowerCase().includes(c) || c.includes(personState.toLowerCase()));
+        const isHome = !isPersonOff && personState && personConditions.some(c => personState.toLowerCase().includes(c) || c.includes(personState.toLowerCase()));
 
         // 构建传感器列表（温度、湿度、pm2.5 按顺序，有实体才显示）
         const sensorItems = [];
+        const _formatSensorVal = (rawState) => {
+            if (rawState === 'unknown') return '未知';
+            if (rawState === 'unavailable') return '离线';
+            return rawState;
+        };
         if (tempEntity) {
             const st = this._getSensorValue(tempEntity);
-            const val = st ? st.state : '--';
-            const unit = st ? (st.attributes.unit_of_measurement || '°C') : '°C';
+            const val = st ? _formatSensorVal(st.state) : '--';
+            const unit = (st && st.state !== 'unknown' && st.state !== 'unavailable') ? (st.attributes.unit_of_measurement || '°C') : '';
             sensorItems.push({ icon: this.config.temperature_icon || 'mdi:thermometer', value: val, unit, color: this.config.temperature_color || '#d44e4e', popup: this.config.temperature_popup || null });
         }
         if (humiEntity) {
             const st = this._getSensorValue(humiEntity);
-            const val = st ? st.state : '--';
-            const unit = st ? (st.attributes.unit_of_measurement || '%') : '%';
+            const val = st ? _formatSensorVal(st.state) : '--';
+            const unit = (st && st.state !== 'unknown' && st.state !== 'unavailable') ? (st.attributes.unit_of_measurement || '%') : '';
             sensorItems.push({ icon: this.config.humidity_icon || 'mdi:water-percent', value: val, unit, color: this.config.humidity_color || '#2196f3', popup: this.config.humidity_popup || null });
         }
         if (pm25Entity) {
             const st = this._getSensorValue(pm25Entity);
-            const val = st ? st.state : '--';
-            const unit = st ? (st.attributes.unit_of_measurement || 'μg/m³') : 'μg/m³';
+            const val = st ? _formatSensorVal(st.state) : '--';
+            const unit = (st && st.state !== 'unknown' && st.state !== 'unavailable') ? (st.attributes.unit_of_measurement || 'μg/m³') : '';
             sensorItems.push({ icon: this.config.pm25_icon || 'mdi:blur', value: val, unit, color: this.config.pm25_color || '#4caf50', popup: this.config.pm25_popup || null });
         }
 
@@ -1226,12 +1265,21 @@ class XiaoshiRoomCard extends LitElement {
                         </div>
                     </div>
                     <div class="devices-area">
-                        ${this._renderDevice(d4)}
-                        ${this._renderDevice(d1)}
-                        ${this._renderDevice(d5)}
-                        ${this._renderDevice(d2)}
-                        ${this._renderDevice(d6)}
-                        ${this._renderDevice(d3)}
+                        ${this.config.device_layout === 'bottom_right' ? html`
+                            ${this._renderDevice(d6)}
+                            ${this._renderDevice(d3)}
+                            ${this._renderDevice(d5)}
+                            ${this._renderDevice(d2)}
+                            ${this._renderDevice(d4)}
+                            ${this._renderDevice(d1)}
+                        ` : html`
+                            ${this._renderDevice(d4)}
+                            ${this._renderDevice(d1)}
+                            ${this._renderDevice(d5)}
+                            ${this._renderDevice(d2)}
+                            ${this._renderDevice(d6)}
+                            ${this._renderDevice(d3)}
+                        `}
                     </div>
                 </div>
             </ha-card>

@@ -11,18 +11,33 @@ window.customCards.push({
 const PRESET_ON_STATES = [
     // 通用
     'on', 'open', 'opening','home',  'active', 'running',
-    'detected', 'occupied', 'locked', 'unlocked', 
+    'detected', 'occupied', 'unlocked', 
     // 媒体
     'Playing','playing', '播放中',
     // 空调/HVAC
     'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
-    'auto', 'heat_cool', 'heat_cool', 'fan_only',
+    'auto', 'heat_cool', 'fan_only',
     // 人在
     '有人', '2～5分钟无人移动',
     // 扫地机器人
     '正在拖地','正在扫地','启动','cleaning',
     // 厨房
     '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm'
+];
+const PRESET_OFF_STATES = [
+    // 通用
+    'off', 'closed', 'closing', 'not_home', 'unavailable', 'unknown', 'idle', 'standby',
+    'unlocked',
+    // 人在
+    '无人', '2～5分钟无人移动',
+    // 媒体
+    'Paused', 'paused', '停止',
+    // 空调/HVAC
+    'off',
+    // 扫地机器人
+    'docked', 'charging', 'error', 'returning',
+    // 厨房
+    'Idle', 'Shut Off'
 ];
 
 class XiaoshiDynamicCardEditor extends LitElement {
@@ -575,10 +590,18 @@ class XiaoshiDynamicCard extends LitElement {
         }
 
         let count = 0;
+        const offStates = PRESET_OFF_STATES.map(s => s.toLowerCase());
         for (const entityId of entityIds) {
             const state = this.hass.states[entityId];
-            if (state && conditions.includes(state.state.toLowerCase())) {
-                count++;
+            if (state) {
+                const stateLower = state.state.toLowerCase();
+                // PRESET_OFF_STATES 优先排除：模糊匹配到OFF条件则不计入开启
+                if (offStates.some(c => stateLower.includes(c) || c.includes(stateLower))) {
+                    continue;
+                }
+                if (conditions.includes(stateLower)) {
+                    count++;
+                }
             }
         }
         return count;
