@@ -587,12 +587,13 @@ class XiaoshiDynamicCard extends LitElement {
         }
 
         let count = 0;
-        const offStates = PRESET_OFF_STATES.map(s => s.toLowerCase());
+        // 覆盖条件时，不使用 PRESET_OFF_STATES 排除
+        const offStates = conditionMode === 'override' ? [] : PRESET_OFF_STATES.map(s => s.toLowerCase());
         for (const entityId of entityIds) {
             const state = this.hass.states[entityId];
             if (state) {
                 const stateLower = state.state.toLowerCase();
-                // PRESET_OFF_STATES 优先排除：模糊匹配到OFF条件则不计入开启
+                // PRESET_OFF_STATES 优先排除：模糊匹配到OFF条件则不计入开启（覆盖模式跳过）
                 if (offStates.some(c => stateLower.includes(c) || c.includes(stateLower))) {
                     continue;
                 }

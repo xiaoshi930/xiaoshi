@@ -1040,7 +1040,9 @@ class XiaoshiRoomCard extends LitElement {
         if (!device || !this.hass) return 0;
         const entities = device.entities || (device.entity ? [device.entity] : []);
         const conditions = this._getDeviceConditions(device);
-        const offStates = PRESET_OFF_STATES.map(s => s.toLowerCase());
+        // 覆盖条件时，不使用 PRESET_OFF_STATES 排除
+        const conditionMode = device.condition_mode || '';
+        const offStates = conditionMode === 'override' ? [] : PRESET_OFF_STATES.map(s => s.toLowerCase());
         let count = 0;
         for (const eid of entities) {
             const state = this.hass.states[eid];
@@ -1188,8 +1190,8 @@ class XiaoshiRoomCard extends LitElement {
         } else {
             personConditions = PRESET_ON_STATES.map(s => s.toLowerCase());
         }
-        // PRESET_OFF_STATES 优先排除（模糊匹配）
-        const presetOffStates = PRESET_OFF_STATES.map(s => s.toLowerCase());
+        // PRESET_OFF_STATES 优先排除（模糊匹配），覆盖条件时跳过
+        const presetOffStates = personConditionMode === 'override' ? [] : PRESET_OFF_STATES.map(s => s.toLowerCase());
         const isPersonOff = personState && presetOffStates.some(c => personState.toLowerCase().includes(c) || c.includes(personState.toLowerCase()));
         const isHome = !isPersonOff && personState && personConditions.some(c => personState.toLowerCase().includes(c) || c.includes(personState.toLowerCase()));
 
