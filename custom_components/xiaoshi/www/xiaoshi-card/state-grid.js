@@ -4167,7 +4167,7 @@ class  XiaoshiStateGridInfo extends LitElement {
     };
     
     // 获取主题和颜色
-    const theme = this.config.theme || 'system';
+    const theme = this._evaluateTheme();
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
     
