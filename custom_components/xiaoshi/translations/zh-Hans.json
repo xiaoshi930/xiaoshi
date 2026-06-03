@@ -2,11 +2,34 @@
   "config": {
     "step": {
       "user": {
-        "title": "消逝汇总卡片"
+        "title": "消逝汇总卡片",
+        "description": "设置主题选择实体的数量",
+        "data": {
+          "select_count": "主题选择实体数量"
+        }
+      },
+      "configure": {
+        "title": "配置选择选项",
+        "description": "勾选以添加对应选项到选择实体（无）"
       }
     },
     "abort": {
       "single_instance_allowed": "已配置：只能创建一个消逝汇总卡片实例。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "消逝汇总卡片 选项",
+        "description": "修改主题选择实体的数量",
+        "data": {
+          "select_count": "主题选择实体数量"
+        }
+      },
+      "configure": {
+        "title": "配置选择选项",
+        "description": "勾选以添加对应选项到选择实体始终包含）"
+      }
     }
   }
 }

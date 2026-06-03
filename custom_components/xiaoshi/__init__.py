@@ -23,14 +23,19 @@ class StaticPathConfig:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """通过 UI 配置流程设置"""
     await _register_static_resources(hass)
-    await hass.config_entries.async_forward_entry_setups(entry, ["switch"])
+    await hass.config_entries.async_forward_entry_setups(entry, ["switch", "select"])
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """卸载集成条目"""
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, ["switch"])
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, ["switch", "select"])
     return unload_ok
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """选项变更时重新加载"""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def _register_static_resources(hass: HomeAssistant):

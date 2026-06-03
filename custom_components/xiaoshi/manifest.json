@@ -4,7 +4,7 @@
   "codeowners": [],
   "config_flow": true,
   "documentation": "https://github.com/xiaoshi930/xiaoshi",
-  "dependencies": ["switch"],
+  "dependencies": ["switch", "select"],
   "integration_type": "device",
   "version": "2.7"
 }

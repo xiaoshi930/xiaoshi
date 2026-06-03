@@ -2,11 +2,34 @@
   "config": {
     "step": {
       "user": {
-        "title": "Xiaoshi Card"
+        "title": "Xiaoshi Card",
+        "description": "设置主题 select 实体的数量",
+        "data": {
+          "select_count": "主题选择实体数量"
+        }
+      },
+      "configure": {
+        "title": "配置 Select 选项",
+        "description": "勾选以添加对应选项到 select 实体（'无'始终包含）"
       }
     },
     "abort": {
-      "single_instance_allowed": "Already configured: Only one Xiaoshi Card instance is allowed."
+      "single_instance_allowed": "已配置：只允许一个消逝汇总卡片实例"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "消逝汇总卡片 选项",
+        "description": "修改 select 实体数量",
+        "data": {
+          "select_count": "主题选择实体数量"
+        }
+      },
+      "configure": {
+        "title": "配置 Select 选项",
+        "description": "勾选以添加对应选项到 select 实体（'无'始终包含）"
+      }
     }
   }
 }
