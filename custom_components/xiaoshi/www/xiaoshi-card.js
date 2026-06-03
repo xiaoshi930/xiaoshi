@@ -13,6 +13,7 @@ import('./xiaoshi-card/balance.js');
 import('./xiaoshi-card/consumables.js');
 import('./xiaoshi-card/petrochina.js');
 import('./xiaoshi-card/state-grid.js');
+import('./xiaoshi-card/weather.js');
 
 import('./xiaoshi-phone/climate-card.js');
 import('./xiaoshi-phone/humidifier-card.js');
@@ -29,3 +30,9 @@ import('./xiaoshi-small/purifier-card.js');
 
 import('./xiaoshi-pad/climate-card.js');
 import('./xiaoshi-pad/grid-card.js');
+import('./xiaoshi-pad/weather-card.js');
+
+import('./xiaoshi-lunar/birthday-card.js');
+import('./xiaoshi-lunar/lunar-calendar.js');
+import('./xiaoshi-lunar/lunar-calendar-pad.js');
+import('./xiaoshi-lunar/lunar-calendar-phone.js');
