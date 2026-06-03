@@ -909,7 +909,7 @@ class XiaoshiRoomCard extends LitElement {
             .device-btn ha-icon {
                 --mdc-icon-size: 2.8vh;
             }
-            .device-btn:active {
+            .device-btn:not(.empty):active {
                 transform: scale(0.95);
                 box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
             }

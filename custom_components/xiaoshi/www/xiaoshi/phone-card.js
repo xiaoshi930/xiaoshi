@@ -6,7 +6,7 @@ window.customCards.push({
     type: 'xiaoshi-phone-card',
     name: '消逝手机端',
     description: '消逝手机端',
-    preview: true
+    preview: false
 });
 
 class XiaoshiPhoneCardEditor extends LitElement {
@@ -68,6 +68,50 @@ class XiaoshiPhoneCardEditor extends LitElement {
                 font-size: 12px;
                 resize: vertical;
                 box-sizing: border-box;
+            }
+            .bg-urls textarea {
+                min-height: 40px;
+            }
+            .binding-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 6px;
+            }
+            .binding-row select {
+                flex: 1;
+                padding: 6px 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                min-width: 0;
+            }
+            .binding-remove {
+                background: none;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                cursor: pointer;
+                padding: 4px 8px;
+                color: #888;
+                font-size: 14px;
+                flex-shrink: 0;
+            }
+            .binding-remove:hover {
+                color: #e00;
+                border-color: #e00;
+            }
+            .binding-add {
+                background: none;
+                border: 1px dashed #aaa;
+                border-radius: 4px;
+                cursor: pointer;
+                padding: 6px 12px;
+                color: #666;
+                font-size: 13px;
+                width: 100%;
+            }
+            .binding-add:hover {
+                color: var(--primary-color);
+                border-color: var(--primary-color);
             }
             .card-section-hint {
                 font-size: 11px;
@@ -180,14 +224,135 @@ class XiaoshiPhoneCardEditor extends LitElement {
         }));
     }
 
-    _bgUrlsChanged(e) {
+    _bgImageUrlsChanged(e) {
         const raw = e.target.value;
         const urls = raw.split('\n').map(s => s.trim()).filter(Boolean);
         this.config = {
             ...this.config,
             background: {
                 ...this.config.background,
-                urls: urls
+                image_urls: urls
+            }
+        };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _bgVideoUrlsChanged(e) {
+        const raw = e.target.value;
+        const urls = raw.split('\n').map(s => s.trim()).filter(Boolean);
+        this.config = {
+            ...this.config,
+            background: {
+                ...this.config.background,
+                video_urls: urls
+            }
+        };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _getPersonEntities() {
+        if (!this.hass || !this.hass.states) return [];
+        return Object.values(this.hass.states)
+            .filter(s => s.entity_id.startsWith('person.'))
+            .map(s => ({
+                entity_id: s.entity_id,
+                friendly_name: s.attributes.friendly_name || s.entity_id
+            }))
+            .sort((a, b) => a.friendly_name.localeCompare(b.friendly_name));
+    }
+
+    _getThemePhoneSelects() {
+        if (!this.hass || !this.hass.states) return [];
+        return Object.values(this.hass.states)
+            .filter(s => s.entity_id.startsWith('select.theme_phone_'))
+            .map(s => ({
+                entity_id: s.entity_id,
+                friendly_name: s.attributes.friendly_name || s.entity_id
+            }))
+            .sort((a, b) => a.entity_id.localeCompare(b.entity_id));
+    }
+
+    _bgPersonChanged(e) {
+        const personEntity = e.target.value;
+        this.config = {
+            ...this.config,
+            background: {
+                ...this.config.background,
+                person_entity: personEntity
+            }
+        };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _bgSelectChanged(e) {
+        const selectEntity = e.target.value;
+        this.config = {
+            ...this.config,
+            background: {
+                ...this.config.background,
+                select_entity: selectEntity
+            }
+        };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _addBinding() {
+        const bindings = [...(this.config.background.bindings || []), { name: '', select: '' }];
+        this.config = {
+            ...this.config,
+            background: {
+                ...this.config.background,
+                bindings
+            }
+        };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _removeBinding(index) {
+        const bindings = [...(this.config.background.bindings || [])];
+        bindings.splice(index, 1);
+        this.config = {
+            ...this.config,
+            background: {
+                ...this.config.background,
+                bindings
+            }
+        };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _bindingChanged(index, field, value) {
+        const bindings = [...(this.config.background.bindings || [])];
+        bindings[index] = { ...bindings[index], [field]: value };
+        this.config = {
+            ...this.config,
+            background: {
+                ...this.config.background,
+                bindings
             }
         };
         this.dispatchEvent(new CustomEvent('config-changed', {
@@ -204,23 +369,6 @@ class XiaoshiPhoneCardEditor extends LitElement {
             background: {
                 ...this.config.background,
                 type: bgType
-            }
-        };
-        this.dispatchEvent(new CustomEvent('config-changed', {
-            detail: { config: this.config },
-            bubbles: true,
-            composed: true
-        }));
-    }
-
-    _bgUrlsChanged(e) {
-        const raw = e.target.value;
-        const urls = raw.split('\n').map(s => s.trim()).filter(Boolean);
-        this.config = {
-            ...this.config,
-            background: {
-                ...this.config.background,
-                urls: urls
             }
         };
         this.dispatchEvent(new CustomEvent('config-changed', {
@@ -252,15 +400,34 @@ class XiaoshiPhoneCardEditor extends LitElement {
                     <label>背景</label>
                     <select .value="${(c.background && c.background.type) || 'none'}" @change="${this._bgTypeChanged}">
                         <option value="none" .selected="${!c.background || c.background.type === 'none' || !c.background.type}">无</option>
-                        <option value="image" .selected="${c.background && c.background.type === 'image'}">图片</option>
-                        <option value="video" .selected="${c.background && c.background.type === 'video'}">视频</option>
+                        <option value="media" .selected="${c.background && c.background.type === 'media'}">图片/视频</option>
                     </select>
                 </div>
                 ${c.background && c.background.type && c.background.type !== 'none' ? html`
                 <div class="card-section">
-                    <div class="card-section-title">背景${c.background.type === 'image' ? '图片' : '视频'}地址</div>
-                    <textarea .value="${(c.background.urls || []).join('\n')}" @change="${this._bgUrlsChanged}" placeholder="每行一个地址${c.background.type === 'image' ? '，支持路径或网址' : '，支持路径或网址'}"></textarea>
-                    <div class="card-section-hint">每行一个地址，支持本地路径或网络网址，多个地址时自动轮播</div>
+                    <div class="card-section-title">用户绑定</div>
+                    ${(c.background.bindings || []).map((b, i) => html`
+                    <div class="binding-row">
+                        <select .value="${b.name || ''}" @change="${e => this._bindingChanged(i, 'name', e.target.value)}">
+                            <option value="">-- 用户 --</option>
+                            ${this._getPersonEntities().map(e => html`<option value="${e.friendly_name}" .selected="${b.name === e.friendly_name}">${e.friendly_name}</option>`)}
+                        </select>
+                        <select .value="${b.select || ''}" @change="${e => this._bindingChanged(i, 'select', e.target.value)}">
+                            <option value="">-- select实体 --</option>
+                            ${this._getThemePhoneSelects().map(e => html`<option value="${e.entity_id}" .selected="${b.select === e.entity_id}">${e.friendly_name}</option>`)}
+                        </select>
+                        <button class="binding-remove" @click="${() => this._removeBinding(i)}">✕</button>
+                    </div>
+                    `)}
+                    <button class="binding-add" @click="${this._addBinding}">+ 添加绑定</button>
+                </div>
+                <div class="card-section bg-urls">
+                    <div class="card-section-title">背景图片地址</div>
+                    <textarea .value="${(c.background.image_urls || []).join('\n')}" @change="${this._bgImageUrlsChanged}" placeholder="每行一个地址，支持路径或网址"></textarea>
+                </div>
+                <div class="card-section bg-urls">
+                    <div class="card-section-title">背景视频地址</div>
+                    <textarea .value="${(c.background.video_urls || []).join('\n')}" @change="${this._bgVideoUrlsChanged}" placeholder="每行一个地址，支持路径或网址"></textarea>
                 </div>
                 ` : ''}
                 <div class="card-section">
@@ -362,7 +529,7 @@ class XiaoshiPhoneCard extends LitElement {
                 overflow: visible;
             }
             .header-info-area {
-                padding: 1vh 2.5vw;
+                padding: 1vh 2vw 1vh 2.5vw;
                 width: 80vw;
                 height: 14vh;
                 display: grid;
@@ -383,30 +550,55 @@ class XiaoshiPhoneCard extends LitElement {
                 flex-shrink: 0;
             }
             .dynamic-area {
-                width: 90vw;
+                width: 80vw;
                 height: 5vh;
                 display: flex;
                 align-items: center;
                 justify-content: flex-start;
                 flex-shrink: 0;
             }
-            .fullscreen-btn {
-                width: 10vw;
+            .btn-area {
+                width: 20vw;
                 height: 5vh;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                padding-right: 2.5vw;
+                box-sizing: border-box;
+                flex-shrink: 0;
+                gap: 1vw;
+            }
+            .fullscreen-btn, .media-toggle-btn {
+                width: 3.2vh;
+                height: 3.2vh;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
-                cursor: pointer;
+                cursor: none;
                 border: none;
-                background: transparent;
+                background: var(--btn-bg, transparent);
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
+                border-radius: 4px;
                 font-size: 18px;
                 padding: 0;
                 opacity: 0.6;
                 transition: opacity 0.2s;
+                border-radius: 8px;
             }
-            .fullscreen-btn:hover {
-                opacity: 1;
+            .media-toggle-btn ha-icon {
+                --mdi-icon-size: 1.8vh;
+                display: inline-flex;
+                width: 1.8vh;
+                height: 1.8vh;
+                margin-top: -0.7vh;
+                margin-left: 0vh;
+            }
+
+            .fullscreen-btn:active ha-icon, .media-toggle-btn:active ha-icon {
+                box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
+                transform: scale(0.95);
             }
             .room-area {
                 width: 100vw;
@@ -500,6 +692,57 @@ class XiaoshiPhoneCard extends LitElement {
         });
     }
 
+    _getBgInfo() {
+        /* 根据 bindings 和 select 实体决定当前背景模式
+           返回 { mode: 'none'|'image'|'video', selectEntity, selectOptions, binding } */
+        const c = this.config || {};
+        const bg = c.background || {};
+        if (bg.type !== 'media') return { mode: 'none' };
+
+        const bindings = bg.bindings || [];
+        if (!this._hass || !this._hass.user) return { mode: 'none' };
+
+        const userName = this._hass.user.name;
+        const binding = bindings.find(b => b.name === userName);
+        if (!binding || !binding.select) return { mode: 'none' };
+
+        const selectState = this._hass.states[binding.select];
+        if (!selectState) return { mode: 'none', selectEntity: binding.select, selectOptions: [], binding };
+
+        const options = selectState.attributes.options || [];
+        // 如果选项只有"无"，则黑白
+        const hasImage = options.includes('图片');
+        const hasVideo = options.includes('视频');
+        if (!hasImage && !hasVideo) return { mode: 'none', selectEntity: binding.select, selectOptions: options, binding };
+
+        const currentValue = selectState.state;
+        let mode = 'none';
+        if (currentValue === '图片') mode = 'image';
+        else if (currentValue === '视频') mode = 'video';
+        // else: "无"或其他 → none
+
+        return { mode, selectEntity: binding.select, selectOptions: options, binding, hasImage, hasVideo };
+    }
+
+    _cycleSelectBg() {
+        /* 双击全屏按钮时循环切换 select 值 */
+        const info = this._getBgInfo();
+        if (!info.selectEntity || !info.hasImage && !info.hasVideo) return;
+
+        const selectState = this._hass.states[info.selectEntity];
+        if (!selectState) return;
+
+        const options = selectState.attributes.options || [];
+        const currentIdx = options.indexOf(selectState.state);
+        const nextIdx = (currentIdx + 1) % options.length;
+        const nextValue = options[nextIdx];
+
+        this._hass.callService('select', 'select_option', {
+            entity_id: info.selectEntity,
+            option: nextValue
+        });
+    }
+
     _startBgRotation(urls) {
         if (this._bgTimer) {
             clearInterval(this._bgTimer);
@@ -510,6 +753,48 @@ class XiaoshiPhoneCard extends LitElement {
             this._bgIndex = (this._bgIndex + 1) % urls.length;
             this.requestUpdate();
         }, 15000);
+    }
+
+    _stopBgRotation() {
+        if (this._bgTimer) {
+            clearInterval(this._bgTimer);
+            this._bgTimer = null;
+        }
+        this._bgIndex = 0;
+        // 销毁已加载的音视频资源
+        const bgLayer = this.shadowRoot && this.shadowRoot.querySelector('.bg-layer');
+        if (bgLayer) {
+            const video = bgLayer.querySelector('video');
+            const img = bgLayer.querySelector('img');
+            if (video) { video.pause(); video.src = ''; video.load(); }
+            if (img) { img.src = ''; }
+        }
+    }
+
+    _handleClick() {
+        const hapticEvent = new Event('haptic', {
+            bubbles: true,
+            cancelable: false,
+            composed: true
+        });
+        hapticEvent.detail = 'light';
+        this.dispatchEvent(hapticEvent);
+    }
+
+    _handleMediaToggle() {
+        this._handleClick();
+        this._cycleSelectBg();
+    }
+
+    _handleFullscreen() {
+        this._handleClick();
+        this._toggleFullscreen();
+    }
+
+    _onFullscreenDblClick(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        this._cycleSelectBg();
     }
 
     setConfig(config) {
@@ -635,13 +920,14 @@ class XiaoshiPhoneCard extends LitElement {
         }
     }
 
-    _bgTypeChanged(e) {
-        const bgType = e.target.value;
+    _bgImageUrlsChanged(e) {
+        const raw = e.target.value;
+        const urls = raw.split('\n').map(s => s.trim()).filter(Boolean);
         this.config = {
             ...this.config,
             background: {
                 ...this.config.background,
-                type: bgType
+                image_urls: urls
             }
         };
         this.dispatchEvent(new CustomEvent('config-changed', {
@@ -651,14 +937,134 @@ class XiaoshiPhoneCard extends LitElement {
         }));
     }
 
-    _bgUrlsChanged(e) {
+    _bgVideoUrlsChanged(e) {
         const raw = e.target.value;
         const urls = raw.split('\n').map(s => s.trim()).filter(Boolean);
         this.config = {
             ...this.config,
             background: {
                 ...this.config.background,
-                urls: urls
+                video_urls: urls
+            }
+        };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _getPersonEntities() {
+        if (!this.hass || !this.hass.states) return [];
+        return Object.values(this.hass.states)
+            .filter(s => s.entity_id.startsWith('person.'))
+            .map(s => ({
+                entity_id: s.entity_id,
+                friendly_name: s.attributes.friendly_name || s.entity_id
+            }))
+            .sort((a, b) => a.friendly_name.localeCompare(b.friendly_name));
+    }
+
+    _getThemePhoneSelects() {
+        if (!this.hass || !this.hass.states) return [];
+        return Object.values(this.hass.states)
+            .filter(s => s.entity_id.startsWith('select.theme_phone_'))
+            .map(s => ({
+                entity_id: s.entity_id,
+                friendly_name: s.attributes.friendly_name || s.entity_id
+            }))
+            .sort((a, b) => a.entity_id.localeCompare(b.entity_id));
+    }
+
+    _bgPersonChanged(e) {
+        const personEntity = e.target.value;
+        this.config = {
+            ...this.config,
+            background: {
+                ...this.config.background,
+                person_entity: personEntity
+            }
+        };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _bgSelectChanged(e) {
+        const selectEntity = e.target.value;
+        this.config = {
+            ...this.config,
+            background: {
+                ...this.config.background,
+                select_entity: selectEntity
+            }
+        };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _addBinding() {
+        const bindings = [...(this.config.background.bindings || []), { name: '', select: '' }];
+        this.config = {
+            ...this.config,
+            background: {
+                ...this.config.background,
+                bindings
+            }
+        };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _removeBinding(index) {
+        const bindings = [...(this.config.background.bindings || [])];
+        bindings.splice(index, 1);
+        this.config = {
+            ...this.config,
+            background: {
+                ...this.config.background,
+                bindings
+            }
+        };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _bindingChanged(index, field, value) {
+        const bindings = [...(this.config.background.bindings || [])];
+        bindings[index] = { ...bindings[index], [field]: value };
+        this.config = {
+            ...this.config,
+            background: {
+                ...this.config.background,
+                bindings
+            }
+        };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _bgTypeChanged(e) {
+        const bgType = e.target.value;
+        this.config = {
+            ...this.config,
+            background: {
+                ...this.config.background,
+                type: bgType
             }
         };
         this.dispatchEvent(new CustomEvent('config-changed', {
@@ -679,19 +1085,27 @@ class XiaoshiPhoneCard extends LitElement {
         const dynamicCards = this._cardElements.dynamic || [];
         const footerCards = this._cardElements.footer || [];
 
-        const bg = c.background;
-        const bgType = bg && bg.type && bg.type !== 'none' ? bg.type : null;
-        const bgUrls = bg && bg.urls && bg.urls.length ? bg.urls : [];
-        if (bgType && bgUrls.length > 1) {
-            this._startBgRotation(bgUrls);
-        }
-        const currentBgUrl = bgUrls.length > 0 ? bgUrls[this._bgIndex % bgUrls.length] : '';
-
+        const bg = c.background || {};
+        const bgInfo = this._getBgInfo();
         let bgLayer = '';
-        if (bgType === 'image' && currentBgUrl) {
-            bgLayer = html`<div class="bg-layer"><img src="${currentBgUrl}" alt="background"></div>`;
-        } else if (bgType === 'video' && currentBgUrl) {
-            bgLayer = html`<div class="bg-layer"><video src="${currentBgUrl}" autoplay loop muted playsinline></video></div>`;
+
+        if (bgInfo.mode === 'video') {
+            const videoUrls = bg.video_urls && bg.video_urls.length ? bg.video_urls : [];
+            if (videoUrls.length > 0) {
+                if (videoUrls.length > 1) this._startBgRotation(videoUrls);
+                const url = videoUrls[this._bgIndex % videoUrls.length];
+                bgLayer = html`<div class="bg-layer"><video src="${url}" autoplay loop muted playsinline></video></div>`;
+            }
+        } else if (bgInfo.mode === 'image') {
+            const imageUrls = bg.image_urls && bg.image_urls.length ? bg.image_urls : [];
+            if (imageUrls.length > 0) {
+                if (imageUrls.length > 1) this._startBgRotation(imageUrls);
+                const url = imageUrls[this._bgIndex % imageUrls.length];
+                bgLayer = html`<div class="bg-layer"><img src="${url}" alt="background"></div>`;
+            }
+        } else {
+            // 黑白背景，停止轮播并销毁资源
+            this._stopBgRotation();
         }
 
         return html`
@@ -714,9 +1128,16 @@ class XiaoshiPhoneCard extends LitElement {
                         <div class="dynamic-area">
                             ${dynamicCards.map(el => html`<div class="card-slot">${el}</div>`)}
                         </div>
-                        <button class="fullscreen-btn" style="color: ${theme === 'dark' ? '#fff' : '#000'}" @click="${this._toggleFullscreen}" title="全屏切换实体">
-                            ${this._isKioskOn() ? '⤓' : '⤢'}
-                        </button>
+                        <div class="btn-area">
+                            ${bgInfo.selectEntity && (bgInfo.hasImage || bgInfo.hasVideo) ? html`
+                            <button class="media-toggle-btn" style="color: ${theme === 'dark' ? '#fff' : '#000'}; --btn-bg: ${theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(230,230,230,0.3)'}" @click="${this._handleMediaToggle}" title="切换背景模式">
+                                <ha-icon icon="${bgInfo.mode === 'video' ? 'mdi:motion-play-outline' : bgInfo.mode === 'image' ? 'mdi:image-auto-adjust' : 'mdi:checkbox-blank-off-outline'}"></ha-icon>
+                            </button>
+                            ` : ''}
+                            <button class="fullscreen-btn" style="color: ${theme === 'dark' ? '#fff' : '#000'}; --btn-bg: ${theme === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(230,230,230,0.3)'}" @click="${this._handleFullscreen}" title="全屏切换实体">
+                                <ha-icon icon="${this._isKioskOn() ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
+                            </button>
+                        </div>
                     </div>
                     <div class="room-area" style="grid-template-rows: repeat(${roomRows}, 1fr)">
                         ${roomCards.map(el => html`<div class="card-slot">${el}</div>`)}
