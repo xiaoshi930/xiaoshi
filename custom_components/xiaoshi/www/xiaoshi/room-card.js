@@ -134,9 +134,6 @@ class XiaoshiRoomCardEditor extends LitElement {
                 cursor: pointer;
                 border-bottom: 1px solid #eee;
             }
-            .entity-option:hover {
-                background: #f5f5f5;
-            }
             .entity-option.selected {
                 background: #e3f2fd;
             }
@@ -866,6 +863,11 @@ class XiaoshiRoomCard extends LitElement {
                 align-items: center;
                 position: relative;
                 box-sizing: border-box;
+                cursor: none;
+            }
+            .sensor-chip:active {
+                transform: scale(0.95);
+                box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
             }
             .sensor-icon {
                 display: flex;
@@ -898,7 +900,7 @@ class XiaoshiRoomCard extends LitElement {
                 align-items: center;
                 justify-content: center;
                 color: #888;
-                cursor: pointer;
+                cursor: none;
                 transition: background 0.25s, color 0.25s;
                 border: none;
                 outline: none;
@@ -907,11 +909,9 @@ class XiaoshiRoomCard extends LitElement {
             .device-btn ha-icon {
                 --mdc-icon-size: 2.8vh;
             }
-            .device-btn:hover {
-                filter: brightness(1.15);
-            }
-            .device-btn.active {
-                color: white;
+            .device-btn:active {
+                transform: scale(0.95);
+                box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
             }
             .device-btn.empty {
                 background: transparent;
@@ -1256,7 +1256,7 @@ class XiaoshiRoomCard extends LitElement {
                         <!-- 传感器条 -->
                         <div class="sensor-list">
                             ${sensorItems.map(s => html`
-                                <div class="sensor-chip" style="background:${s.color}; ${s.popup ? 'cursor:pointer' : ''}"
+                                <div class="sensor-chip" style="background:${s.color};"
                                     @click="${() => s.popup ? this._showSensorPopup(s.popup) : null}">
                                     <span class="sensor-icon"><ha-icon icon="${s.icon}"></ha-icon></span>
                                     <span class="sensor-value">${s.value}${s.unit}</span>

@@ -1174,9 +1174,13 @@ class XiaoshiPetroChinaButton extends PetroChinaBaseMixin(LitElement) {
         align-items: center;
         justify-content: center;
         gap: 0;
-        cursor: pointer;
+        cursor: none;
         transition: background-color 0.2s, transform 0.1s;
         position: relative;
+      }
+      .balance-status:active {
+        transform: scale(0.95);
+        box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
       }
       .status-icon {
         --mdc-icon-size: var(--button-icon-size, 13px);

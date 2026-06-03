@@ -355,16 +355,13 @@ class XiaoshiDynamicCard extends LitElement {
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                cursor: pointer;
+                cursor: none;
                 transition: background-color 0.35s ease, transform 0.2s ease, box-shadow 0.2s ease;
                 overflow: visible;
             }
-            .area-tile:hover {
-                transform: scale(1.05);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            }
             .area-tile:active {
                 transform: scale(0.95);
+                box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
             }
             .area-icon {
                 --mdc-icon-size: 80%;

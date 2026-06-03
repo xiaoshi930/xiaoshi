@@ -1,5 +1,21 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
+window.customCards = window.customCards || [];
+window.customCards.push(
+  {
+    type: 'xiaoshi-state-grid-button',
+    name: '消逝公用事业按钮',
+    description: '显示国网电费、水费、燃气费余额按钮，点击弹出详情卡片',
+    preview: true
+  },
+  {
+    type: 'xiaoshi-state-grid-info',
+    name: '消逝公用事业卡片',
+    description: '显示国网电费、水费、燃气费余额、阶梯和用量统计',
+    preview: true
+  }
+);
+
 // 工具类型配置
 const UTILITY_CONFIG = {
   electric: {
@@ -464,8 +480,12 @@ class XiaoshiStateGridButton extends LitElement {
         padding: 0; margin: 0; background: var(--bg-color, #fff); color: var(--fg-color, #000);
         border-radius: 10px; font-size: var(--button-font-size, 11px); font-weight: 500;
         text-align: center; box-sizing: border-box; display: flex; align-items: center;
-        justify-content: center; gap: 0; cursor: pointer;
+        justify-content: center; gap: 0; cursor: none;
         transition: background-color 0.2s, transform 0.1s; position: relative;
+      }
+      .balance-status:active {
+        transform: scale(0.95);
+        box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
       }
       .balance-status.tablet-mode {
         width: var(--button-width, 16.8vw);
@@ -753,23 +773,7 @@ class XiaoshiStateGridButton extends LitElement {
 }
 customElements.define('xiaoshi-state-grid-button', XiaoshiStateGridButton);
 
-// 卡片编辑器
 
-window.customCards = window.customCards || [];
-window.customCards.push(
-  {
-    type: 'xiaoshi-state-grid-button',
-    name: '消逝公用事业按钮',
-    description: '显示公用事业余额按钮，点击弹出详情卡片',
-    preview: true
-  },
-  {
-    type: 'xiaoshi-state-grid-info',
-    name: '消逝公用事业卡片',
-    description: '显示公用事业信息，包括余额、阶梯和用量统计',
-    preview: true
-  }
-);
 
 class XiaoshiStateGridEditor extends LitElement {
   static get properties() {

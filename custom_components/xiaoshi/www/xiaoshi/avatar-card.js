@@ -321,7 +321,7 @@ class XiaoshiAvatarCard extends LitElement {
                 overflow: visible;
                 touch-action: pan-y;
             }
-            .card-item {
+            .card-item {  
                 border-radius: 6vw;
                 overflow: hidden;
                 display: flex;
@@ -336,7 +336,11 @@ class XiaoshiAvatarCard extends LitElement {
                 box-sizing: border-box;
                 transform-origin: top center;
                 transition: left 0.35s ease, transform 0.35s ease, opacity 0.35s ease, background-color 0.35s ease;
-                cursor: pointer;
+                cursor: none;
+            }
+            .card-item:active {
+              transform: scale(0.95);
+              box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
             }
             .avatar-container {
                 position: relative;
