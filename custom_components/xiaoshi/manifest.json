@@ -6,5 +6,5 @@
   "documentation": "https://github.com/xiaoshi930/xiaoshi",
   "dependencies": ["switch"],
   "integration_type": "device",
-  "version": "2.5"
+  "version": "2.6"
 }
