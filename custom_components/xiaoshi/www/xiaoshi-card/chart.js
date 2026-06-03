@@ -174,7 +174,8 @@ const cardCommonStyles = css`
   .chart-wrap {
     width: 100%;
     height: 144px;
-    overflow: hidden;
+    position: relative;
+    overflow: visible;
   }
   .chart-canvas {
     width: 100%;
@@ -207,6 +208,49 @@ const cardCommonStyles = css`
     height: 10px;
     border-radius: 3px;
     flex-shrink: 0;
+  }
+  .chart-crosshair {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 1px;
+    pointer-events: none;
+    display: none;
+    z-index: 5;
+  }
+  .chart-tooltip {
+    position: absolute;
+    top: 4px;
+    pointer-events: none;
+    z-index: 10;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: nowrap;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    display: none;
+  }
+  .chart-tooltip-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .chart-tooltip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .chart-tooltip-time {
+    font-weight: 600;
+    margin-bottom: 4px;
+    opacity: 0.7;
+    font-size: 11px;
+  }
+  .chart-tooltip-sep {
+    height: 1px;
+    margin: 4px 0;
   }
 `;
 
@@ -424,6 +468,10 @@ const ChartBaseMixin = (superClass) => class extends superClass {
   constructor() {
     super();
     this._chartSeries = [];
+    this._chartLayout = null;
+    this._perEntitySeries = [];
+    this._boundCanvasMouseMove = this._canvasMouseMove.bind(this);
+    this._boundCanvasMouseLeave = this._canvasMouseLeave.bind(this);
   }
 
   _evaluateTheme() {
@@ -487,6 +535,7 @@ const ChartBaseMixin = (superClass) => class extends superClass {
       if (canvas) {
         requestAnimationFrame(() => this._drawChart(canvas));
       }
+      this._hideTooltip();
     }
   }
 
@@ -515,6 +564,26 @@ const ChartBaseMixin = (superClass) => class extends superClass {
         const ts = (entry.lu || entry.last_changed) ? new Date((entry.lu || entry.last_changed) * (entry.lu ? 1000 : 1)).getTime() : Date.now();
         return { t: ts, v };
       };
+
+      // Always store per-entity data for tooltip
+      const perEntity = [];
+      for (let idx = 0; idx < entityIds.length; idx++) {
+        const eid = entityIds[idx];
+        const history = historyResult?.[eid] || [];
+        const values = [];
+        for (const entry of history) {
+          const pt = parseHistoryEntry(entry);
+          if (pt) values.push(pt);
+        }
+        const defaultColor = CHART_COLORS[idx % CHART_COLORS.length];
+        perEntity.push({
+          entityId: eid,
+          name: this._getName(eid),
+          values,
+          color: this._getColor(eid, defaultColor),
+        });
+      }
+      this._perEntitySeries = perEntity;
 
       let series;
 
@@ -713,6 +782,8 @@ const ChartBaseMixin = (superClass) => class extends superClass {
     const vRangeHi = vHi + vPad;
     const y = (v) => pad.top + ch - ((v - vRangeLo) / (vRangeHi - vRangeLo)) * ch;
 
+    this._chartLayout = { t0, t1, pad, width, height, processedSeries, cw, ch };
+
     const theme = this._evaluateTheme();
     const labelColor = theme === "light" ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)";
     const gridColor  = theme === "light" ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)";
@@ -804,6 +875,126 @@ const ChartBaseMixin = (superClass) => class extends superClass {
     }
   }
 
+  /* ---------- Tooltip ---------- */
+  _canvasMouseMove(e) {
+    if (!this._chartLayout || !this._perEntitySeries.length) return;
+    const canvas = this.shadowRoot?.querySelector("#chart-canvas");
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const layout = this._chartLayout;
+    const { t0, t1, pad, width, processedSeries, cw, ch } = layout;
+
+    if (mouseX < pad.left || mouseX > pad.left + cw) {
+      this._hideTooltip();
+      return;
+    }
+
+    const t = t0 + ((mouseX - pad.left) / cw) * (t1 - t0);
+    const d = new Date(t);
+    const timeStr = (d.getMonth() + 1).toString().padStart(2, '0') + '/' +
+      d.getDate().toString().padStart(2, '0') + ' ' +
+      d.getHours().toString().padStart(2, '0') + ':' +
+      d.getMinutes().toString().padStart(2, '0');
+
+    const merge = this.config?.merge && (this.config?.entities || []).length > 1;
+    const unit = this._getUnit();
+    const avgItems = [];
+    const entityItems = [];
+
+    if (merge) {
+      for (const { s, pts } of processedSeries) {
+        const v = this._interpolateValue(pts, t);
+        if (v !== null) {
+          avgItems.push({ name: s.name, value: v, color: s.color });
+        }
+      }
+    }
+
+    for (const pe of this._perEntitySeries) {
+      const v = this._interpolateValue(pe.values, t);
+      if (v !== null) {
+        entityItems.push({ name: pe.name, value: v, color: pe.color });
+      }
+    }
+
+    const theme = this._evaluateTheme();
+    const dark = theme === 'dark';
+
+    const crosshair = this.shadowRoot?.querySelector("#chart-crosshair");
+    const tooltip = this.shadowRoot?.querySelector("#chart-tooltip");
+    const timeEl = this.shadowRoot?.querySelector("#tooltip-time");
+    const avgEl = this.shadowRoot?.querySelector("#tooltip-avg");
+    const sepEl = this.shadowRoot?.querySelector("#tooltip-sep");
+    const itemsEl = this.shadowRoot?.querySelector("#tooltip-items");
+
+    if (!crosshair || !tooltip) return;
+
+    crosshair.style.display = 'block';
+    crosshair.style.left = mouseX + 'px';
+    crosshair.style.top = pad.top + 'px';
+    crosshair.style.height = ch + 'px';
+    crosshair.style.background = dark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)';
+
+    const flipLeft = mouseX > width / 2;
+    const tooltipLeft = flipLeft ? mouseX - 12 : mouseX + 12;
+    const transformX = flipLeft ? 'translateX(-100%)' : 'translateX(0)';
+
+    tooltip.style.display = 'block';
+    tooltip.style.left = tooltipLeft + 'px';
+    tooltip.style.transform = transformX;
+    tooltip.style.background = dark ? 'rgba(30,30,30,0.95)' : 'rgba(255,255,255,0.95)';
+    tooltip.style.color = dark ? '#fff' : '#333';
+    tooltip.style.border = '1px solid ' + (dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)');
+
+    timeEl.textContent = timeStr;
+
+    avgEl.innerHTML = avgItems.map(item =>
+      '<div class="chart-tooltip-item">' +
+        '<span class="chart-tooltip-dot" style="background:' + item.color + '"></span>' +
+        '<span>' + item.name + ': ' + fmtValue(item.value) + unit + '</span>' +
+      '</div>'
+    ).join('');
+
+    sepEl.style.display = avgItems.length > 0 && entityItems.length > 0 ? 'block' : 'none';
+    sepEl.style.background = dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)';
+
+    itemsEl.innerHTML = entityItems.map(item =>
+      '<div class="chart-tooltip-item">' +
+        '<span class="chart-tooltip-dot" style="background:' + item.color + '"></span>' +
+        '<span>' + item.name + ': ' + fmtValue(item.value) + unit + '</span>' +
+      '</div>'
+    ).join('');
+  }
+
+  _canvasMouseLeave() {
+    this._hideTooltip();
+  }
+
+  _hideTooltip() {
+    const crosshair = this.shadowRoot?.querySelector("#chart-crosshair");
+    const tooltip = this.shadowRoot?.querySelector("#chart-tooltip");
+    if (crosshair) crosshair.style.display = 'none';
+    if (tooltip) tooltip.style.display = 'none';
+  }
+
+  _interpolateValue(values, t) {
+    if (!values || values.length === 0) return null;
+    if (values.length === 1) return values[0].v;
+    if (t <= values[0].t) return values[0].v;
+    if (t >= values[values.length - 1].t) return values[values.length - 1].v;
+    for (let i = 0; i < values.length - 1; i++) {
+      if (values[i].t <= t && values[i + 1].t >= t) {
+        const dt = values[i + 1].t - values[i].t;
+        if (dt === 0) return values[i].v;
+        const ratio = (t - values[i].t) / dt;
+        return values[i].v + ratio * (values[i + 1].v - values[i].v);
+      }
+    }
+    return null;
+  }
+
   /* ---------- 卡片头部数据 ---------- */
   _getHeaderValues() {
     const entityIds = (this.config?.entities || []).map(item => item.entity);
@@ -849,7 +1040,18 @@ const ChartBaseMixin = (superClass) => class extends superClass {
           <div class="chart-wrap">
             ${this._chartSeries.every(s => s.values.length === 0)
               ? html`<div class="chart-empty">等待数据采集…</div>`
-              : html`<canvas id="chart-canvas" class="chart-canvas"></canvas>`}
+              : html`
+                <canvas id="chart-canvas" class="chart-canvas"
+                  @mousemove=${this._boundCanvasMouseMove}
+                  @mouseleave=${this._boundCanvasMouseLeave}></canvas>
+                <div class="chart-crosshair" id="chart-crosshair"></div>
+                <div class="chart-tooltip" id="chart-tooltip">
+                  <div class="chart-tooltip-time" id="tooltip-time"></div>
+                  <div id="tooltip-avg"></div>
+                  <div class="chart-tooltip-sep" id="tooltip-sep"></div>
+                  <div id="tooltip-items"></div>
+                </div>
+              `}
           </div>
           ${!merge ? html`
           <div class="legend">
