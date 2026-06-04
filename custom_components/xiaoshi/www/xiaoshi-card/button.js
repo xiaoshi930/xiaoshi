@@ -802,9 +802,43 @@ class XiaoshiButton extends LitElement {
       let indentStack = [];
       let contextStack = [];
 
+      // Block scalar state
+      let blockScalarKey = null;
+      let blockScalarIndent = 0;
+      let blockScalarLines = [];
+      let blockScalarMode = null; // '>' or '|'
+
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const trimmed = line.trim();
+
+        // If we're collecting a block scalar (>- or |-)
+        if (blockScalarKey !== null) {
+          const currentLineIndent = line.length - line.trimStart().length;
+          if (trimmed === '') {
+            continue;
+          }
+          if (currentLineIndent > blockScalarIndent) {
+            blockScalarLines.push(trimmed);
+            continue;
+          } else {
+            // Block scalar ended, commit the value
+            const currentContext = contextStack[contextStack.length - 1];
+            let blockValue;
+            if (blockScalarMode === '>') {
+              blockValue = blockScalarLines.join(' ');
+            } else {
+              blockValue = blockScalarLines.join('\n');
+            }
+            currentContext[blockScalarKey] = blockValue;
+            blockScalarKey = null;
+            blockScalarLines = [];
+            blockScalarMode = null;
+            i--;
+            continue;
+          }
+        }
+
         if (!trimmed || trimmed.startsWith('#')) continue;
         const indentLevel = line.length - line.trimStart().length;
         if (trimmed.startsWith('- type')) {
@@ -816,10 +850,11 @@ class XiaoshiButton extends LitElement {
           }
           const content = trimmed.substring(1).trim();
           if (content.includes(':')) {
-            const [key, ...valueParts] = content.split(':');
-            const value = valueParts.join(':').trim();
+            const colonIdx = content.indexOf(':');
+            const key = content.substring(0, colonIdx).trim();
+            const value = content.substring(colonIdx + 1).trim();
             currentCard = {};
-            this._setNestedValue(currentCard, key.trim(), this._parseValue(value));
+            this._setNestedValue(currentCard, key, this._parseValue(value));
           } else {
             currentCard = { type: content };
           }
@@ -847,26 +882,42 @@ class XiaoshiButton extends LitElement {
           }
           if (Array.isArray(currentContext)) {
             if (itemValue.includes(':')) {
-              const [key, ...valueParts] = itemValue.split(':');
-              const value = valueParts.join(':').trim();
+              const colonIdx = itemValue.indexOf(':');
+              const key = itemValue.substring(0, colonIdx).trim();
+              const value = itemValue.substring(colonIdx + 1).trim();
               const obj = {};
-              obj[key.trim()] = this._parseValue(value);
+              obj[key] = this._parseValue(value);
               currentContext.push(obj);
             } else {
               currentContext.push(this._parseValue(itemValue));
             }
           }
         } else if (currentCard && trimmed.includes(':')) {
-          const [key, ...valueParts] = trimmed.split(':');
-          const value = valueParts.join(':').trim();
-          const keyName = key.trim();
+          const colonIndex = trimmed.indexOf(':');
+          let keyName = trimmed.substring(0, colonIndex).trim();
+          const value = trimmed.substring(colonIndex + 1).trim();
+
+          // Strip quotes from key (e.g. "1" -> 1)
+          if ((keyName.startsWith('"') && keyName.endsWith('"')) ||
+              (keyName.startsWith("'") && keyName.endsWith("'"))) {
+            keyName = keyName.slice(1, -1);
+          }
+
           while (indentStack.length > 1 && indentLevel <= indentStack[indentStack.length - 1]) {
             indentStack.pop();
             contextStack.pop();
           }
           const currentContext = contextStack[contextStack.length - 1];
           if (value) {
-            this._setNestedValue(currentContext, keyName, this._parseValue(value));
+            // Check for block scalar indicators (>, >-, >+, |, |-, |+)
+            if (/^[>|][+-]?$/.test(value) || /^[>|]\d+[+-]?$/.test(value)) {
+              blockScalarKey = keyName;
+              blockScalarIndent = indentLevel;
+              blockScalarLines = [];
+              blockScalarMode = value.charAt(0);
+            } else {
+              this._setNestedValue(currentContext, keyName, this._parseValue(value));
+            }
           } else {
             let nextLine = null, nextIndent = null;
             for (let j = i + 1; j < lines.length; j++) {
@@ -884,6 +935,19 @@ class XiaoshiButton extends LitElement {
           }
         }
       }
+
+      // Handle block scalar at end of input
+      if (blockScalarKey !== null) {
+        const currentContext = contextStack[contextStack.length - 1];
+        let blockValue;
+        if (blockScalarMode === '>') {
+          blockValue = blockScalarLines.join(' ');
+        } else {
+          blockValue = blockScalarLines.join('\n');
+        }
+        currentContext[blockScalarKey] = blockValue;
+      }
+
       if (currentCard) cards.push(currentCard);
       return cards;
     } catch (error) {
