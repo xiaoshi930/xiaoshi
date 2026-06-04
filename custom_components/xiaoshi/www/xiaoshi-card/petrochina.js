@@ -357,6 +357,81 @@ const cardCommonStyles = css`
     --mdc-icon-size: 12px;
     color: var(--fg-color, #000);
   }
+  .history-section {
+    margin: 0 16px;
+    padding: 0 8px;
+  }
+  .history-year-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .history-year-tab {
+    padding: 2px 10px;
+    border-radius: 12px;
+    border: 1px solid rgb(150,150,150,0.5);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--fg-color, #000);
+    background: transparent;
+    transition: background 0.2s, color 0.2s;
+    height: 18px;
+    line-height: 18px;
+  }
+  .history-year-tab.active {
+    background: rgb(255,165,0);
+    color: #fff;
+    border-color: rgb(255,165,0);
+  }
+  .history-year-tab:hover {
+    background: rgb(255,165,0,0.15);
+  }
+  .history-year-tab.active:hover {
+    background: rgb(255,165,0);
+  }
+  .history-summary {
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    font-size: 11px;
+    color: var(--fg-color, #000);
+    background: rgba(150,150,150,0.1);
+    border-radius: 6px;
+  }
+  .history-columns {
+    display: flex;
+    gap: 12px;
+  }
+  .history-col {
+    flex: 1;
+    min-width: 0;
+  }
+  .history-list {
+    display: flex;
+    flex-direction: column;
+  }
+  .history-row {
+    display: flex;
+    align-items: center;
+    padding: 3px;
+    font-size: 10px;
+    color: var(--fg-color, #000);
+  }
+  .history-date {
+    width: 50px;
+    flex-shrink: 0;
+    color: var(--fg-color, #000);
+  }
+  .history-type {
+    width: 36px;
+    flex-shrink: 0;
+    font-weight: 500;
+  }
+  .history-price {
+    flex: 1;
+    min-width: 0;
+  }
 `;
 
 // ==================== 编辑器混入（Mixin） ====================
@@ -474,6 +549,7 @@ const PetroChinaBaseMixin = (superClass) => class extends superClass {
     this._loading = false;
     this._refreshInterval = null;
     this.theme = 'system';
+    this._selectedHistoryYear = null;
   }
 
   _evaluateTheme() {
@@ -531,7 +607,8 @@ const PetroChinaBaseMixin = (superClass) => class extends superClass {
           next_adjustment_time: attributes.下轮调整时间 || '',
           icon: attributes.icon || 'mdi:gas-station',
           expected_adjustment: entity.state || '0',
-          全国油价排序: attributes['全国油价排序'] || []
+          全国油价排序: attributes['全国油价排序'] || [],
+          调整日历: attributes['调整日历'] || null
         });
       }
 
@@ -643,6 +720,30 @@ class XiaoshiPetroChinaCardEditor extends PetroChinaEditorMixin(LitElement) {
             显示油价省份排行（默认显示）
           </label>
         </div>
+        <div class="form-group">
+          <label>排行范围</label>
+          <select
+            @change=${this._entityChanged}
+            .value=${this.config.rank_range || '3'}
+            name="rank_range"
+          >
+            <option value="3">前3+后3</option>
+            <option value="5">前5+后5</option>
+          </select>
+        </div>
+        <div class="checkbox-group2">
+          <input
+            type="checkbox"
+            class="checkbox-input"
+            @change=${this._entityChanged}
+            .checked=${this.config.show_adjustment_history !== false}
+            name="show_adjustment_history"
+            id="show_adjustment_history"
+          />
+          <label for="show_adjustment_history">
+            显示油价调整历史（默认显示）
+          </label>
+        </div>
       </div>
     `;
   }
@@ -700,6 +801,88 @@ class XiaoshiPetroChinaCard extends PetroChinaBaseMixin(LitElement) {
     }
   }
 
+  _selectHistoryYear(year) {
+    this._selectedHistoryYear = year;
+    this.requestUpdate();
+  }
+
+  _renderAdjustmentHistory(calendar) {
+    if (!calendar) return '';
+    const years = Object.keys(calendar).sort((a, b) => b - a);
+    if (years.length === 0) return '';
+    const selectedYear = this._selectedHistoryYear || years[0];
+    const yearData = calendar[selectedYear];
+    if (!yearData) return '';
+
+    const summary = yearData['全年累计'] || '';
+    const dates = yearData['日期'] || {};
+    const sortedDates = Object.keys(dates).sort((a, b) => a.localeCompare(b));
+
+    // 构建解析后的行数据
+    const rows = sortedDates.map(date => {
+      const value = dates[date];
+      let type = '';
+      let typeColor = 'var(--fg-color, #000)';
+      let price = '';
+      let icon = '';
+      if (typeof value === 'string') {
+        if (value.includes('上调')) {
+          type = '上调';
+          typeColor = '#F44336';
+          price = value.replace(/上调/, '').replace(/💖/g, '').trim();
+          icon = '💖';
+        } else if (value.includes('下调')) {
+          type = '下调';
+          typeColor = '#4CAF50';
+          price = value.replace(/下调/, '').replace(/💚/g, '').trim();
+          icon = '💚';
+        } else if (value.includes('不作调整') || value.includes('不调')) {
+          type = '不调';
+          typeColor = 'var(--fg-color, #000)';
+          price = '';
+          icon = '';
+        } else {
+          type = '';
+          price = value;
+          icon = '';
+        }
+      }
+      const dateDisplay = date.substring(5).replace('-', '/');
+      return { dateDisplay, type, typeColor, price, icon };
+    });
+
+    // 分双列
+    const mid = Math.ceil(rows.length / 2);
+    const leftRows = rows.slice(0, mid);
+    const rightRows = rows.slice(mid);
+
+    return html`
+      ${summary ? html`
+        <div class="history-summary">全年累计：${summary}</div>
+      ` : ''}
+      <div class="history-columns">
+        <div class="history-col">
+          ${leftRows.map(row => html`
+            <div class="history-row">
+              <span class="history-date">${row.dateDisplay}</span>
+              <span class="history-type" style="color: ${row.typeColor}">${row.type}</span>
+              <span class="history-price">${row.price}${row.icon}</span>
+            </div>
+          `)}
+        </div>
+        <div class="history-col">
+          ${rightRows.map(row => html`
+            <div class="history-row">
+              <span class="history-date">${row.dateDisplay}</span>
+              <span class="history-type" style="color: ${row.typeColor}">${row.type}</span>
+              <span class="history-price">${row.price}${row.icon}</span>
+            </div>
+          `)}
+        </div>
+      </div>
+    `;
+  }
+
   render() {
     if (!this.hass) {
       return html`<div class="loading">等待Home Assistant连接...</div>`;
@@ -731,29 +914,39 @@ class XiaoshiPetroChinaCard extends PetroChinaBaseMixin(LitElement) {
                   <div class="device-item" @click=${() => this._handleEntityClick(oilData)}>
                     <div class="device-info">
                       <div class="device-details" style="margin-bottom: 8px;">
-                        当前油价：<ha-icon icon="mdi:gas-station"></ha-icon> 92#: ¥${oilData.gasoline92}&emsp;<ha-icon icon="mdi:gas-station"></ha-icon> 95#: ¥${oilData.gasoline95}&emsp;<ha-icon icon="mdi:gas-station"></ha-icon> 98#: ¥${oilData.gasoline98}&emsp;<ha-icon icon="mdi:gas-station"></ha-icon> 柴油: ¥${oilData.diesel}
+                        当前油价：<ha-icon icon="mdi:gas-station"></ha-icon> 92#: ¥${oilData.gasoline92}&emsp;
+                        <ha-icon icon="mdi:gas-station"></ha-icon> 95#: ¥${oilData.gasoline95}&emsp;
+                        <ha-icon icon="mdi:gas-station"></ha-icon> 柴油: ¥${oilData.diesel}
                       </div>
                       ${oilData.current_adjustment_time ? html`
                       <div class="device-details" style="margin-bottom: 2px;">
                         本轮油价： ${oilData.current_adjustment_time}
                       </div>
                       ${oilData.current_adjustment_price ? html`
-                        ${oilData.current_adjustment_price.split(',').map(price => html`
-                        <div class="device-details" style="margin-bottom: 2px;">
-                          　　　${price.trim()}
-                        </div>
-                        `)}
+                        ${(() => {
+                          const prices = oilData.current_adjustment_price.split(',').map(p => p.trim());
+                          const perLiter = prices.filter(p => p.includes('元/升')).map(p => p.replace(/号汽油/, '#').replace(/号柴油/, '#'));
+                          const perTon = prices.filter(p => p.includes('元/吨'));
+                          return html`
+                            ${perLiter.length ? html`<div class="device-details" style="margin-bottom: 2px;">　　${perLiter.join('　　')}</div>` : ''}
+                            ${perTon.length ? html`<div class="device-details" style="margin-bottom: 2px;">　　${perTon.join('　　')}</div>` : ''}
+                          `;
+                        })()}
                       ` : ''}
                       ` : ''}
                       <div class="device-details" style="margin-bottom: 2px;">
                         下轮油价： ${oilData.next_adjustment_time}
                       </div>
                       ${oilData.next_adjustment_price ? html`
-                        ${oilData.next_adjustment_price.split(',').map(price => html`
-                        <div class="device-details" style="margin-bottom: 2px;">
-                          　　　${price.trim()}
-                        </div>
-                        `)}
+                        ${(() => {
+                          const prices = oilData.next_adjustment_price.split(',').map(p => p.trim());
+                          const perLiter = prices.filter(p => p.includes('元/升')).map(p => p.replace(/号汽油/, '#').replace(/号柴油/, '#'));
+                          const perTon = prices.filter(p => p.includes('元/吨'));
+                          return html`
+                            ${perLiter.length ? html`<div class="device-details" style="margin-bottom: 2px;">　　${perLiter.join('　　')}</div>` : ''}
+                            ${perTon.length ? html`<div class="device-details" style="margin-bottom: 2px;">　　${perTon.join('　　')}</div>` : ''}
+                          `;
+                        })()}
                       ` : ''}
                     </div>
                   </div>
@@ -765,18 +958,41 @@ class XiaoshiPetroChinaCard extends PetroChinaBaseMixin(LitElement) {
                   </div>
                   <div class="device-item">
                     <div class="device-info">
-                      ${oilData.全国油价排序.slice(0, 5).map((item, index) => html`
-                        <div class="device-details" style="margin-bottom: 4px;">
-                          <span style="display: inline-block; width: 60px; color: ${index < 3 ? '#FFD700' : 'inherit'}; font-weight: bold;">${index + 1}.${item.省份}</span><span style="display: inline-block; width: 75px;">92#: ¥${item['92#汽油']}</span><span style="display: inline-block; width: 75px;">95#: ¥${item['95#汽油']}</span><span style="display: inline-block; width: 75px;">柴油: ¥${item['00#柴油']}</span>
-                        </div>
-                      `)}
-                      <div class="device-details" style="margin-bottom: 4px; color: #888;">......</div>
-                      ${oilData.全国油价排序.slice(-5).map((item, index) => html`
-                        <div class="device-details" style="margin-bottom: 4px;">
-                          <span style="display: inline-block; width: 60px; font-weight: bold;">${oilData.全国油价排序.length - 4 + index}.${item.省份}</span><span style="display: inline-block; width: 75px;">92#: ¥${item['92#汽油']}</span><span style="display: inline-block; width: 75px;">95#: ¥${item['95#汽油']}</span><span style="display: inline-block; width: 75px;">柴油: ¥${item['00#柴油']}</span>
-                        </div>
-                      `)}
+                      ${(() => {
+                        const rankRange = parseInt(this.config.rank_range) || 3;
+                        return html`
+                          ${oilData.全国油价排序.slice(0, rankRange).map((item, index) => html`
+                            <div class="device-details" style="margin-bottom: 4px;">
+                              <span style="display: inline-block; width: 60px; color: ${index < 3 ? '#FFD700' : 'inherit'}; font-weight: bold;">${index + 1}.${item.省份}</span><span style="display: inline-block; width: 75px;">92#: ¥${item['92#汽油']}</span><span style="display: inline-block; width: 75px;">95#: ¥${item['95#汽油']}</span><span style="display: inline-block; width: 75px;">柴油: ¥${item['00#柴油']}</span>
+                            </div>
+                          `)}
+                          <div class="device-details" style="margin-bottom: 4px; color: #888;">......</div>
+                          ${oilData.全国油价排序.slice(-rankRange).map((item, index) => html`
+                            <div class="device-details" style="margin-bottom: 4px;">
+                              <span style="display: inline-block; width: 60px; font-weight: bold;">${oilData.全国油价排序.length - rankRange + 1 + index}.${item.省份}</span><span style="display: inline-block; width: 75px;">92#: ¥${item['92#汽油']}</span><span style="display: inline-block; width: 75px;">95#: ¥${item['95#汽油']}</span><span style="display: inline-block; width: 75px;">柴油: ¥${item['00#柴油']}</span>
+                            </div>
+                          `)}
+                        `;
+                      })()}
                     </div>
+                  </div>
+                  ` : ''}
+                  ${oilData.调整日历 && this.config.show_adjustment_history !== false ? html`
+                  <div class="section-divider" style="margin-top: 16px;">
+                    <div class="section-title">
+                      <span>📋 油价调整历史</span>
+                      <div class="history-year-tabs">
+                        ${Object.keys(oilData.调整日历).sort((a, b) => b - a).map(year => html`
+                          <div
+                            class="history-year-tab ${year === (this._selectedHistoryYear || Object.keys(oilData.调整日历).sort((a, b) => b - a)[0]) ? 'active' : ''}"
+                            @click=${() => this._selectHistoryYear(year)}
+                          >${year}年</div>
+                        `)}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="history-section">
+                    ${this._renderAdjustmentHistory(oilData.调整日历)}
                   </div>
                   ` : ''}
                 `)}
@@ -897,6 +1113,32 @@ class XiaoshiPetroChinaButtonEditor extends PetroChinaEditorMixin(LitElement) {
           />
           <label for="show_province_rank">
             显示油价省份排行（默认显示）
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>排行范围</label>
+          <select
+            @change=${this._entityChanged}
+            .value=${this.config.rank_range || '3'}
+            name="rank_range"
+          >
+            <option value="3">前3+后3</option>
+            <option value="5">前5+后5</option>
+          </select>
+        </div>
+
+        <div class="checkbox-group2">
+          <input
+            type="checkbox"
+            class="checkbox-input"
+            @change=${this._entityChanged}
+            .checked=${this.config.show_adjustment_history !== false}
+            name="show_adjustment_history"
+            id="show_adjustment_history"
+          />
+          <label for="show_adjustment_history">
+            显示油价调整历史（默认显示）
           </label>
         </div>
 
