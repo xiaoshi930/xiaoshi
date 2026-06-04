@@ -39,7 +39,7 @@ const UTILITY_CONFIG = {
     dayButtonLabel: '用电',
     monthButtonLabel: '用电',
     ladderUsageKey: '电',
-    svgpath:'/xiaoshi/xiaoshi-card/icon/electric.png'
+    svgpath:'/xiaoshi/xiaoshi-card/icon/electric.svg'
   },
   water: {
     emoji: '💧',
@@ -71,7 +71,7 @@ const UTILITY_CONFIG = {
     dayButtonLabel: '用水',
     monthButtonLabel: '用水',
     ladderUsageKey: '水',
-    svgpath:'/xiaoshi/xiaoshi-card/icon/water.png',
+    svgpath:'/xiaoshi/xiaoshi-card/icon/water.svg',
     dayUsageKey: 'f_water',
     dayCostKey: 'e_water',
     monthUsageKey: 'f_water_total',
@@ -107,7 +107,7 @@ const UTILITY_CONFIG = {
     dayButtonLabel: '用气',
     monthButtonLabel: '用气',
     ladderUsageKey: '气',
-    svgpath:'/xiaoshi/xiaoshi-card/icon/gas.png',
+    svgpath:'/xiaoshi/xiaoshi-card/icon/gas.svg',
     dayUsageKey: 'f_gas',
     dayCostKey: 'e_gas',
     monthUsageKey: 'f_gas_total',
