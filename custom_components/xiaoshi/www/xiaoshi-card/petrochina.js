@@ -891,20 +891,6 @@ class XiaoshiPetroChinaButtonEditor extends PetroChinaEditorMixin(LitElement) {
             type="checkbox"
             class="checkbox-input"
             @change=${this._entityChanged}
-            .checked=${this.config.hide_icon === true}
-            name="hide_icon"
-            id="hide_icon"
-          />
-          <label for="hide_icon">
-          （ 平板端特性）隐藏图标（勾选后隐藏图标）
-          </label>
-        </div>
-
-        <div class="checkbox-group2">
-          <input
-            type="checkbox"
-            class="checkbox-input"
-            @change=${this._entityChanged}
             .checked=${this.config.show_province_rank !== false}
             name="show_province_rank"
             id="show_province_rank"
@@ -1027,18 +1013,6 @@ class XiaoshiPetroChinaButtonEditor extends PetroChinaEditorMixin(LitElement) {
         </div>
 
         <div class="form-group">
-          <label>点击动作：点击按钮时触发的动作</label>
-          <select
-            @change=${this._entityChanged}
-            .value=${this.config.tap_action !== 'none' ? 'tap_action' : 'none'}
-            name="tap_action"
-          >
-            <option value="tap_action">弹出油价信息卡片（默认）</option>
-            <option value="none">无动作</option>
-          </select>
-        </div>
-
-        <div class="form-group">
           <label>👇👇👇下方弹出的卡片可增加的其他卡片👇👇👇</label>
           <textarea
             @change=${this._entityChanged}
@@ -1111,7 +1085,7 @@ class XiaoshiPetroChinaButtonEditor extends PetroChinaEditorMixin(LitElement) {
     if (type === 'checkbox') {
       finalValue = checked;
     } else {
-      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top' && name !== 'tap_action' && name !== 'decimal_precision') return;
+      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top' && name !== 'decimal_precision') return;
       finalValue = value;
     }
     if (name === 'button_width') {
@@ -1124,12 +1098,6 @@ class XiaoshiPetroChinaButtonEditor extends PetroChinaEditorMixin(LitElement) {
       finalValue = value || '13px';
     } else if (name === 'decimal_precision') {
       finalValue = value !== undefined ? parseInt(value) : 1;
-    } else if (name === 'tap_action') {
-      if (value === 'tap_action') {
-        finalValue = undefined;
-      } else {
-        finalValue = value;
-      }
     }
     this.config = { ...this.config, [name]: finalValue };
     this._fireConfigChanged();
@@ -1215,42 +1183,39 @@ class XiaoshiPetroChinaButton extends PetroChinaBaseMixin(LitElement) {
   }
 
   _handleButtonClick() {
-    const tapAction = this.config.tap_action;
-    if (!tapAction || tapAction !== 'none') {
-      const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'popup_top', 'popup_width'];
-      const cards = [];
-      const balanceCardConfig = {};
-      Object.keys(this.config).forEach(key => {
-        if (!excludedParams.includes(key) && key !== 'other_cards') {
-          balanceCardConfig[key] = this.config[key];
-        }
-      });
-      cards.push({
-        type: 'custom:xiaoshi-petrochina-card',
-        ...balanceCardConfig
-      });
-      if (this.config.other_cards && this.config.other_cards.trim()) {
-        try {
-          const additionalCardsConfig = this._parseYamlCards(this.config.other_cards);
-          const cardsWithTheme = additionalCardsConfig.map(card => {
-            if (!card.theme && this.config.theme) {
-              return { ...card, theme: this.config.theme };
-            }
-            return card;
-          });
-          cards.push(...cardsWithTheme);
-        } catch (error) {
-          console.error('解析附加卡片配置失败:', error);
-        }
+    const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'popup_top', 'popup_width'];
+    const cards = [];
+    const balanceCardConfig = {};
+    Object.keys(this.config).forEach(key => {
+      if (!excludedParams.includes(key) && key !== 'other_cards') {
+        balanceCardConfig[key] = this.config[key];
       }
-      const serviceData = { card: cards };
-      const popupWidth = this.config.popup_width || '95%';
-      const popupTop = this.config.popup_top || '20px';
-      if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
-      if (popupTop !== '20px') serviceData.popup_top = popupTop;
-      serviceData.background = 'transparent';
-      this.hass.callService('popup_card', 'show', serviceData);
+    });
+    cards.push({
+      type: 'custom:xiaoshi-petrochina-card',
+      ...balanceCardConfig
+    });
+    if (this.config.other_cards && this.config.other_cards.trim()) {
+      try {
+        const additionalCardsConfig = this._parseYamlCards(this.config.other_cards);
+        const cardsWithTheme = additionalCardsConfig.map(card => {
+          if (!card.theme && this.config.theme) {
+            return { ...card, theme: this.config.theme };
+          }
+          return card;
+        });
+        cards.push(...cardsWithTheme);
+      } catch (error) {
+        console.error('解析附加卡片配置失败:', error);
+      }
     }
+    const serviceData = { card: cards };
+    const popupWidth = this.config.popup_width || '95%';
+    const popupTop = this.config.popup_top || '20px';
+    if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+    if (popupTop !== '20px') serviceData.popup_top = popupTop;
+    serviceData.background = 'transparent';
+    this.hass.callService('popup_card', 'show', serviceData);
     this._handleClick();
   }
 
@@ -1389,7 +1354,6 @@ class XiaoshiPetroChinaButton extends PetroChinaBaseMixin(LitElement) {
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
 
     const transparentBg = this.config.transparent_bg === true;
-    const hideIcon = this.config.hide_icon === true;
     const lockWhiteFg = this.config.lock_white_fg === true;
     const buttonIcon = this.config.button_icon || '⛽';
     const buttonBgColor = transparentBg ? 'transparent' : theme === 'light' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
@@ -1454,7 +1418,7 @@ class XiaoshiPetroChinaButton extends PetroChinaBaseMixin(LitElement) {
 
     const buttonHtml = html`
       <div class="balance-status" style="--fg-color: ${fgColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
-      ${!hideIcon ? (buttonIcon.startsWith('mdi:') ? html`<ha-icon class="status-icon" style="color: ${iconColor};" icon="${buttonIcon}"></ha-icon>` : html`<span class="status-icon" style="color: ${iconColor}; font-size: var(--button-icon-size, 13px); line-height: 1;">${buttonIcon}</span>`) : ''}
+      ${(buttonIcon.startsWith('mdi:') ? html`<ha-icon class="status-icon" style="color: ${iconColor};" icon="${buttonIcon}"></ha-icon>` : html`<span class="status-icon" style="color: ${iconColor}; font-size: var(--button-icon-size, 13px); line-height: 1;">${buttonIcon}</span>`)}
         <span style="color: ${iconColor};">${displayText}</span>
       </div>
     `;

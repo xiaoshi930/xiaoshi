@@ -1,5 +1,20 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
+window.customCards = window.customCards || [];
+window.customCards.push(
+  {
+    type: 'xiaoshi-weather-phone-button',
+    name: '消逝天气按钮卡片',
+    description: '消逝天气按钮卡片，点击弹出天气详情',
+    preview: true
+  },
+  {
+    type: "xiaoshi-weather-phone-card",
+    name: "消逝天气卡片（手机端）",
+    preview: true
+  }
+);
+
 class XiaoshiWeatherPhoneEditor extends LitElement {
   static get properties() {
     return {
@@ -3828,18 +3843,3 @@ class XiaoshiWeatherPhoneButton extends LitElement {
   }
 }
 customElements.define('xiaoshi-weather-phone-button', XiaoshiWeatherPhoneButton);
-
-window.customCards = window.customCards || [];
-window.customCards.push(
-  {
-    type: 'xiaoshi-weather-phone-button',
-    name: '消逝天气按钮卡片',
-    description: '消逝天气按钮卡片，点击弹出天气详情',
-    preview: true
-  },
-  {
-    type: "xiaoshi-weather-phone-card",
-    name: "消逝天气卡片（手机端）",
-    preview: true
-  }
-);

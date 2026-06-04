@@ -1200,20 +1200,6 @@ class XiaoshChartButtonEditor extends ChartEditorMixin(LitElement) {
         </label>
       </div>
 
-      <div class="checkbox-group">
-        <input
-          type="checkbox"
-          class="checkbox-input"
-          @change=${this._entityChanged}
-          .checked=${this.config.hide_icon === true}
-          name="hide_icon"
-          id="hide_icon"
-        />
-        <label for="hide_icon" class="checkbox-label">
-        （ 平板端特性）隐藏图标（勾选后隐藏图标）
-        </label>
-      </div>
-
       <div class="form-group">
         <label>按钮宽度：默认16.8vw, 支持像素(px)和百分比(%)</label>
         <input
@@ -1256,18 +1242,6 @@ class XiaoshChartButtonEditor extends ChartEditorMixin(LitElement) {
           name="button_icon_size"
           placeholder="默认13px"
         />
-      </div>
-
-      <div class="form-group">
-        <label>点击动作：点击按钮时触发的动作</label>
-        <select
-          @change=${this._entityChanged}
-          .value=${this.config.tap_action !== 'none' ? 'tap_action' : 'none'}
-          name="tap_action"
-        >
-          <option value="tap_action">弹出曲线卡片（默认）</option>
-          <option value="none">无动作</option>
-        </select>
       </div>
 
       <div class="form-group">
@@ -1324,17 +1298,13 @@ template: 测试模板(最好引用模板，否则大概率会报错)'>
     } else {
       if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height'
         && name !== 'button_font_size' && name !== 'button_icon_size'
-        && name !== 'popup_width' && name !== 'popup_top' && name !== 'tap_action' && name !== 'emoji') return;
+        && name !== 'popup_width' && name !== 'popup_top' && name !== 'emoji') return;
       finalValue = value;
     }
     if (name === 'button_width') { finalValue = value || '16.8vw'; }
     else if (name === 'button_height') { finalValue = value || '24px'; }
     else if (name === 'button_font_size') { finalValue = value || '11px'; }
     else if (name === 'button_icon_size') { finalValue = value || '13px'; }
-    else if (name === 'tap_action') {
-      if (value === 'tap_action') { finalValue = undefined; }
-      else { finalValue = value; }
-    }
 
     this.config = { ...this.config, [name]: finalValue };
     this.dispatchEvent(new CustomEvent('config-changed', {
@@ -1402,42 +1372,39 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
   }
 
   _handleButtonClick() {
-    const tapAction = this.config.tap_action;
-    if (!tapAction || tapAction !== 'none') {
-      const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'popup_top', 'popup_width'];
-      const cards = [];
-      const chartCardConfig = {};
-      Object.keys(this.config).forEach(key => {
-        if (!excludedParams.includes(key) && key !== 'other_cards') {
-          chartCardConfig[key] = this.config[key];
-        }
-      });
-      cards.push({
-        type: 'custom:xiaoshi-chart-card',
-        ...chartCardConfig
-      });
-      if (this.config.other_cards && this.config.other_cards.trim()) {
-        try {
-          const additionalCardsConfig = this._parseYamlCards(this.config.other_cards);
-          const cardsWithTheme = additionalCardsConfig.map(card => {
-            if (!card.theme && this.config.theme) {
-              return { ...card, theme: this.config.theme };
-            }
-            return card;
-          });
-          cards.push(...cardsWithTheme);
-        } catch (error) {
-          console.error('解析附加卡片配置失败:', error);
-        }
+    const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'popup_top', 'popup_width'];
+    const cards = [];
+    const chartCardConfig = {};
+    Object.keys(this.config).forEach(key => {
+      if (!excludedParams.includes(key) && key !== 'other_cards') {
+        chartCardConfig[key] = this.config[key];
       }
-      const serviceData = { card: cards };
-      const popupWidth = this.config.popup_width || '95%';
-      const popupTop = this.config.popup_top || '20px';
-      if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
-      if (popupTop !== '20px') serviceData.popup_top = popupTop;
-      serviceData.background = 'transparent';
-      this.hass.callService('popup_card', 'show', serviceData);
+    });
+    cards.push({
+      type: 'custom:xiaoshi-chart-card',
+      ...chartCardConfig
+    });
+    if (this.config.other_cards && this.config.other_cards.trim()) {
+      try {
+        const additionalCardsConfig = this._parseYamlCards(this.config.other_cards);
+        const cardsWithTheme = additionalCardsConfig.map(card => {
+          if (!card.theme && this.config.theme) {
+            return { ...card, theme: this.config.theme };
+          }
+          return card;
+        });
+        cards.push(...cardsWithTheme);
+      } catch (error) {
+        console.error('解析附加卡片配置失败:', error);
+      }
     }
+    const serviceData = { card: cards };
+    const popupWidth = this.config.popup_width || '95%';
+    const popupTop = this.config.popup_top || '20px';
+    if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+    if (popupTop !== '20px') serviceData.popup_top = popupTop;
+    serviceData.background = 'transparent';
+    this.hass.callService('popup_card', 'show', serviceData);
     this._handleClick();
   }
 
@@ -1574,7 +1541,6 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
 
     const transparentBg = this.config.transparent_bg === true;
-    const hideIcon = this.config.hide_icon === true;
     const lockWhiteFg = this.config.lock_white_fg === true;
 
     const entityIds = (this.config?.entities || []).map(item =>
@@ -1622,7 +1588,7 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
 
     const buttonHtml = html`
       <div class="chart-status" style="--fg-color: ${numberColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
-      ${!hideIcon ? html`<span class="status-emoji">${buttonIcon}</span>` : ''}
+      <span class="status-emoji">${buttonIcon}</span>
         <span style="color: ${numberColor};">${buttonValue}${buttonUnit}</span>
       </div>
     `;
