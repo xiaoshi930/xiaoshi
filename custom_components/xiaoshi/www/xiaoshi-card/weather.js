@@ -3536,11 +3536,15 @@ class XiaoshiWeatherPhoneButton extends LitElement {
 
       .weather-button-text {
         white-space: nowrap;
-        overflow: hidden;
+        overflow: visible;
         text-overflow: ellipsis;
-        line-height: 1;
+        line-height: 1.2;
         min-width: 2.5em;
         text-align: center;
+      }
+      .weather-button-text sup {
+        position: relative;
+        top: -0.3em;
       }
     `;
   }
@@ -3749,8 +3753,12 @@ class XiaoshiWeatherPhoneButton extends LitElement {
     const warning = displayEntity.attributes?.warning || [];
     const hasWarning = warning && Array.isArray(warning) && warning.length > 0;
 
-    // 根据预警决定文字颜色：有预警取预警颜色，没预警按主题取黑或白
-    const textColor = hasWarning ? this._getWarningColor(warning) : fgColor;
+    // 天气文字颜色按主题走
+    const textColor = fgColor;
+
+    // 预警条数及颜色
+    const warningCount = hasWarning ? warning.length : 0;
+    const warningColor = hasWarning ? this._getWarningColor(warning) : '';
 
     // 天气图标
     const iconSrc = this._getWeatherIcon(conditionState);
@@ -3758,7 +3766,7 @@ class XiaoshiWeatherPhoneButton extends LitElement {
     return html`
       <div class="weather-button" style="--bg-color: ${buttonBgColor}; --fg-color: ${textColor};" @click=${this._handleButtonClick}>
         <img class="weather-button-icon" src="${iconSrc}" alt="${condition}" />
-        <span class="weather-button-text" style="color: ${textColor};">${condition}</span>
+        <span class="weather-button-text" style="color: ${textColor};">${condition}${warningCount > 0 ? html` <sup style="color: ${warningColor}; font-size: 0.7em; vertical-align: super; line-height: 0;">⚠${warningCount}</sup>` : ''}</span>
       </div>
     `;
   }
