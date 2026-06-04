@@ -1021,7 +1021,7 @@ const ChartBaseMixin = (superClass) => class extends superClass {
   _renderCardContent(headerData, bgColor, fgColor) {
     const { v1, v2, n1, n2, unit, merge, entityIds } = headerData;
     return html`
-      <ha-card style="background:${bgColor}; color:${fgColor};">
+      <ha-card style="background:${bgColor}; color:${fgColor}; border:none;">
         <div class="card-inner" style="color:${fgColor};">
           <div class="header">
             <div class="cell left">
@@ -1435,6 +1435,7 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
       const popupTop = this.config.popup_top || '20px';
       if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
       if (popupTop !== '20px') serviceData.popup_top = popupTop;
+      serviceData.background = 'transparent';
       this.hass.callService('popup_card', 'show', serviceData);
     }
     this._handleClick();

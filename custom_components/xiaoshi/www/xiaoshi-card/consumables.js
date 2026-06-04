@@ -303,6 +303,7 @@ const cardCommonStyles = css`
     flex-direction: column;
     background: var(--bg-color, #fff);
     border-radius: 12px;
+    border: none;
   }
   .card-header {
     display: flex;
