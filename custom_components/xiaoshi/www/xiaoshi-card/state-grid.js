@@ -95,8 +95,8 @@ const UTILITY_CONFIG = {
     hasPeakValley: false,
     usageUnit: 'm³',
     priceUnit: '元/m³',
-    barColor: '#4CAF50',
-    barColorLast: '#4CAF5040',
+    barColor: '#f66f07ff',
+    barColorLast: '#f66f0740',
     priceKey: '气价',
     usageSeriesName: '用气量',
     costSeriesName: '气费',
@@ -3912,7 +3912,7 @@ class  XiaoshiStateGridInfo extends LitElement {
       return html`
         <div class="usage-bar">
           <div class="usage-bar-fill">
-            <div class="usage-bar-segment normal" style="width: 100%"></div>
+            <div class="usage-bar-segment normal" style="width: 100%; background-color: ${uc.barColor || '#4caf50'}"></div>
             <div class="usage-bar-text normal" style="color: ${Color}; text-shadow: ${Shadow};--normal-width: 100%; left: 0;">${total} ${uc.usageUnit}</div>
           </div>
         </div>
@@ -3973,7 +3973,7 @@ class  XiaoshiStateGridInfo extends LitElement {
       return html`
         <div class="usage-bar">
           <div class="usage-bar-fill">
-            <div class="usage-bar-segment normal" style="width: 100%"></div>
+            <div class="usage-bar-segment normal" style="width: 100%; background-color: ${uc.barColor || '#4caf50'}"></div>
             <div class="usage-bar-text normal" style="color: ${Color}; text-shadow: ${Shadow};--normal-width: 100%; left: 0;">${total} ${uc.usageUnit}</div>
           </div>
         </div>
@@ -4034,7 +4034,7 @@ class  XiaoshiStateGridInfo extends LitElement {
       return html`
         <div class="usage-bar">
           <div class="usage-bar-fill">
-            <div class="usage-bar-segment normal" style="width: 100%"></div>
+            <div class="usage-bar-segment normal" style="width: 100%; background-color: ${uc.barColor || '#4caf50'}"></div>
             <div class="usage-bar-text normal" style="color: ${Color}; text-shadow: ${Shadow};--normal-width: 100%; left: 0;">${total} ${uc.usageUnit}</div>
           </div>
         </div>
