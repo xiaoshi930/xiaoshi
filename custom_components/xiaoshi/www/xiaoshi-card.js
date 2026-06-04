@@ -21,6 +21,7 @@ import('./xiaoshi-phone/purifier-card.js');
 import('./xiaoshi-phone/computer-card.js');
 import('./xiaoshi-phone/light-card.js');
 import('./xiaoshi-phone/switch-card.js');
+import('./xiaoshi-phone/music-player-card.js');
 
 import('./xiaoshi-small/climate-card.js');
 import('./xiaoshi-small/humidifier-card.js');
