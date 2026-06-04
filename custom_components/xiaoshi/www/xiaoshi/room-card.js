@@ -835,7 +835,7 @@ class XiaoshiRoomCard extends LitElement {
                 height: var(--chip-h, 2.6vh);
             }
             .person-icon ha-icon {
-                --mdc-icon-size: calc(var(--chip-h, 2.6vh) * 0.75);
+                --mdc-icon-size: calc(var(--chip-h, 2.6vh) * 0.85);
             }
             @keyframes person-blink {
                 0%, 100% { opacity: 1; }
@@ -1010,6 +1010,9 @@ class XiaoshiRoomCard extends LitElement {
             .layout-br .br-person .person-icon {
                 margin-left: 0;
             }
+            .layout-br .br-person .person-icon ha-icon {
+                --mdc-icon-size: calc(var(--chip-h, 2.6vh) * 0.85);
+            }
             .layout-br .br-devices {
                 display: flex;
                 justify-content: flex-end;
@@ -1046,6 +1049,9 @@ class XiaoshiRoomCard extends LitElement {
             }
             .layout-bl .bl-person .person-icon {
                 margin-left: 0;
+            }
+            .layout-bl .bl-person .person-icon ha-icon {
+                --mdc-icon-size: calc(var(--chip-h, 2.6vh) * 0.85);
             }
             .layout-bl .bl-devices {
                 display: flex;
