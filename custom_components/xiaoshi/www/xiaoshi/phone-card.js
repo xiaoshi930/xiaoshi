@@ -393,10 +393,6 @@ class XiaoshiPhoneCardEditor extends LitElement {
                     </select>
                 </div>
                 <div class="form-row">
-                    <label>全屏实体</label>
-                    <input type="text" name="kiosk_entity" .value="${c.kiosk_entity || 'switch.phone_full'}" @change="${this._valueChanged}" placeholder="switch.phone_full" />
-                </div>
-                <div class="form-row">
                     <label>背景</label>
                     <select .value="${(c.background && c.background.type) || 'none'}" @change="${this._bgTypeChanged}">
                         <option value="none" .selected="${!c.background || c.background.type === 'none' || !c.background.type}">无</option>
@@ -661,35 +657,118 @@ class XiaoshiPhoneCard extends LitElement {
         this._cardElements = {};
         this._bgIndex = 0;
         this._bgTimer = null;
+        this._kioskOn = true;
+        this._kioskWasOn = false;
+        this._blockToggleMenu = null;
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
+        this._applyKioskMode(false);
         if (this._bgTimer) {
             clearInterval(this._bgTimer);
             this._bgTimer = null;
         }
     }
 
+    updated(changedProps) {
+        if (super.updated) super.updated(changedProps);
+        const isKiosk = this._isKioskOn();
+        if (isKiosk !== this._kioskWasOn) {
+            this._kioskWasOn = isKiosk;
+            this._applyKioskMode(isKiosk);
+        }
+    }
+
+    _applyKioskMode(on) {
+        try {
+            const ha = document.querySelector('home-assistant');
+            if (!ha?.shadowRoot) return;
+
+            const main = ha.shadowRoot.querySelector('home-assistant-main');
+            if (!main?.shadowRoot) return;
+
+            const drawer = main.shadowRoot.querySelector('ha-drawer');
+            const drawerSR = drawer?.shadowRoot;
+            const panel = drawer?.querySelector('ha-panel-lovelace');
+            const huiRoot = panel?.shadowRoot?.querySelector('hui-root');
+            const huiRootSR = huiRoot?.shadowRoot;
+
+            if (on) {
+                // === Hide Header (in hui-root shadow root) ===
+                if (huiRootSR && !huiRootSR.querySelector('#xiaoshi-kiosk-header-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'xiaoshi-kiosk-header-style';
+                    style.textContent = `
+                        .header { display: none !important; }
+                        #view {
+                            min-height: 100vh !important;
+                            --kiosk-header-height: 0px;
+                            padding-top: calc(var(--kiosk-header-height) + var(--safe-area-inset-top)) !important;
+                        }
+                    `;
+                    huiRootSR.appendChild(style);
+                }
+
+                // === Hide Sidebar (in ha-drawer shadow root) ===
+                if (drawerSR && !drawerSR.querySelector('#xiaoshi-kiosk-sidebar-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'xiaoshi-kiosk-sidebar-style';
+                    style.textContent = `
+                        :host {
+                            --ha-sidebar-width: 0px !important;
+                            --kiosk-sidebar-width: 0px !important;
+                        }
+                        ha-sidebar { display: none !important; }
+                        wa-drawer, .sidebar-shell { display: none !important; }
+                        partial-panel-resolver { --mdc-top-app-bar-width: 100% !important; }
+                    `;
+                    drawerSR.appendChild(style);
+                }
+
+                // === Hide menu burger button in toolbar ===
+                const toolbar = huiRootSR?.querySelector('.toolbar');
+                if (toolbar && !toolbar.querySelector('#xiaoshi-kiosk-menubutton-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'xiaoshi-kiosk-menubutton-style';
+                    style.textContent = `
+                        ha-menu-button { display: none !important; }
+                    `;
+                    toolbar.appendChild(style);
+                }
+
+                // === Block toggle menu event ===
+                if (!this._blockToggleMenu) {
+                    this._blockToggleMenu = (e) => { e.preventDefault(); e.stopImmediatePropagation(); };
+                    main.addEventListener('hass-toggle-menu', this._blockToggleMenu, true);
+                }
+            } else {
+                // === Remove all injected kiosk styles ===
+                huiRootSR?.querySelector('#xiaoshi-kiosk-header-style')?.remove();
+                drawerSR?.querySelector('#xiaoshi-kiosk-sidebar-style')?.remove();
+                const toolbar = huiRootSR?.querySelector('.toolbar');
+                toolbar?.querySelector('#xiaoshi-kiosk-menubutton-style')?.remove();
+
+                // === Remove toggle menu blocker ===
+                if (this._blockToggleMenu) {
+                    main.removeEventListener('hass-toggle-menu', this._blockToggleMenu, true);
+                    this._blockToggleMenu = null;
+                }
+            }
+        } catch (e) {
+            console.error('[xiaoshi-phone-card] kiosk mode error:', e);
+        }
+    }
+
 
 
     _isKioskOn() {
-        const entityId = this.config.kiosk_entity || 'switch.phone_full';
-        return this._hass && this._hass.states[entityId] && this._hass.states[entityId].state === 'on';
+        return this._kioskOn;
     }
 
     _toggleFullscreen() {
-        const entityId = this.config.kiosk_entity || 'switch.phone_full';
-        if (!this._hass) return;
-        const currentState = this._hass.states[entityId];
-        if (!currentState) {
-            console.warn('[xiaoshi-phone-card] 实体不存在:', entityId);
-            return;
-        }
-        const newState = currentState.state === 'on' ? false : true;
-        this._hass.callService('switch', 'turn_' + (newState ? 'on' : 'off'), {
-            entity_id: entityId
-        });
+        this._kioskOn = !this._kioskOn;
+        this.requestUpdate();
     }
 
     _getBgInfo() {
