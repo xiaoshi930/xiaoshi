@@ -390,13 +390,18 @@ class XiaoshiAvatarCard extends LitElement {
                 font-size: 2.5vw;
                 font-weight: bold;
                 color: #fff;
-                margin-top: 2%;
                 text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            }
+            .status-duration {
+                font-size: 0.7em;
+                font-weight: normal;
+                vertical-align: bottom;
+                margin-left: 0.2em;
             }
             .status-badge {
                 position: absolute;
-                top: -0.5em;
-                right: -1em;
+                top: -0.7em;
+                right: -1.2em;
                 background: rgba(255,255,255,0.9);
                 color: #333;
                 font-size: 2vw;
@@ -730,6 +735,7 @@ class XiaoshiAvatarCard extends LitElement {
     _collectPersonData(personConfig) {
         const person = this._getPersonData(personConfig);
         const isHome = this._isHome(personConfig);
+        const lastChanged = this._getLastChanged(personConfig);
         const distance = this._getDistanceData(personConfig);
         const birthday = this._getBirthdayData(personConfig);
         const battery = this._getBatteryData(personConfig);
@@ -738,11 +744,41 @@ class XiaoshiAvatarCard extends LitElement {
         return {
             person,       // { name, avatar, state }
             isHome,       // true/false/null
+            lastChanged,  // Date 或 null
             distance,     // { distance, time, is_straight_line } 或 null
             birthday,     // { name, days, description } 或 null
             battery,      // { level, charging } 或 null
             storage       // { percent, free, total } 或 null
         };
+    }
+
+    /**
+     * 获取人员实体上次状态变化时间
+     */
+    _getLastChanged(personConfig) {
+        const entityId = personConfig.tracker_entity;
+        if (!entityId || !this.hass) return null;
+        const state = this.hass.states[entityId];
+        if (!state || !state.last_changed) return null;
+        return new Date(state.last_changed);
+    }
+
+    /**
+     * 格式化持续时间：m/h/d/n，<10用1位小数，>=10用0位小数
+     */
+    _formatDuration(lastChanged) {
+        if (!lastChanged) return '';
+        const diffMs = Date.now() - lastChanged.getTime();
+        if (diffMs < 0) return '';
+        const minutes = diffMs / 60000;
+        const hours = minutes / 60;
+        const days = hours / 24;
+        const years = days / 365;
+        const fmt = (v) => v < 10 ? v.toFixed(1) : Math.round(v).toString();
+        if (years >= 1) return fmt(years) + 'n';
+        if (days >= 1) return fmt(days) + 'd';
+        if (hours >= 1) return fmt(hours) + 'h';
+        return fmt(minutes) + 'm';
     }
 
     /**
@@ -997,22 +1033,23 @@ class XiaoshiAvatarCard extends LitElement {
         const avatarHtml = this._renderAvatarWithRingForConfig(data, personConfig);
 
         // 渲染状态文字
+        const duration = this._formatDuration(data.lastChanged);
         let statusHtml = html``;
         if (isMain) {
             // 主卡：有人在家显示"在家"+角标，全不在家显示"离家"
             if (allData.homeCount > 0) {
                 statusHtml = html`
                     <div class="status-text">
-                        在家
-                        <span class="status-badge">${allData.homeCount}</span>
+                        <span style="position:relative;">在家<span class="status-badge">${allData.homeCount}</span></span>${duration ? html`<span class="status-duration">${duration}</span>` : ''}
                     </div>
                 `;
             } else {
-                statusHtml = html`<div class="status-text">离家</div>`;
+                statusHtml = html`<div class="status-text">离家${duration ? html`<span class="status-duration">${duration}</span>` : ''}</div>`;
             }
         } else {
             // 副卡：只显示当前人的在家/离家，无角标
-            statusHtml = html`<div class="status-text">${data.isHome === true ? '在家' : '离家'}</div>`;
+            const label = data.isHome === true ? '在家' : '离家';
+            statusHtml = html`<div class="status-text">${label}${duration ? html`<span class="status-duration">${duration}</span>` : ''}</div>`;
         }
 
         // 渲染生日信息
@@ -1027,14 +1064,15 @@ class XiaoshiAvatarCard extends LitElement {
         if (data.distance) {
             const commuteMode = personConfig ? (personConfig.commute_mode || 'driving') : 'driving';
             const modeIcons = { driving: '🚗', transit: '🚌', cycling: '🚲', walking: '🚶' };
-            const distIcon = data.distance.is_straight_line ? '🚗' : (modeIcons[commuteMode] || '🚗');
+            const distIcon = data.distance.is_straight_line ? '🌏' : (modeIcons[commuteMode] || '🚗');
             const distValue = (data.distance.distance || '').replace(/([\d.]+)(公里|千米|km)/i, (_, n) => Math.round(parseFloat(n)) + 'km').replace('公里', 'km').replace('千米', 'km');
-            const timeValue = (data.distance.time || '').replace('分钟', 'min').replace('小时', 'h');
+            const timeValue = (data.distance.time || '').replace('分钟', 'm').replace('小时', 'h');
 
             distanceHtml = html`<div class="info-text">${distIcon} ${distValue}</div>`;
 
             if (!data.distance.is_straight_line && data.distance.time) {
-                timeHtml = html`<div class="info-text">🕛 ${timeValue}</div>`;
+                const timeIcon = modeIcons[commuteMode] || '🌏';
+                timeHtml = html`<div class="info-text">${timeIcon} ${timeValue}</div>`;
             }
         }
 
