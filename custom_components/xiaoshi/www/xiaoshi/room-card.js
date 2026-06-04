@@ -636,8 +636,10 @@ class XiaoshiRoomCardEditor extends LitElement {
                 <div class="form-row">
                     <label>设备布局</label>
                     <select name="device_layout" @change="${this._valueChanged}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
-                        <option value="top_right" .selected="${!c.device_layout || c.device_layout === 'top_right'}">右上布局</option>
-                        <option value="bottom_right" .selected="${c.device_layout === 'bottom_right'}">右下布局</option>
+                        <option value="right_top" .selected="${!c.device_layout || c.device_layout === 'right_top'}">右上布局</option>
+                        <option value="right_bottom" .selected="${c.device_layout === 'right_bottom'}">右下布局</option>
+                        <option value="bottom_right" .selected="${c.device_layout === 'bottom_right'}">下右布局</option>
+                        <option value="bottom_left" .selected="${c.device_layout === 'bottom_left'}">下左布局</option>
                     </select>
                 </div>
 
@@ -792,12 +794,13 @@ class XiaoshiRoomCard extends LitElement {
             }
             /* ===== 左侧区域 ===== */
             .left {
-                width: 18vw;
+                width: 45%;
                 padding: 1.2vh 1.2vw 1.2vh 2vw;
                 display: flex;
                 flex-direction: column;
                 position: relative;
                 z-index: 1;
+                box-sizing: border-box;
             }
             .corner-label {
                 position: absolute;
@@ -806,13 +809,13 @@ class XiaoshiRoomCard extends LitElement {
                 width: 0;
                 height: 0;
                 border-style: solid;
-                border-width: 7.5vh 7.5vh 0 0;
+                border-width: var(--corner-size, 7.5vh) var(--corner-size, 7.5vh) 0 0;
                 border-color: #00bcd4 transparent transparent transparent;
             }
             .corner-text {
                 position: absolute;
-                top: 1.2vh;
-                left: 0.8vh;
+                top: calc(var(--corner-size, 7.5vh) * 0.16);
+                left: calc(var(--corner-size, 7.5vh) * 0.11);
                 color: white;
                 font-size: 3vw;
                 font-weight: bold;
@@ -821,18 +824,18 @@ class XiaoshiRoomCard extends LitElement {
             }
             /* 人在图标 */
             .person-icon {
-                margin-top: 2.5vh;
+                margin-top: var(--chip-h, 2.6vh);
                 margin-left: 7vw;
                 margin-right: 0;
                 color: #ff5722;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                width: 2.2vh;
-                height: 2.6vh;
+                width: var(--chip-h, 2.6vh);
+                height: var(--chip-h, 2.6vh);
             }
             .person-icon ha-icon {
-                --mdc-icon-size: 1.8vh;
+                --mdc-icon-size: calc(var(--chip-h, 2.6vh) * 0.75);
             }
             @keyframes person-blink {
                 0%, 100% { opacity: 1; }
@@ -855,9 +858,9 @@ class XiaoshiRoomCard extends LitElement {
             .sensor-chip {
                 border-radius: 4vw;
                 padding: 0 2vw;
-                height: 2.6vh;
+                height: calc(var(--chip-h, 2.6vh) * 1.1);
                 color: white;
-                font-size: 1.2vh;
+                font-size: calc(var(--chip-h, 2.6vh) * 0.5);
                 font-weight: 500;
                 display: flex;
                 align-items: center;
@@ -875,7 +878,7 @@ class XiaoshiRoomCard extends LitElement {
                 z-index: 1;
             }
             .sensor-icon ha-icon {
-                --mdc-icon-size: 1.4vh;
+                --mdc-icon-size: calc(var(--chip-h, 2.6vh) * 0.6);
             }
             .sensor-value {
                 flex: 1;
@@ -982,6 +985,103 @@ class XiaoshiRoomCard extends LitElement {
             }
             .badge.hidden {
                 display: none;
+            }
+
+            /* ===== 下右布局（3设备） ===== */
+            .layout-br .br-sensors {
+                position: absolute;
+                top: 1.2vh;
+                right: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 0.5vh;
+                width: 45%;
+                padding: 0 1.2vw 0 2vw;
+                box-sizing: border-box;
+                z-index: 1;
+            }
+            .layout-br .br-person {
+                position: absolute;
+                left: 1vw;
+                top: 40%;
+                transform: translateY(-50%);
+                z-index: 1;
+            }
+            .layout-br .br-person .person-icon {
+                margin-left: 0;
+            }
+            .layout-br .br-devices {
+                display: flex;
+                justify-content: flex-end;
+                align-items: flex-end;
+                gap: 1.4vh;
+                padding: 0 2.5vw 1.2vh 2.5vw;
+                flex: 1;
+            }
+            .layout-br .br-devices .device-btn {
+                flex: 1;
+                min-height: 0;
+                height: 30%;
+            }
+
+            /* ===== 下左布局（3设备） ===== */
+            .layout-bl .bl-sensors {
+                position: absolute;
+                top: 1.2vh;
+                left: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 0.5vh;
+                width: 45%;
+                padding: 0 1.2vw 0 2vw;
+                box-sizing: border-box;
+                z-index: 1;
+            }
+            .layout-bl .bl-person {
+                position: absolute;
+                right: 1vw;
+                top: 40%;
+                transform: translateY(-50%);
+                z-index: 1;
+            }
+            .layout-bl .bl-person .person-icon {
+                margin-left: 0;
+            }
+            .layout-bl .bl-devices {
+                display: flex;
+                justify-content: flex-start;
+                align-items: flex-end;
+                gap: 1.4vh;
+                padding: 0 2.5vw 1.2vh 2.5vw;
+                flex: 1;
+            }
+            .layout-bl .bl-devices .device-btn {
+                flex: 1;
+                min-height: 0;
+                height: 30%;
+            }
+
+            /* ===== 右上角标 ===== */
+            .corner-label-right {
+                position: absolute;
+                top: -1px;
+                right: -1px;
+                width: 0;
+                height: 0;
+                border-style: solid;
+                border-width: var(--corner-size, 7.5vh) 0 0 var(--corner-size, 7.5vh);
+                border-color: #00bcd4 transparent transparent transparent;
+            }
+            .corner-text-right {
+                position: absolute;
+                top: calc(var(--corner-size, 7.5vh) * 0.16);
+                right: calc(var(--corner-size, 7.5vh) * 0.11);
+                color: white;
+                font-size: 3vw;
+                font-weight: bold;
+                transform: rotate(45deg);
+                transform-origin: center center;
+                white-space: nowrap;
             }
         `;
     }
@@ -1167,6 +1267,8 @@ class XiaoshiRoomCard extends LitElement {
         const name = this.config.name || '房间名';
         const cardWidth = this.config.card_width || '46vw';
         const cardHeight = this.config.card_height || '100%';
+        const cardHeightPx = this._cssUnitToPx(cardHeight, this.parentElement?.offsetHeight || window.innerHeight);
+        const chipH = Math.max(12, cardHeightPx * 0.12);
 
         const tempEntity = this.config.temperature;
         const humiEntity = this.config.humidity;
@@ -1243,8 +1345,70 @@ class XiaoshiRoomCard extends LitElement {
             cardHeight ? `height:${cardHeight}` : '',
             `background:${cardBg}`,
             'border-radius:3.5vw',
+            `--chip-h:${chipH}px`,
+            `--corner-size:${cardHeightPx * 0.4}px`,
         ].filter(Boolean).join(';');
 
+        const layout = this.config.device_layout || 'right_top';
+
+        // 传感器渲染公共片段
+        const sensorHtml = sensorItems.map(s => html`
+            <div class="sensor-chip" style="background:${s.color};"
+                @click="${() => s.popup ? this._showSensorPopup(s.popup) : null}">
+                <span class="sensor-icon"><ha-icon icon="${s.icon}"></ha-icon></span>
+                <span class="sensor-value">${s.value}${s.unit}</span>
+            </div>
+        `);
+
+        // 人在图标渲染
+        const personHtml = html`
+            <div class="person-icon ${!personEntity ? 'person-hidden' : ''} ${isHome ? 'person-home' : ''}" style="color:${isHome ? (this.config.person_color || '#ff5722') : '#888'}">
+                <ha-icon icon="${isHome ? (this.config.person_icon || 'mdi:motion-sensor') : 'mdi:motion-sensor-off'}"></ha-icon>
+            </div>
+        `;
+
+        // 下右布局 / 下左布局
+        if (layout === 'bottom_right' || layout === 'bottom_left') {
+            const isBR = layout === 'bottom_right';
+            const layoutClass = isBR ? 'layout-br' : 'layout-bl';
+            return html`
+                <ha-card style="${cardStyle}">
+                    <div class="card ${layoutClass}" style="${cardStyle}">
+                        ${isBR ? html`
+                            <!-- 左上角标 -->
+                            <div class="corner-label" style="border-color:${this.config.name_color || '#00bcd4'} transparent transparent transparent"></div>
+                            <div class="corner-text" style="transform:rotate(-45deg);${this.config.name_size ? 'font-size:' + this.config.name_size + 'vw' : ''}">${name}</div>
+                            <!-- 右上传感器 -->
+                            <div class="br-sensors">${sensorHtml}</div>
+                            <!-- 人在图标（靠左） -->
+                            <div class="br-person">${personHtml}</div>
+                            <!-- 底部设备（从右往左：d3 d2 d1） -->
+                            <div class="br-devices">
+                                ${this._renderDevice(d3)}
+                                ${this._renderDevice(d2)}
+                                ${this._renderDevice(d1)}
+                            </div>
+                        ` : html`
+                            <!-- 右上角标 -->
+                            <div class="corner-label-right" style="border-color:${this.config.name_color || '#00bcd4'} transparent transparent transparent"></div>
+                            <div class="corner-text-right" style="transform:rotate(45deg);${this.config.name_size ? 'font-size:' + this.config.name_size + 'vw' : ''}">${name}</div>
+                            <!-- 左上传感器 -->
+                            <div class="bl-sensors">${sensorHtml}</div>
+                            <!-- 人在图标（靠右） -->
+                            <div class="bl-person">${personHtml}</div>
+                            <!-- 底部设备（从左往右：d1 d2 d3） -->
+                            <div class="bl-devices">
+                                ${this._renderDevice(d1)}
+                                ${this._renderDevice(d2)}
+                                ${this._renderDevice(d3)}
+                            </div>
+                        `}
+                    </div>
+                </ha-card>
+            `;
+        }
+
+        // 原有布局（right_top / right_bottom）
         return html`
             <ha-card style="${cardStyle}">
                 <div class="card" style="${cardStyle}">
@@ -1252,22 +1416,12 @@ class XiaoshiRoomCard extends LitElement {
                         <div class="corner-label" style="border-color:${this.config.name_color || '#00bcd4'} transparent transparent transparent"></div>
                         <div class="corner-text" style="transform:rotate(-45deg);${this.config.name_size ? 'font-size:' + this.config.name_size + 'vw' : ''}">${name}</div>
                         <!-- 人在图标：有人时闪烁，没人时显示off图标 -->
-                        <div class="person-icon ${!personEntity ? 'person-hidden' : ''} ${isHome ? 'person-home' : ''}" style="color:${isHome ? (this.config.person_color || '#ff5722') : '#888'}">
-                            <ha-icon icon="${isHome ? (this.config.person_icon || 'mdi:motion-sensor') : 'mdi:motion-sensor-off'}"></ha-icon>
-                        </div>
+                        ${personHtml}
                         <!-- 传感器条 -->
-                        <div class="sensor-list">
-                            ${sensorItems.map(s => html`
-                                <div class="sensor-chip" style="background:${s.color};"
-                                    @click="${() => s.popup ? this._showSensorPopup(s.popup) : null}">
-                                    <span class="sensor-icon"><ha-icon icon="${s.icon}"></ha-icon></span>
-                                    <span class="sensor-value">${s.value}${s.unit}</span>
-                                </div>
-                            `)}
-                        </div>
+                        <div class="sensor-list">${sensorHtml}</div>
                     </div>
                     <div class="devices-area">
-                        ${this.config.device_layout === 'bottom_right' ? html`
+                        ${layout === 'right_bottom' ? html`
                             ${this._renderDevice(d6)}
                             ${this._renderDevice(d3)}
                             ${this._renderDevice(d5)}
