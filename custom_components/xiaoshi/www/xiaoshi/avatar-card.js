@@ -1019,6 +1019,7 @@ class XiaoshiAvatarCard extends LitElement {
         const popupTop = this.config.popup_top || '20px';
         if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
         if (popupTop !== '20px') serviceData.popup_top = popupTop;
+        serviceData.background = 'transparent';
         this.hass.callService('popup_card', 'show', serviceData);
     }
 
