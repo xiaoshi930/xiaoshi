@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00c853"/>
+      <stop offset="50%" stop-color="#00e676"/>
+      <stop offset="100%" stop-color="#69f0ae"/>
+    </linearGradient>
+    <linearGradient id="greenDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#009624"/>
+      <stop offset="100%" stop-color="#00c853"/>
+    </linearGradient>
+    <radialGradient id="greenGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#b9f6ca" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#00c853" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 外圆环 -->
+  <circle cx="100" cy="100" r="95" fill="none" stroke="url(#greenDark)" stroke-width="4" opacity="0.9"/>
+  <circle cx="100" cy="100" r="90" fill="none" stroke="url(#greenGrad)" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- 背景球体 -->
+  <circle cx="100" cy="100" r="82" fill="url(#greenGlow)"/>
+
+  <!-- 经纬线 -->
+  <ellipse cx="100" cy="100" rx="82" ry="30" fill="none" stroke="url(#greenGrad)" stroke-width="1.2" opacity="0.5"/>
+  <ellipse cx="100" cy="100" rx="82" ry="55" fill="none" stroke="url(#greenGrad)" stroke-width="1" opacity="0.4"/>
+  <ellipse cx="100" cy="100" rx="40" ry="82" fill="none" stroke="url(#greenGrad)" stroke-width="1" opacity="0.4"/>
+  <ellipse cx="100" cy="100" rx="65" ry="82" fill="none" stroke="url(#greenGrad)" stroke-width="1" opacity="0.4"/>
+
+  <!-- 赤道线 -->
+  <line x1="18" y1="100" x2="182" y2="100" stroke="url(#greenGrad)" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- 中心闪电 -->
+  <g filter="url(#glow)">
+    <path d="M108 52 L88 92 L102 92 L92 148 L118 98 L102 98 Z" fill="url(#greenGrad)"/>
+    <path d="M108 52 L88 92 L102 92 L92 148 L118 98 L102 98 Z" fill="none" stroke="#fff" stroke-width="0.8" opacity="0.4"/>
+  </g>
+
+  <!-- 内部小圆环 -->
+  <circle cx="100" cy="100" r="38" fill="none" stroke="url(#greenGrad)" stroke-width="1.5" opacity="0.7"/>
+
+  <!-- 顶部中文标签 -->
+  <text x="100" y="42" text-anchor="middle" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif" font-size="30" font-weight="bold" fill="#00c853" letter-spacing="4">电费</text>
+  <!-- 底部英文标签 -->
+  <text x="100" y="192" text-anchor="middle" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif" font-size="20" fill="#00e676" letter-spacing="2" opacity="0.8">ELECTRIC</text>
+</svg>

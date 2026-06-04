@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d50000"/>
+      <stop offset="50%" stop-color="#ff1744"/>
+      <stop offset="100%" stop-color="#ff5252"/>
+    </linearGradient>
+    <linearGradient id="redDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9b0000"/>
+      <stop offset="100%" stop-color="#d50000"/>
+    </linearGradient>
+    <linearGradient id="orangeGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#ff3d00"/>
+      <stop offset="50%" stop-color="#ff9100"/>
+      <stop offset="100%" stop-color="#ffc400"/>
+    </linearGradient>
+    <radialGradient id="redGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff8a80" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#d50000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glowRed">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 外圆环 -->
+  <circle cx="100" cy="100" r="95" fill="none" stroke="url(#redDark)" stroke-width="4" opacity="0.9"/>
+  <circle cx="100" cy="100" r="90" fill="none" stroke="url(#redGrad)" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- 背景球体 -->
+  <circle cx="100" cy="100" r="82" fill="url(#redGlow)"/>
+
+  <!-- 经纬线 -->
+  <ellipse cx="100" cy="100" rx="82" ry="30" fill="none" stroke="url(#redGrad)" stroke-width="1.2" opacity="0.5"/>
+  <ellipse cx="100" cy="100" rx="82" ry="55" fill="none" stroke="url(#redGrad)" stroke-width="1" opacity="0.4"/>
+  <ellipse cx="100" cy="100" rx="40" ry="82" fill="none" stroke="url(#redGrad)" stroke-width="1" opacity="0.4"/>
+  <ellipse cx="100" cy="100" rx="65" ry="82" fill="none" stroke="url(#redGrad)" stroke-width="1" opacity="0.4"/>
+  <line x1="18" y1="100" x2="182" y2="100" stroke="url(#redGrad)" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- 中心火焰 -->
+  <g filter="url(#glowRed)">
+    <!-- 外焰 -->
+    <path d="M100 148 C85 148 72 135 72 118 C72 100 85 85 95 70 C98 65 100 55 100 55 C100 55 102 65 105 70 C115 85 128 100 128 118 C128 135 115 148 100 148 Z" fill="url(#redGrad)"/>
+    <!-- 内焰 -->
+    <path d="M100 140 C90 140 82 130 82 118 C82 108 90 98 96 88 C98 84 100 78 100 78 C100 78 102 84 104 88 C110 98 118 108 118 118 C118 130 110 140 100 140 Z" fill="url(#orangeGrad)"/>
+    <!-- 焰心 -->
+    <path d="M100 132 C94 132 90 126 90 118 C90 112 94 106 98 100 C99 97 100 94 100 94 C100 94 101 97 102 100 C106 106 110 112 110 118 C110 126 106 132 100 132 Z" fill="#fff9c4" opacity="0.7"/>
+  </g>
+
+  <!-- 内部小圆环 -->
+  <circle cx="100" cy="100" r="38" fill="none" stroke="url(#redGrad)" stroke-width="1.5" opacity="0.7"/>
+
+  <!-- 顶部中文标签 -->
+  <text x="100" y="42" text-anchor="middle" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif" font-size="30" font-weight="bold" fill="#d50000" letter-spacing="4">燃气</text>
+  <!-- 底部英文标签 -->
+  <text x="100" y="192" text-anchor="middle" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif" font-size="20" fill="#ff1744" letter-spacing="2" opacity="0.8">GAS</text>
+</svg>
