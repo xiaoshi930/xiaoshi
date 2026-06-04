@@ -1002,7 +1002,7 @@ class XiaoshiRoomCard extends LitElement {
             }
             .layout-br .br-person {
                 position: absolute;
-                left: 1vw;
+                left: 7vw;
                 top: 40%;
                 transform: translateY(-50%);
                 z-index: 1;
@@ -1039,7 +1039,7 @@ class XiaoshiRoomCard extends LitElement {
             }
             .layout-bl .bl-person {
                 position: absolute;
-                right: 1vw;
+                right: 7vw;
                 top: 40%;
                 transform: translateY(-50%);
                 z-index: 1;
