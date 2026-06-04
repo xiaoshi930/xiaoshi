@@ -70,7 +70,7 @@ const UTILITY_CONFIG = {
     thisCostSeriesName: '本年水费',
     dayButtonLabel: '用水',
     monthButtonLabel: '用水',
-    ladderUsageKey: '水',
+    ladderUsageKey: '用气',
     svgpath:'/xiaoshi/xiaoshi-card/icon/water.svg',
     dayUsageKey: 'f_water',
     dayCostKey: 'e_water',
@@ -106,7 +106,7 @@ const UTILITY_CONFIG = {
     thisCostSeriesName: '本年气费',
     dayButtonLabel: '用气',
     monthButtonLabel: '用气',
-    ladderUsageKey: '气',
+    ladderUsageKey: '用气',
     svgpath:'/xiaoshi/xiaoshi-card/icon/gas.svg',
     dayUsageKey: 'f_gas',
     dayCostKey: 'e_gas',
@@ -4545,9 +4545,9 @@ class  XiaoshiStateGridInfo extends LitElement {
         const ladderType = isYearLadder ? '年' : '月';
         const ladderTitle = isYearLadder ? `年${this._getUC().typeLabel}阶梯` : `月${this._getUC().typeLabel}阶梯`;
         const currentLevel = selectedEntity.attributes.计费标准?.[`当前${ladderType}阶梯档`]?.replace('第', '').replace('档', '') || '1';
-        const secondLevelStart = selectedEntity.attributes.计费标准?.[`${ladderType}阶梯第2档起始用${uc.ladderUsageKey}量`];
-        const thirdLevelStart = selectedEntity.attributes.计费标准?.[`${ladderType}阶梯第3档起始用${uc.ladderUsageKey}量`];
-        const totalUsage = selectedEntity.attributes.计费标准?.[`${ladderType}阶梯累计用${uc.ladderUsageKey}量`];
+        const secondLevelStart = selectedEntity.attributes.计费标准?.[`${ladderType}阶梯第2档起始${uc.ladderUsageKey}量`];
+        const thirdLevelStart = selectedEntity.attributes.计费标准?.[`${ladderType}阶梯第3档起始${uc.ladderUsageKey}量`];
+        const totalUsage = selectedEntity.attributes.计费标准?.[`${ladderType}阶梯累计${uc.ladderUsageKey}量`];
         
         let level1Width = 0, level2Width = 0, level3Width = 0;
         let displayLevel = 1;
