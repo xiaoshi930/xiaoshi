@@ -70,7 +70,7 @@ const UTILITY_CONFIG = {
     thisCostSeriesName: '本年水费',
     dayButtonLabel: '用水',
     monthButtonLabel: '用水',
-    ladderUsageKey: '气',
+    ladderUsageKey: '水',
     svgpath:'/xiaoshi/xiaoshi-card/icon/water.svg',
     dayUsageKey: 'f_water',
     dayCostKey: 'e_water',
