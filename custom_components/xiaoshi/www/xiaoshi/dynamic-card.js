@@ -217,10 +217,17 @@ class XiaoshiDynamicCardEditor extends LitElement {
                     <input type="color" name="off_color" .value="${area.off_color || '#666666'}" @change="${(e) => this._areaValueChanged(index, e)}" title="关闭颜色" />
                 </div>
                 <div class="form-row">
-                    <label>自动隐藏</label>
+                    <label>按钮是否自动隐藏</label>
                     <select name="auto_hide" @change="${(e) => this._areaValueChanged(index, e)}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
                         <option value="false" .selected="${area.auto_hide !== 'true'}">否</option>
                         <option value="true" .selected="${area.auto_hide === 'true'}">是</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>弹出设备是否自动隐藏</label>
+                    <select name="popup_auto_hide" @change="${(e) => this._areaValueChanged(index, e)}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
+                        <option value="false" .selected="${area.popup_auto_hide !== 'true'}">否</option>
+                        <option value="true" .selected="${area.popup_auto_hide === 'true'}">是</option>
                     </select>
                 </div>
                 <div class="form-row">
@@ -605,6 +612,34 @@ class XiaoshiDynamicCard extends LitElement {
         return count;
     }
 
+    // 判断单个实体是否为活跃状态（与角标数量统计规则一致）
+    _isEntityActive(areaConfig, entityId) {
+        if (!this.hass || !entityId) return false;
+        const state = this.hass.states[entityId];
+        if (!state) return false;
+
+        const conditionMode = areaConfig.condition_mode || '';
+        let conditions;
+        if (conditionMode === 'override') {
+            conditions = (areaConfig.status_conditions || '')
+                .split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+        } else if (conditionMode === 'append') {
+            const preset = PRESET_ON_STATES.map(s => s.toLowerCase());
+            const custom = (areaConfig.status_conditions || '')
+                .split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+            conditions = [...new Set([...preset, ...custom])];
+        } else {
+            conditions = PRESET_ON_STATES.map(s => s.toLowerCase());
+        }
+
+        const offStates = conditionMode === 'override' ? [] : PRESET_OFF_STATES.map(s => s.toLowerCase());
+        const stateLower = state.state.toLowerCase();
+        if (offStates.some(c => stateLower.includes(c) || c.includes(stateLower))) {
+            return false;
+        }
+        return conditions.includes(stateLower);
+    }
+
     _getAreaBgColor(areaConfig, activeCount) {
         const baseColor = activeCount > 0 ? (areaConfig.on_color || '#f57c00') : (areaConfig.off_color || '#666666');
         return this._colorWithAlpha(baseColor, 0.6);
@@ -655,8 +690,17 @@ class XiaoshiDynamicCard extends LitElement {
         if (areaConfig.popup_cards && areaConfig.popup_cards.trim()) {
             try {
                 const parsed = this._parseYamlCards(areaConfig.popup_cards);
+                // 弹出设备自动隐藏：过滤掉不活跃实体的卡片
+                let filtered = parsed;
+                if (areaConfig.popup_auto_hide === 'true') {
+                    filtered = parsed.filter(card => {
+                        const entity = card.entity;
+                        if (!entity) return true;
+                        return this._isEntityActive(areaConfig, entity);
+                    });
+                }
                 const theme = this._evaluateTheme();
-                const cardsWithTheme = parsed.map(card => {
+                const cardsWithTheme = filtered.map(card => {
                     if (!card.theme && this.config.theme) {
                         return { ...card, theme: this.config.theme === 'system' ? theme : this.config.theme };
                     }
@@ -669,6 +713,9 @@ class XiaoshiDynamicCard extends LitElement {
         }
 
         this._handleClick();
+
+        // 弹出设备自动隐藏且过滤后无卡片，直接返回
+        if (areaConfig.popup_auto_hide === 'true' && cards.length === 0) return;
 
         // 无弹窗配置时，自动为实体生成弹窗
         if (cards.length === 0) {
