@@ -1,0 +1,781 @@
+import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+
+window.customCards = window.customCards || [];
+window.customCards.push({
+    type: 'xiaoshi-pad-card',
+    name: '消逝卡(平板端)-背景卡',
+    description: '消逝卡(平板端)-背景卡'
+});
+
+// ==================== 编辑器 ====================
+class XiaoshiPadCardEditor extends LitElement {
+    static get properties() {
+        return {
+            hass: { type: Object },
+            config: { type: Object }
+        };
+    }
+
+    static get styles() {
+        return css`
+            .form {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                min-height: 400px;
+            }
+            .form-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .form-row label {
+                font-weight: bold;
+                white-space: nowrap;
+                min-width: 50px;
+            }
+            .form-row input, .form-row select {
+                flex: 1;
+                padding: 6px 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
+            .size-row {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+            .size-row .form-row,
+            .size-row .glow-row {
+                flex: 0 0 auto;
+            }
+            .size-row .form-row:first-child {
+                flex: 0 0 auto;
+            }
+            .size-row input[type="text"] {
+                width: 80px;
+                flex: none;
+            }
+            .card-section {
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 10px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .card-section-title {
+                font-weight: bold;
+                font-size: 14px;
+                color: var(--primary-text-color);
+                margin-bottom: 4px;
+            }
+            .color-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .color-row label {
+                font-weight: bold;
+                white-space: nowrap;
+                min-width: 50px;
+                font-size: 13px;
+            }
+            .color-row input[type="color"] {
+                width: 40px;
+                height: 30px;
+                padding: 0;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            .color-preview {
+                flex: 1;
+                height: 30px;
+                border-radius: 4px;
+                border: 1px solid #ddd;
+            }
+            .glow-item {
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 10px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                background: var(--card-background-color, #fff);
+            }
+            .glow-item-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .glow-item-header span {
+                font-weight: bold;
+                font-size: 13px;
+            }
+            .glow-remove-btn {
+                background: none;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                cursor: pointer;
+                padding: 2px 8px;
+                font-size: 12px;
+                color: var(--error-color, #db4437);
+            }
+            .glow-row {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .glow-row label {
+                font-weight: bold;
+                white-space: nowrap;
+                min-width: 50px;
+                font-size: 12px;
+            }
+            .glow-row input, .glow-row select {
+                flex: 1;
+                padding: 4px 6px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 12px;
+            }
+            .state-colors-textarea {
+                width: 100%;
+                min-height: 60px;
+                padding: 6px 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 12px;
+                font-family: monospace;
+                resize: vertical;
+            }
+            .add-glow-btn {
+                background: var(--primary-color, #03a9f4);
+                color: #fff;
+                border: none;
+                border-radius: 4px;
+                padding: 6px 12px;
+                cursor: pointer;
+                font-size: 13px;
+            }
+        `;
+    }
+
+    constructor() {
+        super();
+    }
+
+    setConfig(config) {
+        this.config = config;
+    }
+
+    _valueChanged(e) {
+        const { name, value } = e.target;
+        if (!name) return;
+        this.config = {
+            ...this.config,
+            [name]: value
+        };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _rgbToHex(rgb) {
+        const match = rgb.match(/(\d+)/g);
+        if (!match || match.length < 3) return '#964646';
+        return '#' + match.slice(0, 3).map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
+    }
+
+    _hexToRgb(hex) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return 'rgb(' + r + ',' + g + ',' + b + ')';
+    }
+
+    _bgColorChanged(e) {
+        this.config = {
+            ...this.config,
+            bg_color: this._hexToRgb(e.target.value)
+        };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _addDeviceGlow() {
+        const glows = [...(this.config.device_glows || [])];
+        glows.push({ entity: '', color: 'rgb(33,150,243)', width: '200px', height: '200px', direction: '右下', top: '0px', left: '0px', state_colors: {} });
+        this.config = { ...this.config, device_glows: glows };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+    }
+
+    _removeDeviceGlow(index) {
+        const glows = [...(this.config.device_glows || [])];
+        glows.splice(index, 1);
+        this.config = { ...this.config, device_glows: glows };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+    }
+
+    _updateDeviceGlowField(index, field, value) {
+        const glows = [...(this.config.device_glows || [])];
+        glows[index] = { ...glows[index], [field]: value };
+        this.config = { ...this.config, device_glows: glows };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+    }
+
+    _updateDeviceGlowStateColors(index, text) {
+        const stateColors = this._parseStateColors(text);
+        this._updateDeviceGlowField(index, 'state_colors', stateColors);
+    }
+
+    _formatStateColors(stateColors) {
+        if (!stateColors || typeof stateColors !== 'object') return '';
+        return Object.entries(stateColors).map(([k, v]) => k + ': ' + v).join('\n');
+    }
+
+    _parseStateColors(text) {
+        const result = {};
+        if (!text) return result;
+        text.split('\n').forEach(line => {
+            const idx = line.indexOf(':');
+            if (idx > 0) {
+                const key = line.substring(0, idx).trim();
+                const val = line.substring(idx + 1).trim();
+                if (key && val) result[key] = val;
+            }
+        });
+        return result;
+    }
+
+    render() {
+        if (!this.hass || !this.config) return html``;
+        const c = this.config;
+        const bgColor = c.bg_color || 'rgb(150,70,70)';
+
+        const previewStyle = 'background: ' + bgColor;
+
+        return html`
+            <div class="form">
+                <div class="size-row">
+                    <div class="form-row">
+                        <label>主题</label>
+                        <select name="theme" @change="${this._valueChanged}">
+                            <option value="sun" .selected="${c.theme === 'sun' || !c.theme}">跟随sun</option>
+                            <option value="light" .selected="${c.theme === 'light'}">白天</option>
+                            <option value="dark" .selected="${c.theme === 'dark'}">黑天</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>宽度</label>
+                        <input type="text" name="width" .value="${c.width || '1024px'}" @change="${this._valueChanged}" placeholder="1024px">
+                    </div>
+                    <div class="form-row">
+                        <label>高度</label>
+                        <input type="text" name="height" .value="${c.height || '768px'}" @change="${this._valueChanged}" placeholder="768px">
+                    </div>
+                </div>
+                <div class="color-row">
+                    <label>背景色</label>
+                    <input type="color" .value="${this._rgbToHex(bgColor)}" @change="${this._bgColorChanged}">
+                    <div class="color-preview" style="${previewStyle}"></div>
+                    <label style="font-size:12px;font-weight:normal;display:flex;align-items:center;gap:4px;white-space:nowrap;">
+                        <input type="checkbox" name="auto_color" .checked="${c.auto_color !== false}" @change="${this._valueChanged}"> 自动变色
+                    </label>
+                </div>
+                <div class="form-row">
+                    <label>背景图片</label>
+                    <input type="text" name="background_image" .value="${c.background_image || ''}" @change="${this._valueChanged}" placeholder="/local/UI/背景/彩平图.png">
+                </div>
+                <div class="card-section">
+                    <div class="card-section-title">设备光效</div>
+                    ${(c.device_glows || []).map((glow, i) => html`
+                        <div class="glow-item">
+                            <div class="glow-item-header">
+                                <span>设备 ${i + 1}</span>
+                                <button class="glow-remove-btn" @click="${() => this._removeDeviceGlow(i)}">删除</button>
+                            </div>
+                            <div class="glow-row">
+                                <label>实体</label>
+                                <input type="text" .value="${glow.entity || ''}" @change="${(e) => this._updateDeviceGlowField(i, 'entity', e.target.value)}" placeholder="climate.xxx">
+                            </div>
+                            <div class="size-row">
+                                <div class="glow-row">
+                                    <label>颜色</label>
+                                    <input type="color" .value="${this._rgbToHex(glow.color || 'rgb(33,150,243)')}" @change="${(e) => this._updateDeviceGlowField(i, 'color', this._hexToRgb(e.target.value))}">
+                                </div>
+                                <div class="glow-row">
+                                    <label>方向</label>
+                                    <select @change="${(e) => this._updateDeviceGlowField(i, 'direction', e.target.value)}">
+                                        ${['左上','左下','右上','右下','上','下','左','右','四周'].map(d => html`
+                                            <option value="${d}" ?selected="${(glow.direction || '右下') === d}">${d}</option>
+                                        `)}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="size-row">
+                                <div class="glow-row">
+                                    <label>宽</label>
+                                    <input type="text" .value="${glow.width || '200px'}" @change="${(e) => this._updateDeviceGlowField(i, 'width', e.target.value)}">
+                                </div>
+                                <div class="glow-row">
+                                    <label>高</label>
+                                    <input type="text" .value="${glow.height || '200px'}" @change="${(e) => this._updateDeviceGlowField(i, 'height', e.target.value)}">
+                                </div>
+                            </div>
+                            <div class="size-row">
+                                <div class="glow-row">
+                                    <label>Top</label>
+                                    <input type="text" .value="${glow.top || '0px'}" @change="${(e) => this._updateDeviceGlowField(i, 'top', e.target.value)}">
+                                </div>
+                                <div class="glow-row">
+                                    <label>Left</label>
+                                    <input type="text" .value="${glow.left || '0px'}" @change="${(e) => this._updateDeviceGlowField(i, 'left', e.target.value)}">
+                                </div>
+                            </div>
+                            <div class="glow-row">
+                                <label>状态颜色</label>
+                                <textarea class="state-colors-textarea" .value="${this._formatStateColors(glow.state_colors)}" @change="${(e) => this._updateDeviceGlowStateColors(i, e.target.value)}" placeholder="cool: rgb(33,150,243)&#10;heat: rgb(254,111,33)"></textarea>
+                            </div>
+                        </div>
+                    `)}
+                    <button class="add-glow-btn" @click="${this._addDeviceGlow}">+ 添加设备光效</button>
+                </div>
+
+            </div>
+        `;
+    }
+}
+customElements.define('xiaoshi-pad-card-editor', XiaoshiPadCardEditor);
+
+// ==================== 主卡片 ====================
+class XiaoshiPadCard extends LitElement {
+  static get properties() {
+    return {
+      hass: Object,
+      config: Object,
+      _kioskOn: { type: Boolean },
+      _themeOverride: { type: String }
+    };
+  }
+
+  static get styles() {
+    return css`
+      :host {
+        display: block;
+      }
+      .container {
+        position: relative;
+        display: block;
+        overflow: hidden;
+      }
+      .bg-image {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        pointer-events: none;
+        z-index: 1;
+      }
+      .device-glow {
+        position: absolute;
+        pointer-events: none;
+        z-index: 2;
+      }
+      .btn-area {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        display: flex;
+        gap: 6px;
+        z-index: 20;
+      }
+      .ctrl-btn {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: none;
+        border: none;
+        background: var(--btn-bg, rgba(0,0,0,0.3));
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        border-radius: 8px;
+        font-size: 18px;
+        padding: 0;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+      }
+      .ctrl-btn:active {
+        box-shadow: 0 2px 12px rgba(255,255,255,0.4), 0 2px 8px rgba(0,0,0,0.4);
+        transform: scale(0.95);
+      }
+      .ctrl-btn ha-icon {
+        --mdi-icon-size: 18px;
+        display: inline-flex;
+        width: 18px;
+        height: 18px;
+      }
+    `;
+  }
+
+  static getConfigElement() {
+    return document.createElement('xiaoshi-pad-card-editor');
+  }
+
+  constructor() {
+    super();
+    this._kioskOn = true;
+    this._kioskWasOn = false;
+    this._blockToggleMenu = null;
+    this._themeOverride = null;
+    this._hueShift = 0;
+    this._autoColorTimer = null;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._startAutoColorTimer();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._stopAutoColorTimer();
+    this._applyKioskMode(false);
+  }
+
+  _startAutoColorTimer() {
+    this._stopAutoColorTimer();
+    this._autoColorTimer = setInterval(() => {
+      this._hueShift = (this._hueShift + 6) % 360;
+      this.requestUpdate();
+    }, 60000);
+  }
+
+  _stopAutoColorTimer() {
+    if (this._autoColorTimer) {
+      clearInterval(this._autoColorTimer);
+      this._autoColorTimer = null;
+    }
+  }
+
+  // ========== 颜色工具 ==========
+  _rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    if (max === min) {
+      h = s = 0;
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+    return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+  }
+
+  _hslToRgb(h, s, l) {
+    h /= 360; s /= 100; l /= 100;
+    let r, g, b;
+    if (s === 0) {
+      r = g = b = l;
+    } else {
+      const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1/3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1/3);
+    }
+    return 'rgb(' + Math.round(r * 255) + ',' + Math.round(g * 255) + ',' + Math.round(b * 255) + ')';
+  }
+
+  _shiftHue(rgbStr, shift) {
+    const match = rgbStr.match(/(\d+)/g);
+    if (!match || match.length < 3) return rgbStr;
+    const [h, s, l] = this._rgbToHsl(parseInt(match[0]), parseInt(match[1]), parseInt(match[2]));
+    return this._hslToRgb((h + shift) % 360, s, l);
+  }
+
+  updated(changedProps) {
+    if (super.updated) super.updated(changedProps);
+    const isKiosk = this._kioskOn;
+    if (isKiosk !== this._kioskWasOn) {
+      this._kioskWasOn = isKiosk;
+      this._applyKioskMode(isKiosk);
+    }
+  }
+
+  // ========== Kiosk模式（移植自phone-card） ==========
+  _applyKioskMode(on) {
+    try {
+      const ha = document.querySelector('home-assistant');
+      if (!ha?.shadowRoot) return;
+      const main = ha.shadowRoot.querySelector('home-assistant-main');
+      if (!main?.shadowRoot) return;
+      const drawer = main.shadowRoot.querySelector('ha-drawer');
+      const drawerSR = drawer?.shadowRoot;
+      const panel = drawer?.querySelector('ha-panel-lovelace');
+      const huiRoot = panel?.shadowRoot?.querySelector('hui-root');
+      const huiRootSR = huiRoot?.shadowRoot;
+
+      if (on) {
+        if (huiRootSR && !huiRootSR.querySelector('#xiaoshi-pad-kiosk-header-style')) {
+          const style = document.createElement('style');
+          style.id = 'xiaoshi-pad-kiosk-header-style';
+          style.textContent = `
+            .header { display: none !important; }
+            #view {
+              min-height: 100vh !important;
+              --kiosk-header-height: 0px;
+              padding-top: calc(var(--kiosk-header-height) + var(--safe-area-inset-top)) !important;
+            }
+          `;
+          huiRootSR.appendChild(style);
+        }
+        if (drawerSR && !drawerSR.querySelector('#xiaoshi-pad-kiosk-sidebar-style')) {
+          const style = document.createElement('style');
+          style.id = 'xiaoshi-pad-kiosk-sidebar-style';
+          style.textContent = `
+            :host {
+              --ha-sidebar-width: 0px !important;
+              --kiosk-sidebar-width: 0px !important;
+            }
+            ha-sidebar { display: none !important; }
+            wa-drawer, .sidebar-shell { display: none !important; }
+            partial-panel-resolver { --mdc-top-app-bar-width: 100% !important; }
+          `;
+          drawerSR.appendChild(style);
+        }
+        const toolbar = huiRootSR?.querySelector('.toolbar');
+        if (toolbar && !toolbar.querySelector('#xiaoshi-pad-kiosk-menubutton-style')) {
+          const style = document.createElement('style');
+          style.id = 'xiaoshi-pad-kiosk-menubutton-style';
+          style.textContent = `ha-menu-button { display: none !important; }`;
+          toolbar.appendChild(style);
+        }
+        if (!this._blockToggleMenu) {
+          this._blockToggleMenu = (e) => { e.preventDefault(); e.stopImmediatePropagation(); };
+          main.addEventListener('hass-toggle-menu', this._blockToggleMenu, true);
+        }
+      } else {
+        huiRootSR?.querySelector('#xiaoshi-pad-kiosk-header-style')?.remove();
+        drawerSR?.querySelector('#xiaoshi-pad-kiosk-sidebar-style')?.remove();
+        const toolbar = huiRootSR?.querySelector('.toolbar');
+        toolbar?.querySelector('#xiaoshi-pad-kiosk-menubutton-style')?.remove();
+        if (this._blockToggleMenu) {
+          main.removeEventListener('hass-toggle-menu', this._blockToggleMenu, true);
+          this._blockToggleMenu = null;
+        }
+      }
+    } catch (e) {
+      console.error('[xiaoshi-pad-card] kiosk mode error:', e);
+    }
+  }
+
+  _toggleFullscreen() {
+    this._kioskOn = !this._kioskOn;
+    this.requestUpdate();
+  }
+
+  _handleFullscreen() {
+    this._handleHaptic();
+    this._toggleFullscreen();
+  }
+
+  _handleHaptic() {
+    const hapticEvent = new Event('haptic', {
+      bubbles: true,
+      cancelable: false,
+      composed: true
+    });
+    hapticEvent.detail = 'light';
+    this.dispatchEvent(hapticEvent);
+  }
+
+  // ========== 主题计算（基于sun.sun） ==========
+  _evaluateTheme() {
+    try {
+      const mode = this.config ? this.config.theme : 'sun';
+      let result;
+
+      if (this._themeOverride) {
+        result = this._themeOverride;
+      } else if (mode === 'light') {
+        result = 'light';
+      } else if (mode === 'dark') {
+        result = 'dark';
+      } else {
+        // sun 模式：根据 sun.sun 实体计算
+        if (this.hass && this.hass.states) {
+          const sunState = this.hass.states['sun.sun'];
+          if (sunState) {
+            const state = sunState.state;
+            // above_horizon = 白天(light), below_horizon = 黑天(dark)
+            // 日落后(below_horizon)是dark，日落前(above_horizon)是light
+            result = state === 'above_horizon' ? 'light' : 'dark';
+          } else {
+            result = 'light';
+          }
+        } else {
+          result = 'light';
+        }
+      }
+
+      // 注册全局 theme() 函数
+      window.theme = () => result;
+      return result;
+    } catch (e) {
+      window.theme = () => 'light';
+      return 'light';
+    }
+  }
+
+  _toggleTheme() {
+    this._handleHaptic();
+    if (this._themeOverride === 'light') {
+      this._themeOverride = 'dark';
+    } else if (this._themeOverride === 'dark') {
+      this._themeOverride = 'light';
+    } else {
+      // 首次切换：取当前主题的反
+      const current = this._evaluateTheme();
+      this._themeOverride = current === 'light' ? 'dark' : 'light';
+    }
+    this.requestUpdate();
+  }
+
+  setConfig(config) {
+    this.config = {
+      width: config.width || '1024px',
+      height: config.height || '768px',
+      theme: config.theme || 'sun',
+      bg_color: config.bg_color || 'rgb(150,70,70)',
+      auto_color: config.auto_color !== false,
+      background_image: config.background_image || '',
+      device_glows: config.device_glows || [],
+    };
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this.requestUpdate();
+  }
+
+  get hass() {
+    return this._hass;
+  }
+
+  // ========== 设备光效 ==========
+  _directionToPosition(dir) {
+    const map = {
+      '左上': '0% 0%',
+      '左下': '0% 100%',
+      '右上': '100% 0%',
+      '右下': '100% 100%',
+      '上': '50% 0%',
+      '下': '50% 100%',
+      '左': '0% 50%',
+      '右': '100% 50%',
+      '四周': 'center'
+    };
+    return map[dir] || '100% 100%';
+  }
+
+  _computeDeviceGlowStyle(item) {
+    if (!this.hass || !item.entity) return null;
+    const entity = this.hass.states[item.entity];
+    if (!entity || entity.state === 'off') return null;
+
+    const state = entity.state;
+    const color = (item.state_colors && item.state_colors[state]) || item.color || 'rgb(33,150,243)';
+    const direction = item.direction || '右下';
+
+    if (direction === '四周') {
+      return `radial-gradient(ellipse farthest-corner at center, ${color} -60%, rgba(0,0,0,0) 60%)`;
+    }
+    const position = this._directionToPosition(direction);
+    return `radial-gradient(ellipse farthest-corner at ${position}, ${color} -60%, rgba(0,0,0,0) 60%)`;
+  }
+
+  // 根据单色自动生成渐变色
+  _darkenColor(rgb, factor) {
+    const match = rgb.match(/(\d+)/g);
+    if (!match || match.length < 3) return 'rgb(0,0,0)';
+    const r = Math.round(parseInt(match[0]) * factor);
+    const g = Math.round(parseInt(match[1]) * factor);
+    const b = Math.round(parseInt(match[2]) * factor);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+
+  render() {
+    const theme = this._evaluateTheme();
+    const autoColor = this.config.auto_color !== false;
+    let bgColor = this.config.bg_color || 'rgb(150,70,70)';
+
+    // light主题且开启自动变色时，根据时间偏移色相
+    if (theme === 'light' && autoColor) {
+      bgColor = this._shiftHue(bgColor, this._hueShift);
+    }
+
+    // dark主题时使用纯黑，light主题使用自动渐变
+    let gradientStyle;
+    if (theme === 'dark') {
+      gradientStyle = 'rgb(0,0,0)';
+    } else {
+      const color2 = this._darkenColor(bgColor, 0.4);
+      gradientStyle = `linear-gradient(to bottom right, ${bgColor} 20%, ${color2} 100%)`;
+    }
+    const bgImage = this.config.background_image || '';
+
+    const btnBg = theme === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.3)';
+    const btnColor = theme === 'dark' ? '#fff' : '#fff';
+
+    return html`
+      <div class="container"
+        style="width: ${this.config.width}; height: ${this.config.height}; background: ${gradientStyle};">
+        ${bgImage ? html`<div class="bg-image" style="background-image: url('${bgImage}');"></div>` : ''}
+        ${(this.config.device_glows || []).map(item => {
+          const glowStyle = this._computeDeviceGlowStyle(item);
+          if (!glowStyle) return '';
+          return html`<div class="device-glow" style="top: ${item.top || '0px'}; left: ${item.left || '0px'}; width: ${item.width || '200px'}; height: ${item.height || '200px'}; background: ${glowStyle};"></div>`;
+        })}
+        <div class="btn-area">
+          <button class="ctrl-btn" style="color: ${btnColor}; --btn-bg: ${btnBg}" @click="${this._toggleTheme}" title="切换主题">
+            <ha-icon icon="${theme === 'dark' ? 'mdi:weather-night' : 'mdi:white-balance-sunny'}"></ha-icon>
+          </button>
+          <button class="ctrl-btn" style="color: ${btnColor}; --btn-bg: ${btnBg}" @click="${this._handleFullscreen}" title="全屏切换">
+            <ha-icon icon="${this._kioskOn ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
+          </button>
+        </div>
+      </div> 
+    `;
+  }
+
+  getCardSize() {
+    return 1;
+  }
+}
+customElements.define('xiaoshi-pad-card', XiaoshiPadCard);
