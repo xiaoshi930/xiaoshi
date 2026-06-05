@@ -1398,7 +1398,6 @@ class XiaoshiPhoneOtherCard extends LitElement {
       }
 
       .select-option-btn.active-option {
-        background: var(--button-fg);
         color: var(--button-bg);
         font-weight: bold;
       }
@@ -1509,11 +1508,10 @@ class XiaoshiPhoneOtherCard extends LitElement {
       .active-extra {
         color: var(--active-color) !important;
         background-color: var(--active-color) !important;
-        opacity: 0.85;
       }
 
       .select-active {
-        background-color: var(--select-active-color, rgba(255, 100, 100, 0.35)) !important;
+        color: var(--select-active-color, rgba(255, 100, 100)) !important;
       }
   `;
   }
@@ -1539,6 +1537,10 @@ class XiaoshiPhoneOtherCard extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
+              // 优先检测 HA 主题暗色模式
+              if (this.hass && this.hass.themes && this.hass.themes.darkMode !== undefined) {
+                  return this.hass.themes.darkMode ? 'dark' : 'light';
+              }
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
@@ -1795,12 +1797,12 @@ class XiaoshiPhoneOtherCard extends LitElement {
     let marginBottom = '4px';
 
     const attrs = entity.attributes;
-    const temperature =  typeof attrs.temperature === 'number'  ? `${attrs.temperature.toFixed(1)}°C`  : '';
     
     const theme = this._evaluateTheme();
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const iconColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
-    const buttonBg = theme === 'light' ? 'rgb(120,120,120)' : 'rgb(120,120,120)';
+    const buttonBg = theme === 'light' ? 'rgb(50,50,50)' : 'rgb(120,120,120)';
     const buttonFg = 'rgb(250,250,250)';
 
     let statusColor = 'rgb(250,250,250)';
@@ -1850,7 +1852,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
     return html` 
       <div class="card" style=" margin-bottom: ${marginBottom};
                                 width: ${this.width};
-                                background: ${bgColor}; 
+                                background: ${isOn ? bgColor : fgColor}; 
                                 color: ${fgColor}; 
                                 --button-bg: ${buttonBg}; 
                                 --button-fg: ${buttonFg}; 
@@ -1870,7 +1872,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
                             <ha-icon 
                                 class="power-icon"
                                 icon="${isOn ? 'mdi:toggle-switch' : 'mdi:toggle-switch-off'}"
-                                style="color: ${isOn ? statusColor : fgColor};"
+                                style="color: ${iconColor};"
                             ></ha-icon>
                         </button>
                     </div>
@@ -1880,7 +1882,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
                             <ha-icon 
                                 class="main-icon" 
                                 icon="${entityIcon}"
-                                style="color: ${isOn ? statusColor : ''};"
+                                style="color: ${iconColor};"
                             ></ha-icon>
                         </div>
                     </div>
@@ -2098,9 +2100,9 @@ class XiaoshiPhoneOtherCard extends LitElement {
 
     const theme = this._evaluateTheme();
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-    const buttonBg = theme === 'light' ? 'rgb(120,120,120)' : 'rgb(120,120,120)';
+    const buttonBg = theme === 'light' ? 'rgb(50,50,50)' : 'rgb(120,120,120)';
     const buttonFg = 'rgb(250,250,250)';
-    let activeColor = theme === 'light' ? 'rgba(00, 80, 80)' : 'rgba(180, 230, 230)';
+    let activeColor = theme === 'light' ? 'rgba(255, 80, 80)' : 'rgba(220, 80, 80)';
     const cardAccentRaw = this.config.accent_color || '';
     const cardAccentColor = cardAccentRaw ? this._evalTemplate(cardAccentRaw) : '';
     if (cardAccentColor) activeColor = cardAccentColor;
@@ -2146,8 +2148,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
             const sliderDomain = domain;
             
             return html`
-                <div class="func-button" style="cursor: default;">
-                    <div class="func-button-value" style="color: ${displayValueColor}">${currentVal}${unit}</div>
+                <div class="func-button" style="cursor: default; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div style="color: ${buttonFg}; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}：${currentVal}${unit}</div>
                     <input type="range" 
                         min="${min}" max="${max}" step="${step}" 
                         .value=${currentVal}
@@ -2168,9 +2170,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
                             }
                             this._handleClick();
                         }}
-                        style="width: 90%; margin: 2px auto 0; height: 4px; accent-color: ${activeColor};"
+                        style="width: 90%; margin: auto auto 5px; height: 4px; accent-color: ${activeColor}; --slider-color: ${activeColor};"
                     />
-                    <div class="func-button-text">${displayName}</div>
                 </div>
             `;
         }
@@ -2218,11 +2219,11 @@ class XiaoshiPhoneOtherCard extends LitElement {
             
         if (domain === 'select' || domain === 'input_select') {
             const isActive = selectOption === entity.state;
-            const btnBg = isActive ? activeColor : buttonBg;
+            const btnBg = isActive ? buttonBg : buttonBg;
             const btnFg = isActive ? activeColor : buttonFg;
             return html`
                 <button class="func-button ${isActive ? 'select-active' : ''}"
-                    style="background-color: ${btnBg}; ${isActive ? 'opacity: 0.85;' : ''}"
+                    style="background-color: ${btnBg};"
                     @click=${() => this._callService(domain, 'select_option', { entity_id: buttonEntityId, option: selectOption })}
                     title="${selectOption}"
                 >
