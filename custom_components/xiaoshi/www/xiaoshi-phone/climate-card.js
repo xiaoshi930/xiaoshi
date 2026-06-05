@@ -1988,7 +1988,6 @@ drawSmoothCurve() {
     }
     const state = entity.state;
     const isOn = state !== 'off' && state !== 'unavailable' && state !== 'unknown';
-    let marginBottom = '8px';
 
     const attrs = entity.attributes;
     const temperature =  typeof attrs.temperature === 'number'  ? `${attrs.temperature.toFixed(1)}°C`  : '';
@@ -2089,8 +2088,7 @@ drawSmoothCurve() {
     const gridColumns2 = buttonCount2 <= 5 ? 5 : buttonCount;
 
     return html` 
-      <div class="card" style=" margin-bottom: ${marginBottom};
-                                width: ${this.width};
+      <div class="card" style=" width: ${this.width};
                                 background: ${bgColor}; 
                                 color: ${fgColor}; 
                                 --button-bg: ${buttonBg}; 

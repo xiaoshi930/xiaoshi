@@ -1685,7 +1685,6 @@ class XiaoshiPhonePurifierCard extends LitElement {
     }
     const state = entity.state;
     const isOn = state !== 'off' && state !== 'unavailable' && state !== 'unknown';
-    let marginBottom = '8px';
 
     const attrs = entity.attributes;
     const theme = this._evaluateTheme();
@@ -1762,8 +1761,7 @@ class XiaoshiPhonePurifierCard extends LitElement {
     const gridColumns = buttonCount <= 4 ? 4 : 5;
 
     return html` 
-      <div class="card" style=" margin-bottom: ${marginBottom};
-                                width: ${this.width};
+      <div class="card" style=" width: ${this.width};
                                 background: ${bgColor}; 
                                 color: ${fgColor}; 
                                 --button-bg: ${buttonBg}; 

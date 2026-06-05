@@ -706,10 +706,9 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
             "name name status power"
             "icon dangwei fan fan"
             "icon dangwei timer timer"
-            "icon dangwei extra extra"
-            "a a a a"; 
+            "icon dangwei extra extra";
         grid-template-columns: 16% 22% 50% 10%;
-        grid-template-rows: auto  auto auto auto 4px;
+        grid-template-rows: auto  auto auto auto;
       }
 
       .content-container.has-available-modes {
@@ -1378,7 +1377,6 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     }
     const state = entity.state;
     const isOn = state !== 'off' && state !== 'unavailable' && state !== 'unknown';
-    let marginBottom = '8px';
 
     const attrs = entity.attributes;
     const humidity =  typeof attrs.current_humidity === 'number'  ? `${attrs.humidity.toFixed(0)}%`  : '';
@@ -1462,8 +1460,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     const gridColumns = buttonCount <= 4 ? 4 : buttonCount;
 
     return html` 
-      <div class="card" style=" margin-bottom: ${marginBottom};
-                                width: ${this.width};
+      <div class="card" style=" width: ${this.width};
                                 background: ${bgColor}; 
                                 color: ${fgColor}; 
                                 --button-bg: ${buttonBg}; 
