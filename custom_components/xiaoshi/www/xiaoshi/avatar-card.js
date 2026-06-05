@@ -1065,15 +1065,14 @@ class XiaoshiAvatarCard extends LitElement {
         if (data.distance) {
             const commuteMode = personConfig ? (personConfig.commute_mode || 'driving') : 'driving';
             const modeIcons = { driving: '🚗', transit: '🚌', cycling: '🚲', walking: '🚶' };
-            const distIcon = data.distance.is_straight_line ? '🌏' : (modeIcons[commuteMode] || '🚗');
+            const distIcon = data.distance.is_straight_line ? '🚗' : (modeIcons[commuteMode] || '🌏');
             const distValue = (data.distance.distance || '').replace(/([\d.]+)(公里|千米|km)/i, (_, n) => Math.round(parseFloat(n)) + 'km').replace('公里', 'km').replace('千米', 'km');
-            const timeValue = (data.distance.time || '').replace('分钟', 'm').replace('小时', 'h');
+            const timeValue = (data.distance.time || '').replace('分钟', '分').replace('小时', '时');
 
             distanceHtml = html`<div class="info-text">${distIcon} ${distValue}</div>`;
 
             if (!data.distance.is_straight_line && data.distance.time) {
-                const timeIcon = modeIcons[commuteMode] || '🌏';
-                timeHtml = html`<div class="info-text">${timeIcon} ${timeValue}</div>`;
+                timeHtml = html`<div class="info-text">🕛 ${timeValue}</div>`;
             }
         }
 
