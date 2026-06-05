@@ -687,9 +687,10 @@ class XiaoshiDynamicCard extends LitElement {
     _onAreaClick(areaConfig) {
         const cards = [];
 
-        if (areaConfig.popup_cards && areaConfig.popup_cards.trim()) {
+        const popupConfig = areaConfig.popup_cards || areaConfig.other_cards || areaConfig.popup;
+        if (popupConfig && popupConfig.trim()) {
             try {
-                const parsed = this._parseYamlCards(areaConfig.popup_cards);
+                const parsed = this._parseYamlCards(popupConfig);
                 // 弹出设备自动隐藏：过滤掉不活跃实体的卡片
                 let filtered = parsed;
                 if (areaConfig.popup_auto_hide === 'true') {

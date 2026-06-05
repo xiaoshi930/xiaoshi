@@ -1178,11 +1178,12 @@ class XiaoshiRoomCard extends LitElement {
      */
     _onDeviceClick(device) {
         if (!device) return;
-        if (device.popup) {
+        const popupConfig = device.popup_cards || device.other_cards || device.popup;
+        if (popupConfig) {
             let popupCards = [];
-            if (typeof device.popup === 'string') {
+            if (typeof popupConfig === 'string') {
                 try {
-                    popupCards = this._parseYamlCards(device.popup);
+                    popupCards = this._parseYamlCards(popupConfig);
                 } catch (err) {
                     console.error('[XiaoshiRoomCard] 设备弹窗配置解析失败:', err);
                     return;
