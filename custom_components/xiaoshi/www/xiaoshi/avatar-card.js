@@ -898,7 +898,9 @@ class XiaoshiAvatarCard extends LitElement {
 
             return html`
                 <div class="card-item" key="${entityKey}"
-                    style="position:${position};${position === 'absolute' ? 'top:0;' : ''}left:${left};transform:scale(${scale});background:${bg};z-index:${zIndex};"
+                    style="position:${position};${position === 'absolute' ? 'top:0;' : ''}left:${left};
+                    transform:scale(${scale});background:${bg};z-index:${zIndex};
+                    filter:drop-shadow(${currentTheme === 'dark' ? '0 2px 5px rgba(0,0,0,0.6)' : '0 3px 8px rgba(230,230,230,0.6)'});"
                     data-is-main="${isMain}"
                     @click="${() => this._onCardClick(pc, isMain)}">
                     ${this._renderCardContent(data, allData, pc, isMain)}
