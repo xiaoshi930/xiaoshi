@@ -14,7 +14,6 @@ class XiaoshiPhoneComputerCard extends LitElement {
           width: { type: String, attribute: true },
           config: { type: Object },
           theme: { type: String },
-          auto_show: { type: Boolean },
           cpuData: { type: Array },
           memoryData: { type: Array }
       };
@@ -222,7 +221,6 @@ class XiaoshiPhoneComputerCard extends LitElement {
   
   setConfig(config) {
       this.config = config;
-      this.auto_show = config.auto_show || false;
       if (config.width !== undefined) this.width = config.width;
   }
 
@@ -507,10 +505,7 @@ drawLineChart(ctx, data, fillColor, strokeColor) {
       }
       const state = entity.state;
       const isOn = state === 'on';
-      let marginBottom = (this.auto_show && isOn) ? '8px' : '0px';
-      if (this.auto_show && !isOn) {
-        return html``;
-      }
+      let marginBottom = '8px';
 
       const theme = this._evaluateTheme();
       const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';

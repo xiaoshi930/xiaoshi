@@ -874,18 +874,6 @@ class XiaoshiPhoneClimateCardEditor extends LitElement {
           </div>
         </div>
 
-        <!-- 自动隐藏选项 -->
-        <div class="form-group">
-          <label>显示选项</label>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <ha-switch
-              .checked=${!!this.config.auto_show}
-              @change=${this._autoShowChanged}
-            ></ha-switch>
-            <span>空调关闭时隐藏卡片</span>
-          </div>
-        </div>
-
         <!-- 宽度设置 -->
         <div class="form-group">
           <label>卡片宽度：支持像素(px)和百分比(%)，默认100%</label>
@@ -1105,17 +1093,6 @@ class XiaoshiPhoneClimateCardEditor extends LitElement {
     this._fireEvent();
   }
 
-  _autoShowChanged(ev) {
-    if (!this.config) return;
-    const auto_show = ev.target.checked;
-    
-    this.config = { 
-      ...this.config,
-      auto_show 
-    };
-    this._fireEvent();
-  }
-
   _widthChanged(e) {
     if (!this.config) return;
     const { name, value } = e.target;
@@ -1216,7 +1193,6 @@ class XiaoshiPhoneClimateCard extends LitElement {
       buttons: { type: Array },
       theme: { type: String },
       _timerInterval: { state: true },
-      auto_show: { type: Boolean },
       temperatureData: { type: Array },
       _externalTempSensor: { type: String } 
     };
@@ -1233,7 +1209,6 @@ class XiaoshiPhoneClimateCard extends LitElement {
       theme: "system",
       buttons: [],
       buttons2: [],
-      auto_show: false,
       width: "100%"
     };
   }
@@ -1242,7 +1217,6 @@ class XiaoshiPhoneClimateCard extends LitElement {
     this.config = config;
     this.buttons = config.buttons || [];
     this.buttons2 = config.buttons2 || [];
-    this.auto_show = config.auto_show || false;
     this._externalTempSensor = config.temperature || null;
     if (config.width !== undefined) this.width = config.width;
     this.requestUpdate();
@@ -2014,10 +1988,7 @@ drawSmoothCurve() {
     }
     const state = entity.state;
     const isOn = state !== 'off' && state !== 'unavailable' && state !== 'unknown';
-    let marginBottom = (this.auto_show && isOn) ? '8px' : '0px';
-    if (this.auto_show && !isOn) {
-      return html``;
-    }
+    let marginBottom = '8px';
 
     const attrs = entity.attributes;
     const temperature =  typeof attrs.temperature === 'number'  ? `${attrs.temperature.toFixed(1)}°C`  : '';
@@ -2216,9 +2187,7 @@ drawSmoothCurve() {
 
   connectedCallback() {
       super.connectedCallback();
-      if (!this.auto_show || this.isOn) {
-        this._startTimerRefresh();
-    }
+      this._startTimerRefresh();
   }
 
   disconnectedCallback() {

@@ -891,15 +891,6 @@ class XiaoshiPhonePurifierCardEditor extends LitElement {
           ` : ''}
         </div>
 
-        <!-- 自动隐藏选项 -->
-        <div class="row">
-          <ha-switch
-            .checked=${!!this.config.auto_show}
-            @change=${this._autoShowChanged}
-          ></ha-switch>
-          <span style="margin-left: 8px">空调关闭时隐藏卡片</span>
-        </div>
-
         <!-- 宽度设置 -->
         <div class="row">
           <div class="label">卡片宽度</div>
@@ -975,17 +966,6 @@ class XiaoshiPhonePurifierCardEditor extends LitElement {
     this._fireEvent();
   }
 
-  _autoShowChanged(ev) {
-    if (!this.config) return;
-    const auto_show = ev.target.checked;
-    
-    this.config = { 
-      ...this.config,
-      auto_show 
-    };
-    this._fireEvent();
-  }
-
   _widthChanged(ev) {
     if (!this.config) return;
     const width = ev.target.value;
@@ -1014,7 +994,6 @@ class XiaoshiPhonePurifierCard extends LitElement {
       buttons: { type: Array },
       theme: { type: String },
       _timerInterval: { state: true },
-      auto_show: { type: Boolean },
       purifierData: { type: Array },
       _externalPurifierSensor: { type: String },
       _fanModeSelectEntity: { type: String },
@@ -1034,7 +1013,6 @@ class XiaoshiPhonePurifierCard extends LitElement {
       timer: "",
       theme: "system",
       buttons: [],
-      auto_show: false,
       width: "100%"
     };
   }
@@ -1042,7 +1020,6 @@ class XiaoshiPhonePurifierCard extends LitElement {
   setConfig(config) {
     this.config = config;
     this.buttons = config.buttons || [];
-    this.auto_show = config.auto_show || false;
     if (config.width !== undefined) this.width = config.width;
     this._fanModeSelectEntity = config.select || '';
     this._fanSpeedNumberEntity = config.number || '';
@@ -1708,10 +1685,7 @@ class XiaoshiPhonePurifierCard extends LitElement {
     }
     const state = entity.state;
     const isOn = state !== 'off' && state !== 'unavailable' && state !== 'unknown';
-    let marginBottom = (this.auto_show && isOn) ? '8px' : '0px';
-    if (this.auto_show && !isOn) {
-      return html``;
-    }
+    let marginBottom = '8px';
 
     const attrs = entity.attributes;
     const theme = this._evaluateTheme();
@@ -1864,9 +1838,7 @@ class XiaoshiPhonePurifierCard extends LitElement {
 
   connectedCallback() {
       super.connectedCallback();
-      if (!this.auto_show || this.isOn) {
-        this._startTimerRefresh();
-    }
+      this._startTimerRefresh();
   }
 
   disconnectedCallback() {
