@@ -315,6 +315,36 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
     this.requestUpdate();
   }
 
+  _formatSelectOptionNames(names) {
+    if (!names || typeof names !== 'object') return '';
+    return Object.entries(names).map(([k, v]) => `${k}:${v}`).join(',');
+  }
+
+  _buttonRowSelectOptionNamesChanged(rowIndex, itemIndex, value) {
+    const rows = [...this._getButtonRows()];
+    if (!rows[rowIndex] || !rows[rowIndex].items[itemIndex]) return;
+    const items = [...rows[rowIndex].items];
+    const selectOptionNames = {};
+    if (value && value.trim()) {
+      value.split(',').forEach(pair => {
+        const trimmed = pair.trim();
+        if (trimmed.includes(':')) {
+          const [original, renamed] = trimmed.split(':');
+          const key = original.trim();
+          const val = renamed.trim();
+          if (key && val) {
+            selectOptionNames[key] = val;
+          }
+        }
+      });
+    }
+    items[itemIndex] = { ...items[itemIndex], select_option_names: Object.keys(selectOptionNames).length > 0 ? selectOptionNames : undefined };
+    rows[rowIndex] = { ...rows[rowIndex], items };
+    this.config = { ...this.config, button_rows: rows };
+    this._fireEvent();
+    this.requestUpdate();
+  }
+
   // ===== 附加按钮1 =====
   _onButtonSearch(e, index) {
     const searchTerm = e.target.value.toLowerCase();
@@ -341,7 +371,12 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
 
   _selectButtonEntity(entityId, index) {
     const buttons = [...(this.config.buttons || [])];
-    buttons[index] = entityId;
+    const existing = buttons[index];
+    if (typeof existing === 'object' && existing !== null) {
+      buttons[index] = { ...existing, entity: entityId };
+    } else {
+      buttons[index] = { entity: entityId, name: '' };
+    }
     this.config = { ...this.config, buttons };
 
     if (!this._buttonSearchTerms) this._buttonSearchTerms = {};
@@ -355,7 +390,7 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
 
   _addButton() {
     const buttons = [...(this.config.buttons || [])];
-    buttons.push('');
+    buttons.push({ entity: '', name: '' });
     this.config = { ...this.config, buttons };
     this._fireEvent();
   }
@@ -369,6 +404,19 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
     if (this._filteredButtonEntities) delete this._filteredButtonEntities[index];
     if (this._showButtonLists) delete this._showButtonLists[index];
 
+    this._fireEvent();
+    this.requestUpdate();
+  }
+
+  _buttonNameChanged(index, value) {
+    const buttons = [...(this.config.buttons || [])];
+    const existing = buttons[index];
+    if (typeof existing === 'object' && existing !== null) {
+      buttons[index] = { ...existing, name: value };
+    } else {
+      buttons[index] = { entity: existing || '', name: value };
+    }
+    this.config = { ...this.config, buttons };
     this._fireEvent();
     this.requestUpdate();
   }
@@ -399,7 +447,12 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
 
   _selectButton2Entity(entityId, index) {
     const buttons2 = [...(this.config.buttons2 || [])];
-    buttons2[index] = entityId;
+    const existing = buttons2[index];
+    if (typeof existing === 'object' && existing !== null) {
+      buttons2[index] = { ...existing, entity: entityId };
+    } else {
+      buttons2[index] = { entity: entityId, name: '' };
+    }
     this.config = { ...this.config, buttons2 };
 
     if (!this._button2SearchTerms) this._button2SearchTerms = {};
@@ -413,7 +466,7 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
 
   _addButton2() {
     const buttons2 = [...(this.config.buttons2 || [])];
-    buttons2.push('');
+    buttons2.push({ entity: '', name: '' });
     this.config = { ...this.config, buttons2 };
     this._fireEvent();
   }
@@ -427,6 +480,19 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
     if (this._filteredButton2Entities) delete this._filteredButton2Entities[index];
     if (this._showButton2Lists) delete this._showButton2Lists[index];
 
+    this._fireEvent();
+    this.requestUpdate();
+  }
+
+  _button2NameChanged(index, value) {
+    const buttons2 = [...(this.config.buttons2 || [])];
+    const existing = buttons2[index];
+    if (typeof existing === 'object' && existing !== null) {
+      buttons2[index] = { ...existing, name: value };
+    } else {
+      buttons2[index] = { entity: existing || '', name: value };
+    }
+    this.config = { ...this.config, buttons2 };
     this._fireEvent();
     this.requestUpdate();
   }
@@ -846,6 +912,16 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                     ` : ''}
                   </div>
                 </div>
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                  <label style="font-size: 0.8em; min-width: 60px;">名称重定义</label>
+                  <input
+                    type="text"
+                    .value=${item.custom_name || ''}
+                    @change=${(e) => this._buttonRowFieldChanged(rowIndex, itemIndex, 'custom_name', e.target.value)}
+                    placeholder="留空使用实体名"
+                    style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+                  />
+                </div>
                 ${itemDomain === 'select' || itemDomain === 'input_select' ? html`
                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
                   <label style="font-size: 0.8em; min-width: 60px;">筛选选项</label>
@@ -857,18 +933,18 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                     style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
                   />
                 </div>
-                ` : ''}
-                ${itemDomain === 'text' || itemDomain === 'input_text' ? html`
                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
-                  <label style="font-size: 0.8em; min-width: 60px;">自定义名称</label>
+                  <label style="font-size: 0.8em; min-width: 60px;">选项名称</label>
                   <input
                     type="text"
-                    .value=${item.custom_name || ''}
-                    @change=${(e) => this._buttonRowFieldChanged(rowIndex, itemIndex, 'custom_name', e.target.value)}
-                    placeholder="留空使用实体名"
+                    .value=${this._formatSelectOptionNames(item.select_option_names || {})}
+                    @change=${(e) => this._buttonRowSelectOptionNamesChanged(rowIndex, itemIndex, e.target.value)}
+                    placeholder="选项:名称, 如 low:低,high:高"
                     style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
                   />
                 </div>
+                ` : ''}
+                ${itemDomain === 'text' || itemDomain === 'input_text' ? html`
                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
                   <label style="font-size: 0.8em; min-width: 60px;">自定义指令</label>
                   <input
@@ -908,14 +984,23 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
         <!-- 附加按钮1 -->
         <div class="form-group">
           <label>附加按钮1 (最多7个)</label>
-          ${(this.config.buttons || []).map((buttonEntity, index) => html`
-            <div class="entity-selector-with-remove">
-              <div class="entity-selector">
+          ${(this.config.buttons || []).map((buttonObj, index) => {
+            const buttonEntityId = typeof buttonObj === 'string' ? buttonObj : (buttonObj?.entity || '');
+            const buttonName = typeof buttonObj === 'object' && buttonObj !== null ? (buttonObj.name || '') : '';
+            return html`
+            <div style="border: 1px solid #444; border-radius: 6px; padding: 8px; margin-bottom: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 0.85em; opacity: 0.8;">按钮${index + 1}</span>
+                <button class="remove-button" @click=${() => this._removeButton(index)} title="移除" style="margin: 0; padding: 2px 6px;">
+                  <ha-icon icon="mdi:close"></ha-icon>
+                </button>
+              </div>
+              <div class="entity-selector" style="margin-bottom: 4px;">
                 <input
                   type="text"
                   @input=${(e) => this._onButtonSearch(e, index)}
                   @focus=${(e) => this._onButtonSearch(e, index)}
-                  .value=${this._buttonSearchTerms?.[index] || buttonEntity || ''}
+                  .value=${this._buttonSearchTerms?.[index] || buttonEntityId || ''}
                   placeholder="搜索实体..."
                   class="entity-search-input"
                 />
@@ -923,7 +1008,7 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                   <div class="entity-dropdown">
                     ${this._filteredButtonEntities?.[index]?.map(entity => html`
                       <div
-                        class="entity-option ${buttonEntity === entity.entity_id ? 'selected' : ''}"
+                        class="entity-option ${buttonEntityId === entity.entity_id ? 'selected' : ''}"
                         @click=${() => this._selectButtonEntity(entity.entity_id, index)}
                       >
                         <div class="entity-info">
@@ -933,7 +1018,7 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                             <div class="entity-id">${entity.entity_id}</div>
                           </div>
                         </div>
-                        ${buttonEntity === entity.entity_id ?
+                        ${buttonEntityId === entity.entity_id ?
                           html`<ha-icon icon="mdi:check" class="check-icon"></ha-icon>` : ''}
                       </div>
                     `)}
@@ -943,11 +1028,18 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                   </div>
                 ` : ''}
               </div>
-              <button class="remove-button" @click=${() => this._removeButton(index)} title="移除">
-                <ha-icon icon="mdi:close"></ha-icon>
-              </button>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <label style="font-size: 0.8em; min-width: 60px;">名称重定义</label>
+                <input
+                  type="text"
+                  .value=${buttonName}
+                  @change=${(e) => this._buttonNameChanged(index, e.target.value)}
+                  placeholder="留空使用实体名"
+                  style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+                />
+              </div>
             </div>
-          `)}
+          `})}
           <div class="buttons-row">
             <mwc-button
               class="add-button"
@@ -963,14 +1055,23 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
         <!-- 附加按钮2 -->
         <div class="form-group">
           <label>附加按钮2 (最多7个)</label>
-          ${(this.config.buttons2 || []).map((buttonEntity, index) => html`
-            <div class="entity-selector-with-remove">
-              <div class="entity-selector">
+          ${(this.config.buttons2 || []).map((buttonObj, index) => {
+            const buttonEntityId = typeof buttonObj === 'string' ? buttonObj : (buttonObj?.entity || '');
+            const buttonName = typeof buttonObj === 'object' && buttonObj !== null ? (buttonObj.name || '') : '';
+            return html`
+            <div style="border: 1px solid #444; border-radius: 6px; padding: 8px; margin-bottom: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 0.85em; opacity: 0.8;">按钮${index + 1}</span>
+                <button class="remove-button" @click=${() => this._removeButton2(index)} title="移除" style="margin: 0; padding: 2px 6px;">
+                  <ha-icon icon="mdi:close"></ha-icon>
+                </button>
+              </div>
+              <div class="entity-selector" style="margin-bottom: 4px;">
                 <input
                   type="text"
                   @input=${(e) => this._onButton2Search(e, index)}
                   @focus=${(e) => this._onButton2Search(e, index)}
-                  .value=${this._button2SearchTerms?.[index] || buttonEntity || ''}
+                  .value=${this._button2SearchTerms?.[index] || buttonEntityId || ''}
                   placeholder="搜索实体..."
                   class="entity-search-input"
                 />
@@ -978,7 +1079,7 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                   <div class="entity-dropdown">
                     ${this._filteredButton2Entities?.[index]?.map(entity => html`
                       <div
-                        class="entity-option ${buttonEntity === entity.entity_id ? 'selected' : ''}"
+                        class="entity-option ${buttonEntityId === entity.entity_id ? 'selected' : ''}"
                         @click=${() => this._selectButton2Entity(entity.entity_id, index)}
                       >
                         <div class="entity-info">
@@ -988,7 +1089,7 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                             <div class="entity-id">${entity.entity_id}</div>
                           </div>
                         </div>
-                        ${buttonEntity === entity.entity_id ?
+                        ${buttonEntityId === entity.entity_id ?
                           html`<ha-icon icon="mdi:check" class="check-icon"></ha-icon>` : ''}
                       </div>
                     `)}
@@ -998,11 +1099,18 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                   </div>
                 ` : ''}
               </div>
-              <button class="remove-button" @click=${() => this._removeButton2(index)} title="移除">
-                <ha-icon icon="mdi:close"></ha-icon>
-              </button>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <label style="font-size: 0.8em; min-width: 60px;">名称重定义</label>
+                <input
+                  type="text"
+                  .value=${buttonName}
+                  @change=${(e) => this._button2NameChanged(index, e.target.value)}
+                  placeholder="留空使用实体名"
+                  style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+                />
+              </div>
             </div>
-          `)}
+          `})}
           <div class="buttons-row">
             <mwc-button
               class="add-button"
@@ -1144,8 +1252,9 @@ class XiaoshiPhoneOtherCard extends LitElement {
   setConfig(config) {
     this.config = config;
     this.button_rows = config.button_rows || [];
-    this.buttons = config.buttons || [];
-    this.buttons2 = config.buttons2 || [];
+    // 向后兼容：buttons/buttons2 支持字符串和对象两种格式
+    this.buttons = (config.buttons || []).map(b => typeof b === 'string' ? { entity: b, name: '' } : b);
+    this.buttons2 = (config.buttons2 || []).map(b => typeof b === 'string' ? { entity: b, name: '' } : b);
     this._externalTempSensor = config.temperature || null;
     if (config.width !== undefined) this.width = config.width;
     this.requestUpdate();
@@ -2134,7 +2243,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
         const { item, entity, domain, selectOption } = unit;
         const buttonEntityId = item.entity;
         const friendlyName = entity.attributes.friendly_name || '';
-        const displayName = friendlyName.slice(0, 4);
+        const displayName = (item.custom_name || friendlyName).slice(0, 4);
         const displayValueColor = entity.state === '低' ? 'red' : fgColor;
         const mode = item.mode || 'button';
 
@@ -2146,10 +2255,11 @@ class XiaoshiPhoneOtherCard extends LitElement {
             const currentVal = parseFloat(entity.state) || 0;
             const unit = entity.attributes.unit_of_measurement || '';
             const sliderDomain = domain;
+            const sliderName = item.custom_name || friendlyName;
             
             return html`
                 <div class="func-button" style="cursor: default; display: flex; flex-direction: column; justify-content: space-between;">
-                    <div style="color: ${buttonFg}; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}：${currentVal}${unit}</div>
+                    <div style="color: ${buttonFg}; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${sliderName.slice(0, 4)}：${currentVal}${unit}</div>
                     <input type="range" 
                         min="${min}" max="${max}" step="${step}" 
                         .value=${currentVal}
@@ -2203,16 +2313,18 @@ class XiaoshiPhoneOtherCard extends LitElement {
             return html`
                 <button class="func-button" disabled style="cursor: default;">
                     <div class="func-button-value" style="color: ${displayValueColor}; font-size: 13px;">${sensorValue}</div>
+                    ${item.custom_name ? html`<div class="func-button-text">${displayName}</div>` : ''}
                 </button>
             `;
         }
                 
         if (domain === 'button' || domain === 'input_button') {
+            const btnName = item.custom_name || friendlyName;
             return html`
                 <button class="func-button" 
                         @click=${() => this._handleExtraButtonClick(buttonEntityId, domain)}
                         title="${friendlyName}">
-                    <div class="func-button-value">${friendlyName}</div>
+                    <div class="func-button-value">${btnName.slice(0, 4)}</div>
                 </button>
             `;
         }
@@ -2221,13 +2333,14 @@ class XiaoshiPhoneOtherCard extends LitElement {
             const isActive = selectOption === entity.state;
             const btnBg = isActive ? buttonBg : buttonBg;
             const btnFg = isActive ? activeColor : buttonFg;
+            const optionDisplayName = (item.select_option_names && item.select_option_names[selectOption]) || selectOption;
             return html`
                 <button class="func-button ${isActive ? 'select-active' : ''}"
                     style="background-color: ${btnBg};"
                     @click=${() => this._callService(domain, 'select_option', { entity_id: buttonEntityId, option: selectOption })}
                     title="${selectOption}"
                 >
-                    <div class="func-button-value" style="color: ${btnFg}">${selectOption}</div>
+                    <div class="func-button-value" style="color: ${btnFg}">${optionDisplayName}</div>
                 </button>
             `;
         }
@@ -2268,13 +2381,15 @@ class XiaoshiPhoneOtherCard extends LitElement {
       const cardAccentColor = cardAccentRaw ? this._evalTemplate(cardAccentRaw) : '';
       if (cardAccentColor) activeColor = cardAccentColor;
 
-      return buttonsToShow.map(buttonEntityId => {
+      return buttonsToShow.map(buttonObj => {
+          const buttonEntityId = buttonObj.entity || '';
+          const customName = buttonObj.name || '';
           const entity = this.hass.states[buttonEntityId];
           if (!entity) return html``;
           
           const domain = buttonEntityId.split('.')[0];
           const friendlyName = entity.attributes.friendly_name || '';
-          const displayName = friendlyName.slice(0, 4);
+          const displayName = (customName || friendlyName).slice(0, 4);
           let displayValue = entity.state.slice(0, 4);
           const displayValueColor = displayValue === '低' ? 'red' : fgColor;
                   
