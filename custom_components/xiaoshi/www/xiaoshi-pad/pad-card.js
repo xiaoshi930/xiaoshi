@@ -1067,12 +1067,16 @@ class XiaoshiPadCard extends LitElement {
 
     // dark主题时使用纯黑，light主题使用自动渐变
     let gradientStyle;
+    let color2;
     if (theme === 'dark') {
       gradientStyle = 'rgb(0,0,0)';
+      color2 = 'rgb(0,0,0)';
     } else {
-      const color2 = this._darkenColor(bgColor, 0.4);
+      color2 = this._darkenColor(bgColor, 0.4);
       gradientStyle = `linear-gradient(to bottom right, ${bgColor} 20%, ${color2} 100%)`;
     }
+    // 注册全局 background() 函数，供子卡片（如 button-card）获取渐变色2
+    window.background = () => color2;
     const bgImage = this.config.background_image || '';
 
     const mode = this.config ? this.config.theme : 'sun';
