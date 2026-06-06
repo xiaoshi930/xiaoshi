@@ -706,9 +706,10 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
             "name name status power"
             "icon dangwei fan fan"
             "icon dangwei timer timer"
-            "icon dangwei extra extra";
+            "icon dangwei extra extra"
+            "a a a a"; 
         grid-template-columns: 16% 22% 50% 10%;
-        grid-template-rows: auto  auto auto auto;
+        grid-template-rows: auto auto auto auto 4px;
       }
 
       .content-container.has-available-modes {
