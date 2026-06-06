@@ -1076,7 +1076,7 @@ class XiaoshiPadCard extends LitElement {
       gradientStyle = `linear-gradient(to bottom right, ${bgColor} 20%, ${color2} 100%)`;
     }
     // 注册全局 background() 函数，供子卡片（如 button-card）获取渐变色2
-    window.background = () => color2;
+    window.background = () => this._darkenColor(bgColor, 0.75);
     const bgImage = this.config.background_image || '';
 
     const mode = this.config ? this.config.theme : 'sun';
