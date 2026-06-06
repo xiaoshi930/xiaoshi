@@ -30,7 +30,7 @@ class LunarCalendarPad extends LitElement {
   setConfig(config) {
     this.config = {
       lunar: config?.lunar || 'sensor.lunar_calendar',
-      theme: config?.theme || 'system',
+      theme: config?.theme || 'theme()',
       width: config?.width || '785px',
       height: config?.height || '540px',
       date: config?.date || 'date.lunar_tap_date',
@@ -347,60 +347,15 @@ class LunarCalendarPadDateEditor extends LitElement {
           <label>主题</label>
           <select
             @change=${this._valueChanged}
-            .value=${this.config.theme || 'system'}
+            .value=${this.config.theme || 'theme()'}
             name="theme"
           >
-            <option value="system">system -  白色字体、弹出窗体亮色背景</option>
-            <option value="light">light -  白色字体、弹出窗体亮色背景</option>
-            <option value="dark">dark - 白色字体、弹出窗体暗色背景</option>
+            <option value="theme()">theme() - 跟随全局函数</option>
+            <option value="theme()">system - 跟随系统</option>
+            <option value="light">light - 浅色模式</option>
+            <option value="dark">dark - 深色模式</option>
           </select>
           <span style="font-size:12px;color:#888;">也可引用全局函数：[[[ return theme() ]]]</span>
-        </div>
-
-        <div class="form-group form-group-inline conditional-field ${(this.config.mode === 'B') ? 'visible' : ''}" id="theme-light-group">
-          <label>翻页时钟浅色背景色</label>
-          <input
-            type="color"
-            .value=${this.config.theme_on || '#782828'}
-            @change=${this._valueChanged}
-            name="theme_on"
-          />
-          <span style="font-size:12px;color:#888;">mode: B, theme = light 时的背景色</span>
-        </div>
-
-        <div class="form-group form-group-inline conditional-field ${(this.config.mode === 'B') ? 'visible' : ''}" id="theme-dark-group">
-          <label>翻页时钟深色背景色</label>
-          <input
-            type="color"
-            .value=${this.config.theme_off || '#323232'}
-            @change=${this._valueChanged}
-            name="theme_off"
-          />
-          <span style="font-size:12px;color:#888;">mode: B, theme = dark 时的背景色</span>
-        </div>
-
-        <div class="form-group conditional-field ${(this.config.mode === 'B') ? 'visible' : ''}" id="filter-group">
-          <label>色相实体（翻页时钟变色）</label>
-          <div class="entity-search-container">
-            <input
-              type="text"
-              .value=${this.config.filter || ''}
-              @input=${this._onFilterEntityInput}
-              @change=${this._valueChanged}
-              name="filter"
-              placeholder="搜索实体（如 number.pad）"
-              list="filter-entities"
-            />
-            <datalist id="filter-entities">
-              ${Object.keys(this.hass.states)
-                .map(entityId => html`
-                  <option value="${entityId}">
-                    ${this.hass.states[entityId].attributes.friendly_name || entityId}
-                  </option>
-                `)}
-            </datalist>
-          </div>
-          <span style="font-size:12px;color:#888;">翻页时钟模式下的色相辅助实体</span>
         </div>
 
         <div class="form-group">
@@ -444,7 +399,7 @@ class LunarCalendarPadDateEditor extends LitElement {
 
   _valueChanged(e) {
     const { name, value } = e.target;
-    if (!value && name !== 'filter' && name !== 'theme_on' && name !== 'theme_off') return;
+    if (!value) return;
 
     let processedValue = value;
     if (name === 'show_birthday' || name === 'show_holiday' || name === 'simplified') {
@@ -468,20 +423,7 @@ class LunarCalendarPadDateEditor extends LitElement {
   }
 
   _updateConditionalFields() {
-    const mode = this.config.mode;
-    ['theme-light-group', 'theme-dark-group', 'filter-group'].forEach(id => {
-      const el = this.shadowRoot?.getElementById(id);
-      if (el) {
-        el.classList.toggle('visible', mode === 'B');
-      }
-    });
-  }
-
-  _onFilterEntityInput(e) {
-    this.config = {
-      ...this.config,
-      filter: e.target.value
-    };
+    // mode B 的条件字段已移除
   }
 
   _onEntityInput(e) {
@@ -513,10 +455,7 @@ class LunarCalendarPadDate extends LitElement {
       _flipParts: { type: Array },
       _previousTime: { type: Object },
       _displayTime: { type: Object },
-      _theme: { type: String }, 
-      _theme_on: { type: String }, 
-      _theme_off: { type: String }, 
-      _filterValue: { type: String }
+      _theme: { type: String }
     };
   }
 
@@ -528,10 +467,7 @@ class LunarCalendarPadDate extends LitElement {
     this._flipParts = [];
     this._updateInterval = null;
     this._mode = 'A';
-    this._theme = 'system';
-    this._theme_on= 'rgb(150,70,70)';
-    this._theme_off = 'rgb(50,50,50)'; 
-    this._filterValue = '0deg';
+    this._theme = 'theme()';
     // 弹窗 hass 状态订阅
     this._popupHassUnsubscribe = null;
     this._popupUpdatePending = false;
@@ -541,10 +477,7 @@ class LunarCalendarPadDate extends LitElement {
   setConfig(config) {
     this.config = config;
     this._mode = config.mode || 'A';
-    this._theme = config.theme || 'system';
-    this._theme_on = config.theme_on || 'rgb(150,70,70)';
-    this._theme_off = config.theme_off || 'rgb(50,50,50)';
-    this._filterEntity = config.filter || '';
+    this._theme = config.theme || 'theme()';
     this._showBirthday = config.show_birthday !== undefined ? config.show_birthday : true;
     this._showHoliday = config.show_holiday !== undefined ? config.show_holiday : true;
     this._simplified = config.simplified !== undefined ? config.simplified : false;
@@ -566,10 +499,6 @@ class LunarCalendarPadDate extends LitElement {
     this._hass = hass;
     const lunarEntity = this.config?.entity || 'sensor.lunar_calendar';
     this._lunarState = this._hass.states[lunarEntity];
-    if (this._filterEntity) {
-      const filterState = this._hass.states[this._filterEntity];
-      this._filterValue = filterState ? filterState.state + 'deg' : '0deg';
-    }
     this._updateStyles();
     this.requestUpdate();
   }
@@ -725,7 +654,7 @@ class LunarCalendarPadDate extends LitElement {
         display: flex;
         align-items: center;
         font-size: 50px;
-        color: var(--text-color);
+        color: var(--time-text-color, white);
         margin: 0 -5px;
       }
       .flip-clock {
@@ -750,8 +679,8 @@ class LunarCalendarPadDate extends LitElement {
         justify-content: center;
         backface-visibility: hidden;
         border-radius: 4px;
-        filter: var(--time-filter, none);
-        background: var(--time-bg-color, rgba(0, 0, 0, 1));
+        background: var(--time-bg-color, rgba(0, 0, 0, 0.4));
+        color: var(--time-text-color, white);
       }
       .part-top {
         top: 0px;
@@ -789,8 +718,8 @@ class LunarCalendarPadDate extends LitElement {
         backface-visibility: hidden;
         border-radius: 4px;
         transform-style: preserve-3d;
-        filter: var(--time-filter, none);
-        background: var(--time-bg-color, rgba(0, 0, 0, 1));
+        background: var(--time-bg-color, rgba(0, 0, 0, 0.4));
+        color: var(--time-text-color, white);
       } 
       .flip-animation-top {
         top: 0px;
@@ -829,32 +758,39 @@ class LunarCalendarPadDate extends LitElement {
   } 
  
   updated(changedProperties) {
-    if (changedProperties.has('_theme') || changedProperties.has('_filterValue')) {
+    if (changedProperties.has('_theme')) {
       this._updateStyles(); 
     }
   }
 
   _updateStyles() {
     const theme = this._evaluateTheme();
-    const bgColor =  theme == 'light' ? this.config.theme_on : this.config.theme_off;
-    this.style.setProperty('--time-bg-color', bgColor);
-    this.style.setProperty('--time-filter', `hue-rotate(${this._filterValue})`);
+    if (theme === 'light') {
+      this.style.setProperty('--time-bg-color', 'rgba(0, 0, 0, 0.3)');
+      this.style.setProperty('--time-text-color', 'white');
+    } else {
+      this.style.setProperty('--time-bg-color', 'rgba(255, 255, 255, 0.3)');
+      this.style.setProperty('--time-text-color', 'white');
+    }
   }
   
   _evaluateTheme() {
       try {
-          const mode = this.config ? this.config.theme : 'system';
+          const mode = this.config?.theme || 'theme()';
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (typeof mode === 'string' && mode.includes('theme()')) {
               if (typeof window.theme === 'function') {
-                  return window.theme() || 'light';
+                  const result = window.theme();
+                  if (result === 'light' || result === 'dark') return result;
               }
-            return 'light';
+              // theme() 函数不存在或返回值无效，回退 system
+              if (this._hass?.themes?.darkMode) return 'dark';
+              return 'light';
           }
           return mode;
       } catch (e) {

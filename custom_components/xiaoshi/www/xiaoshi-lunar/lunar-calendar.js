@@ -664,7 +664,7 @@ class LunarCalendar extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -836,7 +836,7 @@ class LunarCalendarHead extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -1001,7 +1001,7 @@ class LunarCalendarBody1 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -1160,7 +1160,7 @@ class LunarCalendarBody2 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -1289,7 +1289,7 @@ class LunarCalendarBody3 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -1415,7 +1415,7 @@ class LunarCalendarBody4 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -1534,7 +1534,7 @@ class LunarCalendarBody5 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -1653,7 +1653,7 @@ class LunarCalendarBody6 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -1785,7 +1785,7 @@ class LunarCalendarBody7 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -1932,7 +1932,7 @@ class LunarCalendarLeft1 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -2055,7 +2055,7 @@ class LunarCalendarRight1 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -2163,7 +2163,7 @@ class LunarCalendarLeft2 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -2264,7 +2264,7 @@ class LunarCalendarRight2 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -2380,7 +2380,7 @@ class LunarCalendarLeft3 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -2510,7 +2510,7 @@ class LunarCalendarRight3 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -2636,7 +2636,7 @@ class LunarCalendarLeft4 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -2762,7 +2762,7 @@ class LunarCalendarRight4 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -2886,7 +2886,7 @@ class LunarCalendarLeft5 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -3000,7 +3000,7 @@ class LunarCalendarRight5 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -3116,7 +3116,7 @@ class LunarCalendarLeft6 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
@@ -3230,7 +3230,7 @@ class LunarCalendarRight6 extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
