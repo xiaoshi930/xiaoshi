@@ -1107,7 +1107,7 @@ class XiaoshiWeatherPhoneCard extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
