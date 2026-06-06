@@ -31,6 +31,7 @@ import('./xiaoshi-small/purifier-card.js');
 
 
 import('./xiaoshi-pad/pad-card.js');
+import('./xiaoshi-pad/top-bar-card.js');
 import('./xiaoshi-pad/climate-card.js');
 import('./xiaoshi-pad/grid-card.js');
 import('./xiaoshi-pad/weather-card.js');
