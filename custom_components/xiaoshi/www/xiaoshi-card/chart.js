@@ -1053,7 +1053,7 @@ const ChartBaseMixin = (superClass) => class extends superClass {
                 </div>
               `}
           </div>
-          ${!merge ? html`
+          ${!this.config?.merge ? html`
           <div class="legend">
             ${(this._chartSeries.length ? this._chartSeries : entityIds.map((eid, i) => ({
               entityId: eid, name: this._getName(eid), color: this._getColor(eid, CHART_COLORS[i % CHART_COLORS.length])
