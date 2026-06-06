@@ -1650,7 +1650,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
               if (this.hass && this.hass.themes && this.hass.themes.darkMode !== undefined) {
                   return this.hass.themes.darkMode ? 'dark' : 'light';
               }
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              if (this._hass?.themes?.darkMode) return 'dark';
               return 'light';
           }
           if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
