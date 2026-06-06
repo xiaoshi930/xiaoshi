@@ -985,7 +985,7 @@ class XiaoshiPhoneCard extends LitElement {
             if (mode === 'light') result = 'light';
             else if (mode === 'dark') result = 'dark';
             else if (mode === 'system' || !mode) {
-                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) result = 'dark';
+                if (this._hass?.themes?.darkMode) return 'dark';
                 else result = 'light';
             } else {
                 result = mode;
