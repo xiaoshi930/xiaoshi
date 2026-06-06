@@ -185,6 +185,23 @@ class XiaoshiTopBar extends LitElement {
             theme: config.theme || 'theme()',
             cards: config.cards || '',
         };
+        this._buildCards();
+    }
+
+    render() {
+        if (!this.config) return html``;
+        const theme = this._evaluateTheme();
+        const btnBg = theme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.3)';
+        const cards = this._cardElements || [];
+        return html`
+            <div class="bar" style="width: ${this.config.width}; height: ${this.config.height}; --btn-bg: ${btnBg}; border-radius: ${this.config.border_radius};">
+                ${cards.map(el => html`
+                    <div class="bar-card">
+                        ${el}
+                    </div>
+                `)}
+            </div>
+        `;
     }
     
   _evaluateTheme() {
@@ -211,36 +228,57 @@ class XiaoshiTopBar extends LitElement {
       }
   }
 
-    render() {
-        if (!this.config) return html``;
-        const cardConfigs = this._parseCardsConfig();
-        const theme = this._evaluateTheme();
-        const btnBg = theme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.3)';
-        return html`
-            <div class="bar" style="width: ${this.config.width}; height: ${this.config.height}; --btn-bg: ${btnBg}; border-radius: ${this.config.border_radius};">
-                ${cardConfigs.map((cardConfig, index) => html`
-                    <div class="bar-card">
-                        <card-maker id="card-${index}"></card-maker>
-                    </div>
-                `)}
-            </div>
-        `;
+    set hass(hass) {
+        this._hass = hass;
+        this._propagateHass();
+        this.requestUpdate();
     }
 
-    updated(changedProps) {
-        if (changedProps.has('hass')) {
-            const cardConfigs = this._parseCardsConfig();
-            cardConfigs.forEach((_, index) => {
-                const maker = this.shadowRoot.getElementById(`card-${index}`);
-                if (maker) maker.hass = this.hass;
-            });
+    get hass() {
+        return this._hass;
+    }
+
+    async _createCardElementAsync(cardConfig) {
+        if (!cardConfig || !cardConfig.type) return null;
+        try {
+            const tag = cardConfig.type;
+            if (customElements.get(tag)) {
+                const el = document.createElement(tag);
+                el.setConfig(cardConfig);
+                if (this._hass) el.hass = this._hass;
+                return el;
+            }
+            if (window.loadCardHelpers) {
+                const helpers = await window.loadCardHelpers();
+                const el = await helpers.createCardElement(cardConfig);
+                if (this._hass) el.hass = this._hass;
+                return el;
+            }
+            const el = document.createElement('hui-error-card');
+            el.setConfig({ type: 'error', error: `Unknown card type: ${tag}`, cardConfig });
+            return el;
+        } catch (e) {
+            console.error('[xiaoshi-top-bar-card] 创建卡片失败:', e, cardConfig);
+            try {
+                const el = document.createElement('hui-error-card');
+                el.setConfig({ type: 'error', error: `创建卡片失败: ${e.message}`, cardConfig });
+                return el;
+            } catch (e2) {
+                return null;
+            }
         }
-        if (changedProps.has('config')) {
-            const cardConfigs = this._parseCardsConfig();
-            cardConfigs.forEach((cardConfig, index) => {
-                const maker = this.shadowRoot.getElementById(`card-${index}`);
-                if (maker) maker.config = cardConfig;
-            });
+    }
+
+    async _buildCards() {
+        const cardConfigs = this._parseCardsConfig();
+        this._cardElements = (await Promise.all(cardConfigs.map(cfg => this._createCardElementAsync(cfg)))).filter(Boolean);
+        this.requestUpdate();
+    }
+
+    _propagateHass() {
+        if (!this._hass) return;
+        if (this._cardElements) {
+            this._cardElements.forEach(el => { if (el) el.hass = this._hass; });
         }
     }
 
@@ -388,55 +426,3 @@ class XiaoshiTopBar extends LitElement {
     }
 }
 customElements.define('xiaoshi-top-bar-card', XiaoshiTopBar);
-
-// card-maker: 轻量级卡片加载器（普通HTMLElement，避免LitElement重渲染循环）
-class CardMaker extends HTMLElement {
-    set hass(hass) {
-        this._hass = hass;
-        if (this._card) this._card.hass = hass;
-    }
-
-    get hass() {
-        return this._hass;
-    }
-
-    set config(config) {
-        this._config = config;
-        this._buildCard();
-    }
-
-    get config() {
-        return this._config;
-    }
-
-    _buildCard() {
-        if (!this._config) return;
-        const cardElement = this._createCardElement(this._config);
-        if (cardElement) {
-            while (this.firstChild) {
-                this.removeChild(this.firstChild);
-            }
-            if (this._hass) cardElement.hass = this._hass;
-            this._card = cardElement;
-            this.appendChild(cardElement);
-        }
-    }
-
-    _createCardElement(cardConfig) {
-        const tag = this._getCardTag(cardConfig.type);
-        if (!tag) return null;
-        const element = document.createElement(tag);
-        if (element.setConfig) {
-            element.setConfig(cardConfig);
-        }
-        return element;
-    }
-
-    _getCardTag(type) {
-        if (type.startsWith('custom:')) {
-            return type.substring(7);
-        }
-        return `hui-${type}-card`;
-    }
-}
-customElements.define('card-maker', CardMaker);
