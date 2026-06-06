@@ -780,7 +780,7 @@ class LunarCalendarPadDate extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (this._hass?.themes?.darkMode) return 'dark';
+              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
           if (typeof mode === 'string' && mode.includes('theme()')) {
@@ -789,7 +789,7 @@ class LunarCalendarPadDate extends LitElement {
                   if (result === 'light' || result === 'dark') return result;
               }
               // theme() 函数不存在或返回值无效，回退 system
-              if (this._hass?.themes?.darkMode) return 'dark';
+              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
           return mode;
