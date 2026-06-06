@@ -121,7 +121,9 @@ class XiaoshiPadGridCardEditor extends LitElement {
     if (target.type === 'number') value = Number(value);
     if (target.tagName === 'HA-SWITCH' || target.type === 'checkbox') value = target.checked;
     const newConfig = { ...this._config };
-    if (value === '' || value === undefined) {
+    if (key === 'popup_cards') {
+      newConfig[key] = value || '';
+    } else if (value === '' || value === undefined) {
       delete newConfig[key];
     } else {
       newConfig[key] = value;
@@ -208,6 +210,41 @@ class XiaoshiPadGridCardEditor extends LitElement {
           `)}
           <button class="add-btn" @click=${this._addEntity}>+ 添加实体</button>
         </div>
+        <div class="field">
+          <label>👇👇👇下方弹出的卡片可增加的其他卡片👇👇👇</label>
+          <textarea
+            .value=${this._config.popup_cards || ''}
+            configKey="popup_cards"
+            @value-changed=${this._valueChanged}
+            @change=${this._valueChanged}
+            placeholder='# 示例1：直接列表写法
+- type: custom:button-card
+template: 测试模板
+- type: custom:button-card
+template: 测试模板
+
+# 示例2：popup_cards 包裹写法
+popup_cards:
+  - type: custom:button-card
+    template: 测试模板
+
+# 示例3：popup 包裹写法
+popup:
+  - type: custom:button-card
+    template: 测试模板'
+            style="min-height: 80px; resize: vertical; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; font-size: 14px; background: var(--card-background-color); color: var(--primary-text-color);"
+          ></textarea>
+        </div>
+        <div class="inline-fields">
+          <div class="field">
+            <label>弹窗宽度：支持像素(px)、百分比(%)和auto，默认95%</label>
+            <input type="text" .value=${this._config.popup_width || ''} configKey="popup_width" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="95%" />
+          </div>
+          <div class="field">
+            <label>弹窗位置：支持百分比(%)和像素(px)，默认20px</label>
+            <input type="text" .value=${this._config.popup_top || ''} configKey="popup_top" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="20px" />
+          </div>
+        </div>
       </div>
     `;
   }
@@ -250,6 +287,9 @@ class XiaoshiPadGridCard extends LitElement {
       max: config.max || 100,
       mode: config.mode || '温度',
       display: config.display || false,
+      popup_width: config.popup_width || '95%',
+      popup_top: config.popup_top || '20px',
+      popup_cards: config.popup_cards || config.other_cards || config.popup || '',
       entities: (config.entities || []).map(entity => ({
         ...entity,
         state: entity.state !== false,
@@ -282,7 +322,8 @@ class XiaoshiPadGridCard extends LitElement {
           return html`
             <div 
               class="grid-item"\n
-              style="left: ${grid[0]};top: ${grid[1]};width: ${grid[2]};height: ${grid[3]};background-color: rgba(0, 200, 0, 0.8);filter: ${filter};font-size: ${fsize};">
+              style="left: ${grid[0]};top: ${grid[1]};width: ${grid[2]};height: ${grid[3]};background-color: rgba(0, 200, 0, 0.8);filter: ${filter};font-size: ${fsize};"
+              @click=${() => this._handleGridClick(entityConfig)}>
               ${entityConfig.state !== false ? html`${entity.state}${unit}` : ''}
             </div>
           `;
@@ -344,6 +385,164 @@ class XiaoshiPadGridCard extends LitElement {
       deg = (50 - hum) * 120 / (min - 50);
     };
     return `hue-rotate(${deg}deg)`;
+  }
+
+  _handleGridClick(entityConfig) {
+    const entity = this.hass.states[entityConfig.entity];
+    if (!entity) return;
+    const cards = [];
+    if (this.config.popup_cards && this.config.popup_cards.trim()) {
+      try {
+        const additionalCardsConfig = this._parseYamlCards(this.config.popup_cards);
+        cards.push(...additionalCardsConfig);
+      } catch (error) {
+        console.error('解析附加卡片配置失败:', error);
+      }
+    }
+    if (cards.length === 0) return;
+    const serviceData = { card: cards };
+    const popupWidth = this.config.popup_width || '95%';
+    const popupTop = this.config.popup_top || '20px';
+    if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+    if (popupTop !== '20px') serviceData.popup_top = popupTop;
+    serviceData.background = 'transparent';
+    this.hass.callService('popup_card', 'show', serviceData);
+    const hapticEvent = new Event('haptic', { bubbles: true, cancelable: false, composed: true });
+    hapticEvent.detail = 'light';
+    this.dispatchEvent(hapticEvent);
+  }
+
+  _parseYamlCards(yamlString) {
+    try {
+      // 兼容 popup_cards: / popup: 包裹写法，提取其内容
+      let content = yamlString;
+      const wrapperMatch = content.match(/^(popup_cards|other_cards|popup):\s*\n([\s\S]*)$/m);
+      if (wrapperMatch) {
+        content = wrapperMatch[2];
+      }
+      const lines = content.split('\n');
+      const cards = [];
+      let currentCard = null;
+      let indentStack = [];
+      let contextStack = [];
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const indentLevel = line.length - line.trimStart().length;
+        if (trimmed.startsWith('- type')) {
+          if (currentCard) {
+            cards.push(currentCard);
+            currentCard = null;
+            indentStack = [];
+            contextStack = [];
+          }
+          const content = trimmed.substring(1).trim();
+          if (content.includes(':')) {
+            const [key, ...valueParts] = content.split(':');
+            const value = valueParts.join(':').trim();
+            currentCard = {};
+            this._setNestedValue(currentCard, key.trim(), this._parseValue(value));
+          } else {
+            currentCard = { type: content };
+          }
+          indentStack = [indentLevel];
+          contextStack = [currentCard];
+        } else if (currentCard && trimmed.startsWith('-')) {
+          while (indentStack.length > 1 && indentLevel <= indentStack[indentStack.length - 1]) {
+            indentStack.pop();
+            contextStack.pop();
+          }
+          let currentContext = contextStack[contextStack.length - 1];
+          const itemValue = trimmed.substring(1).trim();
+          if (!Array.isArray(currentContext)) {
+            if (contextStack.length > 1) {
+              const parentContext = contextStack[contextStack.length - 2];
+              for (let key in parentContext) {
+                if (parentContext[key] === currentContext) {
+                  parentContext[key] = [];
+                  contextStack[contextStack.length - 1] = parentContext[key];
+                  currentContext = parentContext[key];
+                  break;
+                }
+              }
+            }
+          }
+          if (Array.isArray(currentContext)) {
+            if (itemValue.includes(':')) {
+              const [key, ...valueParts] = itemValue.split(':');
+              const value = valueParts.join(':').trim();
+              const obj = {};
+              obj[key.trim()] = this._parseValue(value);
+              currentContext.push(obj);
+              indentStack.push(indentLevel);
+              contextStack.push(obj);
+            } else {
+              currentContext.push(this._parseValue(itemValue));
+            }
+          }
+        } else if (currentCard && trimmed.includes(':')) {
+          const [key, ...valueParts] = trimmed.split(':');
+          const value = valueParts.join(':').trim();
+          const keyName = key.trim();
+          while (indentStack.length > 1 && indentLevel <= indentStack[indentStack.length - 1]) {
+            indentStack.pop();
+            contextStack.pop();
+          }
+          const currentContext = contextStack[contextStack.length - 1];
+          if (value) {
+            this._setNestedValue(currentContext, keyName, this._parseValue(value));
+          } else {
+            let nextLine = null, nextIndent = null;
+            for (let j = i + 1; j < lines.length; j++) {
+              const nextTrimmed = lines[j].trim();
+              if (nextTrimmed && !nextTrimmed.startsWith('#')) {
+                nextLine = nextTrimmed;
+                nextIndent = lines[j].length - lines[j].trimStart().length;
+                break;
+              }
+            }
+            currentContext[keyName] = (nextLine && nextLine.startsWith('-') && nextIndent > indentLevel)
+              ? [] : (currentContext[keyName] || {});
+            indentStack.push(indentLevel);
+            contextStack.push(currentContext[keyName]);
+          }
+        }
+      }
+      if (currentCard) cards.push(currentCard);
+      return cards;
+    } catch (error) {
+      console.error('YAML解析错误:', error);
+      return [];
+    }
+  }
+
+  _parseValue(value) {
+    if (!value) return '';
+    if ((value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))) {
+      return value.slice(1, -1);
+    }
+    if (!isNaN(value) && value.trim() !== '') {
+      return Number(value);
+    }
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    if (value === 'null') return null;
+    return value;
+  }
+
+  _setNestedValue(obj, path, value) {
+    const keys = path.split('.');
+    let current = obj;
+    for (let i = 0; i < keys.length - 1; i++) {
+      const key = keys[i];
+      if (!current[key] || typeof current[key] !== 'object') {
+        current[key] = {};
+      }
+      current = current[key];
+    }
+    current[keys[keys.length - 1]] = value;
   }
 
   static getConfigElement() {
