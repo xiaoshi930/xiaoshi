@@ -373,20 +373,318 @@ class XiaoshiWeatherPadEditor extends LitElement {
 }
 customElements.define('xiaoshi-weather-pad-editor', XiaoshiWeatherPadEditor);
 
-class XiaoshiWeatherPadCard extends LitElement {
-  // 温度计算常量
-  static get TEMPERATURE_CONSTANTS() {
+// ==================== 共享常量 ====================
+const TEMPERATURE_CONSTANTS = {
+  BUTTON_HEIGHT_PX: 17,
+  CONTAINER_HEIGHT_PX: 125,
+  FORECAST_COLUMNS: 5,
+};
+
+const ICON_PATH = '/xiaoshi/weather-icon';
+
+// ==================== 天气卡片基类 ====================
+class XiaoshiWeatherBase extends LitElement {
+  static get properties() {
     return {
-      BUTTON_HEIGHT_PX: 17,        // 温度矩形高度（px）
-      CONTAINER_HEIGHT_PX: 125,      // 温度容器总高度（px）
-      FORECAST_COLUMNS: 5,          // 预报列数
+      hass: { type: Object },
+      config: { type: Object },
+      entity: { type: Object },
     };
   }
 
-  // 图标路径常量 - 方便调试修改
-  static get ICON_PATH() {
-    return '/xiaoshi/weather-icon';
-  } 
+  static get TEMPERATURE_CONSTANTS() { return TEMPERATURE_CONSTANTS; }
+  static get ICON_PATH() { return ICON_PATH; }
+
+  constructor() {
+    super();
+    this.isDragging = false;
+    this.startX = 0;
+    this.scrollLeft = 0;
+    this.scrollTarget = null;
+    this.rafId = null;
+  }
+
+  setConfig(config) {
+    if (!config.entity) {
+      throw new Error('需要指定天气实体');
+    }
+    this.config = config;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._parseAttributeData();
+    this._updateEntities();
+  }
+
+  updated(changedProperties) {
+    super.updated(changedProperties);
+    if (changedProperties.has('config') || changedProperties.has('hass')) {
+      this._parseAttributeData();
+      this._updateEntities();
+    }
+  }
+
+  _evaluateTheme() {
+    try {
+      const mode = this.config?.theme || 'theme()';
+      if (mode === 'light') return 'light';
+      if (mode === 'dark') return 'dark';
+      if (mode === 'system' || !mode) {
+        if (this._hass?.themes?.darkMode) return 'dark';
+        return 'light';
+      }
+      if (typeof mode === 'string' && mode.includes('theme()')) {
+        if (typeof window.theme === 'function') {
+          const result = window.theme();
+          if (result === 'light' || result === 'dark') return result;
+        }
+        if (this._hass?.themes?.darkMode) return 'dark';
+        return 'light';
+      }
+      return mode;
+    } catch (e) {
+      return 'light';
+    }
+  }
+
+  _handleClick() {
+    const hapticEvent = new Event('haptic', {
+      bubbles: true,
+      cancelable: false,
+      composed: true
+    });
+    hapticEvent.detail = 'light';
+    this.dispatchEvent(hapticEvent);
+  }
+
+  _updateEntities() {
+    if (!this.hass || !this.config) return;
+    this.entity = this.hass.states[this.config.entity];
+  }
+
+  _parseAttributeData() {
+    const hassAttr = this.getAttribute('hass-hass');
+    if (hassAttr && !this.hass) {
+      try {
+        this.hass = JSON.parse(decodeURIComponent(hassAttr));
+      } catch (e) {
+        console.error('Failed to parse hass attribute:', e);
+      }
+    }
+    const configAttr = this.getAttribute('hass-config');
+    if (configAttr && !this.config) {
+      try {
+        this.config = JSON.parse(decodeURIComponent(configAttr));
+      } catch (e) {
+        console.error('Failed to parse config attribute:', e);
+      }
+    }
+  }
+
+  _formatTemperature(temp) {
+    if (temp === undefined || temp === null) return '--';
+    return temp.toString().includes('.') ? temp : temp;
+  }
+
+  _formatSunTime(datetime) {
+    if (!datetime) return '';
+    try {
+      const date = new Date(datetime);
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      return `${hours}:${minutes}`;
+    } catch (error) {
+      console.warn('时间格式化错误:', error);
+      return datetime;
+    }
+  }
+
+  _getWeatherIcon(condition, isDark = false) {
+    const sunState = this.hass?.states['sun.sun']?.state || 'above_horizon';
+    const iconPath = ICON_PATH;
+    const _v = '?v=2';
+    const cn2en = {
+      '晴': 'sunny', '少云': 'partlycloudy', '多云': 'cloudy', '阴': 'overcast',
+      '小雨': 'light-rain', '中雨': 'moderate-rain', '大雨': 'heavy-rain', '暴雨': 'torrential-rain',
+      '阵雨': 'rain-shower', '雷阵雨': 'thunderstorm', '雨': 'rain',
+      '小雪': 'light-snow', '中雪': 'moderate-snow', '大雪': 'heavy-snow', '暴雪': 'blizzard',
+      '阵雪': 'snow-shower', '雪': 'snow',
+      '雨夹雪': 'snowy-rainy', '雨雪天气': 'rain-snow', '冻雨': 'freezing-rain',
+      '雾': 'fog', '霾': 'haze', '扬沙': 'sand', '冰雹': 'hail',
+      '晴间多云': 'fair', '热': 'hot',
+    };
+    const enCondition = cn2en[condition] || condition;
+    const iconMap = {
+      'sunny': isDark ?
+        (sunState === 'above_horizon' ? `${iconPath}/sunny-day-dark.svg${_v}` : `${iconPath}/sunny-night-dark.svg${_v}`) :
+        (sunState === 'above_horizon' ? `${iconPath}/sunny-day.svg${_v}` : `${iconPath}/sunny-night.svg${_v}`),
+      'clear-night': isDark ? `${iconPath}/sunny-night-dark.svg${_v}` : `${iconPath}/sunny-night.svg${_v}`,
+      'partlycloudy': isDark ?
+        (sunState === 'above_horizon' ? `${iconPath}/partlycloudy-day-dark.svg${_v}` : `${iconPath}/partlycloudy-night-dark.svg${_v}`) :
+        (sunState === 'above_horizon' ? `${iconPath}/partlycloudy-day.svg${_v}` : `${iconPath}/partlycloudy-night.svg${_v}`),
+      'cloudy': isDark ?
+        (sunState === 'above_horizon' ? `${iconPath}/cloudy-day-dark.svg${_v}` : `${iconPath}/cloudy-night-dark.svg${_v}`) :
+        (sunState === 'above_horizon' ? `${iconPath}/cloudy-day.svg${_v}` : `${iconPath}/cloudy-night.svg${_v}`),
+      'overcast': isDark ? `${iconPath}/overcast-dark.svg${_v}` : `${iconPath}/overcast.svg${_v}`,
+      'fog': isDark ? `${iconPath}/fog-dark.svg${_v}` : `${iconPath}/fog.svg${_v}`,
+      'hail': isDark ? `${iconPath}/hail-dark.svg${_v}` : `${iconPath}/hail.svg${_v}`,
+      'lightning': isDark ? `${iconPath}/thunderstorm-dark.svg${_v}` : `${iconPath}/thunderstorm.svg${_v}`,
+      'lightning-rainy': isDark ? `${iconPath}/thunderstorm-dark.svg${_v}` : `${iconPath}/thunderstorm.svg${_v}`,
+      'pouring': isDark ? `${iconPath}/heavy-rain-dark.svg${_v}` : `${iconPath}/heavy-rain.svg${_v}`,
+      'rainy': isDark ? `${iconPath}/light-rain-dark.svg${_v}` : `${iconPath}/light-rain.svg${_v}`,
+      'snowy': isDark ? `${iconPath}/light-snow-dark.svg${_v}` : `${iconPath}/light-snow.svg${_v}`,
+      'snowy-rainy': isDark ? `${iconPath}/snowy-rainy-dark.svg${_v}` : `${iconPath}/snowy-rainy.svg${_v}`,
+      'windy': isDark ? `${iconPath}/windy-dark.svg${_v}` : `${iconPath}/windy.svg${_v}`,
+      'windy-variant': isDark ? `${iconPath}/windy-variant-dark.svg${_v}` : `${iconPath}/windy-variant.svg${_v}`,
+      'exceptional': isDark ? `${iconPath}/exceptional-dark.svg${_v}` : `${iconPath}/exceptional.svg${_v}`,
+    };
+    return iconMap[enCondition] || (isDark ? `${iconPath}/${enCondition}-dark.svg${_v}` : `${iconPath}/${enCondition}.svg${_v}`);
+  }
+
+  _getCustomEntityValue(entityKey) {
+    if (!this.config?.use_custom_entities || !this.config?.[entityKey] || !this.hass?.states[this.config[entityKey]]) {
+      return null;
+    }
+    const value = this.hass.states[this.config[entityKey]].state;
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) return null;
+    return numValue.toFixed(1);
+  }
+
+  _getCustomTemperature() { return this._getCustomEntityValue('temperature_entity'); }
+  _getCustomHumidity() { return this._getCustomEntityValue('humidity_entity'); }
+
+  _getInstanceId() {
+    if (!this._instanceId) {
+      this._instanceId = Math.random().toString(36).substr(2, 9);
+    }
+    return this._instanceId;
+  }
+
+  _getWindDirectionIcon(windBearing) {
+    const directions = [
+      { range: [337.5, 360], icon: '↑', name: '北' },
+      { range: [0, 22.5], icon: '↑', name: '北' },
+      { range: [22.5, 67.5], icon: '↗', name: '东北' },
+      { range: [67.5, 112.5], icon: '→', name: '东' },
+      { range: [112.5, 157.5], icon: '↘', name: '东南' },
+      { range: [157.5, 202.5], icon: '↓', name: '南' },
+      { range: [202.5, 247.5], icon: '↙', name: '西南' },
+      { range: [247.5, 292.5], icon: '←', name: '西' },
+      { range: [292.5, 337.5], icon: '↖', name: '西北' }
+    ];
+    const direction = directions.find(dir => {
+      if (dir.range[0] <= dir.range[1]) {
+        return windBearing >= dir.range[0] && windBearing < dir.range[1];
+      } else if (dir.range[0] === 337.5 && dir.range[1] === 360) {
+        return windBearing >= dir.range[0] && windBearing <= 360;
+      } else if (dir.range[0] === 0 && dir.range[1] === 22.5) {
+        return windBearing >= dir.range[0] && windBearing < dir.range[1];
+      }
+      return false;
+    });
+    return direction ? direction.icon : '↓';
+  }
+
+  _getWarningColorForLevel(level) {
+    if (level == "红色") return "rgb(255,50,50)";
+    if (level == "橙色") return "rgb(255,100,0)";
+    if (level == "黄色") return "rgb(255,200,0)";
+    if (level == "蓝色") return "rgb(50,150,200)";
+    if (level == "灰色") {
+      return this._evaluateTheme() === 'light' ? 'rgba(50, 50, 50)' : 'rgba(220, 220, 220)';
+    }
+    return "#FFA726";
+  }
+
+  _getWarningColor(warning) {
+    if (!warning || warning.length === 0) return "#FFA726";
+    let level = "";
+    const priority = ["红色", "橙色", "黄色", "蓝色", "灰色"];
+    for (let i = 0; i < warning.length; i++) {
+      const currentLevel = warning[i].level;
+      if (priority.indexOf(currentLevel) < priority.indexOf(level) || level == "") {
+        level = currentLevel;
+      }
+    }
+    return this._getWarningColorForLevel(level);
+  }
+
+  _getAqiColor(category) {
+    switch(category) {
+      case '优': return '#4CAF50';
+      case '良': return '#FFC107';
+      case '轻度污染': return '#FF9800';
+      case '中度污染': return '#FF5722';
+      case '重度污染': return '#F44336';
+      case '严重污染': return '#9C27B0';
+      default: return '#9E9E9E';
+    }
+  }
+
+  // 鼠标滑动处理方法
+  _handleMouseDown(e) {
+    const container = e.target.closest('.forecast-container');
+    const wrapper = e.target.closest('.forecast-container-wrapper');
+    if (!container || !wrapper) return;
+    this.isDragging = true;
+    this.startX = e.pageX - wrapper.offsetLeft;
+    this.scrollLeft = wrapper.scrollLeft || 0;
+    this.scrollTarget = wrapper;
+    container.style.cursor = 'grabbing';
+    e.preventDefault();
+  }
+
+  _handleMouseUp(e) {
+    this.isDragging = false;
+    if (this.scrollTarget) {
+      const container = this.scrollTarget.querySelector('.forecast-container');
+      if (container) container.style.cursor = 'grab';
+      this.scrollTarget = null;
+    }
+  }
+
+  _handleMouseMove(e) {
+    if (!this.isDragging || !this.scrollTarget) return;
+    e.preventDefault();
+    const x = e.pageX - this.scrollTarget.offsetLeft;
+    const walk = (x - this.startX) * 1.5;
+    if (this.rafId) cancelAnimationFrame(this.rafId);
+    this.rafId = requestAnimationFrame(() => {
+      if (this.scrollTarget) this.scrollTarget.scrollLeft = this.scrollLeft - walk;
+    });
+  }
+
+  _handleTouchStart(e) {
+    const container = e.target.closest('.forecast-container');
+    const wrapper = e.target.closest('.forecast-container-wrapper');
+    if (!container || !wrapper) return;
+    this.startX = e.touches[0].pageX - wrapper.offsetLeft;
+    this.scrollLeft = wrapper.scrollLeft || 0;
+    this.scrollTarget = wrapper;
+  }
+
+  _handleTouchEnd(e) {
+    this.scrollTarget = null;
+  }
+
+  _handleTouchMove(e) {
+    if (!this.scrollTarget) return;
+    e.preventDefault();
+    const x = e.touches[0].pageX - this.scrollTarget.offsetLeft;
+    const walk = (x - this.startX) * 1.5;
+    if (this.rafId) cancelAnimationFrame(this.rafId);
+    this.rafId = requestAnimationFrame(() => {
+      if (this.scrollTarget) this.scrollTarget.scrollLeft = this.scrollLeft - walk;
+    });
+  }
+}
+
+// ==================== 主天气卡片 ====================
+class XiaoshiWeatherPadCard extends XiaoshiWeatherBase {
+  static get TEMPERATURE_CONSTANTS() { return TEMPERATURE_CONSTANTS; }
+  static get ICON_PATH() { return ICON_PATH; }
 
   static getConfigElement() {
     return document.createElement("xiaoshi-weather-pad-editor");
@@ -403,11 +701,6 @@ class XiaoshiWeatherPadCard extends LitElement {
 
   constructor() {
     super();
-    this.isDragging = false;
-    this.startX = 0;
-    this.scrollLeft = 0;
-    this.scrollTarget = null;
-    this.rafId = null;
   }
 
   static get styles() {
@@ -857,112 +1150,9 @@ class XiaoshiWeatherPadCard extends LitElement {
       }
     `;
   }
-
-
   
-  _evaluateTheme() {
-      try {
-          const mode = this.config ? this.config.theme : 'system';
-          if (mode === 'light') return 'light';
-          if (mode === 'dark') return 'dark';
-          if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-              return 'light';
-          }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
-              if (typeof window.theme === 'function') {
-                  return window.theme() || 'light';
-              }
-            return 'light';
-          }
-          return mode;
-      } catch (e) {
-          return 'light';
-      }
-  }
-
-  _handleClick() {
-    const hapticEvent = new Event('haptic', {
-      bubbles: true,
-      cancelable: false,
-      composed: true
-    });
-    hapticEvent.detail = 'light';
-    this.dispatchEvent(hapticEvent);
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    this._updateEntities();
-  }
-
   disconnectedCallback() {
     super.disconnectedCallback();
-  }
-
-  updated(changedProperties) {
-    super.updated(changedProperties);
-    if (changedProperties.has('config') || changedProperties.has('hass')) {
-      this._updateEntities();
-    }
-  }
-
-  _updateEntities() {
-    if (!this.hass || !this.config) return;
-
-    this.entity = this.hass.states[this.config.entity];
-  }
-
-  _getWeatherIcon(condition) {
-    const sunState = this.hass?.states['sun.sun']?.state || 'above_horizon';
-    const isDark = false;
-    const iconPath = XiaoshiWeatherPadCard.ICON_PATH;
-    const _v = '?v=2';
-
-    // 中文条件映射到英文图标名
-    const cn2en = {
-      '晴': 'sunny', '少云': 'partlycloudy', '多云': 'cloudy', '阴': 'overcast',
-      '小雨': 'light-rain', '中雨': 'moderate-rain', '大雨': 'heavy-rain', '暴雨': 'torrential-rain',
-      '阵雨': 'rain-shower', '雷阵雨': 'thunderstorm', '雨': 'rain',
-      '小雪': 'light-snow', '中雪': 'moderate-snow', '大雪': 'heavy-snow', '暴雪': 'blizzard',
-      '阵雪': 'snow-shower', '雪': 'snow',
-      '雨夹雪': 'snowy-rainy', '雨雪天气': 'rain-snow', '冻雨': 'freezing-rain',
-      '雾': 'fog', '霾': 'haze', '扬沙': 'sand', '冰雹': 'hail',
-      '晴间多云': 'fair', '热': 'hot',
-    };
-    const enCondition = cn2en[condition] || condition;
-
-    const iconMap = {
-      'sunny': isDark ?
-        (sunState === 'above_horizon' ? `${iconPath}/sunny-day-dark.svg${_v}` : `${iconPath}/sunny-night-dark.svg${_v}`) :
-        (sunState === 'above_horizon' ? `${iconPath}/sunny-day.svg${_v}` : `${iconPath}/sunny-night.svg${_v}`),
-      'clear-night': isDark ? `${iconPath}/sunny-night-dark.svg${_v}` : `${iconPath}/sunny-night.svg${_v}`,
-      'partlycloudy': isDark ?
-        (sunState === 'above_horizon' ? `${iconPath}/partlycloudy-day-dark.svg${_v}` : `${iconPath}/partlycloudy-night-dark.svg${_v}`) :
-        (sunState === 'above_horizon' ? `${iconPath}/partlycloudy-day.svg${_v}` : `${iconPath}/partlycloudy-night.svg${_v}`),
-      'cloudy': isDark ?
-        (sunState === 'above_horizon' ? `${iconPath}/cloudy-day-dark.svg${_v}` : `${iconPath}/cloudy-night-dark.svg${_v}`) :
-        (sunState === 'above_horizon' ? `${iconPath}/cloudy-day.svg${_v}` : `${iconPath}/cloudy-night.svg${_v}`),
-      'overcast': isDark ? `${iconPath}/overcast-dark.svg${_v}` : `${iconPath}/overcast.svg${_v}`,
-      'fog': isDark ? `${iconPath}/fog-dark.svg${_v}` : `${iconPath}/fog.svg${_v}`,
-      'hail': isDark ? `${iconPath}/hail-dark.svg${_v}` : `${iconPath}/hail.svg${_v}`,
-      'lightning': isDark ? `${iconPath}/thunderstorm-dark.svg${_v}` : `${iconPath}/thunderstorm.svg${_v}`,
-      'lightning-rainy': isDark ? `${iconPath}/thunderstorm-dark.svg${_v}` : `${iconPath}/thunderstorm.svg${_v}`,
-      'pouring': isDark ? `${iconPath}/heavy-rain-dark.svg${_v}` : `${iconPath}/heavy-rain.svg${_v}`,
-      'rainy': isDark ? `${iconPath}/light-rain-dark.svg${_v}` : `${iconPath}/light-rain.svg${_v}`,
-      'snowy': isDark ? `${iconPath}/light-snow-dark.svg${_v}` : `${iconPath}/light-snow.svg${_v}`,
-      'snowy-rainy': isDark ? `${iconPath}/snowy-rainy-dark.svg${_v}` : `${iconPath}/snowy-rainy.svg${_v}`,
-      'windy': isDark ? `${iconPath}/windy-dark.svg${_v}` : `${iconPath}/windy.svg${_v}`,
-      'windy-variant': isDark ? `${iconPath}/windy-variant-dark.svg${_v}` : `${iconPath}/windy-variant.svg${_v}`,
-      'exceptional': isDark ? `${iconPath}/exceptional-dark.svg${_v}` : `${iconPath}/exceptional.svg${_v}`,
-    };
-
-    return iconMap[enCondition] || (isDark ? `${iconPath}/${enCondition}-dark.svg${_v}` : `${iconPath}/${enCondition}.svg${_v}`);
-  }
-
-  _formatTemperature(temp) {
-    if (temp === undefined || temp === null) return '--';
-    return temp.toString().includes('.') ? temp : temp;
   }
 
   _getWeekday(date) {
@@ -1010,32 +1200,6 @@ class XiaoshiWeatherPadCard extends LitElement {
     this.hass.callService('popup_card', 'show', serviceData);
   }
 
-  _getWarningColorForLevel(level) {
-    if (level == "红色") return "rgb(255,50,50)";
-    if (level == "橙色") return "rgb(255,100,0)";
-    if (level == "黄色") return "rgb(255,200,0)";
-    if (level == "蓝色") return "rgb(50,150,200)";
-    if (level == "灰色") return "rgb(220,220,220)";
-    
-    return "#FFA726"; // 默认颜色
-  }
-
-  _getWarningColor(warning) {
-    if (!warning || warning.length === 0) return "#FFA726"; // 默认颜色
-    
-    let level = "";
-    const priority = ["红色", "橙色", "黄色", "蓝色", "灰色"];
-    
-    for (let i = 0; i < warning.length; i++) {
-      const currentLevel = warning[i].level;
-      if (priority.indexOf(currentLevel) < priority.indexOf(level) || level == "") {
-        level = currentLevel;
-      }
-    }
-    
-    return this._getWarningColorForLevel(level);
-  }
-
   _toggleHourlyModal() {
     this._showPopupCard({
       type: 'custom:xiaoshi-hourly-weather-card',
@@ -1079,78 +1243,12 @@ class XiaoshiWeatherPadCard extends LitElement {
   _getAqiCategoryHtml() {
     const category = this.entity.attributes?.aqi?.category;
     if (!category) return '';
-    
-    let color = '';
-    switch(category) {
-      case '优':
-        color = '#4CAF50'; // 绿色
-        break;
-      case '良':
-        color = '#FFC107'; // 黄色
-        break;
-      case '轻度污染':
-        color = '#FF9800'; // 橙色
-        break;
-      case '中度污染':
-      case '重度污染':
-      case '严重污染':
-        color = '#F44336'; // 红色
-        break;
-      default:
-        color = '#9E9E9E'; // 灰色（其他未知类别）
-    }
-    
+    const color = this._getAqiColor(category);
     return html`
             <button class="toggle-btn-aqi" style="color: ${color};" @click="${() => this._toggleApiInfo()}">
               ${category.slice(0,2)}
             </button>
             ` 
-  }
-
-  _getCustomTemperature() {
-    if (!this.config?.use_custom_entities || !this.config?.temperature_entity || !this.hass?.states[this.config.temperature_entity]) {
-      return null;
-    }
-    
-    const temp = this.hass.states[this.config.temperature_entity].state;
-    const tempValue = parseFloat(temp);
-    
-    if (isNaN(tempValue)) {
-      return null;
-    }
-    
-    // 保留1位小数
-    return tempValue.toFixed(1);
-  }
-
-  _getCustomHumidity() {
-    if (!this.config?.use_custom_entities || !this.config?.humidity_entity || !this.hass?.states[this.config.humidity_entity]) {
-      return null;
-    }
-    
-    const humidity = this.hass.states[this.config.humidity_entity].state;
-    const humidityValue = parseFloat(humidity);
-    
-    if (isNaN(humidityValue)) {
-      return null;
-    }
-    
-    // 保留1位小数
-    return humidityValue.toFixed(1);
-  }
-
-  _formatSunTime(datetime) {
-    if (!datetime) return '';
-    
-    try {
-      const date = new Date(datetime);
-      const hours = date.getHours().toString().padStart(2, '0');
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      return `${hours}:${minutes}`;
-    } catch (error) {
-      console.warn('时间格式化错误:', error);
-      return datetime;
-    }
   }
 
   _getTemperatureExtremes() {
@@ -1208,13 +1306,6 @@ class XiaoshiWeatherPadCard extends LitElement {
       lowTop: finalLowTop
     };
   } 
-
-  _getInstanceId() {
-    if (!this._instanceId) {
-      this._instanceId = Math.random().toString(36).substr(2, 9);
-    }
-    return this._instanceId;
-  }
 
   _drawTemperatureCurve(canvasId, points, color, dashedSegmentInfo = null) {
     
@@ -1723,21 +1814,7 @@ class XiaoshiWeatherPadCard extends LitElement {
     `;
   }
 
-  _formatSunTime(datetime) {
-    if (!datetime) return '';
-    
-    try {
-      const date = new Date(datetime);
-      const hours = date.getHours().toString().padStart(2, '0');
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      return `${hours}:${minutes}`;
-    } catch (error) {
-      console.warn('时间格式化错误:', error);
-      return datetime;
-    }
-  }
-
-   _getRelativeTime(updateTime) {
+  _getRelativeTime(updateTime) {
     if (!updateTime || updateTime === '未知时间') {
       return '未知时间';
     }
@@ -1838,129 +1915,13 @@ class XiaoshiWeatherPadCard extends LitElement {
     `;
   }
 
-  _getWindDirectionIcon(bearing) {
-    // 0是北风，按顺时针方向增加
-    const directions = [
-      { range: [337.5, 360], icon: '↑', name: '北' },    // 337.5-360度
-      { range: [0, 22.5], icon: '↑', name: '北' },        // 0-22.5度
-      { range: [22.5, 67.5], icon: '↗', name: '东北' },    // 22.5-67.5度
-      { range: [67.5, 112.5], icon: '→', name: '东' },     // 67.5-112.5度
-      { range: [112.5, 157.5], icon: '↘', name: '东南' },   // 112.5-157.5度
-      { range: [157.5, 202.5], icon: '↓', name: '南' },     // 157.5-202.5度
-      { range: [202.5, 247.5], icon: '↙', name: '西南' },   // 202.5-247.5度
-      { range: [247.5, 292.5], icon: '←', name: '西' },     // 247.5-292.5度
-      { range: [292.5, 337.5], icon: '↖', name: '西北' }    // 292.5-337.5度
-    ];
-
-    const direction = directions.find(dir => {
-      if (dir.range[0] <= dir.range[1]) {
-        // 正常范围，如 22.5-67.5
-        return bearing >= dir.range[0] && bearing < dir.range[1];
-      } else if (dir.range[0] === 337.5 && dir.range[1] === 360) {
-        // 337.5-360度特殊处理
-        return bearing >= dir.range[0] && bearing <= 360;
-      } else if (dir.range[0] === 0 && dir.range[1] === 22.5) {
-        // 0-22.5度特殊处理
-        return bearing >= dir.range[0] && bearing < dir.range[1];
-      }
-      return false;
-    });
-
-    return direction ? direction.icon : '↓';
-  }
-
-  setConfig(config) {
-    if (!config.entity) {
-      throw new Error('需要指定天气实体');
-    }
-    this.config = config;
-  }
-
   getCardSize() {
     return 8;
-  }
-
-  // 鼠标滑动处理方法
-  _handleMouseDown(e) {
-    const container = e.target.closest('.forecast-container');
-    const wrapper = e.target.closest('.forecast-container-wrapper');
-    if (!container || !wrapper) return;
-    
-    this.isDragging = true;
-    this.startX = e.pageX - wrapper.offsetLeft;
-    this.scrollLeft = wrapper.scrollLeft || 0;
-    this.scrollTarget = wrapper;
-    container.style.cursor = 'grabbing';
-    e.preventDefault();
-  }
-
-  _handleMouseUp(e) {
-    this.isDragging = false;
-    if (this.scrollTarget) {
-      const container = this.scrollTarget.querySelector('.forecast-container');
-      if (container) {
-        container.style.cursor = 'grab';
-      }
-      this.scrollTarget = null;
-    }
-  }
-
-  _handleMouseMove(e) {
-    if (!this.isDragging || !this.scrollTarget) return;
-    
-    e.preventDefault();
-    const x = e.pageX - this.scrollTarget.offsetLeft;
-    const walk = (x - this.startX) * 1.5; // 调整滑动速度
-    
-    // 使用requestAnimationFrame优化性能
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-    }
-    
-    this.rafId = requestAnimationFrame(() => {
-      if (this.scrollTarget) {
-        this.scrollTarget.scrollLeft = this.scrollLeft - walk;
-      }
-    });
-  }
-
-  // 触摸滑动处理方法
-  _handleTouchStart(e) {
-    const container = e.target.closest('.forecast-container');
-    const wrapper = e.target.closest('.forecast-container-wrapper');
-    if (!container || !wrapper) return;
-    
-    this.startX = e.touches[0].pageX - wrapper.offsetLeft;
-    this.scrollLeft = wrapper.scrollLeft || 0;
-    this.scrollTarget = wrapper;
-  }
-
-  _handleTouchEnd(e) {
-    this.scrollTarget = null;
-  }
-
-  _handleTouchMove(e) {
-    if (!this.scrollTarget) return;
-    
-    e.preventDefault();
-    const x = e.touches[0].pageX - this.scrollTarget.offsetLeft;
-    const walk = (x - this.startX) * 1.5; // 调整滑动速度
-    
-    // 使用requestAnimationFrame优化性能
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-    }
-    
-    this.rafId = requestAnimationFrame(() => {
-      if (this.scrollTarget) {
-        this.scrollTarget.scrollLeft = this.scrollLeft - walk;
-      }
-    });
   }
 }
 customElements.define('xiaoshi-weather-pad-card', XiaoshiWeatherPadCard);
 
-class XiaoshiHourlyWeatherCard extends LitElement {
+class XiaoshiHourlyWeatherCard extends XiaoshiWeatherBase {
   static get properties() {
     return {
       hass: { type: Object },
@@ -2439,151 +2400,23 @@ class XiaoshiHourlyWeatherCard extends LitElement {
     super();
     this.showWarningDetails = false;
     this.warningTimer = null;
-    this.isDragging = false;
-    this.startX = 0;
-    this.scrollLeft = 0;
-    this.scrollTarget = null;
-    this.rafId = null;
-  }
-
-  _evaluateTheme() {
-      try {
-          const mode = this.config ? this.config.theme : 'system';
-          if (mode === 'light') return 'light';
-          if (mode === 'dark') return 'dark';
-          if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-              return 'light';
-          }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
-              if (typeof window.theme === 'function') {
-                  return window.theme() || 'light';
-              }
-            return 'light';
-          }
-          return mode;
-      } catch (e) {
-          return 'light';
-      }
-  }
-
-  _handleClick() {
-    const hapticEvent = new Event('haptic', {
-      bubbles: true,
-      cancelable: false,
-      composed: true
-    });
-    hapticEvent.detail = 'light';
-    this.dispatchEvent(hapticEvent);
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    // 处理通过属性传递的数据
-    this._parseAttributeData();
-    this._updateEntities();
-  }
-
-  updated(changedProperties) {
-    super.updated(changedProperties);
-    if (changedProperties.has('config') || changedProperties.has('hass')) {
-      // 处理通过属性传递的数据
-      this._parseAttributeData();
-      this._updateEntities();
-    }
   }
 
   _updateEntities() {
+    super._updateEntities();
     if (!this.hass || !this.config) return;
-
-    this.entity = this.hass.states[this.config.entity];
     this.temperature_entity = this.hass.states[this.config.temperature_entity];
     this.humidity_entity = this.hass.states[this.config.humidity_entity];
   }
 
-  _getInstanceId() {
-    if (!this._instanceId) {
-      this._instanceId = Math.random().toString(36).substr(2, 9);
-    }
-    return this._instanceId;
-  }
-
   _getWeatherIcon(condition) {
-    const sunState = this.hass?.states['sun.sun']?.state || 'above_horizon';
-    const isDark = this._evaluateTheme() === 'light';
-    const iconPath = XiaoshiWeatherPadCard.ICON_PATH;
-    const _v = '?v=2';
-
-    // 中文条件映射到英文图标名
-    const cn2en = {
-      '晴': 'sunny', '少云': 'partlycloudy', '多云': 'cloudy', '阴': 'overcast',
-      '小雨': 'light-rain', '中雨': 'moderate-rain', '大雨': 'heavy-rain', '暴雨': 'torrential-rain',
-      '阵雨': 'rain-shower', '雷阵雨': 'thunderstorm', '雨': 'rain',
-      '小雪': 'light-snow', '中雪': 'moderate-snow', '大雪': 'heavy-snow', '暴雪': 'blizzard',
-      '阵雪': 'snow-shower', '雪': 'snow',
-      '雨夹雪': 'snowy-rainy', '雨雪天气': 'rain-snow', '冻雨': 'freezing-rain',
-      '雾': 'fog', '霾': 'haze', '扬沙': 'sand', '冰雹': 'hail',
-      '晴间多云': 'fair', '热': 'hot',
-    };
-    const enCondition = cn2en[condition] || condition;
-
-    const iconMap = {
-      'sunny': isDark ?
-        (sunState === 'above_horizon' ? `${iconPath}/sunny-day-dark.svg${_v}` : `${iconPath}/sunny-night-dark.svg${_v}`) :
-        (sunState === 'above_horizon' ? `${iconPath}/sunny-day.svg${_v}` : `${iconPath}/sunny-night.svg${_v}`),
-      'clear-night': isDark ? `${iconPath}/sunny-night-dark.svg${_v}` : `${iconPath}/sunny-night.svg${_v}`,
-      'partlycloudy': isDark ?
-        (sunState === 'above_horizon' ? `${iconPath}/partlycloudy-day-dark.svg${_v}` : `${iconPath}/partlycloudy-night-dark.svg${_v}`) :
-        (sunState === 'above_horizon' ? `${iconPath}/partlycloudy-day.svg${_v}` : `${iconPath}/partlycloudy-night.svg${_v}`),
-      'cloudy': isDark ?
-        (sunState === 'above_horizon' ? `${iconPath}/cloudy-day-dark.svg${_v}` : `${iconPath}/cloudy-night-dark.svg${_v}`) :
-        (sunState === 'above_horizon' ? `${iconPath}/cloudy-day.svg${_v}` : `${iconPath}/cloudy-night.svg${_v}`),
-      'overcast': isDark ? `${iconPath}/overcast-dark.svg${_v}` : `${iconPath}/overcast.svg${_v}`,
-      'fog': isDark ? `${iconPath}/fog-dark.svg${_v}` : `${iconPath}/fog.svg${_v}`,
-      'hail': isDark ? `${iconPath}/hail-dark.svg${_v}` : `${iconPath}/hail.svg${_v}`,
-      'lightning': isDark ? `${iconPath}/thunderstorm-dark.svg${_v}` : `${iconPath}/thunderstorm.svg${_v}`,
-      'lightning-rainy': isDark ? `${iconPath}/thunderstorm-dark.svg${_v}` : `${iconPath}/thunderstorm.svg${_v}`,
-      'pouring': isDark ? `${iconPath}/heavy-rain-dark.svg${_v}` : `${iconPath}/heavy-rain.svg${_v}`,
-      'rainy': isDark ? `${iconPath}/light-rain-dark.svg${_v}` : `${iconPath}/light-rain.svg${_v}`,
-      'snowy': isDark ? `${iconPath}/light-snow-dark.svg${_v}` : `${iconPath}/light-snow.svg${_v}`,
-      'snowy-rainy': isDark ? `${iconPath}/snowy-rainy-dark.svg${_v}` : `${iconPath}/snowy-rainy.svg${_v}`,
-      'windy': isDark ? `${iconPath}/windy-dark.svg${_v}` : `${iconPath}/windy.svg${_v}`,
-      'windy-variant': isDark ? `${iconPath}/windy-variant-dark.svg${_v}` : `${iconPath}/windy-variant.svg${_v}`,
-      'exceptional': isDark ? `${iconPath}/exceptional-dark.svg${_v}` : `${iconPath}/exceptional.svg${_v}`,
-    };
-
-    return iconMap[enCondition] || (isDark ? `${iconPath}/${enCondition}-dark.svg${_v}` : `${iconPath}/${enCondition}.svg${_v}`);
-  }
-
-  _formatTemperature(temp) {
-    if (temp === undefined || temp === null) return '--';
-    return temp.toString().includes('.') ? temp : temp;
+    return super._getWeatherIcon(condition, this._evaluateTheme() === 'dark');
   }
 
   _getAqiCategoryHtml() {
     const category = this.entity.attributes?.aqi?.category;
     if (!category) return '';
-    
-    let color = '';
-    switch(category) {
-      case '优':
-        color = '#4CAF50'; // 绿色
-        break;
-      case '良':
-        color = '#FFC107'; // 黄色
-        break;
-      case '轻度污染':
-        color = '#FF9800'; // 橙色
-        break;
-      case '中度污染':
-      case '重度污染':
-      case '严重污染':
-        color = '#F44336'; // 红色
-        break;
-      default:
-        color = '#9E9E9E'; // 灰色（其他未知类别）
-    }
-    
+    const color = this._getAqiColor(category);
     return html`<span style="color: ${color}; font-weight: bold;"> ${category}</span>`;
   }
 
@@ -2684,74 +2517,6 @@ class XiaoshiHourlyWeatherCard extends LitElement {
   _getMinutelyForecast() {
     if (!this.entity?.attributes?.minutely_forecast) return [];
     return this.entity.attributes.minutely_forecast.slice(0, 24);
-  }
-
-  _getCustomTemperature() {
-    if (!this.config?.use_custom_entities || !this.config?.temperature_entity || !this.hass?.states[this.config.temperature_entity]) {
-      return null;
-    }
-    
-    const temp = this.hass.states[this.config?.temperature_entity].state;
-    const tempValue = parseFloat(temp);
-    
-    if (isNaN(tempValue)) {
-      return null;
-    }
-    
-    // 保留1位小数
-    return tempValue.toFixed(1);
-  }
-
-  _getCustomHumidity() {
-    if (!this.config?.use_custom_entities || !this.config?.humidity_entity || !this.hass?.states[this.config.humidity_entity]) {
-      return null;
-    }
-    
-    const humidity = this.hass.states[this.config.humidity_entity].state;
-    const humidityValue = parseFloat(humidity);
-    
-    if (isNaN(humidityValue)) {
-      return null;
-    }
-    
-    // 保留1位小数
-    return humidityValue.toFixed(1);
-  }
-
-  _formatSunTime(datetime) {
-    if (!datetime) return '';
-    
-    try {
-      const date = new Date(datetime);
-      const hours = date.getHours().toString().padStart(2, '0');
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      return `${hours}:${minutes}`;
-    } catch (error) {
-      console.warn('时间格式化错误:', error);
-      return datetime;
-    }
-  }
-
-  _parseAttributeData() {
-    // 从hass-hass属性解析数据
-    const hassAttr = this.getAttribute('hass-hass');
-    if (hassAttr && !this.hass) {
-      try {
-        this.hass = JSON.parse(decodeURIComponent(hassAttr));
-      } catch (e) {
-        console.error('Failed to parse hass attribute:', e);
-      }
-    }
-
-    // 从hass-config属性解析配置数据
-    const configAttr = this.getAttribute('hass-config');
-    if (configAttr && !this.config) {
-      try {
-        this.config = JSON.parse(decodeURIComponent(configAttr));
-      } catch (e) {
-        console.error('Failed to parse config attribute:', e);
-      }
-    }
   }
 
   _formatHourlyTime(datetime) {
@@ -3467,130 +3232,13 @@ class XiaoshiHourlyWeatherCard extends LitElement {
     `;
   }
 
-  _getWindDirectionIcon(bearing) {
-    // 0是北风，按顺时针方向增加
-    const directions = [
-      { range: [337.5, 360], icon: '↑', name: '北' },    // 337.5-360度
-      { range: [0, 22.5], icon: '↑', name: '北' },        // 0-22.5度
-      { range: [22.5, 67.5], icon: '↗', name: '东北' },    // 22.5-67.5度
-      { range: [67.5, 112.5], icon: '→', name: '东' },     // 67.5-112.5度
-      { range: [112.5, 157.5], icon: '↘', name: '东南' },   // 112.5-157.5度
-      { range: [157.5, 202.5], icon: '↓', name: '南' },     // 157.5-202.5度
-      { range: [202.5, 247.5], icon: '↙', name: '西南' },   // 202.5-247.5度
-      { range: [247.5, 292.5], icon: '←', name: '西' },     // 247.5-292.5度
-      { range: [292.5, 337.5], icon: '↖', name: '西北' }    // 292.5-337.5度
-    ];
-
-    const direction = directions.find(dir => {
-      if (dir.range[0] <= dir.range[1]) {
-        // 正常范围，如 22.5-67.5
-        return bearing >= dir.range[0] && bearing < dir.range[1];
-      } else if (dir.range[0] === 337.5 && dir.range[1] === 360) {
-        // 337.5-360度特殊处理
-        return bearing >= dir.range[0] && bearing <= 360;
-      } else if (dir.range[0] === 0 && dir.range[1] === 22.5) {
-        // 0-22.5度特殊处理
-        return bearing >= dir.range[0] && bearing < dir.range[1];
-      }
-      return false;
-    });
-
-    return direction ? direction.icon : '↓';
-  }
-
-
-  setConfig(config) {
-    if (!config.entity) {
-      throw new Error('需要指定天气实体');
-    }
-    this.config = config;
-  }
-
   getCardSize() {
     return 8;
-  }
-
-  // 鼠标滑动处理方法
-  _handleMouseDown(e) {
-    const container = e.target.closest('.forecast-container');
-    const wrapper = e.target.closest('.forecast-container-wrapper');
-    if (!container || !wrapper) return;
-    
-    this.isDragging = true;
-    this.startX = e.pageX - wrapper.offsetLeft;
-    this.scrollLeft = wrapper.scrollLeft || 0;
-    this.scrollTarget = wrapper;
-    container.style.cursor = 'grabbing';
-    e.preventDefault();
-  }
-
-  _handleMouseUp(e) {
-    this.isDragging = false;
-    if (this.scrollTarget) {
-      const container = this.scrollTarget.querySelector('.forecast-container');
-      if (container) {
-        container.style.cursor = 'grab';
-      }
-      this.scrollTarget = null;
-    }
-  }
-
-  _handleMouseMove(e) {
-    if (!this.isDragging || !this.scrollTarget) return;
-    
-    e.preventDefault();
-    const x = e.pageX - this.scrollTarget.offsetLeft;
-    const walk = (x - this.startX) * 1.5; // 调整滑动速度
-    
-    // 使用requestAnimationFrame优化性能
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-    }
-    
-    this.rafId = requestAnimationFrame(() => {
-      if (this.scrollTarget) {
-        this.scrollTarget.scrollLeft = this.scrollLeft - walk;
-      }
-    });
-  }
-
-  // 触摸滑动处理方法
-  _handleTouchStart(e) {
-    const container = e.target.closest('.forecast-container');
-    const wrapper = e.target.closest('.forecast-container-wrapper');
-    if (!container || !wrapper) return;
-    
-    this.startX = e.touches[0].pageX - wrapper.offsetLeft;
-    this.scrollLeft = wrapper.scrollLeft || 0;
-    this.scrollTarget = wrapper;
-  }
-
-  _handleTouchEnd(e) {
-    this.scrollTarget = null;
-  }
-
-  _handleTouchMove(e) {
-    if (!this.scrollTarget) return;
-    
-    e.preventDefault();
-    const x = e.touches[0].pageX - this.scrollTarget.offsetLeft;
-    const walk = (x - this.startX) * 1.5; // 调整滑动速度
-    
-    // 使用requestAnimationFrame优化性能
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-    }
-    
-    this.rafId = requestAnimationFrame(() => {
-      if (this.scrollTarget) {
-        this.scrollTarget.scrollLeft = this.scrollLeft - walk;
-      }
-    });
   }
 }
 customElements.define('xiaoshi-hourly-weather-card', XiaoshiHourlyWeatherCard);
 
-class XiaoshiWarningWeatherCard extends LitElement {
+class XiaoshiWarningWeatherCard extends XiaoshiWeatherBase {
   static get properties() {
     return {
       hass: { type: Object },
@@ -3680,118 +3328,6 @@ class XiaoshiWarningWeatherCard extends LitElement {
     `;
   }
 
-  constructor() {
-    super();
-    this.isDragging = false;
-    this.startX = 0;
-    this.scrollLeft = 0;
-    this.scrollTarget = null;
-    this.rafId = null;
-  }
-  
-  _evaluateTheme() {
-      try {
-          const mode = this.config ? this.config.theme : 'system';
-          if (mode === 'light') return 'light';
-          if (mode === 'dark') return 'dark';
-          if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-              return 'light';
-          }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
-              if (typeof window.theme === 'function') {
-                  return window.theme() || 'light';
-              }
-            return 'light';
-          }
-          return mode;
-      } catch (e) {
-          return 'light';
-      }
-  }
-
-  _handleClick() {
-    const hapticEvent = new Event('haptic', {
-      bubbles: true,
-      cancelable: false,
-      composed: true
-    });
-    hapticEvent.detail = 'light';
-    this.dispatchEvent(hapticEvent);
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    // 处理通过属性传递的数据
-    this._parseAttributeData();
-    this._updateEntities();
-  }
-
-  updated(changedProperties) {
-    super.updated(changedProperties);
-    if (changedProperties.has('config') || changedProperties.has('hass')) {
-      // 处理通过属性传递的数据
-      this._parseAttributeData();
-      this._updateEntities();
-    }
-  }
-
-  _updateEntities() {
-    if (!this.hass || !this.config) return;
-
-    this.entity = this.hass.states[this.config.entity];
-  }
-
-  _parseAttributeData() {
-    // 从hass-hass属性解析数据
-    const hassAttr = this.getAttribute('hass-hass');
-    if (hassAttr && !this.hass) {
-      try {
-        this.hass = JSON.parse(decodeURIComponent(hassAttr));
-      } catch (e) {
-        console.error('Failed to parse hass attribute:', e);
-      }
-    }
-
-    // 从hass-config属性解析配置数据
-    const configAttr = this.getAttribute('hass-config');
-    if (configAttr && !this.config) {
-      try {
-        this.config = JSON.parse(decodeURIComponent(configAttr));
-      } catch (e) {
-        console.error('Failed to parse config attribute:', e);
-      }
-    }
-  }
-
-  _getWarningColorForLevel(level) {
-    if (level == "红色") return "rgb(255,50,50)";
-    if (level == "橙色") return "rgb(255,100,0)";
-    if (level == "黄色") return "rgb(255,200,0)";
-    if (level == "蓝色") return "rgb(50,150,200)";
-    if (level == "灰色") {
-      return this._evaluateTheme() === 'light' ? 'rgba(50, 50, 50)' : 'rgba(220, 220, 220)';
-    }
-    
-    return "#FFA726"; // 默认颜色
-  }
-
-  _getWarningColor(warning) {
-    if (!warning || warning.length === 0) return "#FFA726"; // 默认颜色
-    
-    let level = "";
-    const priority = ["红色", "橙色", "黄色", "蓝色", "灰色"];
-    
-    for (let i = 0; i < warning.length; i++) {
-      const currentLevel = warning[i].level;
-      if (priority.indexOf(currentLevel) < priority.indexOf(level) || level == "") {
-        level = currentLevel;
-      }
-    }
-    
-    return this._getWarningColorForLevel(level);
-  }
-
   render() {
     if (!this.entity?.attributes?.warning || this.entity.attributes.warning.length === 0) {
       return html`
@@ -3853,100 +3389,13 @@ class XiaoshiWarningWeatherCard extends LitElement {
     `;
   }
 
-  setConfig(config) {
-    if (!config.entity) {
-      throw new Error('需要指定天气实体');
-    }
-    this.config = config;
-  }
-
-
   getCardSize() {
     return 8;
   }
-
-  // 鼠标滑动处理方法
-  _handleMouseDown(e) {
-    const container = e.target.closest('.forecast-container');
-    const wrapper = e.target.closest('.forecast-container-wrapper');
-    if (!container || !wrapper) return;
-    
-    this.isDragging = true;
-    this.startX = e.pageX - wrapper.offsetLeft;
-    this.scrollLeft = wrapper.scrollLeft || 0;
-    this.scrollTarget = wrapper;
-    container.style.cursor = 'grabbing';
-    e.preventDefault();
-  }
-
-  _handleMouseUp(e) {
-    this.isDragging = false;
-    if (this.scrollTarget) {
-      const container = this.scrollTarget.querySelector('.forecast-container');
-      if (container) {
-        container.style.cursor = 'grab';
-      }
-      this.scrollTarget = null;
-    }
-  }
-
-  _handleMouseMove(e) {
-    if (!this.isDragging || !this.scrollTarget) return;
-    
-    e.preventDefault();
-    const x = e.pageX - this.scrollTarget.offsetLeft;
-    const walk = (x - this.startX) * 1.5; // 调整滑动速度
-    
-    // 使用requestAnimationFrame优化性能
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-    }
-    
-    this.rafId = requestAnimationFrame(() => {
-      if (this.scrollTarget) {
-        this.scrollTarget.scrollLeft = this.scrollLeft - walk;
-      }
-    });
-  }
-
-  // 触摸滑动处理方法
-  _handleTouchStart(e) {
-    const container = e.target.closest('.forecast-container');
-    const wrapper = e.target.closest('.forecast-container-wrapper');
-    if (!container || !wrapper) return;
-    
-    this.startX = e.touches[0].pageX - wrapper.offsetLeft;
-    this.scrollLeft = wrapper.scrollLeft || 0;
-    this.scrollTarget = wrapper;
-  }
-
-  _handleTouchEnd(e) {
-    this.scrollTarget = null;
-  }
-
-  _handleTouchMove(e) {
-    if (!this.scrollTarget) return;
-    
-    e.preventDefault();
-    const x = e.touches[0].pageX - this.scrollTarget.offsetLeft;
-    const walk = (x - this.startX) * 1.5; // 调整滑动速度
-    
-    // 使用requestAnimationFrame优化性能
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-    }
-    
-    this.rafId = requestAnimationFrame(() => {
-      if (this.scrollTarget) {
-        this.scrollTarget.scrollLeft = this.scrollLeft - walk;
-      }
-    });
-  }
-
 }
 customElements.define('xiaoshi-warning-weather-card', XiaoshiWarningWeatherCard);
 
-class XiaoshiAqiWeatherCard extends LitElement {
+class XiaoshiAqiWeatherCard extends XiaoshiWeatherBase {
   static get properties() {
     return {
       hass: { type: Object },
@@ -4045,97 +3494,6 @@ class XiaoshiAqiWeatherCard extends LitElement {
     `;
   }
 
-  constructor() {
-    super();
-  }
-
-  _evaluateTheme() {
-      try {
-          const mode = this.config ? this.config.theme : 'system';
-          if (mode === 'light') return 'light';
-          if (mode === 'dark') return 'dark';
-          if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-              return 'light';
-          }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
-              if (typeof window.theme === 'function') {
-                  return window.theme() || 'light';
-              }
-            return 'light';
-          }
-          return mode;
-      } catch (e) {
-          return 'light';
-      }
-  }
-
-  _handleClick() {
-    const hapticEvent = new Event('haptic', {
-      bubbles: true,
-      cancelable: false,
-      composed: true
-    });
-    hapticEvent.detail = 'light';
-    this.dispatchEvent(hapticEvent);
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    // 处理通过属性传递的数据
-    this._parseAttributeData();
-    this._updateEntities();
-  }
-
-  updated(changedProperties) {
-    super.updated(changedProperties);
-    if (changedProperties.has('config') || changedProperties.has('hass')) {
-      // 处理通过属性传递的数据
-      this._parseAttributeData();
-      this._updateEntities();
-    }
-  }
-
-  _updateEntities() {
-    if (!this.hass || !this.config) return;
-
-    this.entity = this.hass.states[this.config.entity];
-  }
-
-  _parseAttributeData() {
-    // 从hass-hass属性解析数据
-    const hassAttr = this.getAttribute('hass-hass');
-    if (hassAttr && !this.hass) {
-      try {
-        this.hass = JSON.parse(decodeURIComponent(hassAttr));
-      } catch (e) {
-        console.error('Failed to parse hass attribute:', e);
-      }
-    }
-
-    // 从hass-config属性解析配置数据
-    const configAttr = this.getAttribute('hass-config');
-    if (configAttr && !this.config) {
-      try {
-        this.config = JSON.parse(decodeURIComponent(configAttr));
-      } catch (e) {
-        console.error('Failed to parse config attribute:', e);
-      }
-    }
-  }
-
-  _getAqiColor(category) {
-    switch(category) {
-      case '优': return '#4CAF50'; // 绿色
-      case '良': return '#FFC107'; // 黄色
-      case '轻度污染': return '#FF9800'; // 橙色
-      case '中度污染': return '#FF5722'; // 深橙色
-      case '重度污染': return '#F44336'; // 红色
-      case '严重污染': return '#9C27B0'; // 紫色
-      default: return '#9E9E9E'; // 灰色
-    }
-  }
-
   render() {
     if (!this.hass || !this.config) return html``;
  
@@ -4147,7 +3505,7 @@ class XiaoshiAqiWeatherCard extends LitElement {
 
     const aqi = this.entity.attributes.aqi;
     const theme = this._evaluateTheme();
-    const isDark = theme === 'dark';
+    const isDark = theme === 'light';
     
     const textcolor = isDark ? 'rgba(0, 0, 0)' : 'rgba(255, 255, 255)';
     const themeClass = isDark ? 'light-theme' : 'dark-theme';
@@ -4214,20 +3572,13 @@ class XiaoshiAqiWeatherCard extends LitElement {
     `;
   }
 
-  setConfig(config) {
-    if (!config.entity) {
-      throw new Error('需要指定天气实体');
-    }
-    this.config = config;
-  }
-
   getCardSize() {
     return 3;
   }
 }
 customElements.define('xiaoshi-aqi-weather-card', XiaoshiAqiWeatherCard);
 
-class XiaoshiIndicesWeatherCard extends LitElement {
+class XiaoshiIndicesWeatherCard extends XiaoshiWeatherBase {
   static get properties() {
     return {
       hass: { type: Object },
@@ -4305,85 +3656,6 @@ class XiaoshiIndicesWeatherCard extends LitElement {
     `;
   }
 
-  constructor() {
-    super();
-  }
-
-  _evaluateTheme() {
-      try {
-          const mode = this.config ? this.config.theme : 'system';
-          if (mode === 'light') return 'light';
-          if (mode === 'dark') return 'dark';
-          if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-              return 'light';
-          }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
-              if (typeof window.theme === 'function') {
-                  return window.theme() || 'light';
-              }
-            return 'light';
-          }
-          return mode;
-      } catch (e) {
-          return 'light';
-      }
-  }
-
-  _handleClick() {
-    const hapticEvent = new Event('haptic', {
-      bubbles: true,
-      cancelable: false,
-      composed: true
-    });
-    hapticEvent.detail = 'light';
-    this.dispatchEvent(hapticEvent);
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    // 处理通过属性传递的数据
-    this._parseAttributeData();
-    this._updateEntities();
-  }
-
-  updated(changedProperties) {
-    super.updated(changedProperties);
-    if (changedProperties.has('config') || changedProperties.has('hass')) {
-      // 处理通过属性传递的数据
-      this._parseAttributeData();
-      this._updateEntities();
-    }
-  }
-
-  _updateEntities() {
-    if (!this.hass || !this.config) return;
-
-    this.entity = this.hass.states[this.config.entity];
-  }
-
-  _parseAttributeData() {
-    // 从hass-hass属性解析数据
-    const hassAttr = this.getAttribute('hass-hass');
-    if (hassAttr && !this.hass) {
-      try {
-        this.hass = JSON.parse(decodeURIComponent(hassAttr));
-      } catch (e) {
-        console.error('Failed to parse hass attribute:', e);
-      }
-    }
-
-    // 从hass-config属性解析配置数据
-    const configAttr = this.getAttribute('hass-config');
-    if (configAttr && !this.config) {
-      try {
-        this.config = JSON.parse(decodeURIComponent(configAttr));
-      } catch (e) {
-        console.error('Failed to parse config attribute:', e);
-      }
-    }
-  }
-
   render() {
     if (!this.hass || !this.config) return html``;
     
@@ -4395,7 +3667,7 @@ class XiaoshiIndicesWeatherCard extends LitElement {
 
     const indices = this.entity.attributes.air_indices;
     const theme = this._evaluateTheme();
-    const isDark = theme === 'dark';
+    const isDark = theme === 'light';
     
     const textcolor = isDark ? 'rgba(0, 0, 0)' : 'rgba(255, 255, 255)';
     const textcolor2 = isDark ? 'rgba(23, 140, 5, 1)' : 'rgba(10, 231, 47, 1)';
@@ -4425,13 +3697,6 @@ class XiaoshiIndicesWeatherCard extends LitElement {
         </div>
       </div>
     `;
-  }
-
-  setConfig(config) {
-    if (!config.entity) {
-      throw new Error('需要指定天气实体');
-    }
-    this.config = config;
   }
 
   getCardSize() {

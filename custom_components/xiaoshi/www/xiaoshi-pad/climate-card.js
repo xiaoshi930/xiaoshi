@@ -2490,22 +2490,25 @@ class XiaoshiPadClimateCard extends LitElement {
 
   _evaluateTheme() {
       try {
-          const mode = this.config ? this.config.theme : 'system';
-          if (mode === 'light') return 'on';
-          if (mode === 'dark') return 'off';
+          const mode = this.config ? this.config.theme : 'theme()';
+          if (mode === 'light') return 'light';
+          if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'off';
-              return 'on';
+              if (this._hass?.themes?.darkMode) return 'dark';
+              return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (typeof mode === 'string' && mode.includes('theme()')) {
               if (typeof window.theme === 'function') {
-                  return window.theme() || 'on';
+                  const result = window.theme();
+                  if (result === 'light' || result === 'dark') return result;
               }
-            return 'on';
+              // theme() 函数不存在或返回值无效，回退 system
+              if (this._hass?.themes?.darkMode) return 'dark';
+              return 'light';
           }
           return mode;
       } catch (e) {
-          return 'on';
+          return 'light';
       }
   }
 

@@ -394,8 +394,8 @@ class XiaoshiPadCard extends LitElement {
       }
       .btn-area {
         position: absolute;
-        bottom: 8px;
-        right: 8px;
+        top: 8px;
+        left: 8px;
         display: flex;
         gap: 6px;
         z-index: 20;
@@ -424,8 +424,16 @@ class XiaoshiPadCard extends LitElement {
       .ctrl-btn ha-icon {
         --mdi-icon-size: 18px;
         display: inline-flex;
+        align-items: center;
+        justify-content: center;
         width: 18px;
         height: 18px;
+        line-height: 1;
+      }
+      .ctrl-btn ha-icon svg {
+        width: 18px;
+        height: 18px;
+        display: block;
       }
     `;
   }
@@ -655,15 +663,23 @@ class XiaoshiPadCard extends LitElement {
 
   _toggleTheme() {
     this._handleHaptic();
-    if (this._themeOverride === 'light') {
-      this._themeOverride = 'dark';
-    } else if (this._themeOverride === 'dark') {
-      this._themeOverride = 'light';
+    const mode = this.config ? this.config.theme : 'sun';
+    if (mode === 'sun') {
+      // 自动 → 白 → 黑 → 自动
+      if (this._themeOverride === null) {
+        this._themeOverride = 'light';
+      } else if (this._themeOverride === 'light') {
+        this._themeOverride = 'dark';
+      } else {
+        this._themeOverride = null;
+      }
     } else {
-      // 首次切换：取当前主题的反
+      // 白 ↔ 黑
       const current = this._evaluateTheme();
       this._themeOverride = current === 'light' ? 'dark' : 'light';
     }
+    // 实时更新全局 theme()
+    this._evaluateTheme();
     this.requestUpdate();
   }
 
@@ -750,8 +766,13 @@ class XiaoshiPadCard extends LitElement {
     }
     const bgImage = this.config.background_image || '';
 
-    const btnBg = theme === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.3)';
-    const btnColor = theme === 'dark' ? '#fff' : '#fff';
+    const mode = this.config ? this.config.theme : 'sun';
+    // 黑主题：白透明背景；白主题：黑透明背景
+    const btnBg = theme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.3)';
+    // 图标根据当前主题状态：自动→theme-light-dark，白→weather-sunny，黑→weather-night
+    const isAuto = mode === 'sun' && this._themeOverride === null;
+    const themeBtnIcon = isAuto ? 'mdi:theme-light-dark' : (theme === 'dark' ? 'mdi:weather-night' : 'mdi:weather-sunny');
+    const themeBtnColor = isAuto ? '#FF9800' : '#fff';
 
     return html`
       <div class="container"
@@ -763,11 +784,11 @@ class XiaoshiPadCard extends LitElement {
           return html`<div class="device-glow" style="top: ${item.top || '0px'}; left: ${item.left || '0px'}; width: ${item.width || '200px'}; height: ${item.height || '200px'}; background: ${glowStyle};"></div>`;
         })}
         <div class="btn-area">
-          <button class="ctrl-btn" style="color: ${btnColor}; --btn-bg: ${btnBg}" @click="${this._toggleTheme}" title="切换主题">
-            <ha-icon icon="${theme === 'dark' ? 'mdi:weather-night' : 'mdi:white-balance-sunny'}"></ha-icon>
-          </button>
-          <button class="ctrl-btn" style="color: ${btnColor}; --btn-bg: ${btnBg}" @click="${this._handleFullscreen}" title="全屏切换">
+          <button class="ctrl-btn" style="color: #fff; --btn-bg: ${btnBg}" @click="${this._handleFullscreen}" title="全屏切换">
             <ha-icon icon="${this._kioskOn ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
+          </button>
+          <button class="ctrl-btn" style="color: ${themeBtnColor}; --btn-bg: ${btnBg}" @click="${this._toggleTheme}" title="切换主题">
+            <ha-icon icon="${themeBtnIcon}"></ha-icon>
           </button>
         </div>
       </div> 
