@@ -209,9 +209,30 @@ class XiaoshiPadCardEditor extends LitElement {
         }));
     }
 
+    _addLightButton() {
+        const btns = [...(this.config.light_buttons || [])];
+        btns.push({ entity: '', color: 'rgb(220,130,0)', shape: '圆形', width: '25px', height: '25px', top: '100px', left: '100px' });
+        this.config = { ...this.config, light_buttons: btns };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+    }
+
+    _removeLightButton(index) {
+        const btns = [...(this.config.light_buttons || [])];
+        btns.splice(index, 1);
+        this.config = { ...this.config, light_buttons: btns };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+    }
+
+    _updateLightButtonField(index, field, value) {
+        const btns = [...(this.config.light_buttons || [])];
+        btns[index] = { ...btns[index], [field]: value };
+        this.config = { ...this.config, light_buttons: btns };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+    }
+
     _addDeviceGlow() {
         const glows = [...(this.config.device_glows || [])];
-        glows.push({ entity: '', color: 'rgb(33,150,243)', width: '200px', height: '200px', direction: '右下', top: '0px', left: '0px', state_colors: {} });
+        glows.push({ entity: '', color: 'rgb(33,150,243)', width: '200px', height: '200px', direction: '右下', top: '100px', left: '100px', state_colors: {} });
         this.config = { ...this.config, device_glows: glows };
         this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
     }
@@ -294,6 +315,50 @@ class XiaoshiPadCardEditor extends LitElement {
                     <input type="text" name="background_image" .value="${c.background_image || ''}" @change="${this._valueChanged}" placeholder="/local/UI/背景/彩平图.png">
                 </div>
                 <div class="card-section">
+                    <div class="card-section-title">灯光按钮</div>
+                    ${(c.light_buttons || []).map((btn, i) => html`
+                        <div class="glow-item">
+                            <div class="glow-item-header">
+                                <span>灯光 ${i + 1}</span>
+                                <button class="glow-remove-btn" @click="${() => this._removeLightButton(i)}">删除</button>
+                            </div>
+                            <div class="glow-row">
+                                <label>实体</label>
+                                <input type="text" .value="${btn.entity || ''}" @change="${(e) => this._updateLightButtonField(i, 'entity', e.target.value)}" placeholder="light.xxx">
+                            </div>
+                            <div class="glow-row">
+                                <label>颜色</label>
+                                <input type="color" .value="${this._rgbToHex(btn.color || 'rgb(220,130,0)')}" @change="${(e) => this._updateLightButtonField(i, 'color', this._hexToRgb(e.target.value))}">
+                                <label style="font-weight:bold;font-size:12px;white-space:nowrap;min-width:auto;margin-left:8px;">形状</label>
+                                <select @change="${(e) => this._updateLightButtonField(i, 'shape', e.target.value)}">
+                                    ${[,'横线','竖线','圆形','圆形内十字','圆形外十字','圆形内X字','圆形外X字','方形','方形内十字','方形外十字','方形内X字','方形外X字','六边形1','六边形2','心形','月亮形','五角星形','六角星形'].map(s => html`<option value="${s}" ?selected="${(btn.shape || '圆形') === s}">${s}</option>`)}
+                                </select>
+                            </div>
+                            <div class="size-row">
+                                <div class="glow-row">
+                                    <label>宽</label>
+                                    <input type="text" .value="${btn.width || '25px'}" @change="${(e) => this._updateLightButtonField(i, 'width', e.target.value)}">
+                                </div>
+                                <div class="glow-row">
+                                    <label>高</label>
+                                    <input type="text" .value="${btn.height || '25px'}" @change="${(e) => this._updateLightButtonField(i, 'height', e.target.value)}">
+                                </div>
+                            </div>
+                            <div class="size-row">
+                                <div class="glow-row">
+                                    <label>Top</label>
+                                    <input type="text" .value="${btn.top || '100px'}" @change="${(e) => this._updateLightButtonField(i, 'top', e.target.value)}">
+                                </div>
+                                <div class="glow-row">
+                                    <label>Left</label>
+                                    <input type="text" .value="${btn.left || '100px'}" @change="${(e) => this._updateLightButtonField(i, 'left', e.target.value)}">
+                                </div>
+                            </div>
+                        </div>
+                    `)}
+                    <button class="add-glow-btn" @click="${this._addLightButton}">+ 添加灯光按钮</button>
+                </div>
+                <div class="card-section">
                     <div class="card-section-title">设备光效</div>
                     ${(c.device_glows || []).map((glow, i) => html`
                         <div class="glow-item">
@@ -332,11 +397,11 @@ class XiaoshiPadCardEditor extends LitElement {
                             <div class="size-row">
                                 <div class="glow-row">
                                     <label>Top</label>
-                                    <input type="text" .value="${glow.top || '0px'}" @change="${(e) => this._updateDeviceGlowField(i, 'top', e.target.value)}">
+                                    <input type="text" .value="${glow.top || '100px'}" @change="${(e) => this._updateDeviceGlowField(i, 'top', e.target.value)}">
                                 </div>
                                 <div class="glow-row">
                                     <label>Left</label>
-                                    <input type="text" .value="${glow.left || '0px'}" @change="${(e) => this._updateDeviceGlowField(i, 'left', e.target.value)}">
+                                    <input type="text" .value="${glow.left || '100px'}" @change="${(e) => this._updateDeviceGlowField(i, 'left', e.target.value)}">
                                 </div>
                             </div>
                             <div class="glow-row">
@@ -392,6 +457,21 @@ class XiaoshiPadCard extends LitElement {
         pointer-events: none;
         z-index: 2;
       }
+      .light-btn {
+        position: absolute;
+        z-index: 10;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        transition: opacity 0.3s, box-shadow 0.3s;
+        transform: translate(-50%, -50%);
+      }
+      .light-btn:active {
+        transform: translate(-50%, -50%) scale(0.92);
+      }
       .btn-area {
         position: absolute;
         top: 8px;
@@ -414,7 +494,6 @@ class XiaoshiPadCard extends LitElement {
         border-radius: 8px;
         font-size: 18px;
         padding: 0;
-        opacity: 0.6;
         transition: opacity 0.2s;
       }
       .ctrl-btn:active {
@@ -692,6 +771,7 @@ class XiaoshiPadCard extends LitElement {
       auto_color: config.auto_color !== false,
       background_image: config.background_image || '',
       device_glows: config.device_glows || [],
+      light_buttons: config.light_buttons || [],
     };
   }
 
@@ -702,6 +782,235 @@ class XiaoshiPadCard extends LitElement {
 
   get hass() {
     return this._hass;
+  }
+
+  // ========== 灯光按钮 ==========
+  _toggleLight(entityId) {
+    if (!this.hass || !entityId) return;
+    this._handleHaptic();
+    this.hass.callService('light', 'toggle', { entity_id: entityId });
+  }
+
+  _renderLightButtons() {
+    if (!this.hass) return '';
+    return (this.config.light_buttons || []).map(item => {
+      if (!item.entity) return '';
+      const entity = this.hass.states[item.entity];
+      if (!entity) return '';
+      const isOn = entity.state === 'on';
+      const color = item.color || 'rgb(220,130,0)';
+      const shape = item.shape || '圆形';
+      const posSize = `top: ${item.top || '100px'}; left: ${item.left || '100px'}; width: ${item.width || '25px'}; height: ${item.height || '25px'};`;
+      let btnStyle = posSize;
+      if (shape === '圆形') {
+        btnStyle += ' border-radius: 50%;';
+        if (isOn) {
+          btnStyle += ` background: ${color}; border: 2px solid #fff; box-shadow: 0 0 7px 3px ${color};`;
+        } else {
+          btnStyle += ` background: transparent; border: 2px solid #fff;`;
+        }
+      } else if (shape === '方形') {
+        btnStyle += ' border-radius: 0;';
+        if (isOn) {
+          btnStyle += ` background: ${color}; border: 2px solid #fff; box-shadow: 0 0 7px 3px ${color};`;
+        } else {
+          btnStyle += ` background: transparent; border: 2px solid #fff;`;
+        }
+      } else if (shape === '圆形内十字') {
+        btnStyle += ' border-radius: 50%; overflow: hidden;';
+        if (isOn) {
+          btnStyle += ` background: ${color}; border: 2px solid #fff; box-shadow: 0 0 7px 3px ${color};`;
+        } else {
+          btnStyle += ` background: transparent; border: 2px solid #fff;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;height:2px;background:#fff;"></div>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:2px;height:100%;background:#fff;"></div>
+        </button>`;
+      } else if (shape === '圆形外十字') {
+        btnStyle += ' border-radius: 50%; overflow: visible;';
+        if (isOn) {
+          btnStyle += ` background: ${color}; border: 2px solid #fff; box-shadow: 0 0 7px 3px ${color};`;
+        } else {
+          btnStyle += ` background: transparent; border: 2px solid #fff;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:160%;height:2px;background:#fff;"></div>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:2px;height:160%;background:#fff;"></div>
+        </button>`;
+      } else if (shape === '圆形内X字') {
+        btnStyle += ' border-radius: 50%; overflow: hidden;';
+        if (isOn) {
+          btnStyle += ` background: ${color}; border: 2px solid #fff; box-shadow: 0 0 7px 3px ${color};`;
+        } else {
+          btnStyle += ` background: transparent; border: 2px solid #fff;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg);width:142%;height:2px;background:#fff;"></div>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-45deg);width:142%;height:2px;background:#fff;"></div>
+        </button>`;
+      } else if (shape === '圆形外X字') {
+        btnStyle += ' border-radius: 50%; overflow: visible;';
+        if (isOn) {
+          btnStyle += ` background: ${color}; border: 2px solid #fff; box-shadow: 0 0 7px 3px ${color};`;
+        } else {
+          btnStyle += ` background: transparent; border: 2px solid #fff;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg);width:160%;height:2px;background:#fff;"></div>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-45deg);width:160%;height:2px;background:#fff;"></div>
+        </button>`;
+      } else if (shape === '方形内十字') {
+        btnStyle += ' border-radius: 0; overflow: hidden;';
+        if (isOn) {
+          btnStyle += ` background: ${color}; border: 2px solid #fff; box-shadow: 0 0 7px 3px ${color};`;
+        } else {
+          btnStyle += ` background: transparent; border: 2px solid #fff;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;height:2px;background:#fff;"></div>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:2px;height:100%;background:#fff;"></div>
+        </button>`;
+      } else if (shape === '方形外十字') {
+        btnStyle += ' border-radius: 0; overflow: visible;';
+        if (isOn) {
+          btnStyle += ` background: ${color}; border: 2px solid #fff; box-shadow: 0 0 7px 3px ${color};`;
+        } else {
+          btnStyle += ` background: transparent; border: 2px solid #fff;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:160%;height:2px;background:#fff;"></div>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:2px;height:160%;background:#fff;"></div>
+        </button>`;
+      } else if (shape === '方形内X字') {
+        btnStyle += ' border-radius: 0; overflow: hidden;';
+        if (isOn) {
+          btnStyle += ` background: ${color}; border: 2px solid #fff; box-shadow: 0 0 7px 3px ${color};`;
+        } else {
+          btnStyle += ` background: transparent; border: 2px solid #fff;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg);width:142%;height:2px;background:#fff;"></div>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-45deg);width:142%;height:2px;background:#fff;"></div>
+        </button>`;
+      } else if (shape === '方形外X字') {
+        btnStyle += ' border-radius: 0; overflow: visible;';
+        if (isOn) {
+          btnStyle += ` background: ${color}; border: 2px solid #fff; box-shadow: 0 0 7px 3px ${color};`;
+        } else {
+          btnStyle += ` background: transparent; border: 2px solid #fff;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg);width:200%;height:2px;background:#fff;"></div>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-45deg);width:200%;height:2px;background:#fff;"></div>
+        </button>`;
+      } else if (shape === '五角星形') {
+        btnStyle += ' overflow: visible;';
+        if (isOn) {
+          btnStyle += ` background: transparent; filter: drop-shadow(0 0 7px ${color}) drop-shadow(0 0 3px ${color});`;
+        } else {
+          btnStyle += ` background: transparent;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;" preserveAspectRatio="none">
+            <polygon points="50,5 61,35 95,35 68,57 79,91 50,70 21,91 32,57 5,35 39,35"
+              fill="${isOn ? color : 'transparent'}" stroke="#fff" stroke-width="5"/>
+          </svg>
+        </button>`;
+      } else if (shape === '六边形1') {
+        btnStyle += ' overflow: visible;';
+        if (isOn) {
+          btnStyle += ` background: transparent; filter: drop-shadow(0 0 7px ${color}) drop-shadow(0 0 3px ${color});`;
+        } else {
+          btnStyle += ` background: transparent;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;" preserveAspectRatio="none">
+            <polygon points="50,2 93,27 93,73 50,98 7,73 7,27"
+              fill="${isOn ? color : 'transparent'}" stroke="#fff" stroke-width="5"/>
+          </svg>
+        </button>`;
+      } else if (shape === '六边形2') {
+        btnStyle += ' overflow: visible;';
+        if (isOn) {
+          btnStyle += ` background: transparent; filter: drop-shadow(0 0 7px ${color}) drop-shadow(0 0 3px ${color});`;
+        } else {
+          btnStyle += ` background: transparent;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;" preserveAspectRatio="none">
+            <polygon points="50,2 93,27 93,73 50,98 7,73 7,27"
+              fill="${isOn ? color : 'transparent'}" stroke="#fff" stroke-width="5" transform="rotate(30,50,50)"/>
+          </svg>
+        </button>`;
+      } else if (shape === '六角星形') {
+        btnStyle += ' overflow: visible;';
+        if (isOn) {
+          btnStyle += ` background: transparent; filter: drop-shadow(0 0 7px ${color}) drop-shadow(0 0 3px ${color});`;
+        } else {
+          btnStyle += ` background: transparent;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;" preserveAspectRatio="none">
+            <polygon points="50,2 64,26 92,26 78,50 92,74 64,74 50,98 36,74 8,74 22,50 8,26 36,26"
+              fill="${isOn ? color : 'transparent'}" stroke="#fff" stroke-width="4"/>
+          </svg>
+        </button>`;
+      } else if (shape === '心形') {
+        btnStyle += ' overflow: visible;';
+        if (isOn) {
+          btnStyle += ` background: transparent; filter: drop-shadow(0 0 7px ${color}) drop-shadow(0 0 3px ${color});`;
+        } else {
+          btnStyle += ` background: transparent;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;" preserveAspectRatio="none">
+            <path d="M50,88 C20,65 2,45 2,28 C2,12 14,2 28,2 C38,2 46,8 50,16 C54,8 62,2 72,2 C86,2 98,12 98,28 C98,45 80,65 50,88Z"
+              fill="${isOn ? color : 'transparent'}" stroke="#fff" stroke-width="8"/>
+          </svg>
+        </button>`;
+      } else if (shape === '月亮形') {
+        btnStyle += ' overflow: visible;';
+        if (isOn) {
+          btnStyle += ` background: transparent; filter: drop-shadow(0 0 7px ${color}) drop-shadow(0 0 3px ${color});`;
+        } else {
+          btnStyle += ` background: transparent;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <svg viewBox="-45 0 110 100" style="width:100%;height:100%;display:block;" preserveAspectRatio="xMidYMid meet">
+            <path d="M55,8 A48,48,0,1,0,55,92 A42,42,0,1,1,55,8Z"
+              fill="${isOn ? color : 'transparent'}" stroke="#fff" stroke-width="8"/>
+          </svg>
+        </button>`;
+      } else if (shape === '横线') {
+        btnStyle += ' overflow: visible;';
+        if (isOn) {
+          btnStyle += ` background: transparent; filter: drop-shadow(0 0 7px ${color}) drop-shadow(0 0 3px ${color});`;
+        } else {
+          btnStyle += ` background: transparent;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;" preserveAspectRatio="none">
+            ${isOn ? html`<line x1="0" y1="50" x2="100" y2="50" stroke="${color}" stroke-width="10" stroke-linecap="round"/>` : ''}
+            <line x1="0" y1="50" x2="100" y2="50" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
+          </svg>
+        </button>`;
+      } else if (shape === '竖线') {
+        btnStyle += ' overflow: visible;';
+        if (isOn) {
+          btnStyle += ` background: transparent; filter: drop-shadow(0 0 7px ${color}) drop-shadow(0 0 3px ${color});`;
+        } else {
+          btnStyle += ` background: transparent;`;
+        }
+        return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}">
+          <svg viewBox="0 0 100 100" style="width:100%;height:100%;display:block;" preserveAspectRatio="none">
+            ${isOn ? html`<line x1="50" y1="0" x2="50" y2="100" stroke="${color}" stroke-width="10" stroke-linecap="round"/>` : ''}
+            <line x1="50" y1="0" x2="50" y2="100" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
+          </svg>
+        </button>`;
+      }
+      return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}"></button>`;
+    });
   }
 
   // ========== 设备光效 ==========
@@ -723,7 +1032,7 @@ class XiaoshiPadCard extends LitElement {
   _computeDeviceGlowStyle(item) {
     if (!this.hass || !item.entity) return null;
     const entity = this.hass.states[item.entity];
-    if (!entity || entity.state === 'off') return null;
+    if (!entity || entity.state === 'off' || entity.state === 'unknown' || entity.state === 'unavailable') return null;
 
     const state = entity.state;
     const color = (item.state_colors && item.state_colors[state]) || item.color || 'rgb(33,150,243)';
@@ -781,8 +1090,9 @@ class XiaoshiPadCard extends LitElement {
         ${(this.config.device_glows || []).map(item => {
           const glowStyle = this._computeDeviceGlowStyle(item);
           if (!glowStyle) return '';
-          return html`<div class="device-glow" style="top: ${item.top || '0px'}; left: ${item.left || '0px'}; width: ${item.width || '200px'}; height: ${item.height || '200px'}; background: ${glowStyle};"></div>`;
+          return html`<div class="device-glow" style="top: ${item.top || '100px'}; left: ${item.left || '100px'}; width: ${item.width || '200px'}; height: ${item.height || '200px'}; background: ${glowStyle};"></div>`;
         })}
+        ${this._renderLightButtons()}
         <div class="btn-area">
           <button class="ctrl-btn" style="color: #fff; --btn-bg: ${btnBg}" @click="${this._handleFullscreen}" title="全屏切换">
             <ha-icon icon="${this._kioskOn ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
