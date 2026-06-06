@@ -691,8 +691,8 @@ class XiaoshiSmallPurifierCard extends LitElement {
         left: 0;
         width: 100%;
         height: 100%;
-        background: var(--linear-color);
-        opacity: 0.15;
+        background: linear-gradient(90deg, var(--linear-color), transparent 50%);
+        opacity: 0.5;
         z-index: 0;
         border-radius: 12px;
       }
