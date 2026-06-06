@@ -1,0 +1,442 @@
+import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+
+window.customCards = window.customCards || [];
+window.customCards.push({
+    type: 'xiaoshi-top-bar-card',
+    name: '消逝卡(平板端)-顶部状态条',
+    description: '消逝卡(平板端)-顶部状态条'
+});
+
+class XiaoshiTopBarCardEditor extends LitElement {
+    static get properties() {
+        return {
+            hass: Object,
+            _config: Object,
+        };
+    }
+
+    static get styles() {
+        return css`
+            .editor-container {
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            .field {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .field label {
+                font-size: 12px;
+                color: var(--secondary-text-color);
+                font-weight: 500;
+            }
+            .field input, .field select {
+                padding: 8px;
+                border: 1px solid var(--divider-color);
+                border-radius: 4px;
+                font-size: 14px;
+                background: var(--card-background-color);
+                color: var(--primary-text-color);
+            }
+            .inline-fields {
+                display: flex;
+                gap: 12px;
+            }
+            .inline-fields .field {
+                flex: 1;
+            }
+        `;
+    }
+
+    setConfig(config) {
+        this._config = { ...config };
+    }
+
+    _valueChanged(ev) {
+        if (!this._config || !this.hass) return;
+        const target = ev.target;
+        const key = target.getAttribute('configKey');
+        if (!key) return;
+        let value = target.value;
+        const newConfig = { ...this._config };
+        if (key === 'cards') {
+            newConfig[key] = value || '';
+        } else if (value === '' || value === undefined) {
+            delete newConfig[key];
+        } else {
+            newConfig[key] = value;
+        }
+        this._config = newConfig;
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config } }));
+    }
+
+    render() {
+        if (!this._config) return html``;
+        return html`
+            <div class="editor-container">
+                <div class="inline-fields">
+                    <div class="field">
+                        <label>宽度</label>
+                        <input type="text" .value=${this._config.width || ''} configKey="width" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="400px" />
+                    </div>
+                    <div class="field">
+                        <label>高度</label>
+                        <input type="text" .value=${this._config.height || ''} configKey="height" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="30px" />
+                    </div>
+                </div>
+                <div class="inline-fields">
+                    <div class="field">
+                        <label>圆角</label>
+                        <input type="text" .value=${this._config.border_radius || ''} configKey="border_radius" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="8px" />
+                    </div>
+                    <div class="field">
+                        <label>主题</label>
+                        <select .value=${this._config.theme || 'theme()'} configKey="theme" @change=${this._valueChanged}>
+                            <option value="theme()" ?selected=${!this._config.theme || this._config.theme === 'theme()'}>自动(theme)</option>
+                            <option value="light" ?selected=${this._config.theme === 'light'}>浅色</option>
+                            <option value="dark" ?selected=${this._config.theme === 'dark'}>深色</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>👇👇👇按钮卡片配置（YAML格式，支持多组卡片）👇👇👇</label>
+                    <textarea
+                        .value=${this._config.cards || ''}
+                        configKey="cards"
+                        @value-changed=${this._valueChanged}
+                        @change=${this._valueChanged}
+                        placeholder="# 示例1：直接列表写法
+- type: custom:button-card
+  entity: sensor.temperature
+  name: 温度
+  icon: mdi:thermometer
+- type: custom:button-card
+  entity: light.bedroom
+  name: 卧室灯
+  icon: mdi:lightbulb
+
+# 示例2：cards 包裹写法
+cards:
+  - type: custom:button-card
+    entity: sensor.humidity
+    name: 湿度"
+                        style="min-height: 120px; resize: vertical; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; font-size: 14px; background: var(--card-background-color); color: var(--primary-text-color);"
+                    ></textarea>
+                </div>
+            </div>
+        `;
+    }
+}
+customElements.define('xiaoshi-top-bar-card-editor', XiaoshiTopBarCardEditor);
+
+class XiaoshiTopBar extends LitElement {
+    static get properties() {
+        return {
+            hass: Object,
+            config: Object,
+        };
+    }
+
+    static get styles() {
+        return css`
+            .bar {
+                display: flex;
+                align-items: center;
+                justify-content: space-evenly;
+                background: var(--btn-bg, rgba(0,0,0,0.3));
+                padding: 0 20px;
+                box-sizing: border-box;
+            }
+            .bar-card {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+            }
+        `;
+    }
+
+    static getConfigElement() {
+        return document.createElement('xiaoshi-top-bar-card-editor');
+    }
+
+    static getStubConfig() {
+        return {
+            width: '400px',
+            height: '30px',
+            cards: '',
+        };
+    }
+
+    getCardSize() {
+        return 1;
+    }
+
+    setConfig(config) {
+        this.config = {
+            width: config.width || '400px',
+            height: config.height || '30px',
+            border_radius: config.border_radius || '8px',
+            theme: config.theme || 'theme()',
+            cards: config.cards || '',
+        };
+    }
+    
+  _evaluateTheme() {
+      try {
+          const mode = this.config ? this.config.theme : 'theme()';
+          if (mode === 'light') return 'light';
+          if (mode === 'dark') return 'dark';
+          if (mode === 'system' || !mode) {
+              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              return 'light';
+          }
+          if (typeof mode === 'string' && mode.includes('theme()')) {
+              if (typeof window.theme === 'function') {
+                  const result = window.theme();
+                  if (result === 'light' || result === 'dark') return result;
+              }
+              // theme() 函数不存在或返回值无效，回退 system
+              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+              return 'light';
+          }
+          return mode;
+      } catch (e) {
+          return 'light';
+      }
+  }
+
+    render() {
+        if (!this.config) return html``;
+        const cardConfigs = this._parseCardsConfig();
+        const theme = this._evaluateTheme();
+        const btnBg = theme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.3)';
+        return html`
+            <div class="bar" style="width: ${this.config.width}; height: ${this.config.height}; --btn-bg: ${btnBg}; border-radius: ${this.config.border_radius};">
+                ${cardConfigs.map((cardConfig, index) => html`
+                    <div class="bar-card">
+                        <card-maker id="card-${index}"></card-maker>
+                    </div>
+                `)}
+            </div>
+        `;
+    }
+
+    updated(changedProps) {
+        if (changedProps.has('hass')) {
+            const cardConfigs = this._parseCardsConfig();
+            cardConfigs.forEach((_, index) => {
+                const maker = this.shadowRoot.getElementById(`card-${index}`);
+                if (maker) maker.hass = this.hass;
+            });
+        }
+        if (changedProps.has('config')) {
+            const cardConfigs = this._parseCardsConfig();
+            cardConfigs.forEach((cardConfig, index) => {
+                const maker = this.shadowRoot.getElementById(`card-${index}`);
+                if (maker) maker.config = cardConfig;
+            });
+        }
+    }
+
+    _parseCardsConfig() {
+        if (!this.config.cards || !this.config.cards.trim()) return [];
+        try {
+            const cards = this._parseYamlCards(this.config.cards);
+            return cards;
+        } catch (error) {
+            console.error('解析卡片配置失败:', error);
+            return [];
+        }
+    }
+
+    _parseYamlCards(yamlString) {
+        try {
+            let content = yamlString;
+            const wrapperMatch = content.match(/^(cards):\s*\n([\s\S]*)$/m);
+            if (wrapperMatch) {
+                content = wrapperMatch[2];
+            }
+            const lines = content.split('\n');
+            const cards = [];
+            let currentCard = null;
+            let indentStack = [];
+            let contextStack = [];
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith('#')) continue;
+                const indentLevel = line.length - line.trimStart().length;
+                if (trimmed.startsWith('- type')) {
+                    if (currentCard) {
+                        cards.push(currentCard);
+                        currentCard = null;
+                        indentStack = [];
+                        contextStack = [];
+                    }
+                    const content = trimmed.substring(1).trim();
+                    if (content.includes(':')) {
+                        const [key, ...valueParts] = content.split(':');
+                        const value = valueParts.join(':').trim();
+                        currentCard = {};
+                        this._setNestedValue(currentCard, key.trim(), this._parseValue(value));
+                    } else {
+                        currentCard = { type: content };
+                    }
+                    indentStack = [indentLevel];
+                    contextStack = [currentCard];
+                } else if (currentCard && trimmed.startsWith('-')) {
+                    while (indentStack.length > 1 && indentLevel <= indentStack[indentStack.length - 1]) {
+                        indentStack.pop();
+                        contextStack.pop();
+                    }
+                    let currentContext = contextStack[contextStack.length - 1];
+                    const itemValue = trimmed.substring(1).trim();
+                    if (!Array.isArray(currentContext)) {
+                        if (contextStack.length > 1) {
+                            const parentContext = contextStack[contextStack.length - 2];
+                            for (let key in parentContext) {
+                                if (parentContext[key] === currentContext) {
+                                    parentContext[key] = [];
+                                    contextStack[contextStack.length - 1] = parentContext[key];
+                                    currentContext = parentContext[key];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (Array.isArray(currentContext)) {
+                        if (itemValue.includes(':')) {
+                            const [key, ...valueParts] = itemValue.split(':');
+                            const value = valueParts.join(':').trim();
+                            const obj = {};
+                            obj[key.trim()] = this._parseValue(value);
+                            currentContext.push(obj);
+                            indentStack.push(indentLevel);
+                            contextStack.push(obj);
+                        } else {
+                            currentContext.push(this._parseValue(itemValue));
+                        }
+                    }
+                } else if (currentCard && trimmed.includes(':')) {
+                    const [key, ...valueParts] = trimmed.split(':');
+                    const value = valueParts.join(':').trim();
+                    const keyName = key.trim();
+                    while (indentStack.length > 1 && indentLevel <= indentStack[indentStack.length - 1]) {
+                        indentStack.pop();
+                        contextStack.pop();
+                    }
+                    const currentContext = contextStack[contextStack.length - 1];
+                    if (value) {
+                        this._setNestedValue(currentContext, keyName, this._parseValue(value));
+                    } else {
+                        let nextLine = null, nextIndent = null;
+                        for (let j = i + 1; j < lines.length; j++) {
+                            const nextTrimmed = lines[j].trim();
+                            if (nextTrimmed && !nextTrimmed.startsWith('#')) {
+                                nextLine = nextTrimmed;
+                                nextIndent = lines[j].length - lines[j].trimStart().length;
+                                break;
+                            }
+                        }
+                        currentContext[keyName] = (nextLine && nextLine.startsWith('-') && nextIndent > indentLevel)
+                            ? [] : (currentContext[keyName] || {});
+                        indentStack.push(indentLevel);
+                        contextStack.push(currentContext[keyName]);
+                    }
+                }
+            }
+            if (currentCard) cards.push(currentCard);
+            return cards;
+        } catch (error) {
+            console.error('YAML解析错误:', error);
+            return [];
+        }
+    }
+
+    _parseValue(value) {
+        if (!value) return '';
+        if ((value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))) {
+            return value.slice(1, -1);
+        }
+        if (!isNaN(value) && value.trim() !== '') {
+            return Number(value);
+        }
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        if (value === 'null') return null;
+        return value;
+    }
+
+    _setNestedValue(obj, path, value) {
+        const keys = path.split('.');
+        let current = obj;
+        for (let i = 0; i < keys.length - 1; i++) {
+            const key = keys[i];
+            if (!current[key] || typeof current[key] !== 'object') {
+                current[key] = {};
+            }
+            current = current[key];
+        }
+        current[keys[keys.length - 1]] = value;
+    }
+}
+customElements.define('xiaoshi-top-bar-card', XiaoshiTopBar);
+
+// card-maker: 轻量级卡片加载器（普通HTMLElement，避免LitElement重渲染循环）
+class CardMaker extends HTMLElement {
+    set hass(hass) {
+        this._hass = hass;
+        if (this._card) this._card.hass = hass;
+    }
+
+    get hass() {
+        return this._hass;
+    }
+
+    set config(config) {
+        this._config = config;
+        this._buildCard();
+    }
+
+    get config() {
+        return this._config;
+    }
+
+    _buildCard() {
+        if (!this._config) return;
+        const cardElement = this._createCardElement(this._config);
+        if (cardElement) {
+            while (this.firstChild) {
+                this.removeChild(this.firstChild);
+            }
+            if (this._hass) cardElement.hass = this._hass;
+            this._card = cardElement;
+            this.appendChild(cardElement);
+        }
+    }
+
+    _createCardElement(cardConfig) {
+        const tag = this._getCardTag(cardConfig.type);
+        if (!tag) return null;
+        const element = document.createElement(tag);
+        if (element.setConfig) {
+            element.setConfig(cardConfig);
+        }
+        return element;
+    }
+
+    _getCardTag(type) {
+        if (type.startsWith('custom:')) {
+            return type.substring(7);
+        }
+        return `hui-${type}-card`;
+    }
+}
+customElements.define('card-maker', CardMaker);
