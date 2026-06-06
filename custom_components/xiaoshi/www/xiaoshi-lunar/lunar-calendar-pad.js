@@ -583,20 +583,27 @@ class LunarCalendarPadDate extends LitElement {
   }
 
   _renderFlipClock() {
+    const theme = this._evaluateTheme();
+    let timeBgColor;
+    if (theme === 'dark') {
+      timeBgColor = 'rgb(100,100,100)';
+    } else {
+      timeBgColor = (typeof window.background === 'function') ? window.background() : 'rgb(10,100,100)';
+    }
     const renderPart = (part) => {
       const flipPart = this._flipParts.find(p => p.part === part);
       const displayValue = flipPart ? flipPart.oldValue : this._displayTime[part];
       const topValue = flipPart ? flipPart.newValue : displayValue;
       return html`
         <div class="flip-part-container">
-          <div class="part-top">${topValue}</div>
+          <div class="part-top" style="background: ${timeBgColor}">${topValue}</div>
           ${flipPart ? html`
             <div class="flip-animation flipping">
-              <div class="flip-animation-top">${flipPart.oldValue}</div>
-              <div class="flip-animation-bottom">${flipPart.newValue}</div>
+              <div class="flip-animation-top" style="background: ${timeBgColor}">${flipPart.oldValue}</div>
+              <div class="flip-animation-bottom" style="background: ${timeBgColor}">${flipPart.newValue}</div>
             </div>
           ` : ''}
-          <div class="part-bottom">${displayValue}</div>
+          <div class="part-bottom" style="background: ${timeBgColor}">${displayValue}</div>
         </div>
       `;
     };
@@ -679,7 +686,6 @@ class LunarCalendarPadDate extends LitElement {
         justify-content: center;
         backface-visibility: hidden;
         border-radius: 4px;
-        background: var(--time-bg-color, rgba(0, 0, 0, 0.4));
         color: var(--time-text-color, white);
       }
       .part-top {
@@ -718,7 +724,6 @@ class LunarCalendarPadDate extends LitElement {
         backface-visibility: hidden;
         border-radius: 4px;
         transform-style: preserve-3d;
-        background: var(--time-bg-color, rgba(0, 0, 0, 0.4));
         color: var(--time-text-color, white);
       } 
       .flip-animation-top {
