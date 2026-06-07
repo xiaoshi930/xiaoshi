@@ -147,7 +147,7 @@ class XiaoshiTopBar extends LitElement {
                 align-items: center;
                 justify-content: space-evenly;
                 background: var(--btn-bg, rgba(0,0,0,0.3));
-                padding: 0 20px;
+                padding: 0 10px;
                 box-sizing: border-box;
             }
             .bar-card {
