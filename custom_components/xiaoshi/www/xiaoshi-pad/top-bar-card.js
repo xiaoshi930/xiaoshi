@@ -371,7 +371,30 @@ class XiaoshiTopBar extends LitElement {
                         contextStack.pop();
                     }
                     const currentContext = contextStack[contextStack.length - 1];
-                    if (value) {
+                    // 处理 YAML 块标量语法（|, |-, |+, >, >-, >+）
+                    const blockScalarMatch = value.match(/^([|>])([+-]?)$/);
+                    if (blockScalarMatch) {
+                        const blockLines = [];
+                        let j = i + 1;
+                        while (j < lines.length) {
+                            const nextLine = lines[j];
+                            const nextTrimmed = nextLine.trim();
+                            if (!nextTrimmed && !nextLine.includes(' ')) { j++; continue; }
+                            if (nextTrimmed.startsWith('#')) { j++; continue; }
+                            const nextIndent = nextLine.length - nextLine.trimStart().length;
+                            if (nextIndent <= indentLevel) break;
+                            blockLines.push(nextLine);
+                            j++;
+                        }
+                        const nonEmpty = blockLines.filter(l => l.trim());
+                        let blockContent = '';
+                        if (nonEmpty.length > 0) {
+                            const minIndent = Math.min(...nonEmpty.map(l => l.length - l.trimStart().length));
+                            blockContent = nonEmpty.map(l => l.substring(minIndent)).join('\n');
+                        }
+                        this._setNestedValue(currentContext, keyName, blockContent);
+                        i = j - 1;
+                    } else if (value) {
                         this._setNestedValue(currentContext, keyName, this._parseValue(value));
                     } else {
                         let nextLine = null, nextIndent = null;
