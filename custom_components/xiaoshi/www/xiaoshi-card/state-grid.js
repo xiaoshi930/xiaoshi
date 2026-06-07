@@ -301,7 +301,29 @@ class XiaoshiStateGridButtonEditor extends LitElement {
 
         <div class="checkbox-group">
           <input type="checkbox" @change=${this._entityChanged} .checked=${this.config.tablet_mode === true} name="tablet_mode" id="tablet_mode" />
-          <label for="tablet_mode" class="checkbox-label">平板端特性（透明背景、白色文字、显示${tabletDesc}余额和预计天数）</label>
+          <label for="tablet_mode" class="checkbox-label">（平板端特性1）（透明背景、白色文字、显示${tabletDesc}余额和预计天数）</label>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" class="checkbox-input"
+            @change=${this._entityChanged}
+            .checked=${this.config.transparent_bg === true}
+            name="transparent_bg" id="transparent_bg"
+          />
+          <label for="transparent_bg" class="checkbox-label">
+            （平板端特性2）透明背景（勾选后按钮背景透明）
+          </label>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" class="checkbox-input"
+            @change=${this._entityChanged}
+            .checked=${this.config.lock_white_fg === true}
+            name="lock_white_fg" id="lock_white_fg"
+          />
+          <label for="lock_white_fg" class="checkbox-label">
+            （平板端特性2）白色图标文字（勾选后锁定显示白色）
+          </label>
         </div>
 
         <div class="form-group">
@@ -728,7 +750,9 @@ class XiaoshiStateGridButton extends LitElement {
     const excludedParams = [
       'type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size',
       'popup_top', 'popup_width', 'display_mode', 'decimal_precision', 'emoji',
-      'tablet_mode'
+      'tablet_mode',
+      'transparent_bg',
+      'lock_white_fg'
     ];
     const stateGridCardConfig = {};
     Object.keys(this.config).forEach(key => {
@@ -802,10 +826,12 @@ class XiaoshiStateGridButton extends LitElement {
 
     const uc = getUtilityConfig(this.config.utility_type);
     const theme = this._evaluateTheme();
-    const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const buttonEmoji = uc.emoji;
     const tabletMode = this.config.tablet_mode === true;
-    const buttonBgColor = tabletMode ? 'transparent' : theme === 'light' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
+    const transparentBg = this.config.transparent_bg === true;
+    const lockWhiteFg = this.config.lock_white_fg === true;
+    const fgColor = lockWhiteFg ? 'rgb(255, 255, 255)' : theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const buttonBgColor = tabletMode ? 'transparent' : transparentBg ? 'transparent' : theme === 'light' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
 
     const { value: displayValue, unit: displayUnit, isWarning } = this._computeDisplayValue();
 
@@ -880,8 +906,6 @@ class XiaoshiStateGridButton extends LitElement {
   getCardSize() { return 3; }
 }
 customElements.define('xiaoshi-state-grid-button', XiaoshiStateGridButton);
-
-
 
 class XiaoshiStateGridEditor extends LitElement {
   static get properties() {
@@ -4284,8 +4308,10 @@ class  XiaoshiStateGridInfo extends LitElement {
     
     // 获取主题和颜色
     const theme = this._evaluateTheme();
-    const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-    const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    const lockWhiteFg = this.config.lock_white_fg === true;
+    const fgColor = lockWhiteFg ? 'rgb(255, 255, 255)' : theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const transparentBg = this.config.transparent_bg === true;
+    const bgColor = transparentBg ? 'transparent' : theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
     
     // 计算总金额的预警状态
     const totalAmount = this._calculateTotalAmount();
@@ -4373,8 +4399,10 @@ class  XiaoshiStateGridInfo extends LitElement {
     const selectedEntity = this.hass.states[selectedEntityId];
     this.updateDayData();
     const theme = this._evaluateTheme();
-    const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
-    const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const lockWhiteFg = this.config.lock_white_fg === true;
+    const transparentBg = this.config.transparent_bg === true;
+    const bgColor = transparentBg ? 'transparent' : theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    const fgColor = lockWhiteFg ? 'rgb(255, 255, 255)' : theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const daysInMonth = this.getDaysInMonth(this.year, this.month);
     const firstDayOfMonth = new Date(this.year, this.month - 1, 1).getDay();
     const adjustedFirstDay = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
