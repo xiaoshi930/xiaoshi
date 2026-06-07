@@ -84,7 +84,7 @@ class XiaoshiTopBarCardEditor extends LitElement {
                     </div>
                     <div class="field">
                         <label>高度</label>
-                        <input type="text" .value=${this._config.height || ''} configKey="height" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="30px" />
+                        <input type="text" .value=${this._config.height || ''} configKey="height" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="32px" />
                     </div>
                 </div>
                 <div class="inline-fields">
@@ -168,7 +168,7 @@ class XiaoshiTopBar extends LitElement {
     static getStubConfig() {
         return {
             width: '400px',
-            height: '30px',
+            height: '32px',
             cards: '',
         };
     }
@@ -180,7 +180,7 @@ class XiaoshiTopBar extends LitElement {
     setConfig(config) {
         this.config = {
             width: config.width || '400px',
-            height: config.height || '30px',
+            height: config.height || '32px',
             border_radius: config.border_radius || '8px',
             theme: config.theme || 'theme()',
             cards: config.cards || '',

@@ -314,6 +314,10 @@ class XiaoshiPadCardEditor extends LitElement {
                     <label>背景图片</label>
                     <input type="text" name="background_image" .value="${c.background_image || ''}" @change="${this._valueChanged}" placeholder="/local/UI/背景/彩平图.png">
                 </div>
+                <div class="form-row">
+                    <label>按钮区Left</label>
+                    <input type="text" name="btn_area_left" .value="${c.btn_area_left || '20px'}" @change="${this._valueChanged}" placeholder="20px">
+                </div>
                 <div class="card-section">
                     <div class="card-section-title">灯光按钮</div>
                     ${(c.light_buttons || []).map((btn, i) => html`
@@ -475,7 +479,6 @@ class XiaoshiPadCard extends LitElement {
       .btn-area {
         position: absolute;
         top: 8px;
-        left: 8px;
         display: flex;
         gap: 6px;
         z-index: 20;
@@ -772,6 +775,7 @@ class XiaoshiPadCard extends LitElement {
       background_image: config.background_image || '',
       device_glows: config.device_glows || [],
       light_buttons: config.light_buttons || [],
+      btn_area_left: config.btn_area_left || '20px',
     };
   }
 
@@ -1097,7 +1101,7 @@ class XiaoshiPadCard extends LitElement {
           return html`<div class="device-glow" style="top: ${item.top || '100px'}; left: ${item.left || '100px'}; width: ${item.width || '200px'}; height: ${item.height || '200px'}; background: ${glowStyle};"></div>`;
         })}
         ${this._renderLightButtons()}
-        <div class="btn-area">
+        <div class="btn-area" style="left: ${this.config.btn_area_left || '20px'};">
           <button class="ctrl-btn" style="color: #fff; --btn-bg: ${btnBg}" @click="${this._handleFullscreen}" title="全屏切换">
             <ha-icon icon="${this._kioskOn ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
           </button>
