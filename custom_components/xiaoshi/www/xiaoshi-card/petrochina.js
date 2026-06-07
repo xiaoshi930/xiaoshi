@@ -1603,7 +1603,7 @@ class XiaoshiPetroChinaButton extends PetroChinaBaseMixin(LitElement) {
 
     // 计算按钮显示值
     let displayValue = null;
-    let displayUnit = '元';
+    let displayUnit = '元/L';
 
     if (!this._dataLoaded) {
       displayValue = '加载中';
@@ -1636,7 +1636,7 @@ class XiaoshiPetroChinaButton extends PetroChinaBaseMixin(LitElement) {
 
         if (selectedValue !== null) {
           displayValue = parseFloat(selectedValue);
-          displayUnit = '元';
+          displayUnit = '元/L';
         } else {
           displayValue = '未选择';
           displayUnit = '';
