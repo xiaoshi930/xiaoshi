@@ -15,6 +15,7 @@ import('./xiaoshi-card/petrochina.js');
 import('./xiaoshi-card/state-grid.js');
 import('./xiaoshi-card/weather.js');
 import('./xiaoshi-card/button.js');
+import('./xiaoshi-card/device.js');
 
 import('./xiaoshi-phone/climate-card.js');
 import('./xiaoshi-phone/humidifier-card.js');
