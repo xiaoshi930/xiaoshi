@@ -1124,8 +1124,7 @@ class XiaoshiAvatarPadCard extends LitElement {
     _parseYamlCards(yamlString) {
         try {
             const lines = yamlString.split('\n');
-            const cards = [];
-            let currentCard = null;
+            const topCards = [];
             let indentStack = [];
             let contextStack = [];
 
@@ -1136,32 +1135,45 @@ class XiaoshiAvatarPadCard extends LitElement {
                 if (!trimmed || trimmed.startsWith('#')) continue;
 
                 const indentLevel = line.length - line.trimStart().length;
+
                 if (trimmed.startsWith('- type')) {
-                    if (currentCard) {
-                        cards.push(currentCard);
-                        currentCard = null;
-                        indentStack = [];
-                        contextStack = [];
-                    }
+                    // 卡片定义: "- type: xxx"
                     const content = trimmed.substring(1).trim();
-                    if (content.includes(':')) {
-                        const [key, ...valueParts] = content.split(':');
-                        const value = valueParts.join(':').trim();
-                        currentCard = {};
-                        this._setNestedValue(currentCard, key.trim(), this._parseValue(value));
-                    } else {
-                        currentCard = { type: content };
+                    const [key, ...valueParts] = content.split(':');
+                    const value = valueParts.join(':').trim();
+                    const newCard = {};
+                    this._setNestedValue(newCard, key.trim(), this._parseValue(value));
+
+                    // 弹出缩进栈到当前层级或更高
+                    while (indentStack.length > 0 && indentLevel <= indentStack[indentStack.length - 1]) {
+                        indentStack.pop();
+                        contextStack.pop();
                     }
-                    indentStack = [indentLevel];
-                    contextStack = [currentCard];
-                } else if (currentCard && trimmed.startsWith('-')) {
+
+                    // 检查当前上下文是否为数组（如 cards: []）
+                    const currentContext = contextStack.length > 0 ? contextStack[contextStack.length - 1] : null;
+
+                    if (Array.isArray(currentContext)) {
+                        // 嵌套卡片 - 添加到父级的 cards 数组
+                        currentContext.push(newCard);
+                    } else {
+                        // 顶层卡片
+                        topCards.push(newCard);
+                    }
+
+                    indentStack.push(indentLevel);
+                    contextStack.push(newCard);
+
+                } else if (trimmed.startsWith('-')) {
+                    // 列表项: "- value" 或 "- key: value"
+                    const itemValue = trimmed.substring(1).trim();
+
                     while (indentStack.length > 1 && indentLevel <= indentStack[indentStack.length - 1]) {
                         indentStack.pop();
                         contextStack.pop();
                     }
 
                     let currentContext = contextStack[contextStack.length - 1];
-                    const itemValue = trimmed.substring(1).trim();
 
                     if (!Array.isArray(currentContext)) {
                         if (contextStack.length > 1) {
@@ -1187,10 +1199,12 @@ class XiaoshiAvatarPadCard extends LitElement {
                             currentContext.push(this._parseValue(itemValue));
                         }
                     }
-                } else if (currentCard && trimmed.includes(':')) {
+                } else if (trimmed.includes(':')) {
+                    // 键值对: "key: value" 或 "key:" (嵌套)
                     const [key, ...valueParts] = trimmed.split(':');
                     const value = valueParts.join(':').trim();
-                    const keyName = key.trim();
+                    let keyName = key.trim();
+                    if ((keyName.startsWith('"') && keyName.endsWith('"')) || (keyName.startsWith("'") && keyName.endsWith("'"))) keyName = keyName.slice(1, -1);
 
                     while (indentStack.length > 1 && indentLevel <= indentStack[indentStack.length - 1]) {
                         indentStack.pop();
@@ -1221,9 +1235,7 @@ class XiaoshiAvatarPadCard extends LitElement {
                 }
             }
 
-            if (currentCard) cards.push(currentCard);
-
-            return cards;
+            return topCards;
         } catch (error) {
             console.error('[XiaoshiAvatarPadCard] YAML解析错误:', error);
             return [];

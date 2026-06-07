@@ -2,9 +2,9 @@ import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-e
 
 window.customCards = window.customCards || [];
 window.customCards.push({
-    type: 'xiaoshi-dynamic-card',
-    name: '消逝手机端动态区域卡片',
-    description: '消逝手机端动态区域卡片',
+    type: 'xiaoshi-dynamic-pad-card',
+    name: '消逝平板端-右侧状态条',
+    description: '消逝平板端-右侧动态区域卡片',
     preview: true
 });
 
@@ -40,7 +40,7 @@ const PRESET_OFF_STATES = [
     'Idle', 'Shut Off'
 ];
 
-class XiaoshiDynamicCardEditor extends LitElement {
+class XiaoshiDynamicPadCardEditor extends LitElement {
     static get properties() {
         return {
             hass: { type: Object },
@@ -93,6 +93,7 @@ class XiaoshiDynamicCardEditor extends LitElement {
                 border-radius: 6px;
                 padding: 8px;
                 position: relative;
+                margin-bottom: 12px;
             }
             .area-header {
                 display: flex;
@@ -209,27 +210,14 @@ class XiaoshiDynamicCardEditor extends LitElement {
                     <button class="btn-remove" @click="${() => this._removeArea(index)}">删除</button>
                 </div>
                 <div class="form-row">
-                    <label>图标</label>
-                    <input type="text" name="icon" .value="${area.icon || 'mdi:lightbulb'}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="mdi:lightbulb" />
+                    <label>名称</label>
+                    <input type="text" name="name" .value="${area.name || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="客厅" style="max-width:50px" />
+                    <label style="min-width:auto">图标</label>
+                    <input type="text" name="icon" .value="${area.icon || 'mdi:lightbulb'}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="mdi:lightbulb" style="max-width:100px" />
                     <label style="min-width:auto">开启</label>
                     <input type="color" name="on_color" .value="${area.on_color || '#f57c00'}" @change="${(e) => this._areaValueChanged(index, e)}" title="开启颜色" />
-                    <label style="min-width:auto">关闭</label>
-                    <input type="color" name="off_color" .value="${area.off_color || '#666666'}" @change="${(e) => this._areaValueChanged(index, e)}" title="关闭颜色" />
                 </div>
-                <div class="form-row">
-                    <label>按钮是否自动隐藏</label>
-                    <select name="auto_hide" @change="${(e) => this._areaValueChanged(index, e)}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
-                        <option value="false" .selected="${area.auto_hide !== 'true'}">否</option>
-                        <option value="true" .selected="${area.auto_hide === 'true'}">是</option>
-                    </select>
-                </div>
-                <div class="form-row">
-                    <label>弹出设备是否自动隐藏</label>
-                    <select name="popup_auto_hide" @change="${(e) => this._areaValueChanged(index, e)}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
-                        <option value="false" .selected="${area.popup_auto_hide !== 'true'}">否</option>
-                        <option value="true" .selected="${area.popup_auto_hide === 'true'}">是</option>
-                    </select>
-                </div>
+
                 <div class="form-row">
                     <label>条件</label>
                     <select name="condition_mode" @change="${(e) => this._areaValueChanged(index, e)}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
@@ -245,11 +233,19 @@ class XiaoshiDynamicCardEditor extends LitElement {
                 </div>
                 ` : ''}
                 <div class="form-row" style="flex-direction:column;align-items:stretch;">
-                    <label style="margin-bottom:4px;">实体列表</label>
+                    <label>实体列表</label>
                     <textarea name="entities" .value="${this._entitiesToDisplay(area.entities)}" @change="${(e) => this._areaEntitiesChanged(index, e)}" placeholder="- light.xxx&#10;- switch.xxx&#10;- binary_sensor.xxx"></textarea>
                 </div>
+
+                <div class="form-row" >
+                    <label >弹窗宽度</label>
+                    <input type="text" name="popup_width" .value="${area.popup_width || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="auto" style="max-width:100px" />
+                    <label style="min-width:auto">弹窗位置</label>
+                    <input type="text" name="popup_top" .value="${area.popup_top || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="50%" style="max-width:100px" />
+                </div>
+
                 <div class="form-row" style="flex-direction:column;align-items:stretch;">
-                    <label style="margin-bottom:4px;">弹窗卡片（YAML格式）</label>
+                    <label>弹窗卡片（YAML格式）</label>
                     <textarea name="popup_cards" .value="${area.popup_cards || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="- type: custom:button-card
   template: 测试模板"></textarea>
                 </div>
@@ -275,25 +271,10 @@ class XiaoshiDynamicCardEditor extends LitElement {
                 </div>
 
                 <div class="form-row">
-                    <label>弹窗宽度</label>
-                    <input type="text" name="popup_width" .value="${c.popup_width || ''}" @change="${this._valueChanged}" placeholder="95%" style="max-width:100px" />
-                    <label style="min-width:auto">弹窗位置</label>
-                    <input type="text" name="popup_top" .value="${c.popup_top || ''}" @change="${this._valueChanged}" placeholder="20px" style="max-width:100px" />
-                </div>
-
-                <div class="form-row">
-                    <label>卡片宽度</label>
-                    <input type="text" name="card_width" .value="${c.card_width || ''}" @change="${this._valueChanged}" placeholder="100%" style="max-width:100px" />
-                    <label style="min-width:auto">卡片高度</label>
-                    <input type="text" name="card_height" .value="${c.card_height || ''}" @change="${this._valueChanged}" placeholder="auto" style="max-width:100px" />
-                </div>
-
-                <div class="form-row">
-                    <label>自动排序</label>
-                    <select name="auto_sort" @change="${this._valueChanged}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
-                        <option value="true" .selected="${c.auto_sort !== 'false'}">是</option>
-                        <option value="false" .selected="${c.auto_sort === 'false'}">否</option>
-                    </select>
+                    <label>按钮宽度</label>
+                    <input type="text" name="button_width" .value="${c.button_width || '65px'}" @change="${this._valueChanged}" placeholder="65px" style="max-width:100px" />
+                    <label style="min-width:auto">按钮高度</label>
+                    <input type="text" name="button_height" .value="${c.button_height || '56px'}" @change="${this._valueChanged}" placeholder="56px" style="max-width:100px" />
                 </div>
 
                 <div class="form-row">
@@ -322,9 +303,9 @@ class XiaoshiDynamicCardEditor extends LitElement {
         `;
     }
 }
-customElements.define('xiaoshi-dynamic-card-editor', XiaoshiDynamicCardEditor);
+customElements.define('xiaoshi-dynamic-pad-card-editor', XiaoshiDynamicPadCardEditor);
 
-class XiaoshiDynamicCard extends LitElement {
+class XiaoshiDynamicPadCard extends LitElement {
 
     static get properties() {
         return {
@@ -341,23 +322,19 @@ class XiaoshiDynamicCard extends LitElement {
         return css`
             :host {
                 display: block;
-                height: 100%;
             }
             .areas-grid {
                 display: flex;
-                gap: 2.5vw;
-                padding: 0 2.5vw 1vh 2.5vw;
-                width: 100%;
-                height: 100%;
+                flex-direction: column;
+                gap: 12px;
                 box-sizing: border-box;
-                align-items: flex-end;
+                align-items: center;
             }
             .area-tile {
                 position: relative;
                 border-radius: 8px;
                 flex-shrink: 0;
-                height: 80%;
-                aspect-ratio: 1 / 1;
+                width: 80%;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
@@ -368,23 +345,21 @@ class XiaoshiDynamicCard extends LitElement {
             }
             .area-tile:active {
                 transform: scale(0.95);
-                box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
             }
             .area-icon {
-                --mdc-icon-size: 80%;
+                --mdc-icon-size: 70%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 width: 80%;
                 height: 80%;
-                color: rgba(255,255,255,0.9);
-                filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+                color: rgba(255,255,255);
             }
             .area-name {
-                font-size: 11px;
-                color: rgba(255,255,255,0.85);
-                margin-top: 4px;
-                text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+                font-size: 12px;
+                font-weight: 500;
+                color: rgba(255,255,255);
+                margin-bottom: 3px;
                 text-align: center;
                 max-width: 90%;
                 overflow: hidden;
@@ -393,18 +368,17 @@ class XiaoshiDynamicCard extends LitElement {
             }
             .area-badge {
                 position: absolute;
-                top: calc(-20% + 2px);
-                right: calc(-20% + 2px);
+                top: -8px;
+                right: -8px;
                 background: #f57c00;
                 color: #fff;
                 font-size: 10px;
                 font-weight: bold;
-                width: 45%;
-                height: 45%;
+                width: 20px;
+                height: 20px;
                 border-radius: 50%;
                 align-items: center;
                 justify-content: center;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.4);
                 display: none;
             }
             .area-badge.show {
@@ -460,7 +434,7 @@ class XiaoshiDynamicCard extends LitElement {
     }
 
     static getConfigElement() {
-        return document.createElement('xiaoshi-dynamic-card-editor');
+        return document.createElement('xiaoshi-dynamic-pad-card-editor');
     }
 
     static getStubConfig() {
@@ -641,8 +615,14 @@ class XiaoshiDynamicCard extends LitElement {
     }
 
     _getAreaBgColor(areaConfig, activeCount) {
-        const baseColor = activeCount > 0 ? (areaConfig.on_color || '#f57c00') : (areaConfig.off_color || '#666666');
-        return this._colorWithAlpha(baseColor, 0.6);
+        if (activeCount > 0) {
+            const baseColor = areaConfig.on_color || '#f57c00';
+            return this._colorWithAlpha(baseColor, 0.6);
+        } else {
+            const theme = this._evaluateTheme();
+            const offColor = theme === 'light' ? 'rgb(0,0,0,0.3)' : 'rgb(200,200,200,0.2)';
+            return this._colorWithAlpha(offColor, 0.3);
+        }
     }
 
     render() {
@@ -653,14 +633,8 @@ class XiaoshiDynamicCard extends LitElement {
 
         // 计算每个区域的activeCount
         const areasWithCount = areas.map((area, i) => ({ area, i, activeCount: this._getAreaActiveCount(area) }));
-        // 自动排序：开启的排前面
-        if (this.config.auto_sort !== 'false') {
-            areasWithCount.sort((a, b) => b.activeCount - a.activeCount);
-        }
 
         const areasHtml = areasWithCount.map(({ area, i, activeCount }) => {
-            // 自动隐藏：开启数量为0时隐藏
-            if (area.auto_hide === 'true' && activeCount === 0) return html``;
             const bg = this._getAreaBgColor(area, activeCount);
             const icon = area.icon || 'mdi:lightbulb';
             const showBadge = activeCount > 0;
@@ -668,16 +642,17 @@ class XiaoshiDynamicCard extends LitElement {
 
             return html`
                 <div class="area-tile"
-                    style="background:${bg};"
+                    style="background:${bg};height:${this.config.button_height || '56px'};"
                     @click="${() => this._onAreaClick(area)}">
                     <ha-icon icon="${icon}" class="area-icon ${animateClass}"></ha-icon>
+                    ${area.name ? html`<div class="area-name">${area.name}</div>` : ''}
                     <div class="area-badge ${showBadge ? 'show' : ''}" style="background:${area.on_color || '#f57c00'};">${activeCount}</div>
                 </div>
             `;
         });
 
         return html`
-            <div class="areas-grid" style="width:${this.config.card_width || '80vw'};height:${this.config.card_height || '5vh'};">
+            <div class="areas-grid" style="width:${this.config.button_width || '65px'};">
                 ${areasHtml}
             </div>
         `;
@@ -691,17 +666,8 @@ class XiaoshiDynamicCard extends LitElement {
         if (popupConfig && popupConfig.trim()) {
             try {
                 const parsed = this._parseYamlCards(popupConfig);
-                // 弹出设备自动隐藏：过滤掉不活跃实体的卡片
-                let filtered = parsed;
-                if (areaConfig.popup_auto_hide === 'true') {
-                    filtered = parsed.filter(card => {
-                        const entity = card.entity;
-                        if (!entity) return true;
-                        return this._isEntityActive(areaConfig, entity);
-                    });
-                }
                 const theme = this._evaluateTheme();
-                const cardsWithTheme = filtered.map(card => {
+                const cardsWithTheme = parsed.map(card => {
                     if (!card.theme && this.config.theme) {
                         return { ...card, theme: this.config.theme === 'system' ? theme : this.config.theme };
                     }
@@ -709,14 +675,11 @@ class XiaoshiDynamicCard extends LitElement {
                 });
                 cards.push(...cardsWithTheme);
             } catch (err) {
-                console.error('[XiaoshiDynamicCard] 解析区域弹窗卡片失败:', err);
+                console.error('[XiaoshiDynamicPadCard] 解析区域弹窗卡片失败:', err);
             }
         }
 
         this._handleClick();
-
-        // 弹出设备自动隐藏且过滤后无卡片，直接返回
-        if (areaConfig.popup_auto_hide === 'true' && cards.length === 0) return;
 
         // 无弹窗配置时，自动为实体生成弹窗
         if (cards.length === 0) {
@@ -730,19 +693,19 @@ class XiaoshiDynamicCard extends LitElement {
                 state_color: true
             }));
             const serviceData = { card: entityCards };
-            const popupWidth = this.config.popup_width || '95%';
-            const popupTop = this.config.popup_top || '20px';
-            if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
-            if (popupTop !== '20px') serviceData.popup_top = popupTop;
+            const popupWidth = areaConfig.popup_width || 'auto';
+            const popupTop = areaConfig.popup_top || '50%';
+            serviceData.popup_width = popupWidth;
+            serviceData.popup_top = popupTop;
             this.hass.callService('popup_card', 'show', serviceData);
             return;
         }
 
         const serviceData = { card: cards };
-        const popupWidth = this.config.popup_width || '95%';
-        const popupTop = this.config.popup_top || '20px';
-        if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
-        if (popupTop !== '20px') serviceData.popup_top = popupTop;
+        const popupWidth = areaConfig.popup_width || 'auto';
+        const popupTop = areaConfig.popup_top || '50%';
+        serviceData.popup_width = popupWidth;
+        serviceData.popup_top = popupTop;
         serviceData.background = 'transparent';
         this.hass.callService('popup_card', 'show', serviceData);
     }
@@ -762,8 +725,7 @@ class XiaoshiDynamicCard extends LitElement {
     _parseYamlCards(yamlString) {
         try {
             const lines = yamlString.split('\n');
-            const cards = [];
-            let currentCard = null;
+            const topCards = [];
             let indentStack = [];
             let contextStack = [];
 
@@ -774,32 +736,45 @@ class XiaoshiDynamicCard extends LitElement {
                 if (!trimmed || trimmed.startsWith('#')) continue;
 
                 const indentLevel = line.length - line.trimStart().length;
+
                 if (trimmed.startsWith('- type')) {
-                    if (currentCard) {
-                        cards.push(currentCard);
-                        currentCard = null;
-                        indentStack = [];
-                        contextStack = [];
-                    }
+                    // 卡片定义: "- type: xxx"
                     const content = trimmed.substring(1).trim();
-                    if (content.includes(':')) {
-                        const [key, ...valueParts] = content.split(':');
-                        const value = valueParts.join(':').trim();
-                        currentCard = {};
-                        this._setNestedValue(currentCard, key.trim(), this._parseValue(value));
-                    } else {
-                        currentCard = { type: content };
+                    const [key, ...valueParts] = content.split(':');
+                    const value = valueParts.join(':').trim();
+                    const newCard = {};
+                    this._setNestedValue(newCard, key.trim(), this._parseValue(value));
+
+                    // 弹出缩进栈到当前层级或更高
+                    while (indentStack.length > 0 && indentLevel <= indentStack[indentStack.length - 1]) {
+                        indentStack.pop();
+                        contextStack.pop();
                     }
-                    indentStack = [indentLevel];
-                    contextStack = [currentCard];
-                } else if (currentCard && trimmed.startsWith('-')) {
+
+                    // 检查当前上下文是否为数组（如 cards: []）
+                    const currentContext = contextStack.length > 0 ? contextStack[contextStack.length - 1] : null;
+
+                    if (Array.isArray(currentContext)) {
+                        // 嵌套卡片 - 添加到父级的 cards 数组
+                        currentContext.push(newCard);
+                    } else {
+                        // 顶层卡片
+                        topCards.push(newCard);
+                    }
+
+                    indentStack.push(indentLevel);
+                    contextStack.push(newCard);
+
+                } else if (trimmed.startsWith('-')) {
+                    // 列表项: "- value" 或 "- key: value"
+                    const itemValue = trimmed.substring(1).trim();
+
                     while (indentStack.length > 1 && indentLevel <= indentStack[indentStack.length - 1]) {
                         indentStack.pop();
                         contextStack.pop();
                     }
 
                     let currentContext = contextStack[contextStack.length - 1];
-                    const itemValue = trimmed.substring(1).trim();
 
                     if (!Array.isArray(currentContext)) {
                         if (contextStack.length > 1) {
@@ -825,7 +800,8 @@ class XiaoshiDynamicCard extends LitElement {
                             currentContext.push(this._parseValue(itemValue));
                         }
                     }
-                } else if (currentCard && trimmed.includes(':')) {
+                } else if (trimmed.includes(':')) {
+                    // 键值对: "key: value" 或 "key:" (嵌套)
                     const [key, ...valueParts] = trimmed.split(':');
                     const value = valueParts.join(':').trim();
                     let keyName = key.trim();
@@ -860,11 +836,9 @@ class XiaoshiDynamicCard extends LitElement {
                 }
             }
 
-            if (currentCard) cards.push(currentCard);
-
-            return cards;
+            return topCards;
         } catch (error) {
-            console.error('[XiaoshiDynamicCard] YAML解析错误:', error);
+            console.error('[XiaoshiDynamicPadCard] YAML解析错误:', error);
             return [];
         }
     }
@@ -897,4 +871,4 @@ class XiaoshiDynamicCard extends LitElement {
         current[keys[keys.length - 1]] = value;
     }
 }
-customElements.define('xiaoshi-dynamic-card', XiaoshiDynamicCard);
+customElements.define('xiaoshi-dynamic-pad-card', XiaoshiDynamicPadCard);

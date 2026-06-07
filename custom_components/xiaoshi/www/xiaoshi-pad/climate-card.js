@@ -1071,11 +1071,11 @@ class XiaoshiPadClimateCardEditor extends LitElement {
           <label>主题</label>
           <select
             @change=${this._themeSelectChanged}
-            .value=${this.config.theme !== undefined ? this.config.theme : 'on'}
+            .value=${this.config.theme !== undefined ? this.config.theme : 'light'}
             name="theme"
           >
-            <option value="on">浅色主题（白底黑字）</option>
-            <option value="off">深色主题（深灰底白字）</option>
+            <option value="light">浅色主题（白底黑字）</option>
+            <option value="dark">深色主题（深灰底白字）</option>
           </select>
         </div>
 
@@ -1572,7 +1572,7 @@ class XiaoshiPadClimateCardEditor extends LitElement {
 
   _themeSwitchChanged(ev) {
     if (!this.config) return;
-    const theme = ev.target.checked ? 'on' : 'off';
+    const theme = ev.target.checked ? 'light' : 'dark';
 
     this.config = {
       ...this.config,
@@ -2285,7 +2285,7 @@ class XiaoshiPadClimateCard extends LitElement {
   static getStubConfig() {
     return {
       entity: 'climate.demo_ac',  // 使用 Home Assistant 的演示实体
-      theme: 'on'
+      theme: 'light'
     };
   }
 
@@ -2347,7 +2347,7 @@ class XiaoshiPadClimateCard extends LitElement {
         text-align: center;
       }
 
-      .theme-on {
+      .theme-light {
         --ha-card-background: rgb(255,255,255,0);          /*背景色*/
         --primary-text-color:rgb(0,0,0);                 /*文字颜色*/
         --disabled-color: rgb(150,150,150);              /*圆环背景色*/
@@ -2355,7 +2355,7 @@ class XiaoshiPadClimateCard extends LitElement {
         --secondary-text-color: rgb(0,0,0);              /*图标边框颜色*/
         --area-bg: rgb(230,230,230);                     /*按钮区域背景色*/
       }
-      .theme-off {
+      .theme-dark {
         --ha-card-background: rgb(50,50,50,0);
         --primary-text-color:rgb(255,255,255);
         --disabled-color: rgb(220,220,220);
@@ -2479,7 +2479,7 @@ class XiaoshiPadClimateCard extends LitElement {
     this.config = {};
     this.buttons = [];
     this.buttons2 = [];
-    this.theme = 'on';
+    this.theme = 'light';
     this.width = '300px';
     this._timerInterval = null;
     this.temperatureData = [];
@@ -2674,10 +2674,10 @@ class XiaoshiPadClimateCard extends LitElement {
     const state = entity.state;
     const attrs = entity.attributes;
     const theme = this._evaluateTheme();
-    const themeClass = theme === 'on' ? 'theme-on' : 'theme-off';
+    const themeClass = theme === 'light' ? 'theme-light' : 'theme-dark';
 
-    const fgColor = theme === 'on' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-    const bgColor = theme === 'on' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
 
     const hasHvacModes = attrs.hvac_modes && attrs.hvac_modes.length > 0;
     const hasFanModes = attrs.fan_modes && attrs.fan_modes.length > 0;
@@ -2863,8 +2863,8 @@ class XiaoshiPadClimateCard extends LitElement {
     const minutes = Math.floor((remainingSeconds % 3600) / 60);
 
     const theme = this._evaluateTheme();
-    const fgColor = theme === 'on' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-    const bgColor = theme === 'on' ? 'rgb(230, 230, 230)' : 'rgb(80, 80, 80)';
+    const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const bgColor = theme === 'light' ? 'rgb(230, 230, 230)' : 'rgb(80, 80, 80)';
 
     const climateEntity = this.hass.states[this.config.entity];
     const climateState = climateEntity ? climateEntity.state : 'off';
@@ -3007,10 +3007,10 @@ _renderExtraButtons(buttonType = 1) {
 
     const state = entity?.state || 'off';
     const theme = this._evaluateTheme();
-    const fgColor = theme === 'on' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-    const bgColor = theme === 'on' ? 'rgb(230, 230, 230)' : 'rgb(80, 80, 80)';
+    const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const bgColor = theme === 'light' ? 'rgb(230, 230, 230)' : 'rgb(80, 80, 80)';
     const isHumidifierEntity = this.config.entity?.startsWith('humidifier.');
-    let activeColor = theme === 'on' ? 'rgba(0, 188, 213)' : 'rgba(0, 188, 213)';
+    let activeColor = theme === 'light' ? 'rgba(0, 188, 213)' : 'rgba(0, 188, 213)';
     if (state === 'cool') activeColor = 'rgb(33,150,243)';
     else if (state === 'heat') activeColor = 'rgb(254,111,33)';
     else if (state === '自定义' || state === 'AI控温' || state === '婴童洗' || state === '舒适洗' || state === '宠物洗' || state === '厨房用') activeColor = 'rgb(254,111,33)';
@@ -3231,7 +3231,7 @@ _renderExtraButtons(buttonType = 1) {
               else if (state === 'dry' && mode === 'dry') bgColor = 'rgb(255,151,0)';
               else if (state === 'fan_only' && mode === 'fan_only') bgColor = 'rgb(0,188,213)';
               else if (state === 'auto' && mode === 'auto') bgColor = 'rgb(47,96,49)';
-              else if (state === 'off' && mode === 'off') bgColor = theme === 'on' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
+              else if (state === 'off' && mode === 'off') bgColor = theme === 'light' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
           }
 
           return html`
@@ -3241,8 +3241,8 @@ _renderExtraButtons(buttonType = 1) {
                   style="--active-color: ${bgColor}; background: ${isActive ? bgColor : 'rgb(0,0,0,0)'}"
                   title="${customName}"
               >
-                  ${showIcon ? html`<ha-icon class="icon" icon="${customIcon}" style="color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"></ha-icon>` : ''}
-                  ${showName ? html`<span class="mode-text" style="font-size: 10px; color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
+                  ${showIcon ? html`<ha-icon class="icon" icon="${customIcon}" style="color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"></ha-icon>` : ''}
+                  ${showName ? html`<span class="mode-text" style="font-size: 10px; color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
               </button>
           `;
       });
@@ -3277,7 +3277,7 @@ _renderExtraButtons(buttonType = 1) {
             else if (state === 'dry') bgColor = 'rgb(255,151,0)';
             else if (state === 'fan_only') bgColor = 'rgb(0,188,213)';
             else if (state === 'auto') bgColor = 'rgb(47,96,49)';
-            else if (state === 'off') bgColor = theme === 'on' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
+            else if (state === 'off') bgColor = theme === 'light' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
         }
 
         return html`
@@ -3291,10 +3291,10 @@ _renderExtraButtons(buttonType = 1) {
                         <ha-icon
                             class="fan-button-icon ${isActive ? 'active-fan-button-icon' : ''}"
                             icon="${customIcon}"
-                            style="color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"
+                            style="color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"
                         ></ha-icon>
                     ` : ''}
-                    ${showName ? html`<span class="fan-text" style="color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
+                    ${showName ? html`<span class="fan-text" style="color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
                 </div>
             </button>
         `;
@@ -3330,7 +3330,7 @@ _renderExtraButtons(buttonType = 1) {
               else if (state === 'dry') bgColor = 'rgb(255,151,0)';
               else if (state === 'fan_only') bgColor = 'rgb(0,188,213)';
               else if (state === 'auto') bgColor = 'rgb(47,96,49)';
-              else if (state === 'off') bgColor = theme === 'on' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
+              else if (state === 'off') bgColor = theme === 'light' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
           }
 
           return html`
@@ -3340,8 +3340,8 @@ _renderExtraButtons(buttonType = 1) {
                   style="--active-color: ${bgColor}; background: ${isActive ? bgColor : 'rgb(0,0,0,0)'}"
               >
                   <div class="swing-button">
-                      ${showIcon ? html`<ha-icon class="icon" icon="${customIcon}" style="color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"></ha-icon>` : ''}
-                      ${showName ? html`<span class="swing-text" style="color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
+                      ${showIcon ? html`<ha-icon class="icon" icon="${customIcon}" style="color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"></ha-icon>` : ''}
+                      ${showName ? html`<span class="swing-text" style="color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
                   </div>
               </button>
           `;
@@ -3377,7 +3377,7 @@ _renderExtraButtons(buttonType = 1) {
               else if (state === 'dry') bgColor = 'rgb(255,151,0)';
               else if (state === 'fan_only') bgColor = 'rgb(0,188,213)';
               else if (state === 'auto') bgColor = 'rgb(47,96,49)';
-              else if (state === 'off') bgColor = theme === 'on' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
+              else if (state === 'off') bgColor = theme === 'light' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
           }
 
           return html`
@@ -3387,8 +3387,8 @@ _renderExtraButtons(buttonType = 1) {
                   style="--active-color: ${bgColor}; background: ${isActive ? bgColor : 'rgb(0,0,0,0)'}"
               >
                   <div class="preset-button">
-                      ${showIcon ? html`<ha-icon class="icon" icon="${customIcon}" style="color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"></ha-icon>` : ''}
-                      ${showName ? html`<span class="preset-text" style="color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
+                      ${showIcon ? html`<ha-icon class="icon" icon="${customIcon}" style="color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"></ha-icon>` : ''}
+                      ${showName ? html`<span class="preset-text" style="color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
                   </div>
               </button>
           `;
@@ -3424,7 +3424,7 @@ _renderExtraButtons(buttonType = 1) {
             else if (state === 'dry') bgColor = 'rgb(255,151,0)';
             else if (state === 'fan_only') bgColor = 'rgb(0,188,213)';
             else if (state === 'auto') bgColor = 'rgb(47,96,49)';
-            else if (state === 'off') bgColor = theme === 'on' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
+            else if (state === 'off') bgColor = theme === 'light' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
         }
 
         return html`
@@ -3434,8 +3434,8 @@ _renderExtraButtons(buttonType = 1) {
                 style="--active-color: ${bgColor}; background: ${isActive ? bgColor : 'rgb(0,0,0,0)'}"
             >
                 <div class="water-button">
-                    ${showIcon ? html`<ha-icon class="icon" icon="${customIcon}" style="color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"></ha-icon>` : ''}
-                    ${showName ? html`<span class="water-text" style="color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
+                    ${showIcon ? html`<ha-icon class="icon" icon="${customIcon}" style="color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"></ha-icon>` : ''}
+                    ${showName ? html`<span class="water-text" style="color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
                 </div>
             </button>
         `;
@@ -3480,7 +3480,7 @@ _renderExtraButtons(buttonType = 1) {
 
         if (isActive) {
             if (mode === 'on') bgColor = 'rgb(33,150,243)';
-            else if (mode === 'off') bgColor = theme === 'on' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
+            else if (mode === 'off') bgColor = theme === 'light' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
             else bgColor = 'rgb(33,150,243)';
         }
 
@@ -3491,8 +3491,8 @@ _renderExtraButtons(buttonType = 1) {
                 style="--active-color: ${bgColor}; background: ${isActive ? bgColor : 'rgb(0,0,0,0)'}"
                 title="${customName}"
             >
-                ${showIcon ? html`<ha-icon class="icon" icon="${customIcon}" style="color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"></ha-icon>` : ''}
-                ${showName ? html`<span class="mode-text" style="font-size: 10px; color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
+                ${showIcon ? html`<ha-icon class="icon" icon="${customIcon}" style="color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"></ha-icon>` : ''}
+                ${showName ? html`<span class="mode-text" style="font-size: 10px; color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
             </button>
         `;
     });
@@ -3542,7 +3542,7 @@ _renderExtraButtons(buttonType = 1) {
 
         if (isActive) {
             if (mode === 'on') bgColor = 'rgb(33,150,243)';
-            else if (mode === 'off') bgColor = theme === 'on' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
+            else if (mode === 'off') bgColor = theme === 'light' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
         }
 
         return html`
@@ -3552,8 +3552,8 @@ _renderExtraButtons(buttonType = 1) {
                 style="--active-color: ${bgColor}; background: ${isActive ? bgColor : 'rgb(0,0,0,0)'}"
                 title="${customName}"
             >
-                ${showIcon ? html`<ha-icon class="icon" icon="${customIcon}" style="color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"></ha-icon>` : ''}
-                ${showName ? html`<span class="mode-text" style="font-size: 10px; color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
+                ${showIcon ? html`<ha-icon class="icon" icon="${customIcon}" style="color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"></ha-icon>` : ''}
+                ${showName ? html`<span class="mode-text" style="font-size: 10px; color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
             </button>
         `;
     });
@@ -3618,7 +3618,7 @@ _renderExtraButtons(buttonType = 1) {
                 else if (mainEntityState === 'dry') bgColor = 'rgb(255,151,0)';
                 else if (mainEntityState === 'fan_only') bgColor = 'rgb(0,188,213)';
                 else if (mainEntityState === 'auto') bgColor = 'rgb(47,96,49)';
-                else if (mainEntityState === 'off') bgColor = theme === 'on' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
+                else if (mainEntityState === 'off') bgColor = theme === 'light' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
                 else bgColor = 'rgb(33,150,243)'; // 默认蓝色
             }
         }
@@ -3630,8 +3630,8 @@ _renderExtraButtons(buttonType = 1) {
                 style="--active-color: ${bgColor}; background: ${isActive ? bgColor : 'rgb(0,0,0,0)'}"
                 title="${customName}"
             >
-                ${showIcon ? html`<ha-icon class="icon" icon="${customIcon}" style="color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"></ha-icon>` : ''}
-                ${showName ? html`<span class="mode-text" style="font-size: 10px; color: ${isActive ? (theme === 'on' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
+                ${showIcon ? html`<ha-icon class="icon" icon="${customIcon}" style="color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}"></ha-icon>` : ''}
+                ${showName ? html`<span class="mode-text" style="font-size: 10px; color: ${isActive ? (theme === 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)') : ''}">${customName}</span>` : ''}
             </button>
         `;
     });

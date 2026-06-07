@@ -484,7 +484,8 @@ class XiaoshiPadGridCard extends LitElement {
         } else if (currentCard && trimmed.includes(':')) {
           const [key, ...valueParts] = trimmed.split(':');
           const value = valueParts.join(':').trim();
-          const keyName = key.trim();
+          let keyName = key.trim();
+                    if ((keyName.startsWith('"') && keyName.endsWith('"')) || (keyName.startsWith("'") && keyName.endsWith("'"))) keyName = keyName.slice(1, -1);
           while (indentStack.length > 1 && indentLevel <= indentStack[indentStack.length - 1]) {
             indentStack.pop();
             contextStack.pop();

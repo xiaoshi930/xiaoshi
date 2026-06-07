@@ -797,8 +797,7 @@ class XiaoshiButton extends LitElement {
   _parseYamlCards(yamlString) {
     try {
       const lines = yamlString.split('\n');
-      const cards = [];
-      let currentCard = null;
+      const topCards = [];
       let indentStack = [];
       let contextStack = [];
 
@@ -841,26 +840,37 @@ class XiaoshiButton extends LitElement {
 
         if (!trimmed || trimmed.startsWith('#')) continue;
         const indentLevel = line.length - line.trimStart().length;
+
         if (trimmed.startsWith('- type')) {
-          if (currentCard) {
-            cards.push(currentCard);
-            currentCard = null;
-            indentStack = [];
-            contextStack = [];
-          }
+          // 卡片定义: "- type: xxx"
           const content = trimmed.substring(1).trim();
-          if (content.includes(':')) {
-            const colonIdx = content.indexOf(':');
-            const key = content.substring(0, colonIdx).trim();
-            const value = content.substring(colonIdx + 1).trim();
-            currentCard = {};
-            this._setNestedValue(currentCard, key, this._parseValue(value));
-          } else {
-            currentCard = { type: content };
+          const colonIdx = content.indexOf(':');
+          const key = content.substring(0, colonIdx).trim();
+          const value = content.substring(colonIdx + 1).trim();
+          const newCard = {};
+          this._setNestedValue(newCard, key, this._parseValue(value));
+
+          // 弹出缩进栈到当前层级或更高
+          while (indentStack.length > 0 && indentLevel <= indentStack[indentStack.length - 1]) {
+            indentStack.pop();
+            contextStack.pop();
           }
-          indentStack = [indentLevel];
-          contextStack = [currentCard];
-        } else if (currentCard && trimmed.startsWith('-')) {
+
+          // 检查当前上下文是否为数组（如 cards: []）
+          const currentContext = contextStack.length > 0 ? contextStack[contextStack.length - 1] : null;
+
+          if (Array.isArray(currentContext)) {
+            // 嵌套卡片 - 添加到父级的 cards 数组
+            currentContext.push(newCard);
+          } else {
+            // 顶层卡片
+            topCards.push(newCard);
+          }
+
+          indentStack.push(indentLevel);
+          contextStack.push(newCard);
+
+        } else if (trimmed.startsWith('-')) {
           while (indentStack.length > 1 && indentLevel <= indentStack[indentStack.length - 1]) {
             indentStack.pop();
             contextStack.pop();
@@ -892,7 +902,7 @@ class XiaoshiButton extends LitElement {
               currentContext.push(this._parseValue(itemValue));
             }
           }
-        } else if (currentCard && trimmed.includes(':')) {
+        } else if (trimmed.includes(':')) {
           const colonIndex = trimmed.indexOf(':');
           let keyName = trimmed.substring(0, colonIndex).trim();
           const value = trimmed.substring(colonIndex + 1).trim();
@@ -948,8 +958,7 @@ class XiaoshiButton extends LitElement {
         currentContext[blockScalarKey] = blockValue;
       }
 
-      if (currentCard) cards.push(currentCard);
-      return cards;
+      return topCards;
     } catch (error) {
       console.error('YAML解析错误:', error);
       return [];
