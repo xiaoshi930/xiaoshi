@@ -618,7 +618,8 @@ class XiaoshiRoomCardEditor extends LitElement {
                             </div>
                         ` : ''}
                     </div>
-                    <input type="text" name="person_icon" .value="${c.person_icon || ''}" @change="${this._valueChanged}" placeholder="mdi图标" style="width:90px;flex:none" />
+                    <input type="text" name="person_icon" .value="${c.person_icon || ''}" @change="${this._valueChanged}" placeholder="mdi图标" style="width:70px;flex:none" />
+                    <input type="text" name="person_icon_size" .value="${c.person_icon_size || ''}" @change="${this._valueChanged}" placeholder="例如：3" style="width:80px;flex:none" />
                     <input type="color" name="person_color" .value="${c.person_color || '#ff5722'}" @change="${this._valueChanged}" />
                 </div>
 
@@ -1371,8 +1372,8 @@ class XiaoshiRoomCard extends LitElement {
 
         // 人在图标渲染
         const personHtml = html`
-            <div class="person-icon ${!personEntity ? 'person-hidden' : ''} ${isHome ? 'person-home' : ''}" style="color:${isHome ? (this.config.person_color || '#ff5722') : '#888'}">
-                <ha-icon icon="${isHome ? (this.config.person_icon || 'mdi:motion-sensor') : 'mdi:motion-sensor-off'}"></ha-icon>
+            <div class="person-icon ${!personEntity ? 'person-hidden' : ''} ${isHome ? 'person-home' : ''}" style="color:${isHome ? (this.config.person_color || '#ff5722') : '#888'}${this.config.person_icon_size ? ';width:' + this.config.person_icon_size + 'vh;height:' + this.config.person_icon_size + 'vh' : ''}">
+                <ha-icon icon="${isHome ? (this.config.person_icon || 'mdi:motion-sensor') : 'mdi:motion-sensor-off'}" style="${this.config.person_icon_size ? '--mdc-icon-size:' + this.config.person_icon_size + 'vh' : ''}"></ha-icon>
             </div>
         `;
 
