@@ -1286,7 +1286,13 @@ class XiaoshiPhoneOtherCard extends LitElement {
             "icon br2 br2"
             "icon spacer2 spacer2"
             "icon br3 br3"
+            "icon spacer3 spacer3"
             "icon br4 br4"
+            "icon spacer4 spacer4"
+            "icon br5 br5"
+            "icon spacer5 spacer5"
+            "icon br6 br6"
+            "icon spacer6 spacer6"
             "icon timer timer"
             "icon extra extra"
             "icon extra2 extra2"
@@ -1945,11 +1951,17 @@ class XiaoshiPhoneOtherCard extends LitElement {
     const gridTemplateRows = [
         'auto',
         br1HasItems ? 'auto' : '0',
-        br1HasItems ? '10px' : '0',
+        br1HasItems ? '6px' : '0',
         br2HasItems ? 'auto' : '0',
-        br2HasItems ? '10px' : '0',
+        br2HasItems ? '6px' : '0',
         (buttonRows[2] && buttonRows[2].items && buttonRows[2].items.length > 0) ? 'auto' : '0',
+        (buttonRows[2] && buttonRows[2].items && buttonRows[2].items.length > 0) ? '6px' : '0',
         (buttonRows[3] && buttonRows[3].items && buttonRows[3].items.length > 0) ? 'auto' : '0',
+        (buttonRows[3] && buttonRows[3].items && buttonRows[3].items.length > 0) ? '6px' : '0',
+        (buttonRows[4] && buttonRows[4].items && buttonRows[4].items.length > 0) ? 'auto' : '0',
+        (buttonRows[4] && buttonRows[4].items && buttonRows[4].items.length > 0) ? '6px' : '0',
+        (buttonRows[5] && buttonRows[5].items && buttonRows[5].items.length > 0) ? 'auto' : '0',
+        (buttonRows[5] && buttonRows[5].items && buttonRows[5].items.length > 0) ? '6px' : '0',
         hasTimer ? 'auto' : '0',
         hasExtra ? 'auto' : '0',
         hasExtra2 ? 'auto' : '0',
@@ -2002,7 +2014,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
               </div>
           ` : ''}
 
-          ${[0,1,2,3].map(rowIndex => {
+          ${[0,1,2,3,4,5].map(rowIndex => {
             const row = buttonRows[rowIndex];
             const items = (row && row.items) ? row.items.filter(item => item.entity) : [];
             // 计算实际按钮数量（select选项展开为独立按钮）
@@ -2027,7 +2039,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
               <div class="button-row-area" style="grid-area: br${rowIndex + 1}; grid-template-columns: repeat(${gridCols}, 1fr);">
                   ${items.length > 0 ? this._renderButtonRowItems(rowIndex) : ''}
               </div>
-              ${rowIndex < 2 && items.length > 0 ? html`<div style="grid-area: spacer${rowIndex + 1};"></div>` : ''}
+              ${items.length > 0 && rowIndex < 6 ? html`<div style="grid-area: spacer${rowIndex + 1};"></div>` : ''}
             `;
           })}
 
@@ -2076,7 +2088,11 @@ class XiaoshiPhoneOtherCard extends LitElement {
     const mainEntity = this.hass.states[this.config.entity];
     const mainState = mainEntity ? mainEntity.state : 'off';
     
-    let activeColor = 'rgb(255,255,255)';
+    const theme = this._evaluateTheme();
+    let activeColor = theme === 'light' ? 'rgba(00, 80, 80)' : 'rgba(180, 230, 230)';
+    const cardAccentRaw = this.config.accent_color || '';
+    const cardAccentColor = cardAccentRaw ? this._evalTemplate(cardAccentRaw) : '';
+    if (cardAccentColor) activeColor = cardAccentColor;
     const now = new Date();
     const finishesAt = new Date(timerEntity.attributes.finishes_at || 0);
     let remainingSeconds = Math.max(0, Math.floor((finishesAt - now) / 1000));
@@ -2094,7 +2110,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
     const displayColor = remainingSeconds > 0 ? activeColor : 'var(--button-fg)';
     
     return html`
-        <button class="timer-button" @click=${this._cancelTimer}>
+        <button class="timer-button" style="${remainingSeconds > 0 ? `color: ${displayColor}` : ''}" @click=${this._cancelTimer}>
             取消
         </button>
         <button class="timer-button" @click=${() => this._adjustTimer(-1, remainingSeconds)}>
@@ -2287,21 +2303,19 @@ class XiaoshiPhoneOtherCard extends LitElement {
         }
 
         // 按钮模式 - 根据域类型渲染
-        if (domain === 'switch' || domain === 'light') {
+        if (domain === 'switch' || domain === 'light' || domain === 'input_boolean') {
             const isActive = entity.state === 'on';
-            const icon = isActive ? 'mdi:toggle-switch' : 'mdi:toggle-switch-off';
-            const btnBg = isActive ? activeColor : buttonBg;
+            const statusSymbol = isActive ? ' - 开启' : ' - 关闭';
             const btnFg = isActive ? activeColor : buttonFg;
             
             return html`
                 <button 
-                    class="func-button ${isActive ? 'active-extra' : ''}" 
-                    style="background-color: ${btnBg}; ${isActive ? 'opacity: 0.85;' : ''}"
+                    class="func-button" 
+                    style="background-color: ${buttonBg};"
                     @click=${() => this._handleExtraButtonClick(buttonEntityId, domain)}
                     title="${friendlyName}"
                 >
-                    <ha-icon class="func-button-icon" icon="${icon}" style="color: ${btnFg}"></ha-icon>
-                    <div class="func-button-text" style="color: ${btnFg}">${displayName}</div>
+                    <div class="func-button-text" style="color: ${btnFg}">${displayName}${statusSymbol}</div>
                 </button>
             `;
         }
@@ -2468,7 +2482,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
         const entity = this.hass.states[entityId];
         if (!entity) return;
         
-        if (domain === 'switch' || domain === 'light') {
+        if (domain === 'switch' || domain === 'light' || domain === 'input_boolean') {
             const service = entity.state === 'on' ? 'turn_off' : 'turn_on';
             this._callService(domain, service, { entity_id: entityId });
         } else if (domain === 'button' || domain === 'input_button') {
