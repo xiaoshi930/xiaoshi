@@ -641,6 +641,18 @@ const HaInfoEditorMixin = (superClass) => class extends superClass {
       </div>
 
       <div class="form-group">
+        <label>
+          <input type="checkbox"
+            @change=${this._entityChanged}
+            .checked=${this.config.count_offline !== false}
+            name="count_offline"
+          />
+          统计离线设备和离线实体
+        </label>
+        <div class="help-text">如果勾选，离线设备和离线实体的数量将计入警告计数</div>
+      </div>
+
+      <div class="form-group">
         <label>排除离线设备：每行一个设备名称，支持通配符(*)</label>
         <textarea
           @change=${this._entityChanged}
@@ -984,7 +996,9 @@ class XiaoshiHaInfoButton extends HaInfoBaseMixin(LitElement) {
     if (!this.hass) return html`<div></div>`;
     const theme = this._evaluateTheme();
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-    const warningCount = this._haUpdates.length + this._otherUpdates.length + this._offlineDevices.length + this._offlineEntities.length;
+    const countOffline = this.config.count_offline !== false;
+    const offlineCount = countOffline ? this._offlineDevices.length + this._offlineEntities.length : 0;
+    const warningCount = this._haUpdates.length + this._otherUpdates.length + offlineCount;
 
     const transparentBg = this.config.transparent_bg === true;
     const lockWhiteFg = this.config.lock_white_fg === true;
@@ -1809,7 +1823,9 @@ class XiaoshiHaInfoCard extends HaInfoBaseMixin(LitElement) {
     const theme = this._evaluateTheme();
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
-    const warningCount = this._haUpdates.length + this._otherUpdates.length + this._offlineDevices.length + this._offlineEntities.length;
+    const countOffline = this.config.count_offline !== false;
+    const offlineCount = countOffline ? this._offlineDevices.length + this._offlineEntities.length : 0;
+    const warningCount = this._haUpdates.length + this._otherUpdates.length + offlineCount;
 
     return html`
       <ha-card style="--fg-color: ${fgColor}; --bg-color: ${bgColor};">
@@ -1908,58 +1924,60 @@ class XiaoshiHaInfoCard extends HaInfoBaseMixin(LitElement) {
               `
           }
 
-          ${this._loading ?
-            html`<div class="loading">设备和实体加载中...</div>` :
-            (this._offlineDevices.length === 0 && this._offlineEntities.length === 0) ?
-              html`<div class="no-devices">✅ 所有设备和实体都在线</div>` :
-              html`
-                ${this._offlineDevices.length > 0 ? html`
-                  <div class="section-divider">
-                    <div class="section-title">
-                      <span> • 离线设备</span>
-                      <span class="section-count">${this._offlineDevices.length}</span>
-                    </div>
-                  </div>
-                  ${this._offlineDevices.map(device => html`
-                    <div class="device-item" @click=${() => this._handleDeviceClick(device)}>
-                      <div class="device-icon"><ha-icon icon="${device.icon}"></ha-icon></div>
-                      <div class="device-info">
-                        <div class="device-name">${device.name}</div>
-                        <div class="device-details">
-                          ${device.manufacturer && device.model ?
-                            `${device.manufacturer} ${device.model}` :
-                            device.manufacturer || device.model || '未知设备'}
-                          ${device.entities ? `• ${device.entities.length} 个实体` : ''}
-                        </div>
+          ${this.config.count_offline !== false ? html`
+            ${this._loading ?
+              html`<div class="loading">设备和实体加载中...</div>` :
+              (this._offlineDevices.length === 0 && this._offlineEntities.length === 0) ?
+                html`<div class="no-devices">✅ 所有设备和实体都在线</div>` :
+                html`
+                  ${this._offlineDevices.length > 0 ? html`
+                    <div class="section-divider">
+                      <div class="section-title">
+                        <span> • 离线设备</span>
+                        <span class="section-count">${this._offlineDevices.length}</span>
                       </div>
-                      <div class="device-last-seen">${this._formatLastSeen(device.last_seen)}</div>
                     </div>
-                  `)}
-                ` : ''}
-                ${this._offlineEntities.length > 0 ? html`
-                  <div class="section-divider">
-                    <div class="section-title">
-                      <span> • 离线实体</span>
-                      <span class="section-count">${this._offlineEntities.length}</span>
-                    </div>
-                  </div>
-                  ${this._offlineEntities.map(entity => html`
-                    <div class="device-item" @click=${() => this._handleEntityClick(entity)}>
-                      <div class="device-icon"><ha-icon icon="${entity.icon}"></ha-icon></div>
-                      <div class="device-info">
-                        <div class="device-name">${entity.friendly_name}</div>
-                        <div class="device-details">
-                          ${entity.entity_id}
-                          ${entity.platform ? `• ${entity.platform}` : ''}
-                          ${entity.unit_of_measurement ? `• ${entity.unit_of_measurement}` : ''}
+                    ${this._offlineDevices.map(device => html`
+                      <div class="device-item" @click=${() => this._handleDeviceClick(device)}>
+                        <div class="device-icon"><ha-icon icon="${device.icon}"></ha-icon></div>
+                        <div class="device-info">
+                          <div class="device-name">${device.name}</div>
+                          <div class="device-details">
+                            ${device.manufacturer && device.model ?
+                              `${device.manufacturer} ${device.model}` :
+                              device.manufacturer || device.model || '未知设备'}
+                            ${device.entities ? `• ${device.entities.length} 个实体` : ''}
+                          </div>
                         </div>
+                        <div class="device-last-seen">${this._formatLastSeen(device.last_seen)}</div>
                       </div>
-                      <div class="device-last-seen">${this._formatLastSeen(entity.last_updated)}</div>
+                    `)}
+                  ` : ''}
+                  ${this._offlineEntities.length > 0 ? html`
+                    <div class="section-divider">
+                      <div class="section-title">
+                        <span> • 离线实体</span>
+                        <span class="section-count">${this._offlineEntities.length}</span>
+                      </div>
                     </div>
-                  `)}
-                ` : ''}
-              `
-          }
+                    ${this._offlineEntities.map(entity => html`
+                      <div class="device-item" @click=${() => this._handleEntityClick(entity)}>
+                        <div class="device-icon"><ha-icon icon="${entity.icon}"></ha-icon></div>
+                        <div class="device-info">
+                          <div class="device-name">${entity.friendly_name}</div>
+                          <div class="device-details">
+                            ${entity.entity_id}
+                            ${entity.platform ? `• ${entity.platform}` : ''}
+                            ${entity.unit_of_measurement ? `• ${entity.unit_of_measurement}` : ''}
+                          </div>
+                        </div>
+                        <div class="device-last-seen">${this._formatLastSeen(entity.last_updated)}</div>
+                      </div>
+                    `)}
+                  ` : ''}
+                `
+            }
+          ` : ''}
         </div>
       </ha-card>
     `;
@@ -1975,8 +1993,9 @@ class XiaoshiHaInfoCard extends HaInfoBaseMixin(LitElement) {
     const baseSize = 4;
     const haSize = Math.max(0, Math.min(this._haUpdates.length, 6));
     const otherSize = Math.max(0, Math.min(this._otherUpdates.length, 8));
-    const deviceSize = Math.max(0, Math.min(this._offlineDevices.length, 6));
-    const entitySize = Math.max(0, Math.min(this._offlineEntities.length, 8));
+    const countOffline = this.config.count_offline !== false;
+    const deviceSize = countOffline ? Math.max(0, Math.min(this._offlineDevices.length, 6)) : 0;
+    const entitySize = countOffline ? Math.max(0, Math.min(this._offlineEntities.length, 8)) : 0;
     return baseSize + haSize + otherSize + deviceSize + entitySize;
   }
 }
