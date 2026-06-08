@@ -262,6 +262,14 @@ class XiaoshiDynamicPadCardEditor extends LitElement {
         return html`
             <div class="form">
                 <div class="form-row">
+                    <label>布局</label>
+                    <select name="layout" @change="${this._valueChanged}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
+                        <option value="vertical" .selected="${c.layout !== 'horizontal'}">纵向</option>
+                        <option value="horizontal" .selected="${c.layout === 'horizontal'}">横向</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
                     <label>主题</label>
                     <select name="theme" @change="${this._valueChanged}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
                         <option value="system" .selected="${c.theme === 'system' || !c.theme}">跟随系统</option>
@@ -330,6 +338,9 @@ class XiaoshiDynamicPadCard extends LitElement {
                 gap: 12px;
                 box-sizing: border-box;
                 align-items: center;
+            }
+            .areas-grid.horizontal {
+                flex-direction: row;
             }
             .area-tile {
                 position: relative;
@@ -466,11 +477,17 @@ class XiaoshiDynamicPadCard extends LitElement {
                 if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
                 return 'light';
             }
-            if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+            if (mode === 'sun') {
+                const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+                if (sunState && sunState.state === 'above_horizon') return 'light';
+                if (sunState && sunState.state === 'below_horizon') return 'dark';
+                return 'light';
+            }
+            if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
                 if (typeof window.theme === 'function') {
                     return window.theme() || 'light';
                 }
-                return 'light';
+              return 'light';
             }
             return mode;
         } catch (e) {
@@ -653,7 +670,7 @@ class XiaoshiDynamicPadCard extends LitElement {
         });
 
         return html`
-            <div class="areas-grid" style="width:${this.config.button_width || '65px'};">
+            <div class="areas-grid ${this.config.layout === 'horizontal' ? 'horizontal' : ''}" style="width:${this.config.button_width || '65px'};">
                 ${areasHtml}
             </div>
         `;

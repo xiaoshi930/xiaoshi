@@ -111,7 +111,7 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
       const entityId = entity.entity_id.toLowerCase();
       const friendlyName = (entity.attributes.friendly_name || '').toLowerCase();
 
-      const isSensorEntity = entityId.startsWith('sensor.');
+      const isSensorEntity = entityId.startsWith('sensor.') || entityId.startsWith('binary_sensor.');
       const matchesSearch = entityId.includes(searchTerm) || friendlyName.includes(searchTerm);
 
       return isSensorEntity && matchesSearch;
@@ -770,7 +770,7 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                 @input=${this._onTemperatureSearch}
                 @focus=${this._onTemperatureSearch}
                 .value=${this._temperatureSearchTerm || this.config.temperature || ''}
-                placeholder="搜索传感器..."
+                placeholder="搜索传感器/binary_sensor..."
                 class="entity-search-input"
               />
               ${this._showTemperatureList ? html`
@@ -1306,7 +1306,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
         left: 0;
         width: 100%;
         height: 100%;
-        background: var(--linear-color);
+        background: linear-gradient(to right, var(--linear-color));
         opacity: 0.4;
         z-index: 0;
       }
@@ -1652,14 +1652,16 @@ class XiaoshiPhoneOtherCard extends LitElement {
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
-              // 优先检测 HA 主题暗色模式
-              if (this.hass && this.hass.themes && this.hass.themes.darkMode !== undefined) {
-                  return this.hass.themes.darkMode ? 'dark' : 'light';
-              }
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -1908,7 +1910,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
         return html`<div>实体未找到: ${this.config.entity}</div>`;
     }
     const state = entity.state;
-    const isOn = state !== 'off' && state !== 'unavailable' && state !== 'unknown';
+    const isOn = state === 'on' && state !== 'unavailable' && state !== 'unknown';
     let marginBottom = '4px';
 
     const attrs = entity.attributes;
@@ -1983,7 +1985,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
                                                                 
         ${isOn ? html`<div class="active-gradient"></div>` : ''}
         <div id="chart-container"></div>
-        <div class="content-container" style="grid-template-rows: ${gridTemplateRows};">
+        <div class="content-container" style="grid-template-rows: ${gridTemplateRows};background: ${isOn ? `linear-gradient(90deg, ${linearColor} -30%, ${bgColor} 70%)` : bgColor};">
             <div class="name-area">${attrs.friendly_name}</div>
                 <div class="status-area" style="color: ${fgColor}">${stateDisplayValue}
                     
@@ -2303,9 +2305,26 @@ class XiaoshiPhoneOtherCard extends LitElement {
         }
 
         // 按钮模式 - 根据域类型渲染
+        if (domain === 'lock') {
+            const isLocked = entity.state === 'locked';
+            const statusSymbol = isLocked ? ' - 上锁' : ' - 解锁';
+            const btnFg = isLocked ? activeColor : buttonFg;
+            
+            return html`
+                <button 
+                    class="func-button" 
+                    style="background-color: ${buttonBg};"
+                    @click=${() => this._handleExtraButtonClick(buttonEntityId, domain)}
+                    title="${friendlyName}"
+                >
+                    <div class="func-button-text" style="color: ${btnFg}">${displayName}${statusSymbol}</div>
+                </button>
+            `;
+        } 
+          
         if (domain === 'switch' || domain === 'light' || domain === 'input_boolean') {
             const isActive = entity.state === 'on';
-            const statusSymbol = isActive ? ' - 开启' : ' - 关闭';
+            const statusSymbol = isActive ? '：开启' : '：关闭';
             const btnFg = isActive ? activeColor : buttonFg;
             
             return html`
@@ -2319,19 +2338,29 @@ class XiaoshiPhoneOtherCard extends LitElement {
                 </button>
             `;
         }
-                
+
         if (domain === 'sensor') {
             const unit = entity.attributes.unit_of_measurement || '';
-            const sensorValue = `${entity.state}${unit}`;
+            const sensorDisplay = unit ? `${displayName}：${entity.state} ${unit}` : `${displayName}：${entity.state}`;
             
             return html`
                 <button class="func-button" disabled style="cursor: default;">
-                    <div class="func-button-value" style="color: ${displayValueColor}; font-size: 13px;">${sensorValue}</div>
-                    ${item.custom_name ? html`<div class="func-button-text">${displayName}</div>` : ''}
+                    <div class="func-button-value" style="color: white;">${sensorDisplay}</div>
                 </button>
             `;
         }
-                
+
+        if (domain === 'binary_sensor') {
+            const isActive = entity.state === 'on';
+            const statusSymbol = isActive ? '：开启' : '：关闭';
+            
+            return html`
+                <button class="func-button" disabled style="cursor: default;">
+                    <div class="func-button-value" style="color: white;">${displayName}${statusSymbol}</div>
+                </button>
+            `;
+        }
+
         if (domain === 'button' || domain === 'input_button') {
             const btnName = item.custom_name || friendlyName;
             return html`
@@ -2407,7 +2436,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
           let displayValue = entity.state.slice(0, 4);
           const displayValueColor = displayValue === '低' ? 'red' : fgColor;
                   
-          if (domain === 'switch' || domain === 'light') {
+          if (domain === 'switch' || domain === 'light' || domain === 'lock') {
               const isActive = entity.state === 'on';
               const icon = isActive ? 'mdi:toggle-switch' : 'mdi:toggle-switch-off';
               const btnFg = isActive ? activeColor : buttonFg;
@@ -2427,7 +2456,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
               `;
           }
                   
-          if (domain === 'sensor') {
+          if (domain === 'sensor' || domain === 'binary_sensor') {
               const unit = entity.attributes.unit_of_measurement || '';
               displayValue = `${entity.state}${unit}`.slice(0, 4);
               
@@ -2482,7 +2511,10 @@ class XiaoshiPhoneOtherCard extends LitElement {
         const entity = this.hass.states[entityId];
         if (!entity) return;
         
-        if (domain === 'switch' || domain === 'light' || domain === 'input_boolean') {
+        if (domain === 'lock') {
+            const service = entity.state === 'locked' ? 'unlock' : 'lock';
+            this._callService(domain, service, { entity_id: entityId });
+        } else if (domain === 'switch' || domain === 'light' || domain === 'input_boolean') {
             const service = entity.state === 'on' ? 'turn_off' : 'turn_on';
             this._callService(domain, service, { entity_id: entityId });
         } else if (domain === 'button' || domain === 'input_button') {
@@ -2517,7 +2549,11 @@ class XiaoshiPhoneOtherCard extends LitElement {
       const domain = this._getEntityDomain();
       if (!domain) return;
       
-      if (entity.state === 'off') {
+      if (domain === 'lock') {
+          const service = entity.state === 'locked' ? 'unlock' : 'lock';
+          this._callService('lock', service, { entity_id: this.config.entity });
+          this._handleClick();
+      } else if (entity.state === 'off') {
           this._callService(domain, 'turn_on', {
               entity_id: this.config.entity
           });

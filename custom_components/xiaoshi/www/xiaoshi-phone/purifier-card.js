@@ -1423,7 +1423,13 @@ class XiaoshiPhonePurifierCard extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }

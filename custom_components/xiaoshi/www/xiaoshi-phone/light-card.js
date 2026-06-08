@@ -358,6 +358,7 @@ class XiaoshiPhonelightCardEditor extends LitElement {
             name="theme"
           >
             <option value="system">跟随系统</option>
+            <option value="theme()">跟随函数</option>
             <option value="light">浅色主题（白底黑字）</option>
             <option value="dark">深色主题（黑底白字）</option>
           </select>
@@ -443,7 +444,7 @@ customElements.define('xiaoshi-phone-light-card-editor', XiaoshiPhonelightCardEd
 class XiaoshiPhonelightCard extends LitElement {
   static properties = {
     hass: { type: Object },
-    _config: { type: Object, state: true },
+    config: { type: Object, state: true },
     _onCount: { type: Number, state: true },
     _sliderValues: { type: Object, state: true },
     _showScenes: { type: Object, state: true }
@@ -702,7 +703,7 @@ class XiaoshiPhonelightCard extends LitElement {
 
   constructor() {
     super();
-    this._config = null;
+    this.config = null;
     this._hass = null;
     this._onCount = 0;
     this._sliderValues = {};
@@ -713,7 +714,7 @@ class XiaoshiPhonelightCard extends LitElement {
   setConfig(config) {
     const configCopy = JSON.parse(JSON.stringify(config));
     const normalizedEntities = this._normalizeEntities(configCopy);
-    this._config = {
+    this.config = {
       entities: normalizedEntities,
       rgb: configCopy.rgb,
       theme: configCopy.theme || 'system',
@@ -756,7 +757,13 @@ class XiaoshiPhonelightCard extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -782,15 +789,15 @@ class XiaoshiPhonelightCard extends LitElement {
     const theme = this._evaluateTheme();
     if (state === 'on') {
       return theme === 'dark' 
-        ? 'linear-gradient(90deg, #FE6F21 -30%, #323232 50%)'
-        : 'linear-gradient(90deg, #FE6F21 -30%, #FFF 50%)';
+        ? 'linear-gradient(90deg, #FE6F21 0%, #323232 70%)'
+        : 'linear-gradient(90deg, #FE6F21 0%, #FFF 70%)'; 
     }
     return theme === 'dark' ? '#323232' : '#FFF';
   }
 
   _renderHeader() {
-    if (this._config.total === 'off') return html``;
-    this._onCount = this._config.entities.filter(entity => 
+    if (this.config.total === 'off') return html``;
+    this._onCount = this.config.entities.filter(entity => 
       this.hass?.states[entity]?.state === 'on'
     ).length;
     return html`
@@ -818,13 +825,13 @@ class XiaoshiPhonelightCard extends LitElement {
     const state = stateObj.state || 'off';
     const isActive = state === 'on';
     const attributes = stateObj.attributes || {};
-    const showMode = this._config.show || 'always';
+    const showMode = this.config.show || 'always';
     const showCard = showMode === 'auto' ? state === 'on' : true;
     const showScenes = this._showScenes[entity];
     const hasScenes = attributes.effect_list && attributes.effect_list.length > 0;
     return html`
       <div class="entity-container"\n
-        style="width: 100%;height: ${this._config.height};background: ${this._getBackground(state)};box-shadow: ${this._evaluateTheme() === 'dark' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'};display: ${showCard ? 'flex' : 'none'};">
+        style="width: 100%;height: ${this.config.height};background: ${this._getBackground(state)};box-shadow: ${this._evaluateTheme() === 'dark' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'};display: ${showCard ? 'flex' : 'none'};">
         <div class="device-name-area"\n 
           style="color: ${this._evaluateTheme() === 'dark' ? '#FFF' : '#333'}">
           <div class="device-name">
@@ -840,7 +847,7 @@ class XiaoshiPhonelightCard extends LitElement {
         </div>
         ${showScenes && hasScenes ? 
           this._renderScenes(entity) : 
-          (this._config.rgb ? this._renderControls(entity, isActive, attributes) : '')
+          (this.config.rgb ? this._renderControls(entity, isActive, attributes) : '')
         }
         ${this._renderPowerButton(entity, isActive)}
       </div>
@@ -908,7 +915,7 @@ class XiaoshiPhonelightCard extends LitElement {
     return html`
       <div 
         class="power-button ${isActive ? 'active' : ''}"\n
-        style="background-color: ${isActive ? '#FE6F21' : 'rgba(150,150,150,0.8)'}"\n
+        style="background-color: ${isActive ? '#FE6F21' : '#FE6F2133'}"\n
         @click=${() => this._togglePower(entity)}
       >
         <ha-icon icon="mdi:power"\n 
@@ -939,13 +946,13 @@ class XiaoshiPhonelightCard extends LitElement {
   }
 
   render() {
-    if (!this._config || !this.hass) return html``;
+    if (!this.config || !this.hass) return html``;
     return html`
       <div class="main-container">
         ${this._renderHeader()}
         <div class="entities-grid" \n
-          style="--column-count: ${this._config.columns}">
-          ${this._config.entities.map(entity => this._renderEntity(entity))}
+          style="--column-count: ${this.config.columns}">
+          ${this.config.entities.map(entity => this._renderEntity(entity))}
         </div>
       </div>
     `;
@@ -992,7 +999,7 @@ class XiaoshiPhonelightCard extends LitElement {
 
   _turnOffAll() {
     this.hass.callService('light', 'turn_off', {
-      entity_id: this._config.entities
+      entity_id: this.config.entities
     });
     const button = this.shadowRoot.querySelector('.all-off-button');
     if (button) {
@@ -1077,8 +1084,8 @@ class XiaoshiPhonelightCard extends LitElement {
   }
 
   updated(changedProperties) {
-    if (changedProperties.has('hass') && this._config) {
-      this._config.entities.forEach(entity => {
+    if (changedProperties.has('hass') && this.config) {
+      this.config.entities.forEach(entity => {
         this._syncSliderValue(entity, 'brightness');
         this._syncSliderValue(entity, 'color_temp');
       });

@@ -1228,4 +1228,3 @@ class XiaoshiPhoneCard extends LitElement {
     }
 }
 customElements.define('xiaoshi-phone-card', XiaoshiPhoneCard);
-

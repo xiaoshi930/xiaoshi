@@ -667,7 +667,13 @@ class LunarCalendar extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -839,7 +845,13 @@ class LunarCalendarHead extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -1004,7 +1016,13 @@ class LunarCalendarBody1 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -1163,7 +1181,13 @@ class LunarCalendarBody2 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -1292,7 +1316,13 @@ class LunarCalendarBody3 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -1418,7 +1448,13 @@ class LunarCalendarBody4 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -1537,7 +1573,13 @@ class LunarCalendarBody5 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -1656,7 +1698,13 @@ class LunarCalendarBody6 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -1788,7 +1836,13 @@ class LunarCalendarBody7 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -1935,7 +1989,13 @@ class LunarCalendarLeft1 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -2058,7 +2118,13 @@ class LunarCalendarRight1 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -2166,7 +2232,13 @@ class LunarCalendarLeft2 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -2267,7 +2339,13 @@ class LunarCalendarRight2 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -2383,7 +2461,13 @@ class LunarCalendarLeft3 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -2513,7 +2597,13 @@ class LunarCalendarRight3 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -2639,7 +2729,13 @@ class LunarCalendarLeft4 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -2765,7 +2861,13 @@ class LunarCalendarRight4 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -2889,7 +2991,13 @@ class LunarCalendarLeft5 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -3003,7 +3111,13 @@ class LunarCalendarRight5 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -3119,7 +3233,13 @@ class LunarCalendarLeft6 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -3233,7 +3353,13 @@ class LunarCalendarRight6 extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }

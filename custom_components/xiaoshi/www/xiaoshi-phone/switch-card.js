@@ -207,7 +207,7 @@ class XiaoshiPhoneSwitchCardEditor extends LitElement {
       }
       .help-text {
         font-size: 0.85em;
-        color: #666;
+        color: #000;
         margin-top: 4px;
       }
       .entity-selector {
@@ -243,10 +243,8 @@ class XiaoshiPhoneSwitchCardEditor extends LitElement {
         border-bottom: 1px solid #eee;
       }
       .entity-option:hover {
-        background: #f5f5f5;
       }
       .entity-option.selected {
-        background: #e3f2fd;
       }
       .entity-info {
         display: flex;
@@ -273,7 +271,7 @@ class XiaoshiPhoneSwitchCardEditor extends LitElement {
       .no-results {
         padding: 12px;
         text-align: center;
-        color: #666;
+        color: #000;
         font-style: italic;
       }
       .entity-item {
@@ -283,6 +281,7 @@ class XiaoshiPhoneSwitchCardEditor extends LitElement {
         margin-bottom: 8px;
       }
       .entity-row {
+        color: #000;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -447,6 +446,7 @@ class XiaoshiPhoneSwitchCardEditor extends LitElement {
             name="theme"
           >
             <option value="system">跟随系统</option>
+            <option value="theme()">跟随函数</option>
             <option value="light">浅色主题（白底黑字）</option>
             <option value="dark">深色主题（黑底白字）</option>
           </select>
@@ -539,14 +539,14 @@ class XiaoshiPhoneSwitchCard extends LitElement {
   static get properties() {
     return {
       hass: { type: Object },
-      _config: { type: Object },
+      config: { type: Object },
       _unlockedCards: { type: Object }
     };
   }
 
   constructor() {
     super();
-    this._config = null;
+    this.config = null;
     this._unlockedCards = {};
   }
 
@@ -574,15 +574,13 @@ class XiaoshiPhoneSwitchCard extends LitElement {
       }
       .device-name {
         margin-left: 16px;
-        margin-right: auto;
         font-size: 1.2rem;
         font-weight: 600;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        display: inline-flex;
-        align-items: center;
-        padding-left: 0;
+        flex: 1;
+        min-width: 0;
       }
       .stats-container {
         color: var(--primary-text-color);
@@ -620,13 +618,12 @@ class XiaoshiPhoneSwitchCard extends LitElement {
         width: 40px;
         height: 40px;
         border-radius: 10px;
-        background: #999;
+        background: #c8191d33;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: none;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        opacity: 0.5;
         pointer-events: none;
         flex-shrink: 0;
       }
@@ -672,7 +669,7 @@ class XiaoshiPhoneSwitchCard extends LitElement {
   }
 
   setConfig(config) {
-    this._config = {
+    this.config = {
       width: config.width || '100%',
       height: config.height || '60px',
       entities: config.entities || [],
@@ -692,7 +689,13 @@ class XiaoshiPhoneSwitchCard extends LitElement {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme()'))) {
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
+              return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
               if (typeof window.theme === 'function') {
                   return window.theme() || 'light';
               }
@@ -718,8 +721,8 @@ class XiaoshiPhoneSwitchCard extends LitElement {
     const theme = this._evaluateTheme();
     if (state === 'on') {
       return theme === 'dark' 
-        ? 'linear-gradient(90deg, #c8191d 0%, #323232 100%)' 
-        : 'linear-gradient(90deg, #c8191d 0%, #FFFFFF 100%)';
+        ? 'linear-gradient(90deg, #c8191d 0%, #323232 70%)' 
+        : 'linear-gradient(90deg, #c8191d 0%, #FFFFFF 70%)';
     }
     return theme === 'dark' ? '#323232' : '#FFFFFF';
   }
@@ -731,14 +734,14 @@ class XiaoshiPhoneSwitchCard extends LitElement {
     if (typeof config === 'string') {
       return config.split(',').map(e => e.trim());
     }
-    return [config.entity, config.power];
+    return [config.switch || config.entity, config.power];
   }
 
   _createStatsRow() {
-    if (this._config.total === 'off') return null;
+    if (this.config.total === 'off') return null;
     let onCount = 0;
     let totalPower = 0;
-    this._config.entities.forEach(entityPair => {
+    this.config.entities.forEach(entityPair => {
       const [switchEntity, sensorEntity] = this._parseEntityConfig(entityPair);
       const switchState = this.hass.states[switchEntity]?.state;
       const powerValue = parseFloat(this.hass.states[sensorEntity]?.state);
@@ -752,7 +755,7 @@ class XiaoshiPhoneSwitchCard extends LitElement {
     return html`
       <div class="stats-container"\n 
         style="color: ${textColor}">
-        开启&nbsp;${onCount}&nbsp;个&emsp;关闭&nbsp;${this._config.entities.length - onCount}&nbsp;个&emsp;总功率：${totalPower.toFixed(1)}W
+        开启&nbsp;${onCount}&nbsp;个&emsp;关闭&nbsp;${this.config.entities.length - onCount}&nbsp;个&emsp;总功率：${totalPower.toFixed(1)}W
       </div>
     `;
   }
@@ -782,11 +785,11 @@ class XiaoshiPhoneSwitchCard extends LitElement {
   }
 
   render() {
-    if (!this._config || !this.hass) return html``;
+    if (!this.config || !this.hass) return html``;
     return html`
       ${this._createStatsRow()}
-      <div class="entities-grid"\nstyle="--column-count: ${this._config.columns}">
-      ${this._config.entities.map((entityPair, index) => {
+      <div class="entities-grid"\nstyle="--column-count: ${this.config.columns}">
+      ${this.config.entities.map((entityPair, index) => {
         const [switchEntity, sensorEntity] = this._parseEntityConfig(entityPair);
         const stateObj = this.hass.states[switchEntity] || {};
         const state = stateObj.state || 'off';
@@ -808,12 +811,12 @@ class XiaoshiPhoneSwitchCard extends LitElement {
           : (themeMode === 'dark' ? '#323232' : '#FFFFFF');
         const bgImage = state === 'on'
           ? (themeMode === 'dark'
-              ? 'linear-gradient(90deg, #c8191d 0%, #323232 100%)'
-              : 'linear-gradient(90deg, #c8191d 0%, #FFFFFF 100%)')
+              ? 'linear-gradient(90deg, #c8191d 0%, #323232 70%)'
+              : 'linear-gradient(90deg, #c8191d 0%, #FFFFFF 70%)')
           : 'none';
         return html`
           <div id="${cardId}" class="xiaoshi-container"\n
-            style="width: 100%;height: ${this._config.height};background-color: ${bgColor};background-image: ${bgImage};color: ${textColor};">
+            style="width: 100%;height: ${this.config.height};background-color: ${bgColor};background-image: ${bgImage};color: ${textColor};">
             <div class="name-container">
               <span class="device-name">${attributes.friendly_name || switchEntity}</span>
               ${powerValue ? html`<span class="power-value">${powerValue}</span>` : ''}

@@ -2490,21 +2490,24 @@ class XiaoshiPadClimateCard extends LitElement {
 
   _evaluateTheme() {
       try {
-          const mode = this.config ? this.config.theme : 'theme()';
+          const mode = this.config ? this.config.theme : 'system';
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
               if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
               return 'light';
           }
-          if (typeof mode === 'string' && mode.includes('theme()')) {
-              if (typeof window.theme === 'function') {
-                  const result = window.theme();
-                  if (result === 'light' || result === 'dark') return result;
-              }
-              // theme() 函数不存在或返回值无效，回退 system
-              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+          if (mode === 'sun') {
+              const sunState = this.hass && this.hass.states && this.hass.states['sun.sun'];
+              if (sunState && sunState.state === 'above_horizon') return 'light';
+              if (sunState && sunState.state === 'below_horizon') return 'dark';
               return 'light';
+          }
+          if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
+              if (typeof window.theme === 'function') {
+                  return window.theme() || 'light';
+              }
+            return 'light';
           }
           return mode;
       } catch (e) {
