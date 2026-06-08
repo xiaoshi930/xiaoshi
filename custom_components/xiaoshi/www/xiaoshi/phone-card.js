@@ -1,5 +1,5 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-import "https://unpkg.com/js-yaml@4.1.0/dist/js-yaml.min.js";
+import { yamlToJson, jsonToYaml } from '../function/function.js';
 
 window.customCards = window.customCards || [];
 window.customCards.push({
@@ -167,8 +167,7 @@ class XiaoshiPhoneCardEditor extends LitElement {
     _cardsToYaml(cards) {
         if (!cards || !cards.length) return '';
         try {
-            const yaml = window.jsyaml || jsyaml;
-            return yaml.dump(cards, { indent: 2, lineWidth: -1 });
+            return jsonToYaml(cards);
         } catch (e) {
             try {
                 return JSON.stringify(cards, null, 2);
@@ -181,8 +180,7 @@ class XiaoshiPhoneCardEditor extends LitElement {
     _yamlToCards(yamlStr) {
         if (!yamlStr || !yamlStr.trim()) return [];
         try {
-            const yaml = window.jsyaml || jsyaml;
-            const parsed = yaml.load(yamlStr);
+            const parsed = yamlToJson(yamlStr);
             return Array.isArray(parsed) ? parsed : [];
         } catch (e) {
             try {

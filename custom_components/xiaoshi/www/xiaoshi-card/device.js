@@ -1,4 +1,5 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { yamlToJson } from '../function/function.js';
 
 // ==================== 注册自定义卡片 ====================
 window.customCards = window.customCards || [];
@@ -497,7 +498,7 @@ class XiaoshiDeviceButton extends LitElement {
     const popupConfig = this.config.popup_cards || this.config.other_cards;
     if (popupConfig && popupConfig.trim()) {
       try {
-        const parsed = this._parseYamlCards(popupConfig);
+        const parsed = yamlToJson(popupConfig);
         let filtered = parsed;
         if (this.config.popup_auto_hide === 'true') {
           filtered = parsed.filter(card => {
@@ -550,157 +551,6 @@ class XiaoshiDeviceButton extends LitElement {
     serviceData.background = 'transparent';
     this.hass.callService('popup_card', 'show', serviceData);
   }
-
-  // ===== YAML 解析 =====
-  _parseYamlCards(yamlString) {
-    try {
-      const lines = yamlString.split('\n');
-      const cards = [];
-      let currentCard = null;
-      let indentStack = [];
-      let contextStack = [];
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#')) continue;
-        const indentLevel = line.length - line.trimStart().length;
-        if (trimmed.startsWith('- type')) {
-          if (currentCard) {
-            cards.push(currentCard);
-            currentCard = null;
-            indentStack = [];
-            contextStack = [];
-          }
-          const content = trimmed.substring(1).trim();
-          if (content.includes(':')) {
-            const [key, ...valueParts] = content.split(':');
-            const value = valueParts.join(':').trim();
-            currentCard = {};
-            this._setNestedValue(currentCard, key.trim(), this._parseValue(value));
-          } else {
-            currentCard = { type: content };
-          }
-          indentStack = [indentLevel];
-          contextStack = [currentCard];
-        } else if (currentCard && trimmed.startsWith('-')) {
-          while (indentStack.length > 1 && indentLevel <= indentStack[indentStack.length - 1]) {
-            indentStack.pop();
-            contextStack.pop();
-          }
-          let currentContext = contextStack[contextStack.length - 1];
-          const itemValue = trimmed.substring(1).trim();
-          if (!Array.isArray(currentContext)) {
-            if (contextStack.length > 1) {
-              const parentContext = contextStack[contextStack.length - 2];
-              for (let key in parentContext) {
-                if (parentContext[key] === currentContext) {
-                  parentContext[key] = [];
-                  contextStack[contextStack.length - 1] = parentContext[key];
-                  currentContext = parentContext[key];
-                  break;
-                }
-              }
-            }
-          }
-          if (Array.isArray(currentContext)) {
-            if (itemValue.includes(':')) {
-              const [key, ...valueParts] = itemValue.split(':');
-              const value = valueParts.join(':').trim();
-              const obj = {};
-              obj[key.trim()] = this._parseValue(value);
-              currentContext.push(obj);
-            } else {
-              currentContext.push(this._parseValue(itemValue));
-            }
-          }
-        } else if (currentCard && trimmed.includes(':')) {
-          const [key, ...valueParts] = trimmed.split(':');
-          const value = valueParts.join(':').trim();
-          let keyName = key.trim();
-          if ((keyName.startsWith('"') && keyName.endsWith('"')) || (keyName.startsWith("'") && keyName.endsWith("'"))) keyName = keyName.slice(1, -1);
-          while (indentStack.length > 1 && indentLevel <= indentStack[indentStack.length - 1]) {
-            indentStack.pop();
-            contextStack.pop();
-          }
-          const currentContext = contextStack[contextStack.length - 1];
-          // 处理 YAML 块标量语法（|, |-, |+, >, >-, >+）
-          const blockScalarMatch = value.match(/^([|>])([+-]?)$/);
-          if (blockScalarMatch) {
-            const blockLines = [];
-            let j = i + 1;
-            while (j < lines.length) {
-              const nextLine = lines[j];
-              const nextTrimmed = nextLine.trim();
-              if (!nextTrimmed && !nextLine.includes(' ')) { j++; continue; }
-              if (nextTrimmed.startsWith('#')) { j++; continue; }
-              const nextIndent = nextLine.length - nextLine.trimStart().length;
-              if (nextIndent <= indentLevel) break;
-              blockLines.push(nextLine);
-              j++;
-            }
-            const nonEmpty = blockLines.filter(l => l.trim());
-            let blockContent = '';
-            if (nonEmpty.length > 0) {
-              const minIndent = Math.min(...nonEmpty.map(l => l.length - l.trimStart().length));
-              blockContent = nonEmpty.map(l => l.substring(minIndent)).join('\n');
-            }
-            this._setNestedValue(currentContext, keyName, blockContent);
-            i = j - 1;
-          } else if (value) {
-            this._setNestedValue(currentContext, keyName, this._parseValue(value));
-          } else {
-            let nextLine = null, nextIndent = null;
-            for (let j = i + 1; j < lines.length; j++) {
-              const nextTrimmed = lines[j].trim();
-              if (nextTrimmed && !nextTrimmed.startsWith('#')) {
-                nextLine = nextTrimmed;
-                nextIndent = lines[j].length - lines[j].trimStart().length;
-                break;
-              }
-            }
-            currentContext[keyName] = (nextLine && nextLine.startsWith('-') && nextIndent > indentLevel)
-              ? [] : (currentContext[keyName] || {});
-            indentStack.push(indentLevel);
-            contextStack.push(currentContext[keyName]);
-          }
-        }
-      }
-      if (currentCard) cards.push(currentCard);
-      return cards;
-    } catch (error) {
-      console.error('YAML解析错误:', error);
-      return [];
-    }
-  }
-
-  _parseValue(value) {
-    if (!value) return '';
-    if ((value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))) {
-      return value.slice(1, -1);
-    }
-    if (!isNaN(value) && value.trim() !== '') {
-      return Number(value);
-    }
-    if (value === 'true') return true;
-    if (value === 'false') return false;
-    if (value === 'null') return null;
-    return value;
-  }
-
-  _setNestedValue(obj, path, value) {
-    const keys = path.split('.');
-    let current = obj;
-    for (let i = 0; i < keys.length - 1; i++) {
-      const key = keys[i];
-      if (!current[key] || typeof current[key] !== 'object') {
-        current[key] = {};
-      }
-      current = current[key];
-    }
-    current[keys[keys.length - 1]] = value;
-  }
-
   // ===== 渲染 =====
   render() {
     if (!this.hass) {

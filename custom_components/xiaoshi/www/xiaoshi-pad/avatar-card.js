@@ -1,4 +1,5 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { yamlToJson } from '../function/function.js';
 
 window.customCards = window.customCards || [];
 window.customCards.push({
@@ -934,7 +935,7 @@ class XiaoshiAvatarPadCard extends LitElement {
         // 2. 添加附加卡片（other_cards）
         if (this.config.other_cards && this.config.other_cards.trim()) {
             try {
-                const additionalCards = this._parseYamlCards(this.config.other_cards);
+                const additionalCards = yamlToJson(this.config.other_cards);
                 const theme = this._evaluateTheme();
                 const cardsWithTheme = additionalCards.map(card => {
                     if (!card.theme && this.config.theme) {
@@ -1118,156 +1119,6 @@ class XiaoshiAvatarPadCard extends LitElement {
         });
         hapticEvent.detail = 'light';
         this.dispatchEvent(hapticEvent);
-    }
-
-    // ===== YAML 解析方法 =====
-    _parseYamlCards(yamlString) {
-        try {
-            const lines = yamlString.split('\n');
-            const topCards = [];
-            let indentStack = [];
-            let contextStack = [];
-
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const trimmed = line.trim();
-
-                if (!trimmed || trimmed.startsWith('#')) continue;
-
-                const indentLevel = line.length - line.trimStart().length;
-
-                if (trimmed.startsWith('- type')) {
-                    // 卡片定义: "- type: xxx"
-                    const content = trimmed.substring(1).trim();
-                    const [key, ...valueParts] = content.split(':');
-                    const value = valueParts.join(':').trim();
-                    const newCard = {};
-                    this._setNestedValue(newCard, key.trim(), this._parseValue(value));
-
-                    // 弹出缩进栈到当前层级或更高
-                    while (indentStack.length > 0 && indentLevel <= indentStack[indentStack.length - 1]) {
-                        indentStack.pop();
-                        contextStack.pop();
-                    }
-
-                    // 检查当前上下文是否为数组（如 cards: []）
-                    const currentContext = contextStack.length > 0 ? contextStack[contextStack.length - 1] : null;
-
-                    if (Array.isArray(currentContext)) {
-                        // 嵌套卡片 - 添加到父级的 cards 数组
-                        currentContext.push(newCard);
-                    } else {
-                        // 顶层卡片
-                        topCards.push(newCard);
-                    }
-
-                    indentStack.push(indentLevel);
-                    contextStack.push(newCard);
-
-                } else if (trimmed.startsWith('-')) {
-                    // 列表项: "- value" 或 "- key: value"
-                    const itemValue = trimmed.substring(1).trim();
-
-                    while (indentStack.length > 1 && indentLevel <= indentStack[indentStack.length - 1]) {
-                        indentStack.pop();
-                        contextStack.pop();
-                    }
-
-                    let currentContext = contextStack[contextStack.length - 1];
-
-                    if (!Array.isArray(currentContext)) {
-                        if (contextStack.length > 1) {
-                            const parentContext = contextStack[contextStack.length - 2];
-                            for (let key in parentContext) {
-                                if (parentContext[key] === currentContext) {
-                                    parentContext[key] = [];
-                                    contextStack[contextStack.length - 1] = parentContext[key];
-                                    currentContext = parentContext[key];
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (Array.isArray(currentContext)) {
-                        if (itemValue.includes(':')) {
-                            const [key, ...valueParts] = itemValue.split(':');
-                            const value = valueParts.join(':').trim();
-                            const obj = {};
-                            obj[key.trim()] = this._parseValue(value);
-                            currentContext.push(obj);
-                        } else {
-                            currentContext.push(this._parseValue(itemValue));
-                        }
-                    }
-                } else if (trimmed.includes(':')) {
-                    // 键值对: "key: value" 或 "key:" (嵌套)
-                    const [key, ...valueParts] = trimmed.split(':');
-                    const value = valueParts.join(':').trim();
-                    let keyName = key.trim();
-                    if ((keyName.startsWith('"') && keyName.endsWith('"')) || (keyName.startsWith("'") && keyName.endsWith("'"))) keyName = keyName.slice(1, -1);
-
-                    while (indentStack.length > 1 && indentLevel <= indentStack[indentStack.length - 1]) {
-                        indentStack.pop();
-                        contextStack.pop();
-                    }
-
-                    const currentContext = contextStack[contextStack.length - 1];
-
-                    if (value) {
-                        this._setNestedValue(currentContext, keyName, this._parseValue(value));
-                    } else {
-                        let nextLine = null, nextIndent = null;
-                        for (let j = i + 1; j < lines.length; j++) {
-                            const nextTrimmed = lines[j].trim();
-                            if (nextTrimmed && !nextTrimmed.startsWith('#')) {
-                                nextLine = nextTrimmed;
-                                nextIndent = lines[j].length - lines[j].trimStart().length;
-                                break;
-                            }
-                        }
-
-                        currentContext[keyName] = (nextLine && nextLine.startsWith('-') && nextIndent > indentLevel)
-                            ? [] : (currentContext[keyName] || {});
-
-                        indentStack.push(indentLevel);
-                        contextStack.push(currentContext[keyName]);
-                    }
-                }
-            }
-
-            return topCards;
-        } catch (error) {
-            console.error('[XiaoshiAvatarPadCard] YAML解析错误:', error);
-            return [];
-        }
-    }
-
-    _parseValue(value) {
-        if (!value) return '';
-        if ((value.startsWith('"') && value.endsWith('"')) ||
-            (value.startsWith("'") && value.endsWith("'"))) {
-            return value.slice(1, -1);
-        }
-        if (!isNaN(value) && value.trim() !== '') {
-            return Number(value);
-        }
-        if (value === 'true') return true;
-        if (value === 'false') return false;
-        if (value === 'null') return null;
-        return value;
-    }
-
-    _setNestedValue(obj, path, value) {
-        const keys = path.split('.');
-        let current = obj;
-        for (let i = 0; i < keys.length - 1; i++) {
-            const key = keys[i];
-            if (!current[key] || typeof current[key] !== 'object') {
-                current[key] = {};
-            }
-            current = current[key];
-        }
-        current[keys[keys.length - 1]] = value;
     }
 }
 customElements.define('xiaoshi-avatar-pad-card', XiaoshiAvatarPadCard);
