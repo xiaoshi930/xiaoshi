@@ -2267,11 +2267,11 @@ class XiaoshiPhoneOtherCard extends LitElement {
 
         // 数值调节模式
         if (mode === 'slider') {
-            const min = entity.attributes.min ?? 0;
-            const max = entity.attributes.max ?? 100;
-            const step = entity.attributes.step ?? 1;
-            const currentVal = parseFloat(entity.state) || 0;
-            const unit = entity.attributes.unit_of_measurement || '';
+            const min = domain === 'climate' ? (entity.attributes.min_temp ?? 16) : (entity.attributes.min ?? 0);
+            const max = domain === 'climate' ? (entity.attributes.max_temp ?? 30) : (entity.attributes.max ?? 100);
+            const step = domain === 'climate' ? (entity.attributes.target_temp_step ?? 1) : (entity.attributes.step ?? 1);
+            const currentVal = domain === 'climate' ? (entity.attributes.temperature ?? parseFloat(entity.state) ?? 0) : (parseFloat(entity.state) || 0);
+            const unit = domain === 'climate' ? '°C' : (entity.attributes.unit_of_measurement || '');
             const sliderDomain = domain;
             const sliderName = item.custom_name || friendlyName;
             
