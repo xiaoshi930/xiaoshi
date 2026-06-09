@@ -12,7 +12,7 @@ window.customCards.push({
 const PRESET_ON_STATES = [
     // 通用
     'on', 'open', 'opening','home',  'active', 'running',
-    'detected', 'occupied', 'unlocked', 
+    'detected', 'occupied', 'unlocked', 'power_on','开机',
     // 媒体
     'Playing','playing', '播放中',
     // 空调/HVAC
