@@ -24,74 +24,118 @@ const PRESET_ON_STATES = [
     '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm'
 ];
 
-const SELECT_OPTION_TRANSLATIONS = {
+// 通用翻译
+const COMMON_TRANSLATIONS = {
     'on': '开启', 'off': '关闭',
     'low': '低', 'medium': '中', 'high': '高',
     'brightness': '亮度', 'color_temp': '色温', 'color': '颜色',
     'normal': '正常', 'silent': '静音', 'turbo': '极速', 'max': '最大',
     'min': '最小', 'boost': '强力',
     'playing': '播放中', 'paused': '已暂停', 'standby': '待机',
-    //冰箱
+    'cancel': '取消', 'waiting': '等待中', 'running': '运行中',
+    'celsius': '摄氏度', 'fahrenheit': '华氏度',
+    'default': '默认', 'cold_water': '冷水', 'smart': '智能',
+    'power_off': '关机', 'power_on': '开机', 'pause': '暂停', 'resume': '继续',
+    'unavailable': '离线', 'unknown': '未知',
+    '20c': '20°C', '30c': '30°C', '40c': '40°C', '60c': '60°C', '95c': '95°C',
+    '2_hours': '2小时', '4_hours': '4小时', '6_hours': '6小时', '8_hours': '8小时',
+    '1_time': '1次', '2_times': '2次', '3_times': '3次', '4_times': '4次',
+};
+
+// 冰箱翻译
+const FRIDGE_TRANSLATIONS = {
     'none_mode': '无模式', 'soft_freezing_mode': '软冷冻', 'zero_fresh_mode': '零度保鲜', 'cold_drink_mode': '冷饮',
     'fresh_product_mode': '生鲜', 'partial_freezing_mode': '微冻', 'dry_zone_mode': '干区', 'freeze_warm_mode': '冻暖',
     'freeze_mode': '冷冻',
     'left_freezing_room': '左冷冻室', 'right_freezing_room': '右冷冻室',
-    'celsius': '摄氏度', 'fahrenheit': '华氏度',
-    'default': '默认', 'refrigeration': '冷藏', 'freezing': '冷冻',
-    'cancel': '取消', 'waiting': '等待中', 'running': '运行中',
-    //洗碗机
-    'neutral_gear': '空挡', 'auto_wash': '自动洗', 'strong_wash': '强力洗', 'standard_wash': '标准洗',
-    'eco_wash': '节能洗', 'glass_wash': '玻璃洗', 'hour_wash': '一小时洗', 'fast_wash': '快速洗',
-    'soak_wash': '浸泡洗', '90min_wash': '90分钟洗', 'self_clean': '自清洁', 'fruit_wash': '水果洗',
-    'self_define': '自定义', 'germ': '除菌', 'bowl_wash': '碗洗', 'kill_germ': '杀菌',
-    'seafood_wash': '海鲜洗', 'hotpot_wash': '火锅洗', 'quietnight_wash': '静夜洗', 'less_wash': '少量洗',
-    'oilnet_wash': '油网洗',
-    // 洗衣机
-    'cotton': '棉麻', 'eco_wash_mode': '节能洗', 'fast_wash_15': '快速15', 'mixed_wash': '混合洗',
-    'wool': '羊毛', 'ssp': '筒自洁', 'deep_ssp': '深度筒自洁', 'sport_clothes': '运动服',
+    'refrigeration': '冷藏', 'freezing': '冷冻',
+};
+
+// 洗碗机翻译
+const DISHWASHER_TRANSLATIONS = {
+    'neutral_gear': '待机', 'auto_wash': '智能洗', 'strong_wash': '超强洗', 'standard_wash': '标准洗',
+    'eco_wash': '节能洗', 'glass_wash': '玻璃洗', 'soft_wash': '轻柔洗', 'hour_wash': '小时洗',
+    'fast_wash': '快速洗', 'soak_wash': '预冲洗', '90min_wash': '90分钟洗', 'self_clean': '自清洁',
+    'fruit_wash': '果蔬洗', 'self_define': '自定义洗', 'germ': '消毒洗', 'bowl_wash': '碗具洗',
+    'kill_germ': '杀菌洗', 'seafood_wash': '海鲜洗', 'hotpot_wash': '火锅洗', 'quietnight_wash': '夜间静音洗',
+    'less_wash': '轻量洗', 'oilnet_wash': '油网洗', 'max_rapid_wash': '超强快洗', 'hot_bowl_wash': '热碗洗',
+    'cloud_wash': '云感洗', 'baby_wash': '婴儿洗', 'single_dry': '单烘干', 'single_disinfect': '蒸汽消毒',
+    'wahin_wash_dry': '一键洗烘', 'high_temp_wash': '高温洗', 'wash_dry': '洗烘', 'auto_dry': '自动烘干',
+    'fire_disinfect': '火焰消毒', 'toy_wash': '玩具洗',
+};
+
+// 洗衣机翻译
+const WASHER_TRANSLATIONS = {
+    'cotton': '棉麻', 'eco': '节能', 'fast_wash': '快洗', 'mixed_wash': '混合洗',
+    'wool': '羊毛', 'ssp': 'SSP', 'deep_ssp': '深度筒自洁', 'sport_clothes': '运动服',
     'single_dehytration': '单脱水', 'rinsing_dehydration': '漂+脱', 'big': '大件',
-    'baby_clothes': '婴儿服', 'down_jacket': '羽绒服', 'color_wash': '彩色衣物',
-    'intelligent': '智能洗', 'quick_wash': '快洗', 'shirt': '衬衫', 'fiber': '化纤',
-    'enzyme': '除菌洗', 'underwear': '内衣', 'outdoor': '户外服', 'air_wash': '空气洗',
-    'single_drying': '单烘干', 'steep': '浸泡洗', 'kids': '儿童衣物',
-    'water_cotton': '水韵棉织物', 'fast_wash_30': '速洗30', 'fast_wash_60': '60分钟快速洗',
-    'water_mixed_wash': '水韵混合洗', 'water_fiber': '水韵化纤', 'water_kids': '水韵儿童衣物',
-    'water_underwear': '水韵内衣', 'specialist': '专业洗', 'love': '爱心洗',
-    'water_intelligent': '水韵智能洗', 'water_steep': '水韵浸泡洗',
-    'water_fast_wash_30': '水韵30分钟快速洗', 'new_water_cotton': '新水韵棉织物',
-    'water_eco': '水韵节能', 'wash_drying_60': '洗烘60分钟', 'self_wash_5': '自清洁5分钟',
-    'fast_wash_min': '快速洗（分钟）', 'mixed_wash_min': '混合洗（分钟）',
-    'dehydration_min': '脱水（分钟）', 'self_wash_min': '自清洁（分钟）',
-    'baby_clothes_min': '婴儿服（分钟）', 'diy0': '自定义0', 'diy1': '自定义1', 'diy2': '自定义2',
-    'silk_wash': '丝绸洗', 'prevent_allergy': '防过敏', 'cold_wash': '冷水洗',
-    'soft_wash': '轻柔洗', 'remove_mite_wash': '除螨洗', 'water_intense_wash': '水韵强力洗',
-    'fast_dry': '快速烘干', 'water_outdoor': '水韵户外服',
-    'spring_autumn_wash': '春秋洗', 'summer_wash': '夏日洗', 'winter_wash': '冬季洗',
-    'jean': '牛仔服', 'new_clothes_wash': '新衣洗', 'silk': '丝绸', 'insight_wash': '洞察洗',
-    'fitness_clothes': '健身服', 'mink': '貂皮', 'fresh_air': '清新空气',
-    'bucket_dry': '桶烘干', 'jacket': '冲锋衣', 'bath_towel': '浴巾',
-    'night_fresh_wash': '夜间清新洗', 'heart_wash': '爱心洗',
-    'water_cold_wash': '水韵冷水洗', 'water_prevent_allergy': '水韵防过敏',
-    'water_remove_mite_wash': '水韵除螨洗', 'water_ssp': '水韵超净洗',
-    'standard_wash': '标准洗', 'green_wool': '绿色羊毛', 'cook_wash': '高温洗',
-    'fresh_remove_wrinkle': '清新除皱', 'steam_sterilize_wash': '蒸汽消毒洗',
-    'aromatherapy': '香薰洗', 'sterilize_wash': '杀菌洗', 'white_clothes_clean': '白衣洁净',
-    'clean_stains': '特渍洗', 'tube_clean_all': '筒自洁（全）', 'no_channeling_color': '防串色',
+    'baby_clothes': '婴儿服', 'down_jacket': '羽绒服', 'color': '彩色',
+    'intelligent': '智能', 'quick_wash': '快速洗', 'shirt': '衬衫', 'fiber': '化纤',
+    'enzyme': '酶洗', 'underwear': '文胸', 'outdoor': '户外', 'air_wash': '空气洗',
+    'single_drying': '单烘干', 'steep': '浸泡', 'kids': '童装',
+    'water_baby_clothes': '水洗婴儿服', 'fast_wash_30': '快洗30', 'water_shirt': '水洗衬衫',
+    'water_mixed_wash': '水洗混合', 'water_fiber': '水洗化纤', 'water_kids': '水洗童装',
+    'water_underwear': '水洗内衣', 'specialist': '专家', 'love': '爱心',
+    'water_intelligent': '水洗智能', 'water_steep': '水洗浸泡',
+    'water_fast_wash_30': '水洗快洗30', 'new_water_cotton': '新水洗棉',
+    'water_eco': '水洗节能', 'wash_drying_60': '洗烘60', 'self_wash_5': '筒自洁',
+    'fast_wash_min': '快洗分钟', 'mixed_wash_min': '混合洗分钟',
+    'dehydration_min': '脱水分钟', 'self_wash_min': '自洁分钟',
+    'baby_clothes_min': '婴儿服分钟', 'diy0': '自定义0', 'diy1': '自定义1', 'diy2': '自定义2',
+    'silk_wash': '真丝洗', 'prevent_allergy': '防过敏', 'cold_wash': '冷水洗',
+    'remove_mite_wash': '除螨洗', 'water_intense_wash': '水洗强洗',
+    'fast_dry': '快干', 'water_outdoor': '水洗户外',
+    'spring_autumn_wash': '春秋洗', 'summer_wash': '夏季洗', 'winter_wash': '冬季洗',
+    'jean': '牛仔', 'new_clothes_wash': '新衣洗', 'silk': '真丝', 'insight_wash': '洞察洗',
+    'fitness_clothes': '健身服', 'mink': '貂皮', 'fresh_air': '新风',
+    'bucket_dry': '桶烘干', 'jacket': '夹克', 'bath_towel': '浴巾',
+    'night_fresh_wash': '夜间清新洗', 'degerm': '除菌', 'heart_wash': '爱心洗',
+    'water_cold_wash': '水洗冷水', 'water_prevent_allergy': '水洗防过敏',
+    'water_remove_mite_wash': '水洗除螨', 'water_ssp': '深度洁筒',
+    'standard': '标准', 'green_wool': '绿色羊毛', 'cook_wash': '高温煮洗',
+    'fresh_remove_wrinkle': '清新去皱', 'steam_sterilize_wash': '蒸汽杀菌洗',
+    'sterilize_wash': '杀菌洗', 'white_clothes_clean': '白衣清洁',
+    'clean_stains': '特渍洗', 'prevent_cross_color': '防串色',
+    'quick_dry_clothes': '快干衣物', 'yoga_clothes': '瑜伽服',
+    'baby_clothes_dry': '婴童服烘', 'hot_wind_dry': '热风暖衣',
+    'small_wash_dry': '小件智洗烘', 'socks': '袜子', 'underpants': '内裤',
+    'eco_wash_mode': '节能洗', 'fast_wash_15': '快速15', 'color_wash': '彩色衣物',
+    'water_cotton': '水韵棉织物', 'fast_wash_60': '60分钟快速洗',
+    'standard_wash': '标准洗', 'aromatherapy': '香薰洗',
+    'tube_clean_all': '筒自洁（全）', 'no_channeling_color': '防串色',
     'scald_wash': '烫洗', 'hanfu_spring_summer': '汉服（春夏）', 'hanfu_autumn_winter': '汉服（秋冬）',
     'skin_care_wash': '护肤洗', 'hanfu_wash': '汉服洗',
     'low_temp_dry': '低温烘干', 'high_temp_dry': '高温烘干', '30_min': '30分钟', '60_min': '60分钟',
     '90_min': '90分钟', '120_min': '120分钟', '180_min': '180分钟',
     'factory_test': '工厂测试', 'service': '售后', 'normal_continus': '持续标准',
-    '1_time': '1次', '2_times': '2次', '3_times': '3次', '4_times': '4次',
     'l1': '低水位', 'l2': '中水位', 'l3': '高水位', 'l4': '超高水位',
     'sauce': '调味', 'fruit': '水果', 'makeup': '化妆品',
     'no_spin': '无脱水', '400rpm': '400转', '600rpm': '600转', '800rpm': '800转',
     '1000rpm': '1000转', '1200rpm': '1200转', '1400rpm': '1400转',
-    'cold_water': '冷水', '20c': '20°C', '30c': '30°C', '40c': '40°C', '60c': '60°C', '95c': '95°C',
-    'smart': '智能', '2_hours': '2小时', '4_hours': '4小时', '6_hours': '6小时', '8_hours': '8小时',
-    'power_off': '关机', 'power_on': '开机', 'pause': '暂停', 'resume': '继续',
-    'unavailable': '离线', 'unknown': '未知',
 };
+
+// 翻译分类映射
+const TRANSLATION_CATEGORIES = {
+    '洗碗机': DISHWASHER_TRANSLATIONS,
+    '洗衣机': WASHER_TRANSLATIONS,
+    '冰箱': FRIDGE_TRANSLATIONS,
+};
+
+const TRANSLATION_PRIORITY_OPTIONS = ['洗碗机', '洗衣机', '冰箱'];
+
+// 翻译查找函数：优先匹配指定分类，匹配不到则依次查找其他分类
+function translateOption(key, priority) {
+    const order = [priority, ...TRANSLATION_PRIORITY_OPTIONS.filter(p => p !== priority)].filter(Boolean);
+    for (const cat of order) {
+        if (TRANSLATION_CATEGORIES[cat] && TRANSLATION_CATEGORIES[cat][key] !== undefined) {
+            return TRANSLATION_CATEGORIES[cat][key];
+        }
+    }
+    return COMMON_TRANSLATIONS[key] !== undefined ? COMMON_TRANSLATIONS[key] : key;
+}
+
+// 兼容：保留合并对象用于编辑器提示
+const SELECT_OPTION_TRANSLATIONS = { ...COMMON_TRANSLATIONS, ...FRIDGE_TRANSLATIONS, ...DISHWASHER_TRANSLATIONS, ...WASHER_TRANSLATIONS };
 
 class XiaoshiPhoneOtherCardEditor extends LitElement {
   static get properties() {
@@ -424,6 +468,31 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
       });
     }
     items[itemIndex] = { ...items[itemIndex], select_option_names: Object.keys(selectOptionNames).length > 0 ? selectOptionNames : undefined };
+    rows[rowIndex] = { ...rows[rowIndex], items };
+    this.config = { ...this.config, button_rows: rows };
+    this._fireEvent();
+    this.requestUpdate();
+  }
+
+  _buttonRowSensorValueNamesChanged(rowIndex, itemIndex, value) {
+    const rows = [...this._getButtonRows()];
+    if (!rows[rowIndex] || !rows[rowIndex].items[itemIndex]) return;
+    const items = [...rows[rowIndex].items];
+    const sensorValueNames = {};
+    if (value && value.trim()) {
+      value.split(',').forEach(pair => {
+        const trimmed = pair.trim();
+        if (trimmed.includes(':')) {
+          const [original, renamed] = trimmed.split(':');
+          const key = original.trim();
+          const val = renamed.trim();
+          if (key && val) {
+            sensorValueNames[key] = val;
+          }
+        }
+      });
+    }
+    items[itemIndex] = { ...items[itemIndex], sensor_value_names: Object.keys(sensorValueNames).length > 0 ? sensorValueNames : undefined };
     rows[rowIndex] = { ...rows[rowIndex], items };
     this.config = { ...this.config, button_rows: rows };
     this._fireEvent();
@@ -821,6 +890,21 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
           </div>
         </div>
 
+        <!-- 翻译优先 -->
+        <div class="form-group">
+          <label>翻译优先 (可选)</label>
+          <select
+            .value=${this.config.translation_priority || '洗碗机'}
+            @change=${(e) => { this.config = { ...this.config, translation_priority: e.target.value }; this._fireEvent(); this.requestUpdate(); }}
+            style="width: 100%; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+          >
+            <option value="洗碗机" ?selected=${(this.config.translation_priority || '洗碗机') === '洗碗机'}>洗碗机</option>
+            <option value="洗衣机" ?selected=${this.config.translation_priority === '洗衣机'}>洗衣机</option>
+            <option value="冰箱" ?selected=${this.config.translation_priority === '冰箱'}>冰箱</option>
+          </select>
+          <div class="hint">选项翻译优先匹配的设备类型，同名key按优先级翻译，未匹配则依次查找其他类型</div>
+        </div>
+
         <!-- 状态显示值 -->
         <div class="form-group">
           <label>设备实体状态重定义 (可选)</label>
@@ -1031,7 +1115,7 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                     style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
                   />
                 </div>
-                <div class="hint" style="margin-bottom: 4px;">可选值: ${(this.hass?.states?.[item.entity]?.attributes?.options || []).map(opt => `${opt}(${SELECT_OPTION_TRANSLATIONS[opt] || opt})`).join(', ')}</div>
+                <div class="hint" style="margin-bottom: 4px;">可选值: ${(this.hass?.states?.[item.entity]?.attributes?.options || []).map(opt => `${opt}(${translateOption(opt, this.config.translation_priority)})`).join(', ')}</div>
                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
                   <label style="font-size: 0.8em; min-width: 60px;">选项名称</label>
                   <input
@@ -1039,6 +1123,18 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                     .value=${this._formatSelectOptionNames(item.select_option_names || {})}
                     @change=${(e) => this._buttonRowSelectOptionNamesChanged(rowIndex, itemIndex, e.target.value)}
                     placeholder="选项:名称, 如 low:低,high:高"
+                    style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+                  />
+                </div>
+                ` : ''}
+                ${itemDomain === 'sensor' || itemDomain === 'binary_sensor' ? html`
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                  <label style="font-size: 0.8em; min-width: 60px;">实体值重定义</label>
+                  <input
+                    type="text"
+                    .value=${this._formatSelectOptionNames(item.sensor_value_names || {})}
+                    @change=${(e) => this._buttonRowSensorValueNamesChanged(rowIndex, itemIndex, e.target.value)}
+                    placeholder="值:显示名, 如 on:有人,off:无人"
                     style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
                   />
                 </div>
@@ -1328,7 +1424,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
       _timerInterval: { state: true },
 
       temperatureData: { type: Array },
-      _externalTempSensor: { type: String } 
+      _externalTempSensor: { type: String },
+      translation_priority: { type: String }
     };
   }
   static getConfigElement() {
@@ -1344,7 +1441,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
       button_rows: [],
       buttons: [],
       buttons2: [],
-      width: "100%"
+      width: "100%",
+      translation_priority: "洗碗机"
     };
   }
 
@@ -1356,6 +1454,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
     this.buttons2 = (config.buttons2 || []).map(b => typeof b === 'string' ? { entity: b, name: '' } : b);
     this._externalTempSensor = config.temperature || null;
     if (config.width !== undefined) this.width = config.width;
+    this.translation_priority = config.translation_priority || '洗碗机';
     this.requestUpdate();
   }
   
@@ -2441,7 +2540,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
 
         if (domain === 'sensor') {
             const unit = entity.attributes.unit_of_measurement || '';
-            const sensorDisplay = unit ? `${displayName}：${entity.state} ${unit}` : `${displayName}：${entity.state}`;
+            const stateValue = (item.sensor_value_names && item.sensor_value_names[entity.state]) || entity.state;
+            const sensorDisplay = unit ? `${displayName}：${stateValue} ${unit}` : `${displayName}：${stateValue}`;
             
             return html`
                 <button class="func-button" disabled style="cursor: default;">
@@ -2451,8 +2551,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
         }
 
         if (domain === 'binary_sensor') {
-            const isActive = entity.state === 'on';
-            const statusSymbol = isActive ? '：开启' : '：关闭';
+            const stateValue = (item.sensor_value_names && item.sensor_value_names[entity.state]) || entity.state;
+            const statusSymbol = `：${stateValue}`;
             
             return html`
                 <button class="func-button" disabled style="cursor: default;">
@@ -2476,7 +2576,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
             const isActive = selectOption === entity.state;
             const btnBg = isActive ? buttonBg : buttonBg;
             const btnFg = isActive ? activeColor : buttonFg;
-            const optionDisplayName = (item.select_option_names && item.select_option_names[selectOption]) || SELECT_OPTION_TRANSLATIONS[selectOption] || selectOption;
+            const optionDisplayName = (item.select_option_names && item.select_option_names[selectOption]) || translateOption(selectOption, this.config.translation_priority);
             return html`
                 <button class="func-button ${isActive ? 'select-active' : ''}"
                     style="background-color: ${btnBg};"
@@ -2558,7 +2658,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
                   
           if (domain === 'sensor' || domain === 'binary_sensor') {
               const unit = entity.attributes.unit_of_measurement || '';
-              displayValue = `${entity.state}${unit}`.slice(0, 4);
+              const stateValue = (item.sensor_value_names && item.sensor_value_names[entity.state]) || entity.state;
+              displayValue = `${stateValue}${domain === 'sensor' ? unit : ''}`.slice(0, 4);
               
               return html`
                   <div class="extra-button" style="color: ${fgColor}; cursor: default;">
@@ -2588,7 +2689,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
               if (!displayValue || displayValue.length > 4) {
                   const options = entity.attributes.options || [];
                   const firstOption = options[0] || '';
-                  displayValue = (SELECT_OPTION_TRANSLATIONS[firstOption] || firstOption).slice(0, 4);
+                  displayValue = translateOption(firstOption, this.config.translation_priority).slice(0, 4);
               }
               
               return html`
