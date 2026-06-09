@@ -3,8 +3,8 @@ import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-e
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-phone-humidifier-card',
-    name: '消逝卡(移动端)-加湿器卡',
-    description: '移动端加湿器卡',
+    name: '消逝卡(移动端)-加湿器/除湿机卡',
+    description: '移动端加湿器/除湿机卡',
     preview: true
 });
 
@@ -71,6 +71,11 @@ class XiaoshiPhoneHumidifierCardEditor extends LitElement {
     }
   }
 
+  _isDehumidifier(entityId) {
+    const entity = this.hass.states[entityId];
+    return entity?.attributes?.device_class === 'dehumidifier';
+  }
+
   _onMainEntitySearch(e) {
     const searchTerm = e.target.value.toLowerCase();
     this._searchTerm = searchTerm;
@@ -86,7 +91,7 @@ class XiaoshiPhoneHumidifierCardEditor extends LitElement {
       const entityId = entity.entity_id.toLowerCase();
       const friendlyName = (entity.attributes.friendly_name || '').toLowerCase();
 
-      // 只显示 humidifier. 开头的实体
+      // 只显示 humidifier. 开头的实体（兼容加湿器和除湿机）
       const isHumidifierEntity = entityId.startsWith('humidifier.');
       const matchesSearch = entityId.includes(searchTerm) || friendlyName.includes(searchTerm);
 
@@ -384,14 +389,14 @@ class XiaoshiPhoneHumidifierCardEditor extends LitElement {
       <div class="card-config">
         <!-- 主实体选择 -->
         <div class="row">
-          <div class="label">加湿器实体 (必选)</div>
+          <div class="label">加湿器/除湿机实体 (必选)</div>
           <div class="entity-selector">
             <input
               type="text"
               @input=${this._onMainEntitySearch}
               @focus=${this._onMainEntitySearch}
               .value=${this._searchTerm || this.config?.entity || ''}
-              placeholder="搜索加湿器实体..."
+              placeholder="搜索加湿器/除湿机实体..."
               class="entity-search-input"
             />
             ${this._showEntityList ? html`
@@ -419,7 +424,7 @@ class XiaoshiPhoneHumidifierCardEditor extends LitElement {
             ` : ''}
           </div>
           ${!this.config?.entity ? html`
-            <div class="hint">正在加载可用加湿器...</div>
+            <div class="hint">正在加载可用加湿器/除湿机...</div>
           ` : ''}
         </div>
 
@@ -1228,10 +1233,11 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     const entity = this.hass.states[this.config.entity];
     const state = entity?.state || 'off';
     const theme = this._evaluateTheme();
+    const isDehumidifier = entity?.attributes?.device_class === 'dehumidifier';
     
     // 确定颜色
     let statusColor = theme === 'light' ? '#888888' : '#aaaaaa';
-    if (state === 'on') statusColor = '#2ba0f3';
+    if (state === 'on') statusColor = isDehumidifier ? '#f39c12' : '#2ba0f3';
     
     // 获取画布尺寸（CSS像素）
     const canvas = this.canvas;
@@ -1386,16 +1392,17 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     const isOn = state !== 'off' && state !== 'unavailable' && state !== 'unknown';
 
     const attrs = entity.attributes;
+    const isDehumidifier = attrs.device_class === 'dehumidifier';
     const humidity =  typeof attrs.current_humidity === 'number'  ? `${attrs.humidity.toFixed(0)}%`  : '';
     
     let current_humidity = '';
     if (this._externalHumidifierSensor) {
       const humidifierEntity = this.hass.states[this._externalHumidifierSensor];
       if (humidifierEntity && !isNaN(parseFloat(humidifierEntity.state))) {
-        current_humidity = `室内: ${parseFloat(humidifierEntity.state).toFixed(0)}%`;
+        current_humidity = `${isDehumidifier ? '当前' : '室内'}: ${parseFloat(humidifierEntity.state).toFixed(0)}%`;
       }
     } else if (typeof entity.attributes.current_humidity === 'number') {
-      current_humidity = `室内: ${entity.attributes.current_humidity.toFixed(0)}%`;
+      current_humidity = `${isDehumidifier ? '当前' : '室内'}: ${entity.attributes.current_humidity.toFixed(0)}%`;
     }
     
     
@@ -1407,13 +1414,14 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
 
     let statusColor = 'rgb(250,250,250)';
     let linearColor = 'rgb(0,0,0,0)';
-    if (state === 'on') statusColor = 'rgb(33,150,243)' ,linearColor = 'rgb(33,150,243)';
+    const activeColor = isDehumidifier ? 'rgb(243,156,18)' : 'rgb(33,150,243)';
+    if (state === 'on') statusColor = activeColor, linearColor = activeColor;
     else if (state === 'off') statusColor = 'rgb(250,250,250)';
     else if (state === 'unknown') statusColor = 'rgb(250,250,250)';
     else if (state === 'unavailable') statusColor = 'rgb(250,250,250)';
 
     const stateTranslations = {
-        'on': '开启',
+        'on': isDehumidifier ? '除湿中' : '开启',
         'off': '关闭',
         'unknown': '未知',
         'unavailable': '离线'
@@ -1480,7 +1488,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
         <div id="chart-container"></div>
             <div class="content-container ${hasAvailableModes ? 'has-available-modes' : ''}">
                 <div class="name-area">${attrs.friendly_name}</div>
-                <div class="status-area" style="color: ${fgColor}">${hasAvailableModes && isOn ? this._translateAvailableModefanyi(attrs.mode) : translatedState}：
+                <div class="status-area" style="color: ${fgColor}">${hasAvailableModes && isOn ? this._translateAvailableModefanyi(attrs.mode, isDehumidifier) : translatedState}：
                     <div class="humidifier-adjust-container">
                         <button class="humidifier-adjust-button" @click=${() => this._adjustHumidifier('down')}>
                             <ha-icon icon="mdi:chevron-left"></ha-icon>
@@ -1519,7 +1527,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
             <div class="main-icon-container">
                 <ha-icon 
                     class="main-icon ${isOn ? 'active-main-icon' : ''} ${hasAvailableModes ? 'has-available-modes' : ''}" 
-                    icon="${isOn ? 'mdi:fan' : 'mdi:fan-off'}"
+                    icon="${isOn ? (isDehumidifier ? 'mdi:water-off' : 'mdi:fan') : (isDehumidifier ? 'mdi:water-off-outline' : 'mdi:fan-off')}"
                     style="color: ${isOn ? statusColor : ''}; ${isOn ? `--fan-speed: ${fanSpeed}` : ''}"
                 ></ha-icon>
             </div>
@@ -1531,13 +1539,13 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
 
           ${hasAvailableModes ? html`
               <div class="fan-area">
-                  ${this._renderAvailableButtons(attrs.available_modes, attrs.mode)}
+                  ${this._renderAvailableButtons(attrs.available_modes, attrs.mode, isDehumidifier)}
               </div>
           ` : ''}
 
           ${hasFanModes  ? html`
               <div class="fan-area">
-                  ${this._renderFanButtons(fanModes, currentFanMode)}
+                  ${this._renderFanButtons(fanModes, currentFanMode, isDehumidifier)}
               </div>
           ` : ''}
 
@@ -1585,9 +1593,10 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
 
     const humidifierEntity = this.hass.states[this.config.entity];
     const humidifierState = humidifierEntity ? humidifierEntity.state : 'off';
+    const isDehumidifier = humidifierEntity?.attributes?.device_class === 'dehumidifier';
     
     let activeColor = 'rgb(255,255,255)';
-    if (humidifierState === 'on') activeColor = 'rgb(33,150,243)';
+    if (humidifierState === 'on') activeColor = isDehumidifier ? 'rgb(243,156,18)' : 'rgb(33,150,243)';
     
     const now = new Date();
     const finishesAt = new Date(timerEntity.attributes.finishes_at || 0);
@@ -1727,8 +1736,9 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
       const state = entity?.state || 'off';
       const theme = this._evaluateTheme();
       const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+      const isDehumidifier = entity?.attributes?.device_class === 'dehumidifier';
       let activeColor = theme === 'light' ? 'rgba(00, 80, 80)' : 'rgba(180, 230, 230)';
-      if (state === 'on') activeColor = 'rgb(33,150,243)';
+      if (state === 'on') activeColor = isDehumidifier ? 'rgb(243,156,18)' : 'rgb(33,150,243)';
 
       return buttonsToShow.map(buttonEntityId => {
           const entity = this.hass.states[buttonEntityId];
@@ -1896,7 +1906,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
       });
   }
 
-  _renderFanButtons(fanModes, currentFanMode) {
+  _renderFanButtons(fanModes, currentFanMode, isDehumidifier = false) {
     if (!fanModes || fanModes.length === 0) return html``;
     
     const entity = this.hass.states[this.config.entity];
@@ -1914,7 +1924,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
                 <div class="fan-button">
                     <ha-icon 
                         class="fan-button-icon" 
-                        icon="mdi:water" 
+                        icon="${isDehumidifier ? 'mdi:water-off' : 'mdi:water'}" 
                         style="color: ${isActive ? 'var(--active-color)' : ''}"
                     ></ha-icon>
                     <span class="fan-text">${this._translateFanMode(mode)}</span>
@@ -1924,7 +1934,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     });
   }
 
-  _renderAvailableButtons(availableModes, currentAvailableMode) {
+  _renderAvailableButtons(availableModes, currentAvailableMode, isDehumidifier = false) {
     if (!availableModes) return html``;
     
     return availableModes.map(mode => {
@@ -1936,15 +1946,35 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
                 style="color: ${isActive ? 'var(--active-color)' : ''}"
             >
                 <div class="available-button">
-                    <ha-icon class="icon" icon="${this._getAvailableIcon(mode)}" style="color: ${isActive ? 'var(--active-color)' : ''}"></ha-icon>
-                    <span class="available-text">${this._translateAvailableMode(mode)}</span>
+                    <ha-icon class="icon" icon="${this._getAvailableIcon(mode, isDehumidifier)}" style="color: ${isActive ? 'var(--active-color)' : ''}"></ha-icon>
+                    <span class="available-text">${this._translateAvailableMode(mode, isDehumidifier)}</span>
                 </div>
             </button>
         `;
     });
   }
 
-  _getAvailableIcon(mode) {
+  _getAvailableIcon(mode, isDehumidifier = false) {
+    if (isDehumidifier) {
+      const dehumidifierIcons = {
+          '恒湿': 'mdi:water-off',
+          '睡眠': 'mdi:power-sleep',
+          '强力': 'mdi:water-off',
+          '干衣': 'mdi:tshirt-crew',
+          '连续': 'mdi:water-off',
+          '智能': 'mdi:brain',
+          '静音': 'mdi:volume-off',
+          'Off': 'mdi:water-off-outline',
+          'Constant Humidity': 'mdi:water-off',
+          'Sleep': 'mdi:power-sleep',
+          'Strong': 'mdi:water-off',
+          'Dry Clothes': 'mdi:tshirt-crew',
+          'Continuous': 'mdi:water-off',
+          'Smart': 'mdi:brain',
+          'Quiet': 'mdi:volume-off',
+      };
+      return dehumidifierIcons[mode] || 'mdi:water-off';
+    }
     const availableIcons = {
         '恒湿': 'mdi:water-sync',
         '睡眠': 'mdi:power-sleep',
@@ -1957,7 +1987,27 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     return availableIcons[mode] || '';
   }
 
-  _translateAvailableMode(mode) {
+  _translateAvailableMode(mode, isDehumidifier = false) {
+    if (isDehumidifier) {
+      const dehumidifierTranslations = {
+          '恒湿': '\u00A0恒湿',
+          '睡眠': '\u00A0睡眠',
+          '强力': '\u00A0强力',
+          '干衣': '\u00A0干衣',
+          '连续': '\u00A0连续',
+          '智能': '\u00A0智能',
+          '静音': '\u00A0静音',
+          'Off': '\u00A0关闭',
+          'Constant Humidity': '\u00A0恒湿',
+          'Sleep': '\u00A0睡眠',
+          'Strong': '\u00A0强力',
+          'Dry Clothes': '\u00A0干衣',
+          'Continuous': '\u00A0连续',
+          'Smart': '\u00A0智能',
+          'Quiet': '\u00A0静音',
+      };
+      return dehumidifierTranslations[mode] || mode;
+    }
     const translations = {
         '恒湿': '\u00A0恒湿',
         '睡眠': '\u00A0睡眠',
@@ -1970,7 +2020,20 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     return translations[mode] || mode;
   }
 
-  _translateAvailableModefanyi(mode) {
+  _translateAvailableModefanyi(mode, isDehumidifier = false) {
+    if (isDehumidifier) {
+      const dehumidifierTranslations = {
+          'Off': '关闭',
+          'Constant Humidity': '恒湿',
+          'Sleep': '睡眠',
+          'Strong': '强力',
+          'Dry Clothes': '干衣',
+          'Continuous': '连续',
+          'Smart': '智能',
+          'Quiet': '静音',
+      };
+      return dehumidifierTranslations[mode] || mode;
+    }
     const translations = {
         'Off': '关闭',
         'Constant Humidity': '舒适',
@@ -1980,9 +2043,9 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     return translations[mode] || mode;
   }
 
-  _translateMode(mode) {
+  _translateMode(mode, isDehumidifier = false) {
       const translations = {
-          'on': '加湿',
+          'on': isDehumidifier ? '除湿' : '加湿',
           'off': '关闭'
       };
       return translations[mode] || mode;
