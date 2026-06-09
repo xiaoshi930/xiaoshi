@@ -184,6 +184,15 @@ class XiaoshiPadCardEditor extends LitElement {
         }));
     }
 
+    _weatherAnimationChanged(e) {
+        this.config = { ...this.config, weather_animation: e.target.checked };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
     _rgbToHex(rgb) {
         const match = rgb.match(/(\d+)/g);
         if (!match || match.length < 3) return '#964646';
@@ -318,6 +327,17 @@ class XiaoshiPadCardEditor extends LitElement {
                     <label>按钮区Left</label>
                     <input type="text" name="btn_area_left" .value="${c.btn_area_left || '20px'}" @change="${this._valueChanged}" placeholder="20px">
                 </div>
+                <div class="form-row">
+                    <label style="font-weight:bold;font-size:13px;white-space:nowrap;display:flex;align-items:center;gap:4px;">
+                        <input type="checkbox" name="weather_animation" .checked="${c.weather_animation === true}" @change="${this._weatherAnimationChanged}"> 启用天气动画
+                    </label>
+                </div>
+                ${c.weather_animation ? html`
+                <div class="form-row">
+                    <label>天气实体</label>
+                    <input type="text" name="weather_entity" .value="${c.weather_entity || ''}" @change="${this._valueChanged}" placeholder="weather.xxx">
+                </div>
+                ` : ''}
                 <div class="card-section">
                     <div class="card-section-title">灯光按钮</div>
                     ${(c.light_buttons || []).map((btn, i) => html`
@@ -517,6 +537,15 @@ class XiaoshiPadCard extends LitElement {
         height: 18px;
         display: block;
       }
+      .weather-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 5;
+      }
     `;
   }
 
@@ -532,6 +561,10 @@ class XiaoshiPadCard extends LitElement {
     this._themeOverride = null;
     this._hueShift = 0;
     this._autoColorTimer = null;
+    this._weatherAnimFrame = null;
+    this._weatherParticles = [];
+    this._weatherParticlesType = null;
+    this._weatherLightning = { active: false, opacity: 0, nextFlash: 0 };
   }
 
   connectedCallback() {
@@ -542,6 +575,7 @@ class XiaoshiPadCard extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._stopAutoColorTimer();
+    this._stopWeatherAnimation();
     this._applyKioskMode(false);
   }
 
@@ -616,6 +650,7 @@ class XiaoshiPadCard extends LitElement {
       this._kioskWasOn = isKiosk;
       this._applyKioskMode(isKiosk);
     }
+    this._updateWeatherAnimation();
   }
 
   // ========== Kiosk模式（移植自phone-card） ==========
@@ -776,6 +811,8 @@ class XiaoshiPadCard extends LitElement {
       device_glows: config.device_glows || [],
       light_buttons: config.light_buttons || [],
       btn_area_left: config.btn_area_left || '20px',
+      weather_animation: config.weather_animation === true,
+      weather_entity: config.weather_entity || '',
     };
   }
 
@@ -1059,6 +1096,357 @@ class XiaoshiPadCard extends LitElement {
     return 'rgb(' + r + ',' + g + ',' + b + ')';
   }
 
+  // ========== 天气动画 ==========
+  _getWeatherType() {
+    if (!this.config.weather_animation || !this.config.weather_entity || !this.hass) return null;
+    const entity = this.hass.states[this.config.weather_entity];
+    if (!entity) return null;
+    // 无动画的天气状态
+    const noAnimStates = ['晴', '多云', '阴', 'clear', 'cloudy', 'overcast', 'partlycloudy', 'partly_cloudy', 'mostly_cloudy', 'sunny', 'fair'];
+    // 优先使用实体 state，排除无动画状态后回退到 condition_cn
+    const rawState = entity.state || '';
+    const cn = entity.attributes && entity.attributes.condition_cn ? entity.attributes.condition_cn : '';
+    const state = (!noAnimStates.includes(rawState) && rawState) || (!noAnimStates.includes(cn) && cn) || '';
+
+    const lightRain = ['小雨', '雨', '阵雨', '冻雨', 'light_rain', 'light rain', 'rainy', 'rain', 'showers', 'drizzle', 'freezing_rain'];
+    const medRain = ['中雨', 'moderate_rain', 'moderate rain'];
+    const heavyRain = ['大雨', '暴雨', 'pouring', 'heavy_rain', 'heavy rain', 'torrential_rain'];
+    const lightSnow = ['小雪', '雪', '雨夹雪', 'light_snow', 'light snow', 'snow', 'sleet', 'snowy_rainy', 'snowy-rainy'];
+    const medSnow = ['中雪', 'moderate_snow', 'moderate snow'];
+    const heavySnow = ['大雪', '暴雪', 'heavy_snow', 'heavy snow'];
+    const thunder = ['雷', '雷阵雨', '雷雨', 'thunderstorm', 'lightning', 'lightning-rainy', 'thunderstorm_with_rain'];
+    const hailStates = ['冰雹', 'hail'];
+    const dustStates = ['沙尘暴', '沙尘', '扬沙', '浮尘', '霾', 'dust', 'sandstorm', 'duststorm', 'haze'];
+    const fogStates = ['雾', '大雾', '浓雾', 'fog', 'mist'];
+
+    if (fogStates.includes(state)) return { type: 'fog', density: 'heavy', speed: 'slow', lightning: false };
+    if (dustStates.includes(state)) return { type: 'dust', density: 'heavy', speed: 'fast', lightning: false };
+    if (hailStates.includes(state)) return { type: 'hail', density: 'heavy', speed: 'fast', lightning: false };
+    if (thunder.includes(state)) return { type: 'rain', density: 'heavy', speed: 'fast', lightning: true };
+    if (heavyRain.includes(state)) return { type: 'rain', density: 'heavy', speed: 'fast', lightning: false };
+    if (medRain.includes(state)) return { type: 'rain', density: 'medium', speed: 'medium', lightning: false };
+    if (lightRain.includes(state)) return { type: 'rain', density: 'light', speed: 'slow', lightning: false };
+    if (heavySnow.includes(state)) return { type: 'snow', density: 'heavy', speed: 'fast', lightning: false };
+    if (medSnow.includes(state)) return { type: 'snow', density: 'medium', speed: 'medium', lightning: false };
+    if (lightSnow.includes(state)) return { type: 'snow', density: 'light', speed: 'slow', lightning: false };
+    return null;
+  }
+
+  _getParticleParams(weatherConfig) {
+    const rainDensityMap = { heavy: 100, medium: 60, light: 40 };
+    const rainSpeedMap = { fast: 10, medium: 7, slow: 5 };
+    const snowDensityMap = { heavy: 100, medium: 60, light: 30 };
+    const snowSpeedMap = { fast: 2, medium: 1.2, slow: 0.8 };
+    const hailDensityMap = { heavy: 60 };
+    const hailSpeedMap = { fast: 12 };
+    const dustDensityMap = { heavy: 150, medium: 80, light: 40 };
+    const dustSpeedMap = { fast: 6, medium: 4, slow: 2 };
+    const fogDensityMap = { heavy: 30, medium: 15, light: 8 };
+    const fogSpeedMap = { slow: 0.3, medium: 0.6, fast: 1 };
+
+    if (weatherConfig.type === 'rain') {
+      return {
+        count: rainDensityMap[weatherConfig.density],
+        speed: rainSpeedMap[weatherConfig.speed],
+        length: weatherConfig.speed === 'slow' ? 12 : weatherConfig.speed === 'medium' ? 18 : 25,
+        type: 'rain'
+      };
+    } else if (weatherConfig.type === 'fog') {
+      return {
+        count: fogDensityMap[weatherConfig.density],
+        speed: fogSpeedMap[weatherConfig.speed],
+        size: weatherConfig.density === 'heavy' ? 120 : weatherConfig.density === 'medium' ? 80 : 50,
+        type: 'fog'
+      };
+    } else if (weatherConfig.type === 'hail') {
+      return {
+        count: hailDensityMap[weatherConfig.density],
+        speed: hailSpeedMap[weatherConfig.speed],
+        size: 4,
+        type: 'hail'
+      };
+    } else if (weatherConfig.type === 'dust') {
+      return {
+        count: dustDensityMap[weatherConfig.density],
+        speed: dustSpeedMap[weatherConfig.speed],
+        size: weatherConfig.speed === 'slow' ? 2 : weatherConfig.speed === 'medium' ? 3 : 5,
+        type: 'dust'
+      };
+    } else {
+      return {
+        count: snowDensityMap[weatherConfig.density],
+        speed: snowSpeedMap[weatherConfig.speed],
+        size: weatherConfig.speed === 'slow' ? 1.5 : weatherConfig.speed === 'medium' ? 2.5 : 3.5,
+        type: 'snow'
+      };
+    }
+  }
+
+  _createParticle(params, w, h) {
+    if (params.type === 'rain') {
+      return {
+        x: Math.random() * w * 1.2 - w * 0.1,
+        y: Math.random() * h,
+        speed: params.speed + Math.random() * 4,
+        length: params.length + Math.random() * 10,
+        opacity: 0.2 + Math.random() * 0.4
+      };
+    } else if (params.type === 'hail') {
+      return {
+        x: Math.random() * w,
+        y: Math.random() * h,
+        speed: params.speed + Math.random() * 4,
+        size: params.size + Math.random() * 3,
+        opacity: 0.6 + Math.random() * 0.4,
+        drift: (Math.random() - 0.5) * 2
+      };
+    } else if (params.type === 'dust') {
+      return {
+        x: Math.random() * w,
+        y: Math.random() * h,
+        speed: params.speed + Math.random() * 3,
+        size: params.size + Math.random() * 3,
+        opacity: 0.15 + Math.random() * 0.3,
+        angle: Math.random() * Math.PI * 2,
+        driftY: (Math.random() - 0.5) * 1.5
+      };
+    } else if (params.type === 'fog') {
+      return {
+        x: Math.random() * w,
+        y: Math.random() * h,
+        speed: params.speed + Math.random() * 0.2,
+        size: params.size + Math.random() * 40,
+        opacity: 0.08 + Math.random() * 0.12,
+        driftY: (Math.random() - 0.5) * 0.3
+      };
+    } else {
+      return {
+        x: Math.random() * w,
+        y: Math.random() * h,
+        speed: params.speed + Math.random() * 1.5,
+        size: params.size + Math.random() * 2,
+        opacity: 0.4 + Math.random() * 0.5,
+        drift: (Math.random() - 0.5) * 1.5,
+        angle: Math.random() * Math.PI * 2
+      };
+    }
+  }
+
+  _updateWeatherAnimation() {
+    if (this.config.weather_animation && this.config.weather_entity) {
+      if (!this._weatherAnimFrame) {
+        requestAnimationFrame(() => this._startWeatherAnimation());
+      }
+    } else {
+      this._stopWeatherAnimation();
+    }
+  }
+
+  _startWeatherAnimation() {
+    const canvas = this.shadowRoot.getElementById('weather-canvas');
+    if (!canvas) {
+      this._weatherAnimFrame = requestAnimationFrame(() => this._startWeatherAnimation());
+      return;
+    }
+    const ctx = canvas.getContext('2d');
+
+    const animate = () => {
+      const rect = canvas.getBoundingClientRect();
+      if (canvas.width !== rect.width || canvas.height !== rect.height) {
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+      }
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const weatherConfig = this._getWeatherType();
+      if (weatherConfig) {
+        const params = this._getParticleParams(weatherConfig);
+        const typeKey = weatherConfig.type + '-' + weatherConfig.density;
+        if (this._weatherParticlesType !== typeKey) {
+          this._weatherParticlesType = typeKey;
+          this._weatherParticles = [];
+          for (let i = 0; i < params.count; i++) {
+            this._weatherParticles.push(this._createParticle(params, w, h));
+          }
+          this._weatherLightning = {
+            active: weatherConfig.lightning,
+            opacity: 0,
+            nextFlash: Date.now() + Math.random() * 5000 + 2000
+          };
+        }
+
+        if (weatherConfig.type === 'rain') {
+          this._drawRain(ctx, w, h, params);
+        } else if (weatherConfig.type === 'hail') {
+          this._drawHail(ctx, w, h, params);
+        } else if (weatherConfig.type === 'dust') {
+          this._drawDust(ctx, w, h, params);
+        } else if (weatherConfig.type === 'fog') {
+          this._drawFog(ctx, w, h, params);
+        } else {
+          this._drawSnow(ctx, w, h, params);
+        }
+        if (this._weatherLightning.active) {
+          this._drawLightningEffect(ctx, w, h);
+        }
+      } else {
+        this._weatherParticles = [];
+        this._weatherParticlesType = null;
+      }
+
+      this._weatherAnimFrame = requestAnimationFrame(animate);
+    };
+    this._weatherAnimFrame = requestAnimationFrame(animate);
+  }
+
+  _stopWeatherAnimation() {
+    if (this._weatherAnimFrame) {
+      cancelAnimationFrame(this._weatherAnimFrame);
+      this._weatherAnimFrame = null;
+    }
+    this._weatherParticles = [];
+    this._weatherParticlesType = null;
+  }
+
+  _drawRain(ctx, w, h, params) {
+    for (const p of this._weatherParticles) {
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - p.length * 0.15, p.y + p.length);
+      ctx.strokeStyle = `rgba(180, 210, 255, ${p.opacity})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      p.y += p.speed;
+      p.x -= p.speed * 0.15;
+
+      if (p.y > h) {
+        p.y = -p.length;
+        p.x = Math.random() * w * 1.2 - w * 0.1;
+      }
+    }
+  }
+
+  _drawSnow(ctx, w, h, params) {
+    for (const p of this._weatherParticles) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+      ctx.fill();
+
+      p.y += p.speed;
+      p.x += Math.sin(p.angle) * p.drift;
+      p.angle += 0.01;
+
+      if (p.y > h + p.size) {
+        p.y = -p.size;
+        p.x = Math.random() * w;
+      }
+      if (p.x > w + 10) p.x = -10;
+      if (p.x < -10) p.x = w + 10;
+    }
+  }
+
+  _drawHail(ctx, w, h, params) {
+    for (const p of this._weatherParticles) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(220, 230, 255, ${p.opacity})`;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(p.x - p.size * 0.25, p.y - p.size * 0.25, p.size * 0.35, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity * 0.6})`;
+      ctx.fill();
+
+      p.y += p.speed;
+      p.x += p.drift;
+
+      if (p.y > h + p.size) {
+        p.y = -p.size * 2;
+        p.x = Math.random() * w;
+        p.drift = (Math.random() - 0.5) * 2;
+      }
+      if (p.x > w + 10) p.x = -10;
+      if (p.x < -10) p.x = w + 10;
+    }
+  }
+
+  _drawDust(ctx, w, h, params) {
+    ctx.fillStyle = 'rgba(180, 140, 60, 0.08)';
+    ctx.fillRect(0, 0, w, h);
+
+    for (const p of this._weatherParticles) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(190, 150, 70, ${p.opacity})`;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(180, 140, 60, ${p.opacity * 0.2})`;
+      ctx.fill();
+
+      p.x += p.speed;
+      p.y += p.driftY + Math.sin(p.angle) * 0.5;
+      p.angle += 0.02;
+
+      if (p.x > w + p.size * 2) {
+        p.x = -p.size * 2;
+        p.y = Math.random() * h;
+      }
+      if (p.x < -p.size * 2) {
+        p.x = w + p.size * 2;
+      }
+      if (p.y > h + 10) p.y = -10;
+      if (p.y < -10) p.y = h + 10;
+    }
+  }
+
+  _drawFog(ctx, w, h, params) {
+    // 整体雾气底色
+    ctx.fillStyle = 'rgba(200, 200, 210, 0.06)';
+    ctx.fillRect(0, 0, w, h);
+
+    for (const p of this._weatherParticles) {
+      // 大范围径向渐变雾团
+      const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+      gradient.addColorStop(0, `rgba(220, 220, 230, ${p.opacity})`);
+      gradient.addColorStop(1, `rgba(220, 220, 230, 0)`);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      p.x += p.speed;
+      p.y += p.driftY;
+
+      if (p.x > w + p.size) {
+        p.x = -p.size;
+        p.y = Math.random() * h;
+      }
+      if (p.x < -p.size) {
+        p.x = w + p.size;
+      }
+      if (p.y > h + p.size) p.y = -p.size;
+      if (p.y < -p.size) p.y = h + p.size;
+    }
+  }
+
+  _drawLightningEffect(ctx, w, h) {
+    const now = Date.now();
+    if (now > this._weatherLightning.nextFlash) {
+      this._weatherLightning.opacity = 0.7 + Math.random() * 0.3;
+      this._weatherLightning.nextFlash = now + Math.random() * 8000 + 3000;
+    }
+    if (this._weatherLightning.opacity > 0) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${this._weatherLightning.opacity})`;
+      ctx.fillRect(0, 0, w, h);
+      this._weatherLightning.opacity -= 0.04;
+      if (this._weatherLightning.opacity < 0) this._weatherLightning.opacity = 0;
+    }
+  }
+
   render() {
     const theme = this._evaluateTheme();
     const autoColor = this.config.auto_color !== false;
@@ -1095,6 +1483,7 @@ class XiaoshiPadCard extends LitElement {
       <div class="container"
         style="width: ${this.config.width}; height: ${this.config.height}; background: ${gradientStyle};">
         ${bgImage ? html`<div class="bg-image" style="background-image: url('${bgImage}');"></div>` : ''}
+        ${this.config.weather_animation ? html`<canvas id="weather-canvas" class="weather-canvas"></canvas>` : ''}
         ${(this.config.device_glows || []).map(item => {
           const glowStyle = this._computeDeviceGlowStyle(item);
           if (!glowStyle) return '';
