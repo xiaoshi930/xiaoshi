@@ -890,6 +890,44 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
           </div>
         </div>
 
+        <!-- 名称重定义 -->
+        <div class="form-group">
+          <label>名称重定义 (可选)</label>
+          <input
+            type="text"
+            .value=${this.config.custom_name || ''}
+            @change=${(e) => { this.config = { ...this.config, custom_name: e.target.value }; this._fireEvent(); this.requestUpdate(); }}
+            placeholder="留空使用实体名称"
+            style="width: 100%; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+          />
+        </div>
+
+        <!-- 图标重定义 -->
+        <div class="form-group">
+          <label>图标重定义 (可选)</label>
+          <input
+            type="text"
+            .value=${this.config.custom_icon || ''}
+            @change=${(e) => { this.config = { ...this.config, custom_icon: e.target.value }; this._fireEvent(); this.requestUpdate(); }}
+            placeholder="如: mdi:washing-machine"
+            style="width: 100%; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+          />
+        </div>
+
+        <!-- 是否显示开关 -->
+        <div class="form-group">
+          <label>显示电源开关 (可选)</label>
+          <select
+            .value=${this.config.show_power !== undefined ? this.config.show_power : 'true'}
+            @change=${(e) => { this.config = { ...this.config, show_power: e.target.value }; this._fireEvent(); this.requestUpdate(); }}
+            style="width: 100%; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+          >
+            <option value="true" ?selected=${(this.config.show_power !== undefined ? this.config.show_power : 'true') === 'true'}>显示</option>
+            <option value="false" ?selected=${this.config.show_power === 'false'}>隐藏</option>
+          </select>
+          <div class="hint">控制右上角电源开关的显示与隐藏</div>
+        </div>
+
         <!-- 翻译优先 -->
         <div class="form-group">
           <label>翻译优先 (可选)</label>
@@ -2169,7 +2207,9 @@ class XiaoshiPhoneOtherCard extends LitElement {
         '4px'
     ].join(' ');
 
-    const entityIcon = attrs.icon || 'mdi:devices';
+    const entityIcon = this.config.custom_icon || attrs.icon || 'mdi:devices';
+    const entityName = this.config.custom_name || attrs.friendly_name;
+    const showPower = this.config.show_power !== 'false';
 
     return html` 
       <div class="card" style=" margin-bottom: ${marginBottom};
@@ -2185,11 +2225,12 @@ class XiaoshiPhoneOtherCard extends LitElement {
         ${isOn ? html`<div class="active-gradient"></div>` : ''}
         <div id="chart-container"></div>
         <div class="content-container" style="grid-template-rows: ${gridTemplateRows};background: ${isOn ? `linear-gradient(90deg, ${linearColor} -30%, ${bgColor} 70%)` : bgColor};">
-            <div class="name-area">${attrs.friendly_name}</div>
+            <div class="name-area">${entityName}</div>
                 <div class="status-area" style="color: ${fgColor}">${stateDisplayValue}
                     
                 </div>
-                    <div class="power-area">
+                    <div class="power-area" style="${!showPower ? 'height: 35px;' : ''}">
+                        ${showPower ? html`
                         <button class="power-button" @click=${this._togglePower}>
                             <ha-icon 
                                 class="power-icon"
@@ -2197,6 +2238,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
                                 style="color: ${iconColor};"
                             ></ha-icon>
                         </button>
+                        ` : ''}
                     </div>
                       
                     <div class="icon-area">
