@@ -1144,6 +1144,16 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                 </div>
                 ${itemDomain === 'select' || itemDomain === 'input_select' ? html`
                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                  <label style="font-size: 0.8em; min-width: 60px;">选项标签</label>
+                  <input
+                    type="text"
+                    .value=${item.select_label || ''}
+                    @change=${(e) => this._buttonRowFieldChanged(rowIndex, itemIndex, 'select_label', e.target.value)}
+                    placeholder="留空不显示，如: 模式"
+                    style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+                  />
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
                   <label style="font-size: 0.8em; min-width: 60px;">筛选选项</label>
                   <input
                     type="text"
@@ -2490,7 +2500,11 @@ class XiaoshiPhoneOtherCard extends LitElement {
             const filteredOptions = (item.select_options && item.select_options.length > 0)
                 ? allOptions.filter(opt => item.select_options.includes(opt))
                 : allOptions;
-            filteredOptions.slice(0, 5).forEach(opt => {
+            // 如果有标签，先添加标签单元
+            if (item.select_label && item.select_label.trim()) {
+                renderUnits.push({ item, entity, domain, selectOption: null, isLabel: true });
+            }
+            filteredOptions.slice(0, 6).forEach(opt => {
                 renderUnits.push({ item, entity, domain, selectOption: opt });
             });
         } else {
@@ -2615,6 +2629,18 @@ class XiaoshiPhoneOtherCard extends LitElement {
         }
             
         if (domain === 'select' || domain === 'input_select') {
+            // 标签按钮
+            if (unit.isLabel) {
+                const labelText = (item.select_label || '').trim();
+                return html`
+                    <button class="func-button"
+                        style="background-color: ${buttonBg}; cursor: default;"
+                        title="${labelText}"
+                    >
+                        <div class="func-button-value" style="color: ${buttonFg}">${labelText.slice(0, 6)}</div>
+                    </button>
+                `;
+            }
             const isActive = selectOption === entity.state;
             const btnBg = isActive ? buttonBg : buttonBg;
             const btnFg = isActive ? activeColor : buttonFg;
