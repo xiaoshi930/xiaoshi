@@ -614,7 +614,33 @@ class XiaoshiPhoneClimateCardEditor extends LitElement {
                     @change=${this._showHvacModesChanged}
                   ></ha-switch>
                   <span>显示模式按钮</span>
+                  <span style="font-size: 12px; color: #999; margin-left: 8px;">按钮样式：</span>
+                  <select
+                    class="mode-button-style-select"
+                    .value=${this.config.mode_button_style || 'icon_text'}
+                    @change=${this._modeButtonStyleChanged}
+                    style="font-size: 12px; padding: 2px 4px; border-radius: 4px; border: 1px solid #555; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #e1e1e1);"
+                  >
+                    <option value="icon_text" ?selected=${(this.config.mode_button_style || 'icon_text') === 'icon_text'}>图标+文字</option>
+                    <option value="icon_only" ?selected=${this.config.mode_button_style === 'icon_only'}>仅图标</option>
+                  </select>
                 </div>
+                ${this.hass && this.hass.states[this.config.entity] ? html`
+                  <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-left: 32px; margin-top: 2px;">
+                    ${(this.hass.states[this.config.entity].attributes.hvac_modes || []).map(mode => html`
+                      <div style="display: flex; align-items: center; gap: 2px; font-size: 11px;">
+                        <span style="color: #999; min-width: 50px;">${mode}:</span>
+                        <input
+                          type="text"
+                          .value=${(this.config.mode_labels && this.config.mode_labels[mode]) || ''}
+                          placeholder="${this._translateMode(mode)}"
+                          @change=${(e) => this._modeLabelChanged(mode, e.target.value)}
+                          style="width: 48px; font-size: 11px; padding: 1px 4px; border-radius: 3px; border: 1px solid #555; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #e1e1e1);"
+                        />
+                      </div>
+                    `)}
+                  </div>
+                ` : ''}
               ` : ''}
               ${this._availableModes?.hasFanModes ? html`
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -1120,6 +1146,30 @@ class XiaoshiPhoneClimateCardEditor extends LitElement {
     this._fireEvent();
   }
 
+  _modeButtonStyleChanged(ev) {
+    if (!this.config) return;
+    this.config = {
+      ...this.config,
+      mode_button_style: ev.target.value
+    };
+    this._fireEvent();
+  }
+
+  _modeLabelChanged(mode, value) {
+    if (!this.config) return;
+    const modeLabels = { ...(this.config.mode_labels || {}) };
+    if (value) {
+      modeLabels[mode] = value;
+    } else {
+      delete modeLabels[mode];
+    }
+    this.config = {
+      ...this.config,
+      mode_labels: modeLabels
+    };
+    this._fireEvent();
+  }
+
   _showFanModesChanged(ev) {
     if (!this.config) return;
     this.config = {
@@ -1154,6 +1204,21 @@ class XiaoshiPhoneClimateCardEditor extends LitElement {
       show_water_modes: ev.target.checked
     };
     this._fireEvent();
+  }
+
+  _translateMode(mode) {
+    const translations = {
+        'cool': '制冷',
+        'heat': '制热',
+        'dry': '除湿',
+        'fan_only': '吹风',
+        'fan': '吹风',
+        'auto': '自动',
+        'off': '关闭',
+        'unknown': '未知',
+        'unavailable': '离线'
+    };
+    return translations[mode] || mode;
   }
 
   _fireEvent() {
@@ -1407,6 +1472,8 @@ class XiaoshiPhoneClimateCard extends LitElement {
       .modes-area {
         grid-area: modes;
       }
+
+
       
       .fan-area {
         grid-area: fan;
@@ -1566,13 +1633,22 @@ class XiaoshiPhoneClimateCard extends LitElement {
         border-radius: 8px;
         cursor: pointer;
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
         flex: 1;
         min-width: 0;
         position: relative;
         cursor: default;
+      }
+
+      .mode-text {
+        font-size: 8px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+        line-height: 1;
+        margin-left: 2px;
       }
 
       .fan-button {
@@ -2598,6 +2674,8 @@ _renderExtraButtons(buttonType = 1) {
   _renderModeButtons(modes, currentMode) {
       if (!modes) return html``;
       
+      const showText = (this.config.mode_button_style || 'icon_text') === 'icon_text';
+      
       const modeIcons = {
           'auto': 'mdi:thermostat-auto',
           'heat': 'mdi:fire',
@@ -2620,6 +2698,7 @@ _renderExtraButtons(buttonType = 1) {
                   title="${this._translateMode(mode)}"
               >
                   <ha-icon class="icon" icon="${modeIcons[mode] || 'mdi:thermostat'}" style="color: ${isActive ? 'var(--active-color)' : ''}"></ha-icon>
+                  ${showText ? html`<span class="mode-text">${this._translateMode(mode)}</span>` : ''}
               </button>
           `;
       });
@@ -2719,6 +2798,9 @@ _renderExtraButtons(buttonType = 1) {
   }
 
   _translateMode(mode) {
+      if (this.config.mode_labels && this.config.mode_labels[mode]) {
+          return this.config.mode_labels[mode];
+      }
       const translations = {
           'cool': '制冷',
           'heat': '制热',
