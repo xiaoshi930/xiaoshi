@@ -1,4 +1,5 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { yamlToJson } from '../function/function.js';
 
 window.customCards = window.customCards || [];
 window.customCards.push({
@@ -6,6 +7,23 @@ window.customCards.push({
     name: '消逝卡(平板端)-背景卡',
     description: '消逝卡(平板端)-背景卡'
 });
+
+const PRESET_ON_STATES = [
+    // 通用
+    'on', 'open', 'opening','home',  'active', 'running',
+    'detected', 'occupied', 'unlocked', 'power_on','开机',
+    // 媒体
+    'Playing','playing', '播放中',
+    // 空调/HVAC
+    'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
+    'auto', 'heat_cool', 'fan_only',
+    // 人在
+    '有人', 'one',
+    // 扫地机器人
+    '正在拖地','正在扫地','启动','cleaning',
+    // 厨房
+    '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm'
+];
 
 // ==================== 编辑器 ====================
 class XiaoshiPadCardEditor extends LitElement {
@@ -47,14 +65,17 @@ class XiaoshiPadCardEditor extends LitElement {
             }
             .size-row .form-row,
             .size-row .glow-row {
-                flex: 0 0 auto;
+                flex: 1 1 0;
             }
             .size-row .form-row:first-child {
                 flex: 0 0 auto;
             }
             .size-row input[type="text"] {
-                width: 80px;
+                width: 55px;
                 flex: none;
+            }
+            .size-row .glow-row label {
+                min-width: auto;
             }
             .card-section {
                 border: 1px solid #ddd;
@@ -142,7 +163,7 @@ class XiaoshiPadCardEditor extends LitElement {
             }
             .state-colors-textarea {
                 width: 100%;
-                min-height: 60px;
+                min-height: 40px;
                 padding: 6px 8px;
                 border: 1px solid #ddd;
                 border-radius: 4px;
@@ -236,6 +257,48 @@ class XiaoshiPadCardEditor extends LitElement {
         const btns = [...(this.config.light_buttons || [])];
         btns[index] = { ...btns[index], [field]: value };
         this.config = { ...this.config, light_buttons: btns };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+    }
+
+    _addPersonIcon() {
+        const icons = [...(this.config.person_icons || [])];
+        icons.push({ entity: '', width: '20px', height: '20px', color: 'rgb(255,87,34)', top: '100px', left: '100px', condition_mode: '', status_conditions: '' });
+        this.config = { ...this.config, person_icons: icons };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+    }
+
+    _removePersonIcon(index) {
+        const icons = [...(this.config.person_icons || [])];
+        icons.splice(index, 1);
+        this.config = { ...this.config, person_icons: icons };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+    }
+
+    _updatePersonIconField(index, field, value) {
+        const icons = [...(this.config.person_icons || [])];
+        icons[index] = { ...icons[index], [field]: value };
+        this.config = { ...this.config, person_icons: icons };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+    }
+
+    _addDeviceIcon() {
+        const icons = [...(this.config.device_icons || [])];
+        icons.push({ entity: '', on_image: '', off_image: '', width: '40px', height: '40px', top: '100px', left: '100px', popup_cards: '' });
+        this.config = { ...this.config, device_icons: icons };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+    }
+
+    _removeDeviceIcon(index) {
+        const icons = [...(this.config.device_icons || [])];
+        icons.splice(index, 1);
+        this.config = { ...this.config, device_icons: icons };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+    }
+
+    _updateDeviceIconField(index, field, value) {
+        const icons = [...(this.config.device_icons || [])];
+        icons[index] = { ...icons[index], [field]: value };
+        this.config = { ...this.config, device_icons: icons };
         this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
     }
 
@@ -360,15 +423,13 @@ class XiaoshiPadCardEditor extends LitElement {
                             </div>
                             <div class="size-row">
                                 <div class="glow-row">
-                                    <label>宽</label>
+                                    <label style="width: 50px;">宽</label>
                                     <input type="text" .value="${btn.width || '25px'}" @change="${(e) => this._updateLightButtonField(i, 'width', e.target.value)}">
                                 </div>
                                 <div class="glow-row">
                                     <label>高</label>
                                     <input type="text" .value="${btn.height || '25px'}" @change="${(e) => this._updateLightButtonField(i, 'height', e.target.value)}">
                                 </div>
-                            </div>
-                            <div class="size-row">
                                 <div class="glow-row">
                                     <label>Top</label>
                                     <input type="text" .value="${btn.top || '100px'}" @change="${(e) => this._updateLightButtonField(i, 'top', e.target.value)}">
@@ -383,6 +444,56 @@ class XiaoshiPadCardEditor extends LitElement {
                     <button class="add-glow-btn" @click="${this._addLightButton}">+ 添加灯光按钮</button>
                 </div>
                 <div class="card-section">
+                    <div class="card-section-title">人在图标</div>
+                    ${(c.person_icons || []).map((pi, i) => html`
+                        <div class="glow-item">
+                            <div class="glow-item-header">
+                                <span>人在 ${i + 1}</span>
+                                <button class="glow-remove-btn" @click="${() => this._removePersonIcon(i)}">删除</button>
+                            </div>
+                            <div class="glow-row">
+                                <label>实体</label>
+                                <input type="text" .value="${pi.entity || ''}" @change="${(e) => this._updatePersonIconField(i, 'entity', e.target.value)}" placeholder="binary_sensor.xxx">
+                            </div>
+                            <div class="glow-row">
+                                <label>颜色</label>
+                                <input type="color" .value="${this._rgbToHex(pi.color || 'rgb(255,87,34)')}" @change="${(e) => this._updatePersonIconField(i, 'color', this._hexToRgb(e.target.value))}">
+                                <label style="font-weight:bold;font-size:12px;white-space:nowrap;min-width:auto;margin-left:8px;">条件</label>
+                                <select @change="${(e) => this._updatePersonIconField(i, 'condition_mode', e.target.value)}">
+                                    <option value="" ?selected="${!pi.condition_mode}">预置</option>
+                                    <option value="append" ?selected="${pi.condition_mode === 'append'}">新增</option>
+                                    <option value="override" ?selected="${pi.condition_mode === 'override'}">覆盖</option>
+                                </select>
+                            </div>
+                            ${pi.condition_mode ? html`
+                            <div class="glow-row">
+                                <label>条件值</label>
+                                <input type="text" .value="${pi.status_conditions || ''}" @change="${(e) => this._updatePersonIconField(i, 'status_conditions', e.target.value)}" placeholder="on,home,有人">
+                            </div>
+                            ` : ''}
+                            <div class="size-row">
+                                <div class="glow-row">
+                                    <label style="width: 50px;">宽</label>
+                                    <input type="text" .value="${pi.width || '20px'}" @change="${(e) => this._updatePersonIconField(i, 'width', e.target.value)}">
+                                </div>
+                                <div class="glow-row">
+                                    <label>高</label>
+                                    <input type="text" .value="${pi.height || '20px'}" @change="${(e) => this._updatePersonIconField(i, 'height', e.target.value)}">
+                                </div>
+                                <div class="glow-row">
+                                    <label>Top</label>
+                                    <input type="text" .value="${pi.top || '100px'}" @change="${(e) => this._updatePersonIconField(i, 'top', e.target.value)}">
+                                </div>
+                                <div class="glow-row">
+                                    <label>Left</label>
+                                    <input type="text" .value="${pi.left || '100px'}" @change="${(e) => this._updatePersonIconField(i, 'left', e.target.value)}">
+                                </div>
+                            </div>
+                        </div>
+                    `)}
+                    <button class="add-glow-btn" @click="${this._addPersonIcon}">+ 添加人在图标</button>
+                </div>
+                <div class="card-section">
                     <div class="card-section-title">设备光效</div>
                     ${(c.device_glows || []).map((glow, i) => html`
                         <div class="glow-item">
@@ -394,31 +505,25 @@ class XiaoshiPadCardEditor extends LitElement {
                                 <label>实体</label>
                                 <input type="text" .value="${glow.entity || ''}" @change="${(e) => this._updateDeviceGlowField(i, 'entity', e.target.value)}" placeholder="climate.xxx">
                             </div>
-                            <div class="size-row">
-                                <div class="glow-row">
-                                    <label>颜色</label>
-                                    <input type="color" .value="${this._rgbToHex(glow.color || 'rgb(33,150,243)')}" @change="${(e) => this._updateDeviceGlowField(i, 'color', this._hexToRgb(e.target.value))}">
-                                </div>
-                                <div class="glow-row">
-                                    <label>方向</label>
-                                    <select @change="${(e) => this._updateDeviceGlowField(i, 'direction', e.target.value)}">
-                                        ${['左上','左下','右上','右下','上','下','左','右','四周'].map(d => html`
-                                            <option value="${d}" ?selected="${(glow.direction || '右下') === d}">${d}</option>
-                                        `)}
-                                    </select>
-                                </div>
+                            <div class="glow-row">
+                                <label>颜色</label>
+                                <input type="color" .value="${this._rgbToHex(glow.color || 'rgb(33,150,243)')}" @change="${(e) => this._updateDeviceGlowField(i, 'color', this._hexToRgb(e.target.value))}">
+                                <label style="font-weight:bold;font-size:12px;white-space:nowrap;min-width:auto;margin-left:8px;">方向</label>
+                                <select @change="${(e) => this._updateDeviceGlowField(i, 'direction', e.target.value)}">
+                                    ${['左上','左下','右上','右下','上','下','左','右','四周'].map(d => html`
+                                        <option value="${d}" ?selected="${(glow.direction || '右下') === d}">${d}</option>
+                                    `)}
+                                </select>
                             </div>
                             <div class="size-row">
                                 <div class="glow-row">
-                                    <label>宽</label>
+                                    <label style="width: 50px;">宽</label>
                                     <input type="text" .value="${glow.width || '200px'}" @change="${(e) => this._updateDeviceGlowField(i, 'width', e.target.value)}">
                                 </div>
                                 <div class="glow-row">
                                     <label>高</label>
                                     <input type="text" .value="${glow.height || '200px'}" @change="${(e) => this._updateDeviceGlowField(i, 'height', e.target.value)}">
                                 </div>
-                            </div>
-                            <div class="size-row">
                                 <div class="glow-row">
                                     <label>Top</label>
                                     <input type="text" .value="${glow.top || '100px'}" @change="${(e) => this._updateDeviceGlowField(i, 'top', e.target.value)}">
@@ -435,6 +540,74 @@ class XiaoshiPadCardEditor extends LitElement {
                         </div>
                     `)}
                     <button class="add-glow-btn" @click="${this._addDeviceGlow}">+ 添加设备光效</button>
+                </div>
+                <div class="card-section">
+                    <div class="card-section-title">设备图标</div>
+                    ${(c.device_icons || []).map((di, i) => html`
+                        <div class="glow-item">
+                            <div class="glow-item-header">
+                                <span>设备图标 ${i + 1}</span>
+                                <button class="glow-remove-btn" @click="${() => this._removeDeviceIcon(i)}">删除</button>
+                            </div>
+                            <div class="glow-row">
+                                <label>实体</label>
+                                <input type="text" .value="${di.entity || ''}" @change="${(e) => this._updateDeviceIconField(i, 'entity', e.target.value)}" placeholder="climate.xxx">
+                                <label>条件</label>
+                                <select @change="${(e) => this._updateDeviceIconField(i, 'condition_mode', e.target.value)}">
+                                    <option value="" ?selected="${!di.condition_mode}">预置</option>
+                                    <option value="append" ?selected="${di.condition_mode === 'append'}">新增</option>
+                                    <option value="override" ?selected="${di.condition_mode === 'override'}">覆盖</option>
+                                </select>
+                            </div>
+                            ${di.condition_mode ? html`
+                            <div class="glow-row">
+                                <label>条件值</label>
+                                <input type="text" .value="${di.status_conditions || ''}" @change="${(e) => this._updateDeviceIconField(i, 'status_conditions', e.target.value)}" placeholder="on,home,有人">
+                            </div>
+                            ` : ''}
+                            <div class="glow-row">
+                                <label>开启图片</label>
+                                <input type="text" .value="${di.on_image || ''}" @change="${(e) => this._updateDeviceIconField(i, 'on_image', e.target.value)}" placeholder="/local/images/device_on.png">
+                            </div>
+                            <div class="glow-row">
+                                <label>关闭图片</label>
+                                <input type="text" .value="${di.off_image || ''}" @change="${(e) => this._updateDeviceIconField(i, 'off_image', e.target.value)}" placeholder="/local/images/device_off.png">
+                            </div>
+                            <div class="size-row">
+                                <div class="glow-row">
+                                    <label style="width: 50px;">宽</label>
+                                    <input type="text" .value="${di.width || '40px'}" @change="${(e) => this._updateDeviceIconField(i, 'width', e.target.value)}">
+                                </div>
+                                <div class="glow-row">
+                                    <label>高</label>
+                                    <input type="text" .value="${di.height || '40px'}" @change="${(e) => this._updateDeviceIconField(i, 'height', e.target.value)}">
+                                </div>
+                                <div class="glow-row">
+                                    <label>Top</label>
+                                    <input type="text" .value="${di.top || '100px'}" @change="${(e) => this._updateDeviceIconField(i, 'top', e.target.value)}">
+                                </div>
+                                <div class="glow-row">
+                                    <label>Left</label>
+                                    <input type="text" .value="${di.left || '100px'}" @change="${(e) => this._updateDeviceIconField(i, 'left', e.target.value)}">
+                                </div>
+                            </div>
+                            <div class="size-row">
+                                <div class="glow-row">
+                                    <label>弹窗宽度</label>
+                                    <input style="width: 80px;" type="text" .value="${di.popup_width || '400px'}" @change="${(e) => this._updateDeviceIconField(i, 'popup_width', e.target.value)}" placeholder="400px">
+                                </div>
+                                <div class="glow-row">
+                                    <label>弹窗位置</label>
+                                    <input style="width: 80px;" type="text" .value="${di.popup_top || '50%'}" @change="${(e) => this._updateDeviceIconField(i, 'popup_top', e.target.value)}" placeholder="50%">
+                                </div>
+                            </div>
+                            <div class="glow-row">
+                                <label>弹窗</label>
+                                <textarea class="state-colors-textarea" .value="${di.popup_cards || ''}" @change="${(e) => this._updateDeviceIconField(i, 'popup_cards', e.target.value)}" placeholder="- type: custom:xiaoshi-chart-card&#10;  entities:&#10;    - entity: sensor.xxx"></textarea>
+                            </div>
+                        </div>
+                    `)}
+                    <button class="add-glow-btn" @click="${this._addDeviceIcon}">+ 添加设备图标</button>
                 </div>
 
             </div>
@@ -545,6 +718,51 @@ class XiaoshiPadCard extends LitElement {
         height: 100%;
         pointer-events: none;
         z-index: 5;
+      }
+      .person-icon-item {
+        position: absolute;
+        z-index: 10;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transform: translate(-50%, -50%);
+      }
+      .person-icon-item ha-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      @keyframes person-blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+      }
+      .person-home {
+        animation: person-blink 0.6s ease-in-out infinite;
+      }
+      .person-hidden {
+        display: none;
+      }
+      .device-icon-item {
+        position: absolute;
+        z-index: 10;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transform: translate(-50%, -50%);
+        padding: 0;
+        border: none;
+        background: transparent;
+      }
+      .device-icon-item:active {
+        transform: translate(-50%, -50%) scale(0.92);
+      }
+      .device-icon-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        pointer-events: none;
       }
     `;
   }
@@ -810,6 +1028,8 @@ class XiaoshiPadCard extends LitElement {
       background_image: config.background_image || '',
       device_glows: config.device_glows || [],
       light_buttons: config.light_buttons || [],
+      person_icons: config.person_icons || [],
+      device_icons: config.device_icons || [],
       btn_area_left: config.btn_area_left || '20px',
       weather_animation: config.weather_animation === true,
       weather_entity: config.weather_entity || '',
@@ -1051,6 +1271,143 @@ class XiaoshiPadCard extends LitElement {
         </button>`;
       }
       return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}"></button>`;
+    });
+  }
+
+  // ========== 人在图标 ==========
+  _getPersonConditions(item) {
+    const conditionMode = item.condition_mode || '';
+    if (conditionMode === 'override') {
+      return (item.status_conditions || '')
+        .split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+    } else if (conditionMode === 'append') {
+      const preset = PRESET_ON_STATES.map(s => s.toLowerCase());
+      const custom = (item.status_conditions || '')
+        .split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+      return [...new Set([...preset, ...custom])];
+    } else {
+      return PRESET_ON_STATES.map(s => s.toLowerCase());
+    }
+  }
+
+  _renderPersonIcons() {
+    if (!this.hass) return '';
+    return (this.config.person_icons || []).map(item => {
+      if (!item.entity) return '';
+      const entity = this.hass.states[item.entity];
+      if (!entity) return '';
+
+      const personState = entity.state;
+      const conditions = this._getPersonConditions(item);
+      const isHome = personState && conditions.some(c => personState.toLowerCase().includes(c) || c.includes(personState.toLowerCase()));
+
+      const color = item.color || 'rgb(255,87,34)';
+      const icon = isHome ? 'mdi:motion-sensor' : 'mdi:motion-sensor-off';
+      const iconWidth = item.width || item.icon_size || '20px';
+      const iconHeight = item.height || item.icon_size || '20px';
+      const posSize = `top: ${item.top || '100px'}; left: ${item.left || '100px'};`;
+
+      return html`<div class="person-icon-item ${isHome ? 'person-home' : ''}" style="${posSize} color: ${isHome ? color : '#888'};">
+        <ha-icon icon="${icon}" style="--mdc-icon-size:${iconWidth};width:${iconWidth};height:${iconHeight}"></ha-icon>
+      </div>`;
+    });
+  }
+
+  // ========== 设备图标 ==========
+  _getDeviceIconConditions(item) {
+    const conditionMode = item.condition_mode || '';
+    if (conditionMode === 'override') {
+      return (item.status_conditions || '')
+        .split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+    } else if (conditionMode === 'append') {
+      const preset = PRESET_ON_STATES.map(s => s.toLowerCase());
+      const custom = (item.status_conditions || '')
+        .split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+      return [...new Set([...preset, ...custom])];
+    } else {
+      return PRESET_ON_STATES.map(s => s.toLowerCase());
+    }
+  }
+
+  _isDeviceIconOn(item) {
+    if (!this.hass || !item.entity) return false;
+    const entity = this.hass.states[item.entity];
+    if (!entity) return false;
+    const state = entity.state;
+    const conditions = this._getDeviceIconConditions(item);
+    return state && conditions.some(c => state.toLowerCase().includes(c) || c.includes(state.toLowerCase()));
+  }
+
+  _onDeviceIconClick(item) {
+    if (!item) return;
+    const popupConfig = item.popup_cards || item.other_cards || item.popup;
+    if (popupConfig) {
+      let popupCards = [];
+      if (typeof popupConfig === 'string') {
+        try {
+          popupCards = yamlToJson(popupConfig);
+        } catch (err) {
+          console.error('[xiaoshi-pad-card] 设备图标弹窗配置解析失败:', err);
+          return;
+        }
+      }
+      this._handleHaptic();
+      const popupWidth = item.popup_width || '400px';
+      const popupTop = item.popup_top || '50%';
+      const serviceData = { card: popupCards };
+      serviceData.background = 'transparent';
+      serviceData.popup_width = popupWidth;
+      serviceData.popup_top = popupTop;
+      this.hass.callService('popup_card', 'show', serviceData);
+      return;
+    }
+    // 弹窗为空时，直接切换实体状态
+    if (item.entity) {
+      this._handleHaptic();
+      const entityId = item.entity;
+      const domain = entityId.split('.')[0];
+      if (domain === 'light' || domain === 'switch' || domain === 'fan' || domain === 'humidifier' || domain === 'input_boolean') {
+        this.hass.callService('homeassistant', 'toggle', { entity_id: entityId });
+      } else if (domain === 'climate') {
+        const entity = this.hass.states[entityId];
+        if (entity && entity.state === 'off') {
+          this.hass.callService('climate', 'turn_on', { entity_id: entityId });
+        } else {
+          this.hass.callService('climate', 'turn_off', { entity_id: entityId });
+        }
+      } else if (domain === 'media_player') {
+        this.hass.callService('media_player', 'toggle', { entity_id: entityId });
+      } else {
+        this.hass.callService('homeassistant', 'toggle', { entity_id: entityId });
+      }
+    }
+  }
+
+  _renderDeviceIcons() {
+    if (!this.hass) return '';
+    return (this.config.device_icons || []).map(item => {
+      if (!item.entity) return '';
+      const entity = this.hass.states[item.entity];
+      if (!entity) return '';
+
+      const isOn = this._isDeviceIconOn(item);
+      const width = item.width || '40px';
+      const height = item.height || '40px';
+      const posSize = `top: ${item.top || '100px'}; left: ${item.left || '100px'}; width: ${width}; height: ${height};`;
+
+      const onImage = item.on_image || '';
+      const offImage = item.off_image || '';
+      const imageUrl = isOn ? onImage : offImage;
+
+      if (imageUrl) {
+        return html`<button class="device-icon-item" style="${posSize}" @click="${() => this._onDeviceIconClick(item)}" title="${item.entity}">
+          <img src="${imageUrl}" alt="device" />
+        </button>`;
+      }
+
+      return html`<button class="device-icon-item" style="${posSize} color: ${isOn ? '#fff' : '#888'};" @click="${() => this._onDeviceIconClick(item)}" title="${item.entity}">
+        <ha-icon icon="${isOn ? 'mdi:power-plug' : 'mdi:power-plug-off'}" style="--mdc-icon-size:${width};width:${width};height:${height}"></ha-icon>
+      </button>`;
     });
   }
 
@@ -1490,6 +1847,8 @@ class XiaoshiPadCard extends LitElement {
           return html`<div class="device-glow" style="top: ${item.top || '100px'}; left: ${item.left || '100px'}; width: ${item.width || '200px'}; height: ${item.height || '200px'}; background: ${glowStyle};"></div>`;
         })}
         ${this._renderLightButtons()}
+        ${this._renderPersonIcons()}
+        ${this._renderDeviceIcons()}
         <div class="btn-area" style="left: ${this.config.btn_area_left || '20px'};">
           <button class="ctrl-btn" style="color: #fff; --btn-bg: ${btnBg}" @click="${this._handleFullscreen}" title="全屏切换">
             <ha-icon icon="${this._kioskOn ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
