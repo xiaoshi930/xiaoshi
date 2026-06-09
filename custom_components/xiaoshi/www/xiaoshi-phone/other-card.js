@@ -7,6 +7,52 @@ window.customCards.push({
     description: '移动端其他设备卡',
     preview: true
 }); 
+const PRESET_ON_STATES = [
+    // 通用
+    'on', 'open', 'opening','home',  'active', 'running',
+    'detected', 'occupied', 'unlocked', 'power_on', '开机',
+    // 媒体
+    'Playing','playing', '播放中',
+    // 空调/HVAC
+    'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
+    'auto', 'heat_cool', 'fan_only',
+    // 人在
+    '有人', 'one',
+    // 扫地机器人
+    '正在拖地','正在扫地','启动','cleaning',
+    // 厨房
+    '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm'
+];
+
+const SELECT_OPTION_TRANSLATIONS = {
+    'cool': '制冷', 'heat': '制热', 'auto': '自动', 'dry': '除湿', 'fan': '送风', 'fan_only': '仅送风',
+    'heat_cool': '制热制冷',
+    'on': '开启', 'off': '关闭',
+    'low': '低', 'medium': '中', 'high': '高',
+    'cleaning': '清扫', 'docking': '回充', 'charging': '充电中', 'idle': '待机',
+    'paused': '暂停', 'returning': '返回', 'error': '错误',
+    'brightness': '亮度', 'color_temp': '色温', 'color': '颜色',
+    'normal': '正常', 'sleep': '睡眠', 'silent': '静音', 'turbo': '极速', 'max': '最大',
+    'min': '最小', 'comfort': '舒适', 'eco': '节能', 'boost': '强力',
+    'away': '离家', 'home': '在家', 'smart': '智能',
+    'mop': '拖地', 'sweep': '扫地', 'sweep_mop': '扫拖',
+    'playing': '播放中', 'paused': '已暂停', 'standby': '待机',
+    'none_mode': '无模式', 'soft_freezing_mode': '软冷冻', 'zero_fresh_mode': '零度保鲜', 'cold_drink_mode': '冷饮',
+    'fresh_product_mode': '生鲜', 'partial_freezing_mode': '微冻', 'dry_zone_mode': '干区', 'freeze_warm_mode': '冻暖',
+    'freeze_mode': '冷冻',
+    'left_freezing_room': '左冷冻室', 'right_freezing_room': '右冷冻室',
+    'celsius': '摄氏度', 'fahrenheit': '华氏度',
+    'default': '默认', 'refrigeration': '冷藏', 'freezing': '冷冻',
+    'cancel': '取消', 'waiting': '等待中', 'running': '运行中',
+    'neutral_gear': '空挡', 'auto_wash': '自动洗', 'strong_wash': '强力洗', 'standard_wash': '标准洗',
+    'eco_wash': '节能洗', 'glass_wash': '玻璃洗', 'hour_wash': '一小时洗', 'fast_wash': '快速洗',
+    'soak_wash': '浸泡洗', '90min_wash': '90分钟洗', 'self_clean': '自清洁', 'fruit_wash': '水果洗',
+    'self_define': '自定义', 'germ': '除菌', 'bowl_wash': '碗洗', 'kill_germ': '杀菌',
+    'seafood_wash': '海鲜洗', 'hotpot_wash': '火锅洗', 'quietnight_wash': '静夜洗', 'less_wash': '少量洗',
+    'oilnet_wash': '油网洗',
+    'power_off': '关机', 'power_on': '开机', 'pause': '暂停', 'resume': '继续',
+    'unavailable': '离线', 'unknown': '未知',
+};
 
 class XiaoshiPhoneOtherCardEditor extends LitElement {
   static get properties() {
@@ -738,6 +784,19 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
 
         <!-- 状态显示值 -->
         <div class="form-group">
+          <label>设备实体状态重定义 (可选)</label>
+          <input
+            type="text"
+            .value=${this.config.on_states || ''}
+            @change=${(e) => { this.config = { ...this.config, on_states: e.target.value }; this._fireEvent(); this.requestUpdate(); }}
+            placeholder="如: on,open,running"
+            style="width: 100%; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+          />
+          <div class="hint">逗号分隔的状态值，匹配时视为设备开启。留空使用内置预设状态列表</div>
+        </div>
+
+        <!-- 状态显示值 -->
+        <div class="form-group">
           <label>状态显示值 (可选)</label>
           <textarea
             .value=${this.config.state_display || ''}
@@ -933,6 +992,7 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                     style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
                   />
                 </div>
+                <div class="hint" style="margin-bottom: 4px;">可选值: ${(this.hass?.states?.[item.entity]?.attributes?.options || []).map(opt => `${opt}(${SELECT_OPTION_TRANSLATIONS[opt] || opt})`).join(', ')}</div>
                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
                   <label style="font-size: 0.8em; min-width: 60px;">选项名称</label>
                   <input
@@ -1910,7 +1970,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
         return html`<div>实体未找到: ${this.config.entity}</div>`;
     }
     const state = entity.state;
-    const isOn = state === 'on' && state !== 'unavailable' && state !== 'unknown';
+    const customOnStates = this.config.on_states ? this.config.on_states.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const isOn = (customOnStates.length > 0 ? customOnStates.includes(state) : PRESET_ON_STATES.includes(state)) && state !== 'unavailable' && state !== 'unknown';
     let marginBottom = '4px';
 
     const attrs = entity.attributes;
@@ -2376,7 +2437,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
             const isActive = selectOption === entity.state;
             const btnBg = isActive ? buttonBg : buttonBg;
             const btnFg = isActive ? activeColor : buttonFg;
-            const optionDisplayName = (item.select_option_names && item.select_option_names[selectOption]) || selectOption;
+            const optionDisplayName = (item.select_option_names && item.select_option_names[selectOption]) || SELECT_OPTION_TRANSLATIONS[selectOption] || selectOption;
             return html`
                 <button class="func-button ${isActive ? 'select-active' : ''}"
                     style="background-color: ${btnBg};"
@@ -2488,7 +2549,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
               if (!displayValue || displayValue.length > 4) {
                   const options = entity.attributes.options || [];
                   const firstOption = options[0] || '';
-                  displayValue = firstOption.slice(0, 4);
+                  displayValue = (SELECT_OPTION_TRANSLATIONS[firstOption] || firstOption).slice(0, 4);
               }
               
               return html`
