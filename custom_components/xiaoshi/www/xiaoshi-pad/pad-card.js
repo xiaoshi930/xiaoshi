@@ -283,7 +283,7 @@ class XiaoshiPadCardEditor extends LitElement {
 
     _addDeviceIcon() {
         const icons = [...(this.config.device_icons || [])];
-        icons.push({ entity: '', on_image: '', off_image: '', width: '40px', height: '40px', top: '100px', left: '100px', popup_cards: '' });
+        icons.push({ entity: '', width: '40px', height: '40px', top: '100px', left: '100px', popup_cards: '' });
         this.config = { ...this.config, device_icons: icons };
         this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
     }
@@ -298,6 +298,33 @@ class XiaoshiPadCardEditor extends LitElement {
     _updateDeviceIconField(index, field, value) {
         const icons = [...(this.config.device_icons || [])];
         icons[index] = { ...icons[index], [field]: value };
+        this.config = { ...this.config, device_icons: icons };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+    }
+
+    _addDeviceIconStateImage(index) {
+        const icons = [...(this.config.device_icons || [])];
+        const sis = [...(icons[index].state_images || [])];
+        sis.push({ state: '', image: '' });
+        icons[index] = { ...icons[index], state_images: sis };
+        this.config = { ...this.config, device_icons: icons };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+    }
+
+    _removeDeviceIconStateImage(index, siIndex) {
+        const icons = [...(this.config.device_icons || [])];
+        const sis = [...(icons[index].state_images || [])];
+        sis.splice(siIndex, 1);
+        icons[index] = { ...icons[index], state_images: sis };
+        this.config = { ...this.config, device_icons: icons };
+        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+    }
+
+    _updateDeviceIconStateImageField(index, siIndex, field, value) {
+        const icons = [...(this.config.device_icons || [])];
+        const sis = [...(icons[index].state_images || [])];
+        sis[siIndex] = { ...sis[siIndex], [field]: value };
+        icons[index] = { ...icons[index], state_images: sis };
         this.config = { ...this.config, device_icons: icons };
         this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
     }
@@ -552,7 +579,14 @@ class XiaoshiPadCardEditor extends LitElement {
                             <div class="glow-row">
                                 <label>实体</label>
                                 <input type="text" .value="${di.entity || ''}" @change="${(e) => this._updateDeviceIconField(i, 'entity', e.target.value)}" placeholder="climate.xxx">
-                                <label>条件</label>
+                            </div>
+                            <div class="glow-row">
+                                <label>图片</label>
+                                <select @change="${(e) => this._updateDeviceIconField(i, 'image_mode', e.target.value)}">
+                                    <option value="" ?selected="${!di.image_mode}">on/off状态</option>
+                                    <option value="custom" ?selected="${di.image_mode === 'custom'}">其他状态</option>
+                                </select>
+                                <label style="font-weight:bold;font-size:12px;white-space:nowrap;min-width:auto;margin-left:8px;">条件</label>
                                 <select @change="${(e) => this._updateDeviceIconField(i, 'condition_mode', e.target.value)}">
                                     <option value="" ?selected="${!di.condition_mode}">预置</option>
                                     <option value="append" ?selected="${di.condition_mode === 'append'}">新增</option>
@@ -565,6 +599,7 @@ class XiaoshiPadCardEditor extends LitElement {
                                 <input type="text" .value="${di.status_conditions || ''}" @change="${(e) => this._updateDeviceIconField(i, 'status_conditions', e.target.value)}" placeholder="on,home,有人">
                             </div>
                             ` : ''}
+                            ${!di.image_mode || di.image_mode === '' ? html`
                             <div class="glow-row">
                                 <label>开启图片</label>
                                 <input type="text" .value="${di.on_image || ''}" @change="${(e) => this._updateDeviceIconField(i, 'on_image', e.target.value)}" placeholder="/local/images/device_on.png">
@@ -573,6 +608,18 @@ class XiaoshiPadCardEditor extends LitElement {
                                 <label>关闭图片</label>
                                 <input type="text" .value="${di.off_image || ''}" @change="${(e) => this._updateDeviceIconField(i, 'off_image', e.target.value)}" placeholder="/local/images/device_off.png">
                             </div>
+                            ` : html`
+                            ${(di.state_images || []).map((si, siIdx) => html`
+                            <div class="glow-row" style="gap:4px;">
+                                <label>值</label>
+                                <input type="text" style="flex:0.8; max-width: 60px;" .value="${si.state || ''}" @change="${(e) => this._updateDeviceIconStateImageField(i, siIdx, 'state', e.target.value)}" placeholder="heat">
+                                <label>图</label>
+                                <input type="text" style="flex:1.2;" .value="${si.image || ''}" @change="${(e) => this._updateDeviceIconStateImageField(i, siIdx, 'image', e.target.value)}" placeholder="/local/images/device_heat.png">
+                                <button class="glow-remove-btn" style="padding:2px 4px;font-size:11px;" @click="${() => this._removeDeviceIconStateImage(i, siIdx)}">✕</button>
+                            </div>
+                            `)}
+                            <button class="add-glow-btn" style="font-size:11px;padding:3px 8px;align-self:flex-start;" @click="${() => this._addDeviceIconStateImage(i)}">+ 添加状态图片</button>
+                            `}
                             <div class="size-row">
                                 <div class="glow-row">
                                     <label style="width: 50px;">宽</label>
@@ -1029,7 +1076,11 @@ class XiaoshiPadCard extends LitElement {
       device_glows: config.device_glows || [],
       light_buttons: config.light_buttons || [],
       person_icons: config.person_icons || [],
-      device_icons: config.device_icons || [],
+      device_icons: (config.device_icons || []).map(di => ({
+        ...di,
+        image_mode: di.image_mode || '',
+        state_images: di.state_images || []
+      })),
       btn_area_left: config.btn_area_left || '20px',
       weather_animation: config.weather_animation === true,
       weather_entity: config.weather_entity || '',
@@ -1390,14 +1441,31 @@ class XiaoshiPadCard extends LitElement {
       const entity = this.hass.states[item.entity];
       if (!entity) return '';
 
-      const isOn = this._isDeviceIconOn(item);
       const width = item.width || '40px';
       const height = item.height || '40px';
       const posSize = `top: ${item.top || '100px'}; left: ${item.left || '100px'}; width: ${width}; height: ${height};`;
 
-      const onImage = item.on_image || '';
-      const offImage = item.off_image || '';
-      const imageUrl = isOn ? onImage : offImage;
+      const isOn = this._isDeviceIconOn(item);
+      const state = entity.state;
+      const isUnavailable = state === 'unknown' || state === 'unavailable';
+
+      let imageUrl = '';
+
+      if (item.image_mode === 'custom' && item.state_images && item.state_images.length > 0) {
+        // 自定义状态图片模式：按实体值匹配图片
+        const matched = item.state_images.find(si => si.state && si.state.toLowerCase() === state.toLowerCase());
+        if (matched && matched.image) {
+          imageUrl = matched.image;
+        } else {
+          // unknown/unavailable 或未匹配时，取 off_image 或最后一个状态图片
+          imageUrl = item.off_image || (item.state_images.length > 0 ? item.state_images[item.state_images.length - 1].image : '');
+        }
+      } else {
+        // 默认 on/off 模式
+        const onImage = item.on_image || '';
+        const offImage = item.off_image || '';
+        imageUrl = isOn ? onImage : offImage;
+      }
 
       if (imageUrl) {
         return html`<button class="device-icon-item" style="${posSize}" @click="${() => this._onDeviceIconClick(item)}" title="${item.entity}">
