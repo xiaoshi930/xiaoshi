@@ -19,28 +19,12 @@ const PRESET_ON_STATES = [
     'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
     'auto', 'heat_cool', 'fan_only',
     // 人在
-    '有人', '2～5分钟无人移动',
+    '有人', 'one',
     // 扫地机器人
     '正在拖地','正在扫地','启动','cleaning',
     // 厨房
     '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm'
 ];
-const PRESET_OFF_STATES = [
-    // 通用
-    'off', 'closed', 'closing', 'not_home', 'unavailable', 'unknown', 'idle', 'standby',
-    'unlocked',
-    // 人在
-    '无人',
-    // 媒体
-    'Paused', 'paused', '停止',
-    // 空调/HVAC
-    'off',
-    // 扫地机器人
-    'docked', 'charging', 'error', 'returning',
-    // 厨房
-    'Idle', 'Shut Off'
-];
-
 class XiaoshiRoomCardEditor extends LitElement {
     static get properties() {
         return {
@@ -1148,18 +1132,13 @@ class XiaoshiRoomCard extends LitElement {
         if (!device || !this.hass) return 0;
         const entities = device.entities || (device.entity ? [device.entity] : []);
         const conditions = this._getDeviceConditions(device);
-        // 覆盖条件时，不使用 PRESET_OFF_STATES 排除
+        // 覆盖条件时，不使用 off 排除
         const conditionMode = device.condition_mode || '';
-        const offStates = conditionMode === 'override' ? [] : PRESET_OFF_STATES.map(s => s.toLowerCase());
         let count = 0;
         for (const eid of entities) {
             const state = this.hass.states[eid];
             if (state) {
                 const stateLower = state.state.toLowerCase();
-                // PRESET_OFF_STATES 优先排除：模糊匹配到OFF条件则不计入开启
-                if (offStates.some(c => stateLower.includes(c) || c.includes(stateLower))) {
-                    continue;
-                }
                 if (conditions.includes(stateLower)) {
                     count++;
                 }
@@ -1308,10 +1287,8 @@ class XiaoshiRoomCard extends LitElement {
         } else {
             personConditions = PRESET_ON_STATES.map(s => s.toLowerCase());
         }
-        // PRESET_OFF_STATES 优先排除（模糊匹配），覆盖条件时跳过
-        const presetOffStates = personConditionMode === 'override' ? [] : PRESET_OFF_STATES.map(s => s.toLowerCase());
-        const isPersonOff = personState && presetOffStates.some(c => personState.toLowerCase().includes(c) || c.includes(personState.toLowerCase()));
-        const isHome = !isPersonOff && personState && personConditions.some(c => personState.toLowerCase().includes(c) || c.includes(personState.toLowerCase()));
+        // 人在判断：覆盖条件时跳过 off 排除
+        const isHome = personState && personConditions.some(c => personState.toLowerCase().includes(c) || c.includes(personState.toLowerCase()));
 
         // 构建传感器列表（温度、湿度、pm2.5 按顺序，有实体才显示）
         const sensorItems = [];
