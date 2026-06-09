@@ -3,8 +3,8 @@ import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-e
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-pad-climate-card',
-    name: '消逝卡(平板端)-空调/水暖毯/热水器/加湿器卡',
-    description: '平板端空调/水暖毯/热水器卡/加湿器卡',
+    name: '消逝卡(平板端)-空调/水暖毯/热水器/加湿器/除湿机卡',
+    description: '平板端空调/水暖毯/热水器/加湿器/除湿机卡',
     preview: true
 });
 
@@ -144,6 +144,7 @@ class XiaoshiPadClimateCardEditor extends LitElement {
 
     const attrs = this.hass.states[entityId].attributes;
     const isHumidifierEntity = entityId?.startsWith('humidifier.');
+    const isDehumidifier = attrs.device_class === 'dehumidifier';
     
     this._availableModes = {
       hasHvacModes: attrs.hvac_modes && attrs.hvac_modes.length > 0,
@@ -233,10 +234,13 @@ class XiaoshiPadClimateCardEditor extends LitElement {
     }
     // 初始化加湿器硬编码开关模式过滤器
     if (isHumidifierEntity) {
-      this._modeFilters.humidifier_switch = {
-        'on': this.config.mode_filters?.humidifier_switch?.['on'] === false ? false : true,
-        'off': this.config.mode_filters?.humidifier_switch?.['off'] === false ? false : true
-      };
+      const switchModes = isDehumidifier 
+        ? { 'on': true, 'off': true }
+        : { 'on': true, 'off': true };
+      this._modeFilters.humidifier_switch = {};
+      Object.keys(switchModes).forEach(mode => {
+        this._modeFilters.humidifier_switch[mode] = this.config.mode_filters?.humidifier_switch?.[mode] === false ? false : true;
+      });
     }
   }
 
@@ -841,7 +845,7 @@ class XiaoshiPadClimateCardEditor extends LitElement {
       <div class="form">
         <!-- 主实体选择 -->
         <div class="form-group">
-          <label>空调/水暖毯/热水器/加湿器实体 (必选)</label>
+          <label>空调/水暖毯/热水器/加湿器/除湿机实体 (必选)</label>
           <div class="entity-selector">
             <input
               type="text"
@@ -908,11 +912,11 @@ class XiaoshiPadClimateCardEditor extends LitElement {
                 html`<div class="mode-badge has-mode">✓ 热水器模式(operation_list)</div>` :
                 html`<div class="mode-badge no-mode">✗ 热水器模式(operation_list)</div>`}
               ${this._availableModes?.hasHumidifierModes ?
-                html`<div class="mode-badge has-mode">✓ 加湿器模式(available_modes)</div>` :
-                html`<div class="mode-badge no-mode">✗ 加湿器模式(available_modes)</div>`}
+                html`<div class="mode-badge has-mode">✓ 加湿器/除湿机模式(available_modes)</div>` :
+                html`<div class="mode-badge no-mode">✗ 加湿器/除湿机模式(available_modes)</div>`}
               ${this._availableModes?.hasHumidifierSwitch ?
-                html`<div class="mode-badge has-mode">✓ 加湿器开关</div>` :
-                html`<div class="mode-badge no-mode">✗ 加湿器开关</div>`}
+                html`<div class="mode-badge has-mode">✓ 加湿器/除湿机开关</div>` :
+                html`<div class="mode-badge no-mode">✗ 加湿器/除湿机开关</div>`}
             </div>
             ${Object.keys(this._availableModes).length === 0 ? html`
               <div style="color: #666; font-size: 12px; margin-bottom: 8px;">
@@ -987,9 +991,9 @@ class XiaoshiPadClimateCardEditor extends LitElement {
                       .checked=${this.config.show_humidifier_modes !== false}
                       @change=${this._showHumidifierModesChanged}
                     ></ha-switch>
-                    <span>显示加湿器模式按钮</span>
+                    <span>显示加湿器/除湿机模式按钮</span>
                   </div>
-                  ${this._renderModeFilter('available_modes', '加湿器模式筛选')}
+                  ${this._renderModeFilter('available_modes', '加湿器/除湿机模式筛选')}
                 </div>
               ` : ''}
               ${this.config.entity?.startsWith('humidifier.') ? html`
@@ -999,9 +1003,9 @@ class XiaoshiPadClimateCardEditor extends LitElement {
                       .checked=${this.config.show_humidifier_switch === true}
                       @change=${this._showHumidifierSwitchChanged}
                     ></ha-switch>
-                    <span>显示加湿器开关按钮</span>
+                    <span>显示加湿器/除湿机开关按钮</span>
                   </div>
-                  ${this._renderModeFilter('humidifier_switch', '加湿器开关筛选')}
+                  ${this._renderModeFilter('humidifier_switch', '加湿器/除湿机开关筛选')}
                 </div>
               ` : ''}
 
@@ -2488,6 +2492,11 @@ class XiaoshiPadClimateCard extends LitElement {
     this._variables = {};
   }
 
+  _isDehumidifier() {
+    const entity = this.hass.states[this.config.entity];
+    return entity?.attributes?.device_class === 'dehumidifier';
+  }
+
   _evaluateTheme() {
       try {
           const mode = this.config ? this.config.theme : 'system';
@@ -2689,6 +2698,7 @@ class XiaoshiPadClimateCard extends LitElement {
     const hasWaterModes = attrs.operation_list && attrs.operation_list.length > 0;
     const hasHumidifierModes = attrs.available_modes && attrs.available_modes.length > 0;
     const hasHumidifierSwitch = this.config.entity?.startsWith('humidifier.');
+    const isDehumidifier = attrs.device_class === 'dehumidifier';
 
     // 检查Select实体
     let hasSelectModes = false;
@@ -2800,7 +2810,7 @@ class XiaoshiPadClimateCard extends LitElement {
             ${showHumidifierModes ? html`
                 <div class="area-bg-wrapper">
                     <div class="humidifier-area">
-                        ${this._renderHumidifierButtons(attrs.available_modes, attrs.available_mode)}
+                        ${this._renderHumidifierButtons(attrs.available_modes, attrs.available_mode, isDehumidifier)}
                     </div>
                 </div>
             ` : ''}
@@ -2808,7 +2818,7 @@ class XiaoshiPadClimateCard extends LitElement {
             ${showHumidifierSwitch ? html`
                 <div class="area-bg-wrapper">
                     <div class="humidifier-area">
-                        ${this._renderHumidifierSwitchButtons()}
+                        ${this._renderHumidifierSwitchButtons(isDehumidifier)}
                     </div>
                 </div>
             ` : ''}
@@ -2882,6 +2892,7 @@ class XiaoshiPadClimateCard extends LitElement {
       else if (climateState === 'dry') activeColor = 'rgb(255,151,0)';
       else if (climateState === 'fan' || climateState === 'fan_only') activeColor = 'rgb(0,188,213)';
       else if (climateState === 'auto') activeColor = 'rgb(47,96,49)';
+      else if (climateState === 'on') activeColor = this._isDehumidifier() ? 'rgb(243,156,18)' : 'rgb(33,150,243)';
     }
 
     return html`
@@ -3013,6 +3024,7 @@ _renderExtraButtons(buttonType = 1) {
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(230, 230, 230)' : 'rgb(80, 80, 80)';
     const isHumidifierEntity = this.config.entity?.startsWith('humidifier.');
+    const isDehumidifier = this._isDehumidifier();
     let activeColor = theme === 'light' ? 'rgba(0, 188, 213)' : 'rgba(0, 188, 213)';
     if (state === 'cool') activeColor = 'rgb(33,150,243)';
     else if (state === 'heat') activeColor = 'rgb(254,111,33)';
@@ -3020,7 +3032,7 @@ _renderExtraButtons(buttonType = 1) {
     else if (state === 'dry') activeColor = 'rgb(255,151,0)';
     else if (state === 'fan' || state === 'fan_only') activeColor = 'rgb(0,188,213)';
     else if (state === 'auto') activeColor = 'rgb(47,96,49)';
-    else if (isHumidifierEntity) activeColor = 'rgb(33,150,243)';
+    else if (isHumidifierEntity) activeColor = isDehumidifier ? 'rgb(243,156,18)' : 'rgb(33,150,243)';
 
     const buttonConfigKey = buttonType === 1 ? 'buttons' : 'buttons2';
 
@@ -3445,7 +3457,7 @@ _renderExtraButtons(buttonType = 1) {
     });
   }
 
-  _renderHumidifierButtons(modes, currentMode) {
+  _renderHumidifierButtons(modes, currentMode, isDehumidifier = false) {
     if (!modes) return html``;
 
     const entity = this.hass.states[this.config.entity];
@@ -3453,7 +3465,23 @@ _renderExtraButtons(buttonType = 1) {
     const theme = this._evaluateTheme();
     const modeConfigs = this.config.mode_configs?.available_modes || {};
 
-    const modeIcons = {
+    const modeIcons = isDehumidifier ? {
+        'on': 'mdi:power',
+        'off': 'mdi:power-off',
+        'auto': 'mdi:autorenew',
+        'sleep': 'mdi:sleep',
+        'baby': 'mdi:baby',
+        'favorite': 'mdi:heart',
+        'low': 'mdi:water-off',
+        'medium': 'mdi:water-off',
+        'high': 'mdi:water-off',
+        'normal': 'mdi:water-off',
+        'continuous': 'mdi:water-off',
+        'quiet': 'mdi:volume-off',
+        'smart': 'mdi:brain',
+        'dry_clothes': 'mdi:tshirt-crew',
+        'strong': 'mdi:water-off'
+    } : {
         'on': 'mdi:power',
         'off': 'mdi:power-off',
         'auto': 'mdi:autorenew',
@@ -3478,13 +3506,14 @@ _renderExtraButtons(buttonType = 1) {
         // 获取自定义配置
         const showName = config.show_name !== false;
         const showIcon = config.show_icon !== false;
-        const customName = config.custom_name || this._translateHumidifierMode(mode);
-        const customIcon = config.custom_icon || modeIcons[mode] || 'mdi:water-percent';
+        const customName = config.custom_name || this._translateHumidifierMode(mode, isDehumidifier);
+        const customIcon = config.custom_icon || modeIcons[mode] || (isDehumidifier ? 'mdi:water-off' : 'mdi:water-percent');
 
         if (isActive) {
-            if (mode === 'on') bgColor = 'rgb(33,150,243)';
+            const humidifierActiveColor = isDehumidifier ? 'rgb(243,156,18)' : 'rgb(33,150,243)';
+            if (mode === 'on') bgColor = humidifierActiveColor;
             else if (mode === 'off') bgColor = theme === 'light' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
-            else bgColor = 'rgb(33,150,243)';
+            else bgColor = humidifierActiveColor;
         }
 
         return html`
@@ -3519,7 +3548,7 @@ _renderExtraButtons(buttonType = 1) {
     this._handleClick();
   }
 
-  _renderHumidifierSwitchButtons() {
+  _renderHumidifierSwitchButtons(isDehumidifier = false) {
     const entity = this.hass.states[this.config.entity];
     if (!entity) return html``;
 
@@ -3540,11 +3569,12 @@ _renderExtraButtons(buttonType = 1) {
         // 获取自定义配置
         const showName = config.show_name !== false;
         const showIcon = config.show_icon !== false;
-        const customName = config.custom_name || (mode === 'on' ? '开机' : '关机');
+        const customName = config.custom_name || (mode === 'on' ? (isDehumidifier ? '除湿' : '开机') : '关机');
         const customIcon = config.custom_icon || (mode === 'on' ? 'mdi:power' : 'mdi:power-off');
 
         if (isActive) {
-            if (mode === 'on') bgColor = 'rgb(33,150,243)';
+            const humidifierActiveColor = isDehumidifier ? 'rgb(243,156,18)' : 'rgb(33,150,243)';
+            if (mode === 'on') bgColor = humidifierActiveColor;
             else if (mode === 'off') bgColor = theme === 'light' ? 'rgb(180,180,180)' : 'rgb(150,150,150)';
         }
 
@@ -3562,7 +3592,27 @@ _renderExtraButtons(buttonType = 1) {
     });
   }
 
-  _translateHumidifierMode(mode) {
+  _translateHumidifierMode(mode, isDehumidifier = false) {
+    if (isDehumidifier) {
+      const dehumidifierTranslations = {
+          'on': '除湿',
+          'off': '关机',
+          'auto': '自动',
+          'sleep': '睡眠',
+          'baby': '婴儿',
+          'favorite': '收藏',
+          'low': '低速',
+          'medium': '中速',
+          'high': '高速',
+          'normal': '正常',
+          'continuous': '连续',
+          'quiet': '静音',
+          'smart': '智能',
+          'dry_clothes': '干衣',
+          'strong': '强力'
+      };
+      return dehumidifierTranslations[mode] || mode;
+    }
     const translations = {
         'on': '开机',
         'off': '关机',
@@ -3594,6 +3644,7 @@ _renderExtraButtons(buttonType = 1) {
     const mainEntity = this.hass.states[this.config.entity];
     const mainEntityState = mainEntity ? mainEntity.state : 'off';
     const isHumidifierEntity = this.config.entity?.startsWith('humidifier.');
+    const isDehumidifier = this._isDehumidifier();
 
     // 应用过滤器
     const filters = this.config.mode_filters?.select_modes || {};
@@ -3613,7 +3664,7 @@ _renderExtraButtons(buttonType = 1) {
         if (isActive) {
             // 根据主实体类型和状态决定颜色
             if (isHumidifierEntity) {
-                bgColor = 'rgb(33,150,243)'; // 加湿器使用蓝色
+                bgColor = isDehumidifier ? 'rgb(243,156,18)' : 'rgb(33,150,243)';
             } else {
                 // 空调和热水器实体根据状态决定颜色
                 if (mainEntityState === 'cool') bgColor = 'rgb(33,150,243)';
