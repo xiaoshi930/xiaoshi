@@ -1609,14 +1609,6 @@ class XiaoshiPhoneOtherCard extends LitElement {
             "icon spacer5 spacer5"
             "icon br6 br6"
             "icon spacer6 spacer6"
-            "icon br7 br7"
-            "icon spacer7 spacer7"
-            "icon br8 br8"
-            "icon spacer8 spacer8"
-            "icon br9 br9"
-            "icon spacer9 spacer9"
-            "icon br10 br10"
-            "icon spacer10 spacer10"
             "icon timer timer"
             "icon extra extra"
             "icon extra2 extra2"
@@ -2289,14 +2281,6 @@ class XiaoshiPhoneOtherCard extends LitElement {
         (buttonRows[4] && buttonRows[4].items && buttonRows[4].items.length > 0) ? '6px' : '0',
         (buttonRows[5] && buttonRows[5].items && buttonRows[5].items.length > 0) ? 'auto' : '0',
         (buttonRows[5] && buttonRows[5].items && buttonRows[5].items.length > 0) ? '6px' : '0',
-        (buttonRows[6] && buttonRows[6].items && buttonRows[6].items.length > 0) ? 'auto' : '0',
-        (buttonRows[6] && buttonRows[6].items && buttonRows[6].items.length > 0) ? '6px' : '0',
-        (buttonRows[7] && buttonRows[7].items && buttonRows[7].items.length > 0) ? 'auto' : '0',
-        (buttonRows[7] && buttonRows[7].items && buttonRows[7].items.length > 0) ? '6px' : '0',
-        (buttonRows[8] && buttonRows[8].items && buttonRows[8].items.length > 0) ? 'auto' : '0',
-        (buttonRows[8] && buttonRows[8].items && buttonRows[8].items.length > 0) ? '6px' : '0',
-        (buttonRows[9] && buttonRows[9].items && buttonRows[9].items.length > 0) ? 'auto' : '0',
-        (buttonRows[9] && buttonRows[9].items && buttonRows[9].items.length > 0) ? '6px' : '0',
         hasTimer ? 'auto' : '0',
         hasExtra ? 'auto' : '0',
         hasExtra2 ? 'auto' : '0',
@@ -2353,7 +2337,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
               </div>
           ` : ''}
 
-          ${[0,1,2,3,4,5,6,7,8,9].map(rowIndex => {
+          ${[0,1,2,3,4,5].map(rowIndex => {
             const row = buttonRows[rowIndex];
             const items = (row && row.items) ? row.items.filter(item => item.entity) : [];
             // 计算实际按钮数量（select选项展开为独立按钮）
@@ -2387,7 +2371,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
               <div class="button-row-area" style="grid-area: br${rowIndex + 1}; grid-template-columns: repeat(${gridCols}, 1fr);">
                   ${items.length > 0 ? this._renderButtonRowItems(rowIndex) : ''}
               </div>
-              ${items.length > 0 && rowIndex < 10 ? html`<div style="grid-area: spacer${rowIndex + 1};"></div>` : ''}
+              ${items.length > 0 && rowIndex < 6 ? html`<div style="grid-area: spacer${rowIndex + 1};"></div>` : ''}
             `;
           })}
 
@@ -2610,9 +2594,17 @@ class XiaoshiPhoneOtherCard extends LitElement {
             if (item.fan_label && item.fan_label.trim()) {
                 renderUnits.push({ item, entity, domain, selectOption: null, isLabel: true });
             }
-            filteredPresets.slice(0, 6).forEach(opt => {
-                renderUnits.push({ item, entity, domain, selectOption: opt });
-            });
+            if (filteredPresets.length > 0) {
+                filteredPresets.slice(0, 6).forEach(opt => {
+                    renderUnits.push({ item, entity, domain, selectOption: opt });
+                });
+            } else {
+                // 无预设模式，使用percentage档位控制
+                const speeds = ['off', 'low', 'mid', 'high'];
+                speeds.forEach(speed => {
+                    renderUnits.push({ item, entity, domain, selectOption: `speed:${speed}` });
+                });
+            }
         } else {
             renderUnits.push({ item, entity, domain, selectOption: null });
         }
@@ -2679,6 +2671,30 @@ class XiaoshiPhoneOtherCard extends LitElement {
                     </button>
                 `;
             }
+            // 档位按钮（无preset_modes时）
+            if (selectOption && selectOption.startsWith('speed:')) {
+                const speedMode = selectOption.replace('speed:', '');
+                const speedLabels = { 'off': '关闭', 'low': '低', 'mid': '中', 'high': '高' };
+                const percentage = entity.attributes.percentage || 0;
+                const step = entity.attributes.percentage_step || 33.33;
+                const speedPercentages = { 'off': 0, 'low': Math.round(step), 'mid': Math.round(step * 2), 'high': 100 };
+                const isActive = speedMode === 'off'
+                    ? entity.state === 'off'
+                    : entity.state !== 'off' && Math.abs(percentage - speedPercentages[speedMode]) < step / 2;
+                const btnFg = isActive ? activeColor : buttonFg;
+                return html`
+                    <button class="func-button ${isActive ? 'select-active' : ''}"
+                        style="background-color: ${buttonBg};"
+                        @click=${() => speedMode === 'off'
+                            ? this._callService('fan', 'turn_off', { entity_id: buttonEntityId })
+                            : this._callService('fan', 'set_percentage', { entity_id: buttonEntityId, percentage: speedPercentages[speedMode] })}
+                        title="${speedLabels[speedMode]}"
+                    >
+                        <div class="func-button-value" style="color: ${btnFg}">${speedLabels[speedMode]}</div>
+                    </button>
+                `;
+            }
+            // 预设模式按钮
             const currentPreset = entity.attributes.preset_mode || '';
             const isActive = selectOption === currentPreset;
             const btnFg = isActive ? activeColor : buttonFg;
