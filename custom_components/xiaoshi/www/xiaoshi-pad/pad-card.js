@@ -586,6 +586,12 @@ class XiaoshiPadCardEditor extends LitElement {
                                     <option value="" ?selected="${!di.image_mode}">on/off状态</option>
                                     <option value="custom" ?selected="${di.image_mode === 'custom'}">其他状态</option>
                                 </select>
+                                <label style="font-weight:bold;font-size:12px;white-space:nowrap;min-width:auto;margin-left:8px;">方向</label>
+                                <select @change="${(e) => this._updateDeviceIconField(i, 'image_flip', e.target.value)}">
+                                    <option value="" ?selected="${!di.image_flip}">正常</option>
+                                    <option value="flip-h" ?selected="${di.image_flip === 'flip-h'}">左右翻转</option>
+                                    <option value="flip-v" ?selected="${di.image_flip === 'flip-v'}">上下翻转</option>
+                                </select>
                                 <label style="font-weight:bold;font-size:12px;white-space:nowrap;min-width:auto;margin-left:8px;">条件</label>
                                 <select @change="${(e) => this._updateDeviceIconField(i, 'condition_mode', e.target.value)}">
                                     <option value="" ?selected="${!di.condition_mode}">预置</option>
@@ -1089,6 +1095,7 @@ class XiaoshiPadCard extends LitElement {
       device_icons: (config.device_icons || []).map(di => ({
         ...di,
         image_mode: di.image_mode || '',
+        image_flip: di.image_flip || '',
         state_images: di.state_images || []
       })),
       btn_area_left: config.btn_area_left || '20px',
@@ -1932,9 +1939,16 @@ class XiaoshiPadCard extends LitElement {
         imageUrl = isOn ? onImage : offImage;
       }
 
+      let flipStyle = '';
+      if (item.image_flip === 'flip-h') {
+        flipStyle = 'transform: scaleX(-1);';
+      } else if (item.image_flip === 'flip-v') {
+        flipStyle = 'transform: scaleY(-1);';
+      }
+
       if (imageUrl) {
         return html`<button class="device-icon-item" style="${posSize}" @click="${() => this._onDeviceIconClick(item)}" title="${item.entity}">
-          <img src="${imageUrl}" alt="device" />
+          <img src="${imageUrl}" alt="device" style="${flipStyle}" />
         </button>`;
       }
 
