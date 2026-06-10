@@ -700,16 +700,16 @@ class XiaoshiPadCard extends LitElement {
         background-position: center;
         background-repeat: no-repeat;
         pointer-events: none;
-        z-index: 1;
+        z-index: 2;
       }
       .device-glow {
         position: absolute;
         pointer-events: none;
-        z-index: 2;
+        z-index: 4;
       }
       .light-btn {
         position: absolute;
-        z-index: 10;
+        z-index: 7;
         border: none;
         cursor: pointer;
         display: flex;
@@ -770,11 +770,11 @@ class XiaoshiPadCard extends LitElement {
         width: 100%;
         height: 100%;
         pointer-events: none;
-        z-index: 5;
+        z-index: 3;
       }
       .person-icon-item {
         position: absolute;
-        z-index: 10;
+        z-index: 5;
         pointer-events: none;
         display: flex;
         align-items: center;
@@ -798,7 +798,7 @@ class XiaoshiPadCard extends LitElement {
       }
       .device-icon-item {
         position: absolute;
-        z-index: 10;
+        z-index: 6;
         cursor: pointer;
         display: flex;
         align-items: center;
