@@ -283,7 +283,7 @@ class XiaoshiPadCardEditor extends LitElement {
 
     _addDeviceIcon() {
         const icons = [...(this.config.device_icons || [])];
-        icons.push({ entity: '', width: '40px', height: '40px', top: '100px', left: '100px', popup_cards: '' });
+        icons.push({ entity: '', width: '25px', height: '25px', top: '100px', left: '100px', popup_cards: '' });
         this.config = { ...this.config, device_icons: icons };
         this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
     }
@@ -629,11 +629,11 @@ class XiaoshiPadCardEditor extends LitElement {
                             <div class="size-row">
                                 <div class="glow-row">
                                     <label style="width: 50px;">宽</label>
-                                    <input type="text" .value="${di.width || '40px'}" @change="${(e) => this._updateDeviceIconField(i, 'width', e.target.value)}">
+                                    <input type="text" .value="${di.width || '25px'}" @change="${(e) => this._updateDeviceIconField(i, 'width', e.target.value)}">
                                 </div>
                                 <div class="glow-row">
                                     <label>高</label>
-                                    <input type="text" .value="${di.height || '40px'}" @change="${(e) => this._updateDeviceIconField(i, 'height', e.target.value)}">
+                                    <input type="text" .value="${di.height || '25px'}" @change="${(e) => this._updateDeviceIconField(i, 'height', e.target.value)}">
                                 </div>
                                 <div class="glow-row">
                                     <label>Top</label>
@@ -1913,8 +1913,8 @@ class XiaoshiPadCard extends LitElement {
       const entity = this.hass.states[item.entity];
       if (!entity) return '';
 
-      const width = item.width || '40px';
-      const height = item.height || '40px';
+      const width = item.width || '25px';
+      const height = item.height || '25px';
       const posSize = `top: ${item.top || '100px'}; left: ${item.left || '100px'}; width: ${width}; height: ${height};`;
 
       const isOn = this._isDeviceIconOn(item);
