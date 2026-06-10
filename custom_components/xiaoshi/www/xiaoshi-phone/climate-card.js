@@ -1714,20 +1714,13 @@ class XiaoshiPhoneClimateCard extends LitElement {
       }
       
       .preset-text {
-        display: flex;
-        font-size: 6px;
+        font-size: 8px;
         overflow: hidden;
-        white-space: nowrap;        
-        position: absolute;
-        bottom: 0px;
-        right: 0px; 
-        padding: 1px 6px 1px 0;  
-        white-space: normal;
-        border-radius: 4px;
-        align-items: center;
-        justify-content: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
         line-height: 1;
-        background-color: var(--button-bg);  
+        margin-left: 2px;
       }
       
       .water-button {
@@ -2649,6 +2642,11 @@ _renderExtraButtons(buttonType = 1) {
       const presetIcons = {
           '普通': 'mdi:radiator',
           '除螨': 'mdi:radiator',
+          '待机': 'mdi:power-standby',
+          '干燥': 'mdi:water-percent',
+          '除雾': 'mdi:car-defrost-rear',
+          '快速除雾': 'mdi:car-defrost-front',
+          '速热': 'mdi:fire',
           'none': 'mdi:thermostat',
           'comfort': 'mdi:home-heart',
           'eco': 'mdi:leaf',
@@ -2656,7 +2654,7 @@ _renderExtraButtons(buttonType = 1) {
           'sleep': 'mdi:power-sleep',
           'away': 'mdi:home-export-outline'
       };
-      return presetIcons[mode] || '';
+      return presetIcons[mode] || 'mdi:thermostat';
   }
 
   _getWaterIcon(mode) {
