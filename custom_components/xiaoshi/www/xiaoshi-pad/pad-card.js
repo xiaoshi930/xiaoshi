@@ -1527,25 +1527,33 @@ class XiaoshiPadCard extends LitElement {
     const entity = this.hass.states[this.config.weather_entity];
     if (!entity) return null;
     // 无动画的天气状态
-    const noAnimStates = ['晴', '多云', '阴', 'clear', 'cloudy', 'overcast', 'partlycloudy', 'partly_cloudy', 'mostly_cloudy', 'sunny', 'fair'];
-    // 优先使用实体 state，排除无动画状态后回退到 condition_cn
+    const noAnimStates = ['晴', '多云', '少云', '晴间多云', '阴', '热', '冷', '未知', 'clear', 'cloudy', 'overcast', 'partlycloudy', 'partly_cloudy', 'mostly_cloudy', 'sunny', 'fair'];
+    // 优先使用 condition_cn，排除无动画状态后回退到实体 state
     const rawState = entity.state || '';
     const cn = entity.attributes && entity.attributes.condition_cn ? entity.attributes.condition_cn : '';
-    const state = (!noAnimStates.includes(rawState) && rawState) || (!noAnimStates.includes(cn) && cn) || '';
+    const state = (!noAnimStates.includes(cn) && cn) || (!noAnimStates.includes(rawState) && rawState) || '';
 
-    const lightRain = ['小雨', '雨', '阵雨', '冻雨', 'light_rain', 'light rain', 'rainy', 'rain', 'showers', 'drizzle', 'freezing_rain'];
-    const medRain = ['中雨', 'moderate_rain', 'moderate rain'];
-    const heavyRain = ['大雨', '暴雨', 'pouring', 'heavy_rain', 'heavy rain', 'torrential_rain'];
-    const lightSnow = ['小雪', '雪', '雨夹雪', 'light_snow', 'light snow', 'snow', 'sleet', 'snowy_rainy', 'snowy-rainy'];
-    const medSnow = ['中雪', 'moderate_snow', 'moderate snow'];
-    const heavySnow = ['大雪', '暴雪', 'heavy_snow', 'heavy snow'];
-    const thunder = ['雷', '雷阵雨', '雷雨', 'thunderstorm', 'lightning', 'lightning-rainy', 'thunderstorm_with_rain'];
+    const lightRain = ['小雨', '雨', '阵雨', '冻雨', '细雨', '小到中雨', 'light_rain', 'light rain', 'rainy', 'rain', 'showers', 'drizzle', 'freezing_rain'];
+    const medRain = ['中雨', '强阵雨', '中到大雨', 'moderate_rain', 'moderate rain'];
+    const heavyRain = ['大雨', '极端降雨', '暴雨', '大暴雨', '特大暴雨', '大到暴雨', '暴雨到大暴雨', '大暴雨到特大暴雨', 'pouring', 'heavy_rain', 'heavy rain', 'torrential_rain'];
+    const lightSnow = ['小雪', '雪', '雨夹雪', '雨雪天气', '阵雨夹雪', '阵雪', '小到中雪', 'light_snow', 'light snow', 'snow', 'sleet', 'snowy_rainy', 'snowy-rainy'];
+    const medSnow = ['中雪', '中到大雪', 'moderate_snow', 'moderate snow'];
+    const heavySnow = ['大雪', '暴雪', '大到暴雪', 'heavy_snow', 'heavy snow'];
+    const thunder = ['雷', '雷阵雨', '强雷阵雨', '雷阵雨伴冰雹', '雷雨', 'thunderstorm', 'lightning', 'lightning-rainy', 'thunderstorm_with_rain'];
     const hailStates = ['冰雹', 'hail'];
-    const dustStates = ['沙尘暴', '沙尘', '扬沙', '浮尘', '霾', 'dust', 'sandstorm', 'duststorm', 'haze'];
-    const fogStates = ['雾', '大雾', '浓雾', 'fog', 'mist'];
+    const heavyDust = ['沙尘暴', '强沙尘暴', 'dust', 'sandstorm', 'duststorm'];
+    const lightDust = ['沙尘', '扬沙', '浮尘'];
+    const lightHaze = ['霾', 'haze'];
+    const heavyHaze = ['中度霾', '重度霾', '严重霾'];
+    const lightFog = ['薄雾', '雾', 'fog', 'mist'];
+    const heavyFog = ['大雾', '浓雾', '强浓雾', '特强浓雾'];
 
-    if (fogStates.includes(state)) return { type: 'fog', density: 'heavy', speed: 'slow', lightning: false };
-    if (dustStates.includes(state)) return { type: 'dust', density: 'heavy', speed: 'fast', lightning: false };
+    if (heavyHaze.includes(state)) return { type: 'haze', density: 'heavy', speed: 'slow', lightning: false };
+    if (lightHaze.includes(state)) return { type: 'haze', density: 'light', speed: 'slow', lightning: false };
+    if (heavyFog.includes(state)) return { type: 'fog', density: 'heavy', speed: 'slow', lightning: false };
+    if (lightFog.includes(state)) return { type: 'fog', density: 'light', speed: 'slow', lightning: false };
+    if (heavyDust.includes(state)) return { type: 'dust', density: 'heavy', speed: 'fast', lightning: false };
+    if (lightDust.includes(state)) return { type: 'dust', density: 'light', speed: 'slow', lightning: false };
     if (hailStates.includes(state)) return { type: 'hail', density: 'heavy', speed: 'fast', lightning: false };
     if (thunder.includes(state)) return { type: 'rain', density: 'heavy', speed: 'fast', lightning: true };
     if (heavyRain.includes(state)) return { type: 'rain', density: 'heavy', speed: 'fast', lightning: false };
@@ -1576,12 +1584,12 @@ class XiaoshiPadCard extends LitElement {
         length: weatherConfig.speed === 'slow' ? 12 : weatherConfig.speed === 'medium' ? 18 : 25,
         type: 'rain'
       };
-    } else if (weatherConfig.type === 'fog') {
+    } else if (weatherConfig.type === 'fog' || weatherConfig.type === 'haze') {
       return {
         count: fogDensityMap[weatherConfig.density],
         speed: fogSpeedMap[weatherConfig.speed],
         size: weatherConfig.density === 'heavy' ? 120 : weatherConfig.density === 'medium' ? 80 : 50,
-        type: 'fog'
+        type: weatherConfig.type
       };
     } else if (weatherConfig.type === 'hail') {
       return {
@@ -1635,7 +1643,7 @@ class XiaoshiPadCard extends LitElement {
         angle: Math.random() * Math.PI * 2,
         driftY: (Math.random() - 0.5) * 1.5
       };
-    } else if (params.type === 'fog') {
+    } else if (params.type === 'fog' || params.type === 'haze') {
       return {
         x: Math.random() * w,
         y: Math.random() * h,
@@ -1710,6 +1718,8 @@ class XiaoshiPadCard extends LitElement {
           this._drawDust(ctx, w, h, params);
         } else if (weatherConfig.type === 'fog') {
           this._drawFog(ctx, w, h, params);
+        } else if (weatherConfig.type === 'haze') {
+          this._drawHaze(ctx, w, h, params);
         } else {
           this._drawSnow(ctx, w, h, params);
         }
@@ -1838,6 +1848,36 @@ class XiaoshiPadCard extends LitElement {
       const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
       gradient.addColorStop(0, `rgba(220, 220, 230, ${p.opacity})`);
       gradient.addColorStop(1, `rgba(220, 220, 230, 0)`);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      p.x += p.speed;
+      p.y += p.driftY;
+
+      if (p.x > w + p.size) {
+        p.x = -p.size;
+        p.y = Math.random() * h;
+      }
+      if (p.x < -p.size) {
+        p.x = w + p.size;
+      }
+      if (p.y > h + p.size) p.y = -p.size;
+      if (p.y < -p.size) p.y = h + p.size;
+    }
+  }
+
+  _drawHaze(ctx, w, h, params) {
+    // 整体霾底色（沙黄色）
+    ctx.fillStyle = 'rgba(180, 150, 80, 0.06)';
+    ctx.fillRect(0, 0, w, h);
+
+    for (const p of this._weatherParticles) {
+      // 大范围径向渐变霾团（沙黄色）
+      const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+      gradient.addColorStop(0, `rgba(200, 170, 90, ${p.opacity})`);
+      gradient.addColorStop(1, `rgba(200, 170, 90, 0)`);
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fillStyle = gradient;
