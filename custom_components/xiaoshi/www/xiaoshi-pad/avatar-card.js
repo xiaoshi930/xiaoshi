@@ -883,7 +883,7 @@ class XiaoshiAvatarPadCard extends LitElement {
         const awayColor = this.config.away_color || '#a5271f';
         const currentTheme = this._evaluateTheme();
         let bg = '#999';
-        const alpha = currentTheme === 'dark' ? 0.6 : 0.3;
+        const alpha = currentTheme === 'dark' ? 0.5 : 0.3;
         if (data && data.isHome === true) {
             bg = this._darkenColor(homeColor, alpha);
         } else if (data && data.isHome === false) {
