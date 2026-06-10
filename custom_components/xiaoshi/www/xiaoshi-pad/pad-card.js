@@ -830,6 +830,15 @@ class XiaoshiPadCard extends LitElement {
     this._weatherParticles = [];
     this._weatherParticlesType = null;
     this._weatherLightning = { active: false, opacity: 0, nextFlash: 0 };
+    this._lightLongPressTimer = null;
+    this._lightLongPress = false;
+    this._lightPopupOverlay = null;
+    this._lightPopupElement = null;
+    this._lightPopupEscHandler = null;
+    this._lightPopupEntityId = null;
+    this._lightPopupHassUnsubscribe = null;
+    this._lightPopupUpdatePending = false;
+    this._lightPopupHass = null;
   }
 
   connectedCallback() {
@@ -841,6 +850,7 @@ class XiaoshiPadCard extends LitElement {
     super.disconnectedCallback();
     this._stopAutoColorTimer();
     this._stopWeatherAnimation();
+    this._closeLightPopup();
     this._applyKioskMode(false);
   }
 
@@ -1098,6 +1108,10 @@ class XiaoshiPadCard extends LitElement {
 
   // ========== 灯光按钮 ==========
   _toggleLight(entityId) {
+    if (this._lightLongPress) {
+      this._lightLongPress = false;
+      return;
+    }
     if (!this.hass || !entityId) return;
     this._handleHaptic();
     this.hass.callService('light', 'toggle', { entity_id: entityId });
@@ -1322,6 +1336,457 @@ class XiaoshiPadCard extends LitElement {
         </button>`;
       }
       return html`<button class="light-btn ${isOn ? 'on' : 'off'}" style="${btnStyle}" @click="${() => this._toggleLight(item.entity)}" title="${item.entity}"></button>`;
+    });
+  }
+
+  // ========== 灯光长按弹窗 ==========
+  _onContainerPointerDown(e) {
+    const btn = e.target.closest ? e.target.closest('.light-btn') : null;
+    if (!btn) return;
+    const entityId = btn.title;
+    if (!entityId) return;
+    this._lightLongPress = false;
+    this._lightLongPressTimer = setTimeout(() => {
+      this._lightLongPress = true;
+      this._showLightPopup(entityId);
+    }, 500);
+  }
+
+  _onContainerPointerUp(e) {
+    clearTimeout(this._lightLongPressTimer);
+  }
+
+  _onContainerPointerLeave(e) {
+    clearTimeout(this._lightLongPressTimer);
+  }
+
+  _injectLightPopupStyles() {
+    if (document.getElementById('xiaoshi-light-popup-style')) return;
+    const style = document.createElement('style');
+    style.id = 'xiaoshi-light-popup-style';
+    style.textContent = `
+      .xiaoshi-light-popup-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+      @keyframes xiaoshiLightPopupIn {
+        from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+        to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      }
+      .xiaoshi-light-popup {
+        position: fixed;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1005;
+        background: var(--lp-bg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 16px;
+        padding: 24px;
+        min-width: 320px;
+        max-width: 420px;
+        color: var(--lp-text);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        animation: xiaoshiLightPopupIn 0.2s ease-out;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      }
+      .xiaoshi-light-popup-title {
+        font-size: 18px;
+        font-weight: 600;
+        text-align: center;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--lp-border);
+      }
+      .xiaoshi-light-popup-section {
+        margin-bottom: 20px;
+      }
+      .xiaoshi-light-popup-section:last-child {
+        margin-bottom: 0;
+      }
+      .xiaoshi-light-popup-label {
+        font-size: 14px;
+        color: var(--lp-text-secondary);
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .xiaoshi-light-popup-value {
+        color: var(--lp-text);
+        font-weight: 600;
+        font-size: 15px;
+      }
+      .xiaoshi-light-popup-slider-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .xiaoshi-light-popup-slider-icon {
+        font-size: 16px;
+        flex-shrink: 0;
+        width: 24px;
+        text-align: center;
+      }
+      .xiaoshi-light-popup-slider {
+        flex: 1;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 6px;
+        border-radius: 3px;
+        outline: none;
+        cursor: pointer;
+      }
+      .xiaoshi-light-brightness-slider {
+        background: linear-gradient(to right, #333, #FFD54F);
+      }
+      .xiaoshi-light-popup-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--lp-thumb);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        cursor: pointer;
+      }
+      .xiaoshi-light-popup-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--lp-thumb);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        cursor: pointer;
+        border: none;
+      }
+      .xiaoshi-light-popup-effects {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .xiaoshi-light-popup-effect-btn {
+        padding: 8px 14px;
+        border-radius: 20px;
+        border: 1px solid var(--lp-btn-border);
+        background: var(--lp-btn-bg);
+        color: var(--lp-btn-text);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: inherit;
+      }
+      .xiaoshi-light-popup-effect-btn:hover {
+        background: var(--lp-btn-hover);
+      }
+      .xiaoshi-light-popup-effect-btn.active {
+        background: rgba(33, 150, 243, 0.3);
+        border-color: rgba(33, 150, 243, 0.6);
+        color: #fff;
+        font-weight: 600;
+      }
+      .xiaoshi-light-popup-toggle-btn {
+        padding: 10px 32px;
+        border-radius: 24px;
+        border: 1px solid var(--lp-btn-border);
+        background: var(--lp-btn-bg);
+        color: var(--lp-btn-text);
+        font-size: 15px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: inherit;
+      }
+      .xiaoshi-light-popup-toggle-btn:hover {
+        background: var(--lp-btn-hover);
+      }
+      .xiaoshi-light-popup-toggle-btn.on {
+        background: rgba(255, 180, 0, 0.25);
+        border-color: rgba(255, 180, 0, 0.5);
+        color: #FFB800;
+        font-weight: 600;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  _showLightPopup(entityId) {
+    if (!this.hass || !entityId) return;
+    const entity = this.hass.states[entityId];
+    if (!entity) return;
+
+    const attrs = entity.attributes || {};
+    const supportedColorModes = attrs.supported_color_modes || [];
+    const hasColorTemp = supportedColorModes.includes('color_temp');
+    const effectList = attrs.effect_list || [];
+    const hasEffects = effectList.length > 0;
+
+    if (!hasColorTemp && !hasEffects) return;
+
+    this._injectLightPopupStyles();
+    this._closeLightPopup();
+
+    const isOn = entity.state === 'on';
+    const friendlyName = attrs.friendly_name || entityId;
+    const brightness = isOn ? Math.round((attrs.brightness || 0) / 255 * 100) : 0;
+    const minKelvin = attrs.min_color_temp_kelvin || 2700;
+    const maxKelvin = attrs.max_color_temp_kelvin || 6500;
+    const currentKelvin = attrs.color_temp_kelvin || Math.round((minKelvin + maxKelvin) / 2);
+    const currentEffect = attrs.effect || '';
+
+    this._lightPopupEntityId = entityId;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'xiaoshi-light-popup-overlay';
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) this._closeLightPopup();
+    });
+
+    const popup = document.createElement('div');
+    popup.className = 'xiaoshi-light-popup';
+
+    // 根据主题设置弹窗颜色变量
+    const currentTheme = (typeof window.theme === 'function') ? window.theme() : 'dark';
+    if (currentTheme === 'light') {
+      popup.style.setProperty('--lp-bg', 'rgba(240, 240, 240, 0.95)');
+      popup.style.setProperty('--lp-text', '#222');
+      popup.style.setProperty('--lp-text-secondary', 'rgba(0,0,0,0.5)');
+      popup.style.setProperty('--lp-border', 'rgba(0,0,0,0.1)');
+      popup.style.setProperty('--lp-thumb', '#555');
+      popup.style.setProperty('--lp-btn-bg', 'rgba(0,0,0,0.06)');
+      popup.style.setProperty('--lp-btn-border', 'rgba(0,0,0,0.15)');
+      popup.style.setProperty('--lp-btn-text', 'rgba(0,0,0,0.7)');
+      popup.style.setProperty('--lp-btn-hover', 'rgba(0,0,0,0.1)');
+    } else {
+      popup.style.setProperty('--lp-bg', 'rgba(40, 40, 40, 0.95)');
+      popup.style.setProperty('--lp-text', '#fff');
+      popup.style.setProperty('--lp-text-secondary', 'rgba(255,255,255,0.7)');
+      popup.style.setProperty('--lp-border', 'rgba(255,255,255,0.1)');
+      popup.style.setProperty('--lp-thumb', '#fff');
+      popup.style.setProperty('--lp-btn-bg', 'rgba(255,255,255,0.08)');
+      popup.style.setProperty('--lp-btn-border', 'rgba(255,255,255,0.2)');
+      popup.style.setProperty('--lp-btn-text', 'rgba(255,255,255,0.8)');
+      popup.style.setProperty('--lp-btn-hover', 'rgba(255,255,255,0.15)');
+    }
+
+    let content = '';
+    content += '<div class="xiaoshi-light-popup-title">' + friendlyName + '</div>';
+
+    // 开关按钮
+    content += '<div class="xiaoshi-light-popup-section" style="text-align:center;margin-bottom:16px;">';
+    content += '<button class="xiaoshi-light-popup-toggle-btn' + (isOn ? ' on' : '') + '" id="xiaoshi-light-toggle-btn">' + (isOn ? '💡 已开启' : '⚫ 已关闭') + '</button>';
+    content += '</div>';
+
+    // 亮度
+    content += '<div class="xiaoshi-light-popup-section">';
+    content += '<div class="xiaoshi-light-popup-label"><span>亮度</span><span class="xiaoshi-light-popup-value" id="xiaoshi-light-brightness-val">' + brightness + '%</span></div>';
+    content += '<div class="xiaoshi-light-popup-slider-row">';
+    content += '<span class="xiaoshi-light-popup-slider-icon">🔅</span>';
+    content += '<input type="range" class="xiaoshi-light-popup-slider xiaoshi-light-brightness-slider" min="1" max="100" value="' + brightness + '">';
+    content += '<span class="xiaoshi-light-popup-slider-icon">🔆</span>';
+    content += '</div></div>';
+
+    // 色温
+    if (hasColorTemp) {
+      content += '<div class="xiaoshi-light-popup-section">';
+      content += '<div class="xiaoshi-light-popup-label"><span>色温</span><span class="xiaoshi-light-popup-value" id="xiaoshi-light-colortemp-val">' + currentKelvin + 'K</span></div>';
+      content += '<div class="xiaoshi-light-popup-slider-row">';
+      content += '<span class="xiaoshi-light-popup-slider-icon" style="color:#FF9800;">🟠</span>';
+      content += '<input type="range" class="xiaoshi-light-popup-slider xiaoshi-light-colortemp-slider" min="' + minKelvin + '" max="' + maxKelvin + '" value="' + currentKelvin + '" step="100" style="background: linear-gradient(to right, #FF9800, #FFF5E1, #87CEEB);">';
+      content += '<span class="xiaoshi-light-popup-slider-icon" style="color:#87CEEB;">🔵</span>';
+      content += '</div></div>';
+    }
+
+    // 情景模式
+    if (hasEffects) {
+      content += '<div class="xiaoshi-light-popup-section">';
+      content += '<div class="xiaoshi-light-popup-label"><span>情景模式</span></div>';
+      content += '<div class="xiaoshi-light-popup-effects">';
+      effectList.forEach(function(effect) {
+        content += '<button class="xiaoshi-light-popup-effect-btn' + (currentEffect === effect ? ' active' : '') + '" data-effect="' + effect + '">' + effect + '</button>';
+      });
+      content += '</div></div>';
+    }
+
+    popup.innerHTML = content;
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(popup);
+
+    this._lightPopupOverlay = overlay;
+    this._lightPopupElement = popup;
+
+    // 亮度滑块
+    const brightnessSlider = popup.querySelector('.xiaoshi-light-brightness-slider');
+    if (brightnessSlider) {
+      let lastCall = 0;
+      const self = this;
+      brightnessSlider.addEventListener('input', function(e) {
+        const val = parseInt(e.target.value);
+        const valueEl = popup.querySelector('#xiaoshi-light-brightness-val');
+        if (valueEl) valueEl.textContent = val + '%';
+        const now = Date.now();
+        if (now - lastCall > 200) {
+          lastCall = now;
+          self.hass.callService('light', 'turn_on', { entity_id: entityId, brightness_pct: val });
+        }
+      });
+      brightnessSlider.addEventListener('change', function(e) {
+        const val = parseInt(e.target.value);
+        self.hass.callService('light', 'turn_on', { entity_id: entityId, brightness_pct: val });
+      });
+    }
+
+    // 色温滑块
+    const colortempSlider = popup.querySelector('.xiaoshi-light-colortemp-slider');
+    if (colortempSlider) {
+      let lastCall = 0;
+      const self = this;
+      colortempSlider.addEventListener('input', function(e) {
+        const val = parseInt(e.target.value);
+        const valueEl = popup.querySelector('#xiaoshi-light-colortemp-val');
+        if (valueEl) valueEl.textContent = val + 'K';
+        const now = Date.now();
+        if (now - lastCall > 200) {
+          lastCall = now;
+          self.hass.callService('light', 'turn_on', { entity_id: entityId, color_temp_kelvin: val });
+        }
+      });
+      colortempSlider.addEventListener('change', function(e) {
+        const val = parseInt(e.target.value);
+        self.hass.callService('light', 'turn_on', { entity_id: entityId, color_temp_kelvin: val });
+      });
+    }
+
+    // 情景模式按钮
+    const effectBtns = popup.querySelectorAll('.xiaoshi-light-popup-effect-btn');
+    const self = this;
+    effectBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        const effect = btn.dataset.effect;
+        self.hass.callService('light', 'turn_on', { entity_id: entityId, effect: effect });
+        effectBtns.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+      });
+    });
+
+    // 开关按钮
+    const toggleBtn = popup.querySelector('#xiaoshi-light-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        self.hass.callService('light', 'toggle', { entity_id: entityId });
+      });
+    }
+
+    // ESC 关闭
+    this._lightPopupEscHandler = function(e) {
+      if (e.key === 'Escape') self._closeLightPopup();
+    }.bind(this);
+    window.addEventListener('keydown', this._lightPopupEscHandler);
+
+    // 订阅 hass 状态变化实时更新弹窗
+    this._startLightPopupHassWatcher();
+  }
+
+  _closeLightPopup() {
+    if (this._lightPopupOverlay) {
+      this._lightPopupOverlay.remove();
+      this._lightPopupOverlay = null;
+    }
+    if (this._lightPopupElement) {
+      this._lightPopupElement.remove();
+      this._lightPopupElement = null;
+    }
+    if (this._lightPopupEscHandler) {
+      window.removeEventListener('keydown', this._lightPopupEscHandler);
+      this._lightPopupEscHandler = null;
+    }
+    if (this._lightPopupHassUnsubscribe) {
+      this._lightPopupHassUnsubscribe();
+      this._lightPopupHassUnsubscribe = null;
+    }
+    this._lightPopupUpdatePending = false;
+    this._lightPopupHass = null;
+    this._lightPopupEntityId = null;
+  }
+
+  _startLightPopupHassWatcher() {
+    if (!this.hass || !this.hass.connection) return;
+    try {
+      this.hass.connection.subscribeMessage(
+        () => {
+          if (!this._lightPopupElement) return;
+          this._scheduleLightPopupUpdate();
+        },
+        { type: 'subscribe_events', event_type: 'state_changed' }
+      ).then((unsub) => {
+        this._lightPopupHassUnsubscribe = unsub;
+      });
+    } catch (err) {
+      console.warn('[xiaoshi-pad-card] 灯光弹窗订阅失败:', err);
+    }
+  }
+
+  _scheduleLightPopupUpdate() {
+    if (this._lightPopupUpdatePending) return;
+    this._lightPopupUpdatePending = true;
+    requestAnimationFrame(() => {
+      this._lightPopupUpdatePending = false;
+      if (!this._lightPopupElement) return;
+      this._updateLightPopupSliders();
+    });
+  }
+
+  _updateLightPopupSliders() {
+    const entityId = this._lightPopupEntityId;
+    if (!entityId || !this.hass) return;
+    const entity = this.hass.states[entityId];
+    if (!entity) return;
+
+    const attrs = entity.attributes || {};
+    const isOn = entity.state === 'on';
+    const brightness = isOn ? Math.round((attrs.brightness || 0) / 255 * 100) : 0;
+    const currentKelvin = attrs.color_temp_kelvin || 0;
+    const currentEffect = attrs.effect || '';
+
+    const popup = this._lightPopupElement;
+    if (!popup) return;
+
+    // 更新开关按钮
+    const toggleBtn = popup.querySelector('#xiaoshi-light-toggle-btn');
+    if (toggleBtn) {
+      if (isOn) {
+        toggleBtn.textContent = '💡 已开启';
+        toggleBtn.classList.add('on');
+      } else {
+        toggleBtn.textContent = '⚫ 已关闭';
+        toggleBtn.classList.remove('on');
+      }
+    }
+
+    const brightnessSlider = popup.querySelector('.xiaoshi-light-brightness-slider');
+    const brightnessVal = popup.querySelector('#xiaoshi-light-brightness-val');
+    if (brightnessSlider && isOn) {
+      brightnessSlider.value = brightness;
+      if (brightnessVal) brightnessVal.textContent = brightness + '%';
+    }
+
+    const colortempSlider = popup.querySelector('.xiaoshi-light-colortemp-slider');
+    const colortempVal = popup.querySelector('#xiaoshi-light-colortemp-val');
+    if (colortempSlider && currentKelvin) {
+      colortempSlider.value = currentKelvin;
+      if (colortempVal) colortempVal.textContent = currentKelvin + 'K';
+    }
+
+    const effectBtns = popup.querySelectorAll('.xiaoshi-light-popup-effect-btn');
+    effectBtns.forEach(btn => {
+      if (btn.dataset.effect === currentEffect) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
     });
   }
 
@@ -1946,7 +2411,10 @@ class XiaoshiPadCard extends LitElement {
 
     return html`
       <div class="container"
-        style="width: ${this.config.width}; height: ${this.config.height}; background: ${gradientStyle};">
+        style="width: ${this.config.width}; height: ${this.config.height}; background: ${gradientStyle};"
+        @pointerdown="${this._onContainerPointerDown}"
+        @pointerup="${this._onContainerPointerUp}"
+        @pointerleave="${this._onContainerPointerLeave}">
         ${bgImage ? html`<div class="bg-image" style="background-image: url('${bgImage}');"></div>` : ''}
         ${this.config.weather_animation ? html`<canvas id="weather-canvas" class="weather-canvas"></canvas>` : ''}
         ${(this.config.device_glows || []).map(item => {
