@@ -306,6 +306,7 @@ class XiaoshiAvatarPadCard extends LitElement {
             ha-card {
                 border-radius: 10px !important;
                 overflow: visible;
+                background: transparent !important;
             }
             .card-wrapper {
                 position: relative;
@@ -619,22 +620,11 @@ class XiaoshiAvatarPadCard extends LitElement {
         return { r: 0, g: 0, b: 0 };
     }
 
-    // 改淡：将颜色向白色混合，amount 0~1
-    _lightenColor(color, amount) {
-        const { r, g, b } = this._parseColor(color);
-        const lr = Math.round(r + (255 - r) * amount);
-        const lg = Math.round(g + (255 - g) * amount);
-        const lb = Math.round(b + (255 - b) * amount);
-        return `rgb(${lr},${lg},${lb})`;
-    }
-
-    // 改暗：将颜色向黑色混合，amount 0~1
+    // 改暗：通过降低透明度混合背景色，amount 0~1
     _darkenColor(color, amount) {
         const { r, g, b } = this._parseColor(color);
-        const dr = Math.round(r * (1 - amount));
-        const dg = Math.round(g * (1 - amount));
-        const db = Math.round(b * (1 - amount));
-        return `rgb(${dr},${dg},${db})`;
+        const alpha = 1 - amount;
+        return `rgba(${r},${g},${b},${alpha})`;
     }
 
     /**
@@ -893,10 +883,11 @@ class XiaoshiAvatarPadCard extends LitElement {
         const awayColor = this.config.away_color || '#a5271f';
         const currentTheme = this._evaluateTheme();
         let bg = '#999';
+        const alpha = currentTheme === 'dark' ? 0.6 : 0.3;
         if (data && data.isHome === true) {
-            bg = currentTheme === 'dark' ? this._darkenColor(homeColor, 0.3) : homeColor;
+            bg = this._darkenColor(homeColor, alpha);
         } else if (data && data.isHome === false) {
-            bg = currentTheme === 'dark' ? this._darkenColor(awayColor, 0.3) : awayColor;
+            bg = this._darkenColor(awayColor, alpha);
         }
 
         return html`
