@@ -399,22 +399,21 @@ class XiaoshiAvatarCard extends LitElement {
                 vertical-align: bottom;
                 margin-left: 0.2em;
             }
-            .status-badge {
+            .home-count-badge {
                 position: absolute;
-                top: -0.7em;
-                right: -1.2em;
-                background: rgba(255,255,255,0.9);
+                top: 0;
+                right: 0.1em;
+                background: rgba(255,255,255,0.92);
                 color: #333;
-                font-size: 2vw;
+                font-size: 2.2vw;
                 font-weight: bold;
-                min-width: 1.4em;
-                width: 1.4em;
-                height: 1.4em;
-                line-height: 1.4em;
+                width: 1.6em;
+                height: 1.6em;
+                line-height: 1.6em;
                 text-align: center;
                 border-radius: 50%;
-                padding: 0;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+                z-index: 100;
             }
             .info-text {
                 font-size: 2vw;
@@ -921,6 +920,7 @@ class XiaoshiAvatarCard extends LitElement {
                 @touchend="${this._onTouchEnd}"
                 @mousedown="${this._onMouseDown}"
                 @mouseup="${this._onMouseUp}">
+                <div class="home-count-badge">${allData.homeCount}</div>
                 ${allCardsHtml}
             </div>
         `;
@@ -1042,25 +1042,10 @@ class XiaoshiAvatarCard extends LitElement {
         // 渲染头像+圆环
         const avatarHtml = this._renderAvatarWithRingForConfig(data, personConfig);
 
-        // 渲染状态文字
+        // 渲染状态文字：每个卡片显示自己的在家/离家
         const duration = this._formatDuration(data.lastChanged);
-        let statusHtml = html``;
-        if (isMain) {
-            // 主卡：有人在家显示"在家"+角标，全不在家显示"离家"
-            if (allData.homeCount > 0) {
-                statusHtml = html`
-                    <div class="status-text">
-                        <span style="position:relative;">在家<span class="status-badge">${allData.homeCount}</span></span>${duration ? html`<span class="status-duration">${duration}</span>` : ''}
-                    </div>
-                `;
-            } else {
-                statusHtml = html`<div class="status-text">离家${duration ? html`<span class="status-duration">${duration}</span>` : ''}</div>`;
-            }
-        } else {
-            // 副卡：只显示当前人的在家/离家，无角标
-            const label = data.isHome === true ? '在家' : '离家';
-            statusHtml = html`<div class="status-text">${label}${duration ? html`<span class="status-duration">${duration}</span>` : ''}</div>`;
-        }
+        const label = data.isHome === true ? '在家' : '离家';
+        const statusHtml = html`<div class="status-text">${label}${duration ? html`<span class="status-duration">${duration}</span>` : ''}</div>`;
 
         // 渲染生日信息
         let birthdayHtml = html``;
