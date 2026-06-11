@@ -862,10 +862,15 @@ class XiaoshiPadCard extends LitElement {
 
   _startAutoColorTimer() {
     this._stopAutoColorTimer();
-    this._autoColorTimer = setInterval(() => {
-      this._hueShift = (this._hueShift + 6) % 360;
+    const update = () => {
+      const now = new Date();
+      const secondsInHour = now.getMinutes() * 60 + now.getSeconds();
+      // 0-3600秒映射到0-360色相，每10秒一段共360段
+      this._hueShift = Math.floor(secondsInHour / 10);
       this.requestUpdate();
-    }, 60000);
+    };
+    update();
+    this._autoColorTimer = setInterval(update, 10000);
   }
 
   _stopAutoColorTimer() {
@@ -2053,8 +2058,8 @@ class XiaoshiPadCard extends LitElement {
     const hailSpeedMap = { fast: 12 };
     const dustDensityMap = { heavy: 150, medium: 80, light: 40 };
     const dustSpeedMap = { fast: 6, medium: 4, slow: 2 };
-    const fogDensityMap = { heavy: 30, medium: 15, light: 8 };
-    const fogSpeedMap = { slow: 0.3, medium: 0.6, fast: 1 };
+    const fogDensityMap = { heavy: 50, medium: 25, light: 35 };
+    const fogSpeedMap = { slow: 0.8, medium: 1.2, fast: 1.8 };
 
     if (weatherConfig.type === 'rain') {
       return {
@@ -2067,7 +2072,7 @@ class XiaoshiPadCard extends LitElement {
       return {
         count: fogDensityMap[weatherConfig.density],
         speed: fogSpeedMap[weatherConfig.speed],
-        size: weatherConfig.density === 'heavy' ? 120 : weatherConfig.density === 'medium' ? 80 : 50,
+        size: weatherConfig.density === 'heavy' ? 120 : weatherConfig.density === 'medium' ? 80 : 70,
         type: weatherConfig.type
       };
     } else if (weatherConfig.type === 'hail') {
@@ -2126,10 +2131,11 @@ class XiaoshiPadCard extends LitElement {
       return {
         x: Math.random() * w,
         y: Math.random() * h,
-        speed: params.speed + Math.random() * 0.2,
-        size: params.size + Math.random() * 40,
-        opacity: 0.08 + Math.random() * 0.12,
-        driftY: (Math.random() - 0.5) * 0.3
+        speed: params.speed + Math.random() * 0.3,
+        size: params.size + Math.random() * 50,
+        opacity: params.type === 'haze' ? (0.12 + Math.random() * 0.22) : (0.12 + Math.random() * 0.18),
+        driftY: (Math.random() - 0.5) * 0.3,
+        driftX: (Math.random() - 0.5) * 0.2
       };
     } else {
       return {
@@ -2319,7 +2325,7 @@ class XiaoshiPadCard extends LitElement {
 
   _drawFog(ctx, w, h, params) {
     // 整体雾气底色
-    ctx.fillStyle = 'rgba(200, 200, 210, 0.06)';
+    ctx.fillStyle = 'rgba(200, 200, 210, 0.08)';
     ctx.fillRect(0, 0, w, h);
 
     for (const p of this._weatherParticles) {
@@ -2332,6 +2338,7 @@ class XiaoshiPadCard extends LitElement {
       ctx.fillStyle = gradient;
       ctx.fill();
 
+      // 缓慢向右移动
       p.x += p.speed;
       p.y += p.driftY;
 
@@ -2349,7 +2356,7 @@ class XiaoshiPadCard extends LitElement {
 
   _drawHaze(ctx, w, h, params) {
     // 整体霾底色（沙黄色）
-    ctx.fillStyle = 'rgba(180, 150, 80, 0.06)';
+    ctx.fillStyle = 'rgba(180, 150, 80, 0.08)';
     ctx.fillRect(0, 0, w, h);
 
     for (const p of this._weatherParticles) {
@@ -2362,6 +2369,7 @@ class XiaoshiPadCard extends LitElement {
       ctx.fillStyle = gradient;
       ctx.fill();
 
+      // 缓慢向右移动
       p.x += p.speed;
       p.y += p.driftY;
 
