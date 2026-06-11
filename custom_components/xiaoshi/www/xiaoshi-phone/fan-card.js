@@ -139,6 +139,13 @@ class XiaoshiPhoneFanCardEditor extends LitElement {
       { key: 'timer', label: '定时器timer', filter: 'timer.' },
     ];
 
+    const normalFanEntitySelectors = [
+      { key: 'entity', label: '风扇实体fan', filter: 'fan.' },
+      { key: 'temperature', label: '温度传感器sensor', filter: 'sensor.' },
+      { key: 'humidity', label: '湿度传感器sensor', filter: 'sensor.' },
+      { key: 'timer', label: '定时器timer', filter: 'timer.' },
+    ];
+
     return html`
       <div class="form">
         <div class="form-group">
@@ -165,7 +172,19 @@ class XiaoshiPhoneFanCardEditor extends LitElement {
           />
         </div>
 
-        ${entitySelectors.map(item => html`
+        <div class="form-group">
+          <label>风扇类型</label>
+          <select
+            @change=${this._fanTypeChanged}
+            .value=${this.config.fan_type || 'circulator'}
+            name="fan_type"
+          >
+            <option value="circulator">循环扇</option>
+            <option value="normal">普通风扇</option>
+          </select>
+        </div>
+
+        ${(this.config.fan_type === 'normal' ? normalFanEntitySelectors : entitySelectors).map(item => html`
           <div class="form-group">
             <label>${item.label}</label>
             <div class="entity-selector-with-remove">
@@ -313,6 +332,11 @@ class XiaoshiPhoneFanCardEditor extends LitElement {
 
   _widthChanged(e) {
     this.config = { ...this.config, width: e.target.value };
+    this._fireEvent();
+  }
+
+  _fanTypeChanged(e) {
+    this.config = { ...this.config, fan_type: e.target.value };
     this._fireEvent();
   }
 
@@ -492,6 +516,7 @@ class XiaoshiPhoneFanCard extends LitElement {
       entity: "",
       theme: "auto",
       width: "100%",
+      fan_type: "circulator",
       show_temperature: true,
       show_direction_control: true,
       timer: "",
@@ -1223,6 +1248,23 @@ class XiaoshiPhoneFanCard extends LitElement {
         color: var(--active-color) !important;
       }
 
+      /* 普通风扇图标容器 */
+      .normal-fan-icon-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* 风扇旋转动画 */
+      @keyframes fan-spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      .fan-spinning {
+        animation: fan-spin 1.5s linear infinite;
+      }
+
     `;
   }
 
@@ -1494,13 +1536,15 @@ class XiaoshiPhoneFanCard extends LitElement {
 
   render() {
     if (!this.hass || !this.config.entity) {
-      return html`<div>请选择循环扇实体</div>`;
+      return html`<div>请选择风扇实体</div>`;
     }
 
     const entity = this._getEntityState(this.config.entity);
     if (!entity) {
       return html`<div>实体未找到: ${this.config.entity}</div>`;
     }
+
+    const isNormalFan = this.config.fan_type === 'normal';
 
     const state = entity.state;
     const attrs = entity.attributes || {};
@@ -1569,12 +1613,31 @@ class XiaoshiPhoneFanCard extends LitElement {
       }
     }
 
-    // 模式列表（使用中文名称）
+    // 循环扇模式列表
     const modes = [
       { value: '直吹风', label: '直吹风', icon: 'mdi:weather-windy' },
       { value: '自然风', label: '自然风', icon: 'mdi:leaf' },
       { value: '智能风', label: '智能风', icon: 'mdi:fan-auto' },
       { value: '睡眠风', label: '睡眠风', icon: 'mdi:weather-night' },
+    ];
+
+    // 普通风扇模式列表 - 只要有preset_modes就显示模式按钮
+    const presetModes = attrs.preset_modes || [];
+    const hasPresetModes = presetModes.length > 0;
+    const normalModes = presetModes.map(m => ({
+      value: m,
+      label: m,
+      icon: 'mdi:fan',
+    }));
+
+    // 普通风扇档位 - 基于percentage_step计算
+    const percentageStep = attrs.percentage_step || 33.333333333333336;
+    const maxPercentage = attrs.percentage || 66;
+    // 计算3个档位
+    const normalSpeedLevels = [
+      { value: Math.round(percentageStep), label: `${Math.round(percentageStep)}%`, icon: 'mdi:fan-speed-1' },
+      { value: Math.round(percentageStep * 2), label: `${Math.round(percentageStep * 2)}%`, icon: 'mdi:fan-speed-2' },
+      { value: 100, label: '100%', icon: 'mdi:fan-speed-3' },
     ];
 
     // 风速档位（与原版一致：1档1-34, 2档35-69, 3档70-99, 4档100）
@@ -1608,6 +1671,15 @@ class XiaoshiPhoneFanCard extends LitElement {
     const buttonCount = Math.min((this.buttons || []).length, 7);
     const buttonCount2 = Math.min((this.buttons2 || []).length, 7);
 
+    // 普通风扇的当前档位
+    const getCurrentNormalLevel = () => {
+      if (currentPct <= 0) return 0;
+      for (const level of normalSpeedLevels) {
+        if (currentPct <= level.value) return level.value;
+      }
+      return 100;
+    };
+
     return html`
       <div class="card" style="
         width: ${this.width || '100%'};
@@ -1621,19 +1693,19 @@ class XiaoshiPhoneFanCard extends LitElement {
       ">
         ${isOn ? html`<div class="active-gradient"></div>` : ''}
         <div id="chart-container"></div>
-        <div class="content-container">
+        <div class="content-container" style="${isNormalFan ? 'grid-template-columns: 1fr 3fr;' : ''}">
           <!-- 状态行 -->
-          <div class="status-area" style="color: ${fgColor}">
-            <span class="status-name">${attrs.friendly_name || '循环扇'}</span>
+          <div class="status-area" style="color: ${fgColor}; ${isNormalFan ? 'grid-column: 1 / -1;' : ''}">
+            <span class="status-name">${attrs.friendly_name || (isNormalFan ? '风扇' : '循环扇')}</span>
             <span class="status-info">
               <span>${isOn ? presetMode : '关闭'}</span>
-              <span>${temperature}°C</span>
-              <span>${humidity}%</span>
+              ${this.config.temperature ? html`<span>${temperature}°C</span>` : ''}
+              ${this.config.humidity ? html`<span>${humidity}%</span>` : ''}
             </span>
           </div>
 
           <!-- 电源开关 -->
-          <div class="power-area">
+          <div class="power-area" style="${isNormalFan ? 'grid-column: 2;' : ''}">
             <button class="power-button" @click=${this._toggleFan}>
               <ha-icon
                 icon="${isOn ? 'mdi:toggle-switch' : 'mdi:toggle-switch-off'}"
@@ -1642,132 +1714,173 @@ class XiaoshiPhoneFanCard extends LitElement {
             </button>
           </div>
 
-          <!-- 方向控制区域 -->
-          ${this.config.show_direction_control !== false ? html`
-            <div class="direction-area">
-              <div class="direction-control">
-                <div class="dir-bg">
-                  <div class="dir扇 dir扇-up" @click=${() => this._setSwingDirection('UP')}></div>
-                  <div class="dir扇 dir扇-down" @click=${() => this._setSwingDirection('DOWN')}></div>
-                  <div class="dir扇 dir扇-left" @click=${() => this._setSwingDirection('LEFT')}></div>
-                  <div class="dir扇 dir扇-right" @click=${() => this._setSwingDirection('RIGHT')}></div>
-                </div>
-                <button class="dir-btn up" @click=${() => this._setSwingDirection('UP')}>
-                  <ha-icon icon="mdi:chevron-up"></ha-icon>
-                </button>
-                <button class="dir-btn down" @click=${() => this._setSwingDirection('DOWN')}>
-                  <ha-icon icon="mdi:chevron-down"></ha-icon>
-                </button>
-                <button class="dir-btn left" @click=${() => this._setSwingDirection('LEFT')}>
-                  <ha-icon icon="mdi:chevron-left"></ha-icon>
-                </button>
-                <button class="dir-btn right" @click=${() => this._setSwingDirection('RIGHT')}>
-                  <ha-icon icon="mdi:chevron-right"></ha-icon>
-                </button>
-                <button class="dir-btn center" @click=${() => this._toggleSwitch(this.config.reset_position)}>
-                </button>
+          ${isNormalFan ? html`
+            <!-- 普通风扇：左侧风扇图标 -->
+            <div class="direction-area" style="grid-row: 2 / 4; margin-right: 0;">
+              <div class="normal-fan-icon-container">
+                <ha-icon icon="mdi:fan" class="normal-fan-icon ${isOn ? 'fan-spinning' : ''}" style="--mdc-icon-size: 50px; color: ${isOn ? activeColor : secondaryBg};"></ha-icon>
               </div>
             </div>
-          ` : ''}
 
-          <!-- 模式区域 -->
-          <div class="mode-area">
-            ${modes.map(m => html`
-              <button
-                class="mode-button ${presetMode === m.value ? 'active-mode' : ''}"
-                @click=${() => this._setPresetMode(m.value)}
-              >
-                <ha-icon icon="${m.icon}"></ha-icon>
-                <span class="btn-text">${m.label}</span>
-              </button>
-            `)}
-          </div>
-
-          <!-- 风速区域 - 根据模式动态显示 -->
-          <div class="fanspeed-area">
-            ${presetMode === '自然风' ? html`
-              <!-- 自然风模式：显示4个档位按钮 -->
-              ${this.config.speed_level ? fanSpeedLevels.map(fs => html`
+            <!-- 普通风扇模式区域 -->
+            <div class="mode-area" style="grid-row: 2; grid-column: 2; margin-left: -10px;">
+              ${hasPresetModes ? normalModes.map(m => html`
                 <button
-                  class="mode-button ${currentPct >= fs.min && currentPct <= fs.max ? 'active-mode' : ''}"
-                  @click=${() => this._setSpeedLevel(fs.value)}
+                  class="mode-button ${presetMode === m.value ? 'active-mode' : ''}"
+                  @click=${() => this._setPresetMode(m.value)}
                 >
-                  <ha-icon icon="${fs.icon}"></ha-icon>
-                  <span class="btn-text">${fs.label}</span>
+                  <ha-icon icon="${m.icon}"></ha-icon>
+                  <span class="btn-text">${m.label}</span>
                 </button>
-              `) : html`
-                <!-- 没有风速档位实体时显示滑块 -->
+              `) : normalSpeedLevels.map((level, idx) => {
+                let isActive = false;
+                if (idx === 0 && currentPct > 0 && currentPct <= level.value) isActive = true;
+                else if (idx > 0 && currentPct > normalSpeedLevels[idx - 1].value && currentPct <= level.value) isActive = true;
+                else if (idx === normalSpeedLevels.length - 1 && currentPct === 100) isActive = true;
+                return html`
+                  <button
+                    class="mode-button ${isActive ? 'active-mode' : ''}"
+                    @click=${() => this._setFanSpeed(level.value)}
+                  >
+                    <ha-icon icon="${level.icon}"></ha-icon>
+                    <span class="btn-text">${level.value}%</span>
+                  </button>
+                `;
+              })}
+              <button
+                class="mode-button ${attrs.oscillating ? 'active-mode' : ''}"
+                @click=${this._toggleOscillate}
+              >
+                <ha-icon icon="mdi:rotate-3d-variant"></ha-icon>
+                <span class="btn-text">摇头</span>
+              </button>
+            </div>
+
+          ` : html`
+            <!-- 循环扇：方向控制区域 -->
+            ${this.config.show_direction_control !== false ? html`
+              <div class="direction-area">
+                <div class="direction-control">
+                  <div class="dir-bg">
+                    <div class="dir扇 dir扇-up" @click=${() => this._setSwingDirection('UP')}></div>
+                    <div class="dir扇 dir扇-down" @click=${() => this._setSwingDirection('DOWN')}></div>
+                    <div class="dir扇 dir扇-left" @click=${() => this._setSwingDirection('LEFT')}></div>
+                    <div class="dir扇 dir扇-right" @click=${() => this._setSwingDirection('RIGHT')}></div>
+                  </div>
+                  <button class="dir-btn up" @click=${() => this._setSwingDirection('UP')}>
+                    <ha-icon icon="mdi:chevron-up"></ha-icon>
+                  </button>
+                  <button class="dir-btn down" @click=${() => this._setSwingDirection('DOWN')}>
+                    <ha-icon icon="mdi:chevron-down"></ha-icon>
+                  </button>
+                  <button class="dir-btn left" @click=${() => this._setSwingDirection('LEFT')}>
+                    <ha-icon icon="mdi:chevron-left"></ha-icon>
+                  </button>
+                  <button class="dir-btn right" @click=${() => this._setSwingDirection('RIGHT')}>
+                    <ha-icon icon="mdi:chevron-right"></ha-icon>
+                  </button>
+                  <button class="dir-btn center" @click=${() => this._toggleSwitch(this.config.reset_position)}>
+                  </button>
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- 循环扇模式区域 -->
+            <div class="mode-area">
+              ${modes.map(m => html`
+                <button
+                  class="mode-button ${presetMode === m.value ? 'active-mode' : ''}"
+                  @click=${() => this._setPresetMode(m.value)}
+                >
+                  <ha-icon icon="${m.icon}"></ha-icon>
+                  <span class="btn-text">${m.label}</span>
+                </button>
+              `)}
+            </div>
+
+            <!-- 循环扇风速区域 -->
+            <div class="fanspeed-area">
+              ${presetMode === '自然风' ? html`
+                ${this.config.speed_level ? fanSpeedLevels.map(fs => html`
+                  <button
+                    class="mode-button ${currentPct >= fs.min && currentPct <= fs.max ? 'active-mode' : ''}"
+                    @click=${() => this._setSpeedLevel(fs.value)}
+                  >
+                    <ha-icon icon="${fs.icon}"></ha-icon>
+                    <span class="btn-text">${fs.label}</span>
+                  </button>
+                `) : html`
+                  ${this._renderSunSlider(currentPct, activeColor, secondaryBg, this.config.speed_level, this.config.entity)}
+                `}
+              ` : html`
+                <button class="speed-display-btn">
+                  <ha-icon icon="mdi:speedometer" style="color: ${activeColor}; --mdc-icon-size: 16px;"></ha-icon>
+                  <span class="speed-percent">${this._tempSpeedPct !== null ? this._tempSpeedPct : currentPct}%</span>
+                </button>
                 ${this._renderSunSlider(currentPct, activeColor, secondaryBg, this.config.speed_level, this.config.entity)}
               `}
-            ` : html`
-              <!-- 其他模式：显示风速数值按钮 + 滑块 -->
-              <button class="speed-display-btn">
-                <ha-icon icon="mdi:speedometer" style="color: ${activeColor}; --mdc-icon-size: 16px;"></ha-icon>
-                <span class="speed-percent">${this._tempSpeedPct !== null ? this._tempSpeedPct : currentPct}%</span>
-              </button>
-              ${this._renderSunSlider(currentPct, activeColor, secondaryBg, this.config.speed_level, this.config.entity)}
-            `}
-          </div>
+            </div>
 
-          <!-- 左右摆风区域 -->
-          <div class="oscillateh-area">
-            <button
-              class="switch-button ${attrs.oscillating ? 'active' : ''}"
-              @click=${this._toggleOscillate}
-            >
-              <ha-icon icon="mdi:arrow-oscillating"></ha-icon>
-              <span class="btn-text">左右摆风</span>
-            </button>
-            ${oscillateAngles.map(angle => html`
+            <!-- 循环扇上下摆风区域 -->
+            <div class="oscillatev-area">
               <button
-                class="angle-button ${oscillateAngle === angle.toString() ? 'active' : ''}"
-                @click=${() => this._selectOscillateAngle(angle)}
+                class="switch-button ${verticalSwingOn ? 'active' : ''}"
+                @click=${this._toggleVerticalSwing}
               >
-                <span class="btn-text">${angle}°</span>
+                <ha-icon icon="mdi:arrow-up-down"></ha-icon>
+                <span class="btn-text">上下摆风</span>
               </button>
-            `)}
-          </div>
+              ${verticalAngles.map(angle => html`
+                <button
+                  class="angle-button ${verticalAngle === angle.toString() ? 'active' : ''}"
+                  @click=${() => this._selectVerticalAngle(angle)}
+                >
+                  <span class="btn-text">${angle}°</span>
+                </button>
+              `)}
+              <button
+                class="switch-button ${cycleSwingOn ? 'active' : ''}"
+                @click=${this._toggleCycleSwing}
+              >
+                <ha-icon icon="mdi:arrow-all"></ha-icon>
+                <span class="btn-text">循环摆风</span>
+              </button>
+            </div>
 
-          <!-- 上下摆风区域 -->
-          <div class="oscillatev-area">
-            <button
-              class="switch-button ${verticalSwingOn ? 'active' : ''}"
-              @click=${this._toggleVerticalSwing}
-            >
-              <ha-icon icon="mdi:arrow-up-down"></ha-icon>
-              <span class="btn-text">上下摆风</span>
-            </button>
-            ${verticalAngles.map(angle => html`
+            <!-- 循环扇左右摆风区域 -->
+            <div class="oscillateh-area">
               <button
-                class="angle-button ${verticalAngle === angle.toString() ? 'active' : ''}"
-                @click=${() => this._selectVerticalAngle(angle)}
+                class="switch-button ${attrs.oscillating ? 'active' : ''}"
+                @click=${this._toggleOscillate}
               >
-                <span class="btn-text">${angle}°</span>
+                <ha-icon icon="mdi:arrow-oscillating"></ha-icon>
+                <span class="btn-text">左右摆风</span>
               </button>
-            `)}
-            <button
-              class="switch-button ${cycleSwingOn ? 'active' : ''}"
-              @click=${this._toggleCycleSwing}
-            >
-              <ha-icon icon="mdi:arrow-all"></ha-icon>
-              <span class="btn-text">循环摆风</span>
-            </button>
-          </div>
+              ${oscillateAngles.map(angle => html`
+                <button
+                  class="angle-button ${oscillateAngle === angle.toString() ? 'active' : ''}"
+                  @click=${() => this._selectOscillateAngle(angle)}
+                >
+                  <span class="btn-text">${angle}°</span>
+                </button>
+              `)}
+            </div>
+          `}
 
           ${hasTimer ? html`
-            <div class="timer-area">
+            <div class="timer-area" style="${isNormalFan ? 'grid-row: 3; grid-column: 2; margin-left: -10px;' : ''}">
               ${this._renderTimerControls(timerEntity)}
             </div>
           ` : ''}
 
           ${hasExtra ? html`
-            <div class="extra-area" style="grid-template-columns: repeat(${buttonCount}, 1fr);">
+            <div class="extra-area" style="grid-template-columns: repeat(${buttonCount}, 1fr); ${isNormalFan ? 'grid-row: 4; grid-column: 2; margin-left: 0;' : ''}">
               ${this._renderExtraButtons(1)}
             </div>
           ` : ''}
 
           ${hasExtra2 ? html`
-            <div class="extra2-area" style="grid-template-columns: repeat(${buttonCount2}, 1fr);">
+            <div class="extra2-area" style="grid-template-columns: repeat(${buttonCount2}, 1fr); ${isNormalFan ? 'grid-row: 5; grid-column: 2; margin-left: 0;' : ''}">
               ${this._renderExtraButtons(2)}
             </div>
           ` : ''}
