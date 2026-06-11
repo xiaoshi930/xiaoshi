@@ -1392,10 +1392,12 @@ class XiaoshiPhonePurifierCard extends LitElement {
       }
       
       .active-mode {
-        color: var(--active-color) !important;
+        background-color: var(--active-color) !important;
+        color: var(--active-text-color, white) !important;
       }
       
       .active-extra {
+        background-color: transparent !important;
         color: var(--active-color) !important;
       }
   `;
@@ -1537,7 +1539,7 @@ class XiaoshiPhonePurifierCard extends LitElement {
     const theme = this._evaluateTheme();
     
     // 确定颜色
-    let statusColor = theme === 'light' ? '#888888' : '#aaaaaa';
+    let statusColor = theme === 'light' ? '#05CD32' : '#05CD32';
     if (state === 'on') statusColor = '#05CD32';
     
     // 获取画布尺寸（CSS像素）
@@ -1696,15 +1698,18 @@ class XiaoshiPhonePurifierCard extends LitElement {
     const theme = this._evaluateTheme();
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
-    const buttonBg = theme === 'light' ? 'rgb(50,50,50)' : 'rgb(120,120,120)';
-    const buttonFg = 'rgb(250,250,250)';
-
-    let statusColor = 'rgb(250,250,250)';
+    const buttonBg = theme === 'light' ? 'rgb(230, 230, 230)' : 'rgb(80, 80, 80)';
+    const buttonFg = theme === 'light' ? 'rgb(50, 50, 50)' : 'rgb(240, 240, 240)';
+    
+    let statusColor = theme === 'light'? 'rgb(230, 230, 230)' : 'rgb(80, 80, 80)';
     let linearColor = 'rgb(0,0,0,0)';
     if (state === 'on') statusColor = 'rgb(50,205,50)' ,linearColor = 'rgb(50,205,50)';
     else if (state === 'off') statusColor = 'rgb(250,250,250)';
     else if (state === 'unknown') statusColor = 'rgb(250,250,250)';
     else if (state === 'unavailable') statusColor = 'rgb(250,250,250)';
+
+    // 激活按钮的文字颜色：off时背景浅色用深色文字，on时用白色
+    const activeTextColor = (state === 'off' || state === 'unknown' || state === 'unavailable') ? buttonFg : 'white';
 
     const stateTranslations = {
         'on': '开启',
@@ -1773,6 +1778,7 @@ class XiaoshiPhonePurifierCard extends LitElement {
                                 --button-bg: ${buttonBg}; 
                                 --button-fg: ${buttonFg}; 
                                 --active-color: ${statusColor};
+                                --active-text-color: ${activeTextColor};
                                 --linear-color: ${linearColor};
                                 grid-template-rows: ${gridPurifierlateRows}">
 																
@@ -1820,7 +1826,7 @@ class XiaoshiPhonePurifierCard extends LitElement {
           
           ${hasFanModes ? html`
               <div class="fan-area">
-                  ${this._renderFanButtons(fanModes, currentFanMode)}
+                  ${this._renderFanButtons(fanModes, currentFanMode, activeTextColor)}
               </div>
           ` : ''}
 
@@ -2154,7 +2160,7 @@ class XiaoshiPhonePurifierCard extends LitElement {
       this._handleClick();
   }
 
-  _renderModeButtons(modes, currentMode) {
+  _renderModeButtons(modes, currentMode, activeTextColor) {
       if (!modes) return html``;
       
       const modeIcons = {
@@ -2170,16 +2176,16 @@ class XiaoshiPhonePurifierCard extends LitElement {
               <button 
                   class="mode-button ${isActive ? 'active-mode' : ''}" 
                   @click=${() => this._setHvacMode(mode)}
-                  style="color: ${isActive ? 'var(--active-color)' : ''}"
+                  style="${isActive ? `background-color: var(--active-color); color: ${activeTextColor};` : ''}"
                   title="${this._translateMode(mode)}"
               >
-                  <ha-icon class="icon" icon="${modeIcons[mode] || 'mdi:fan'}" style="color: ${isActive ? 'var(--active-color)' : ''}"></ha-icon>
+                  <ha-icon class="icon" icon="${modeIcons[mode] || 'mdi:fan'}" style="color: ${isActive ? activeTextColor : ''}"></ha-icon>
               </button>
           `;
       });
   }
 
-  _renderFanButtons(fanModes, currentFanMode) {
+  _renderFanButtons(fanModes, currentFanMode, activeTextColor) {
     // 优先检查fan实体是否有preset_modes属性
     const fanEntity = this.hass.states[this.config.entity];
     let actualFanModes = fanModes;
@@ -2212,15 +2218,15 @@ class XiaoshiPhonePurifierCard extends LitElement {
             <button 
                 class="mode-button ${isActive ? 'active-mode' : ''}" 
                 @click=${() => this._setFanOption(mode)}
-                style="color: ${isActive ? 'var(--active-color)' : ''}"
+                style="${isActive ? `background-color: var(--active-color); color: ${activeTextColor};` : ''}"
             >
                 <div class="fan-button">
                     <ha-icon 
                         class="fan-button-icon" 
                         icon="${modeIcon}" 
-                        style="color: ${isActive ? 'var(--active-color)' : ''}"
+                        style="color: ${isActive ? activeTextColor : ''}"
                     ></ha-icon>
-                    <span class="fan-text">${this._translateFanMode(mode)}</span>
+                    <span class="fan-text" style="${isActive ? `background-color: var(--active-color); color: ${activeTextColor};` : ''}">${this._translateFanMode(mode)}</span>
                 </div>
             </button>
         `;

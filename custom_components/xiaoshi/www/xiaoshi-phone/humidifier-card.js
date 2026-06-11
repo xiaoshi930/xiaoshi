@@ -1089,10 +1089,12 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
       }
       
       .active-mode {
-        color: var(--active-color) !important;
+        background-color: var(--active-color) !important;
+        color: var(--active-text-color, white) !important;
       }
       
       .active-extra {
+        background-color: transparent !important;
         color: var(--active-color) !important;
       }
   `;
@@ -1236,7 +1238,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     const isDehumidifier = entity?.attributes?.device_class === 'dehumidifier';
     
     // 确定颜色
-    let statusColor = theme === 'light' ? '#888888' : '#aaaaaa';
+    let statusColor = theme === 'light' ? '#2ba0f3' : '#2ba0f3';
     if (state === 'on') statusColor = isDehumidifier ? '#f39c12' : '#2ba0f3';
     
     // 获取画布尺寸（CSS像素）
@@ -1409,16 +1411,19 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     const theme = this._evaluateTheme();
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
-    const buttonBg = theme === 'light' ? 'rgb(50,50,50)' : 'rgb(120,120,120)';
-    const buttonFg = 'rgb(250,250,250)';
-
-    let statusColor = 'rgb(250,250,250)';
+    const buttonBg = theme === 'light' ? 'rgb(230, 230, 230)' : 'rgb(80, 80, 80)';
+    const buttonFg = theme === 'light' ? 'rgb(50, 50, 50)' : 'rgb(240, 240, 240)';
+    
+    let statusColor = theme === 'light'? 'rgb(230, 230, 230)' : 'rgb(80, 80, 80)';
     let linearColor = 'rgb(0,0,0,0)';
     const activeColor = isDehumidifier ? 'rgb(243,156,18)' : 'rgb(33,150,243)';
     if (state === 'on') statusColor = activeColor, linearColor = activeColor;
     else if (state === 'off') statusColor = 'rgb(250,250,250)';
     else if (state === 'unknown') statusColor = 'rgb(250,250,250)';
     else if (state === 'unavailable') statusColor = 'rgb(250,250,250)';
+
+    // 激活按钮的文字颜色：off时背景浅色用深色文字，on时用白色
+    const activeTextColor = (state === 'off' || state === 'unknown' || state === 'unavailable') ? buttonFg : 'white';
 
     const stateTranslations = {
         'on': isDehumidifier ? '除湿中' : '开启',
@@ -1481,6 +1486,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
                                 --button-bg: ${buttonBg}; 
                                 --button-fg: ${buttonFg}; 
                                 --active-color: ${statusColor};
+                                --active-text-color: ${activeTextColor};
                                 --linear-color: ${linearColor};
                                 grid-template-rows: ${gridHumidifierlateRows}">
 																
@@ -1539,13 +1545,13 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
 
           ${hasAvailableModes ? html`
               <div class="fan-area">
-                  ${this._renderAvailableButtons(attrs.available_modes, attrs.mode, isDehumidifier)}
+                  ${this._renderAvailableButtons(attrs.available_modes, attrs.mode, isDehumidifier, activeTextColor)}
               </div>
           ` : ''}
 
           ${hasFanModes  ? html`
               <div class="fan-area">
-                  ${this._renderFanButtons(fanModes, currentFanMode, isDehumidifier)}
+                  ${this._renderFanButtons(fanModes, currentFanMode, isDehumidifier, activeTextColor)}
               </div>
           ` : ''}
 
@@ -1881,7 +1887,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
       this._handleClick();
   }
 
-  _renderModeButtons(modes, currentMode) {
+  _renderModeButtons(modes, currentMode, activeTextColor) {
       if (!modes) return html``;
       
       const modeIcons = {
@@ -1897,16 +1903,16 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
               <button 
                   class="mode-button ${isActive ? 'active-mode' : ''}" 
                   @click=${() => this._setHvacMode(mode)}
-                  style="color: ${isActive ? 'var(--active-color)' : ''}"
+                  style="${isActive ? `background-color: var(--active-color); color: ${activeTextColor};` : ''}"
                   title="${this._translateMode(mode)}"
               >
-                  <ha-icon class="icon" icon="${modeIcons[mode] || 'mdi:water'}" style="color: ${isActive ? 'var(--active-color)' : ''}"></ha-icon>
+                  <ha-icon class="icon" icon="${modeIcons[mode] || 'mdi:water'}" style="color: ${isActive ? activeTextColor : ''}"></ha-icon>
               </button>
           `;
       });
   }
 
-  _renderFanButtons(fanModes, currentFanMode, isDehumidifier = false) {
+  _renderFanButtons(fanModes, currentFanMode, isDehumidifier = false, activeTextColor) {
     if (!fanModes || fanModes.length === 0) return html``;
     
     const entity = this.hass.states[this.config.entity];
@@ -1919,22 +1925,22 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
             <button 
                 class="mode-button ${isActive ? 'active-mode' : ''}" 
                 @click=${() => this._setFanOption(mode)}
-                style="color: ${isActive ? 'var(--active-color)' : ''}"
+                style="${isActive ? `background-color: var(--active-color); color: ${activeTextColor};` : ''}"
             >
                 <div class="fan-button">
                     <ha-icon 
                         class="fan-button-icon" 
                         icon="${isDehumidifier ? 'mdi:water-off' : 'mdi:water'}" 
-                        style="color: ${isActive ? 'var(--active-color)' : ''}"
+                        style="color: ${isActive ? activeTextColor : ''}"
                     ></ha-icon>
-                    <span class="fan-text">${this._translateFanMode(mode)}</span>
+                    <span class="fan-text" style="${isActive ? `background-color: var(--active-color); color: ${activeTextColor};` : ''}">${this._translateFanMode(mode)}</span>
                 </div>
             </button>
         `;
     });
   }
 
-  _renderAvailableButtons(availableModes, currentAvailableMode, isDehumidifier = false) {
+  _renderAvailableButtons(availableModes, currentAvailableMode, isDehumidifier = false, activeTextColor) {
     if (!availableModes) return html``;
     
     return availableModes.map(mode => {
@@ -1943,10 +1949,10 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
             <button 
                 class="mode-button ${isActive ? 'active-mode' : ''}" 
                 @click=${() => this._setAvailableMode(mode)}
-                style="color: ${isActive ? 'var(--active-color)' : ''}"
+                style="${isActive ? `background-color: var(--active-color); color: ${activeTextColor};` : ''}"
             >
                 <div class="available-button">
-                    <ha-icon class="icon" icon="${this._getAvailableIcon(mode, isDehumidifier)}" style="color: ${isActive ? 'var(--active-color)' : ''}"></ha-icon>
+                    <ha-icon class="icon" icon="${this._getAvailableIcon(mode, isDehumidifier)}" style="color: ${isActive ? activeTextColor : ''}"></ha-icon>
                     <span class="available-text">${this._translateAvailableMode(mode, isDehumidifier)}</span>
                 </div>
             </button>

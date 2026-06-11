@@ -1453,7 +1453,7 @@ class XiaoshiPhoneClimateCard extends LitElement {
 
       .active-main-icon {
         animation: spin var(--fan-speed, 2s) linear infinite;
-        color: var(--active-color);
+        color: var(--active-text-color, white);
       }
 
       @keyframes spin {
@@ -1472,8 +1472,6 @@ class XiaoshiPhoneClimateCard extends LitElement {
       .modes-area {
         grid-area: modes;
       }
-
-
       
       .fan-area {
         grid-area: fan;
@@ -1672,7 +1670,7 @@ class XiaoshiPhoneClimateCard extends LitElement {
 
       .active-fan-button-icon {
         animation: spin var(--fan-speed, 2s) linear infinite;
-        color: var(--active-color);
+        color: var(--active-text-color, white);
       }
 
       .fan-text {
@@ -1750,10 +1748,12 @@ class XiaoshiPhoneClimateCard extends LitElement {
       }
       
       .active-mode {
-        color: var(--active-color) !important;
+        background-color: var(--active-color) !important;
+        color: var(--active-text-color, white) !important;
       }
       
       .active-extra {
+        background-color: transparent !important;
         color: var(--active-color) !important;
       }
   `;
@@ -1897,7 +1897,7 @@ drawSmoothCurve() {
     const theme = this._evaluateTheme();
     
     // 确定颜色
-    let statusColor = theme === 'light' ? '#888888' : '#aaaaaa';
+    let statusColor = theme === 'light' ? '#256a9c' : '#09456f';
     if (state === 'cool') statusColor = '#2ba0f3';
     else if (state === 'heat') statusColor = '#fe6f21';
     else if (state === '自定义') statusColor = '#fe6f21';
@@ -1944,15 +1944,23 @@ drawSmoothCurve() {
     
     // 创建渐变填充
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, `${statusColor}60`);
-    gradient.addColorStop(1, `${statusColor}20`);
+    // 统一使用rgba格式，避免hex颜色拼接透明度后缀问题
+    const isRgba = statusColor.startsWith('rgba');
+    if (isRgba) {
+      // rgba格式直接使用（off状态已有透明度）
+      gradient.addColorStop(0, statusColor);
+      gradient.addColorStop(1, statusColor);
+    } else {
+      gradient.addColorStop(0, `${statusColor}60`);
+      gradient.addColorStop(1, `${statusColor}20`);
+    }
     ctx.fillStyle = gradient;
     ctx.fill();
     
     // 绘制曲线
     ctx.beginPath();
     this.drawMonotonicSpline(ctx, points);
-    ctx.strokeStyle = statusColor;
+    ctx.strokeStyle = isRgba ? statusColor : statusColor;
     ctx.lineWidth = 1; // 线宽不需要乘以scale，因为上下文已经缩放
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
@@ -2081,10 +2089,10 @@ drawSmoothCurve() {
     const theme = this._evaluateTheme();
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
-    const buttonBg = theme === 'light' ? 'rgb(50,50,50)' : 'rgb(120,120,120)';
-    const buttonFg = 'rgb(250,250,250)';
-
-    let statusColor = 'rgb(250,250,250)';
+    const buttonBg = theme === 'light' ? 'rgb(230, 230, 230)' : 'rgb(80, 80, 80)';
+    const buttonFg = theme === 'light' ? 'rgb(50, 50, 50)' : 'rgb(240, 240, 240)';
+    
+    let statusColor = theme === 'light'? 'rgb(230, 230, 230)' : 'rgb(80, 80, 80)';
     let linearColor = 'rgb(0,0,0,0)';
     if (state === 'cool') statusColor = 'rgb(33,150,243)',linearColor = 'rgb(33,150,243)';
     else if (state === 'heat') statusColor = 'rgb(254,111,33)',linearColor = 'rgb(254,111,33)';
@@ -2097,9 +2105,9 @@ drawSmoothCurve() {
     else if (state === 'dry') statusColor = 'rgb(255,151,0)', linearColor = 'rgb(255,151,0)';
     else if (state === 'fan' || state === 'fan_only') statusColor = 'rgb(0,188,213)', linearColor = 'rgb(0,188,213)';
     else if (state === 'auto') statusColor = 'rgb(147,112,219)', linearColor = 'rgb(147,112,219)';
-    else if (state === 'off') statusColor = 'rgb(250,250,250)';
-    else if (state === 'unknown') statusColor = 'rgb(250,250,250)';
-    else if (state === 'unavailable') statusColor = 'rgb(250,250,250)';
+
+    // 激活按钮的文字颜色：off时背景浅色用深色文字，其余用白色
+    const activeTextColor = (state === 'off' || state === 'unknown' || state === 'unavailable') ? buttonFg : 'white';
 
     const stateTranslations = {
         'cool': '制冷',
@@ -2169,6 +2177,8 @@ drawSmoothCurve() {
                                 --button-bg: ${buttonBg}; 
                                 --button-fg: ${buttonFg}; 
                                 --active-color: ${statusColor};
+                                --active-text-color: ${activeTextColor};
+                                --active-border-color: ${theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(0, 0, 0)'};
                                 --linear-color: ${linearColor};
                                 grid-template-rows: ${gridTemplateRows}">
 																
@@ -2208,31 +2218,31 @@ drawSmoothCurve() {
                     </div>
           ${showHvacModes ? html`
               <div class="modes-area">
-                  ${this._renderModeButtons(attrs.hvac_modes, state)}
+                  ${this._renderModeButtons(attrs.hvac_modes, state, activeTextColor)}
               </div>
           ` : ''}
 
           ${showFanModes ? html`
               <div class="fan-area">
-                  ${this._renderFanButtons(attrs.fan_modes, attrs.fan_mode)}
+                  ${this._renderFanButtons(attrs.fan_modes, attrs.fan_mode, activeTextColor)}
               </div>
           ` : ''}
 
           ${showPresetModes ? html`
               <div class="preset-area">
-                  ${this._renderPresetButtons(attrs.preset_modes, attrs.preset_mode)}
+                  ${this._renderPresetButtons(attrs.preset_modes, attrs.preset_mode, activeTextColor)}
               </div>
           ` : ''}
 
           ${showSwingModes ? html`
               <div class="swing-area">
-                  ${this._renderSwingButtons(attrs.swing_modes, attrs.swing_mode)}
+                  ${this._renderSwingButtons(attrs.swing_modes, attrs.swing_mode, activeTextColor)}
               </div>
           ` : ''}
 
           ${showWaterModes ? html`
               <div class="water-area">
-                  ${this._renderWaterButtons(attrs.operation_list, attrs.operation_mode)}
+                  ${this._renderWaterButtons(attrs.operation_list, attrs.operation_mode, activeTextColor)}
               </div>
           ` : ''}
 
@@ -2669,7 +2679,7 @@ _renderExtraButtons(buttonType = 1) {
     return '';
   }
 
-  _renderModeButtons(modes, currentMode) {
+  _renderModeButtons(modes, currentMode, activeTextColor) {
       if (!modes) return html``;
       
       const showText = (this.config.mode_button_style || 'icon_text') === 'icon_text';
@@ -2692,17 +2702,17 @@ _renderExtraButtons(buttonType = 1) {
               <button 
                   class="mode-button ${isActive ? 'active-mode' : ''}" 
                   @click=${() => this._setHvacMode(mode)}
-                  style="color: ${isActive ? 'var(--active-color)' : ''}"
+                  style="${isActive ? `background-color: var(--active-color); color: ${activeTextColor};` : ''}"
                   title="${this._translateMode(mode)}"
               >
-                  <ha-icon class="icon" icon="${modeIcons[mode] || 'mdi:thermostat'}" style="color: ${isActive ? 'var(--active-color)' : ''}"></ha-icon>
+                  <ha-icon class="icon" icon="${modeIcons[mode] || 'mdi:thermostat'}" style="color: ${isActive ? activeTextColor : ''}"></ha-icon>
                   ${showText ? html`<span class="mode-text">${this._translateMode(mode)}</span>` : ''}
               </button>
           `;
       });
   }
 
-  _renderFanButtons(fanModes, currentFanMode) {
+  _renderFanButtons(fanModes, currentFanMode, activeTextColor) {
     if (!fanModes || fanModes.length === 0) return html``;
     
     const entity = this.hass.states[this.config.entity];
@@ -2721,22 +2731,22 @@ _renderExtraButtons(buttonType = 1) {
             <button 
                 class="mode-button ${isActive ? 'active-mode' : ''}" 
                 @click=${() => this._setFanMode(mode)}
-                style="${isActive ? `--fan-speed: ${speed};` : ''} color: ${isActive ? 'var(--active-color)' : ''}"
+                style="${isActive ? `--fan-speed: ${speed}; background-color: var(--active-color); color: ${activeTextColor};` : ''}"
             >
                 <div class="fan-button">
                     <ha-icon 
                         class="fan-button-icon ${isActive ? 'active-fan-button-icon' : ''}" 
                         icon="mdi:fan" 
-                        style="color: ${isActive ? 'var(--active-color)' : ''}"
+                        style="color: ${isActive ? activeTextColor : ''}"
                     ></ha-icon>
-                    <span class="fan-text">${this._translateFanMode(mode)}</span>
+                    <span class="fan-text" style="${isActive ? `background-color: var(--active-color); color: ${activeTextColor};` : ''}">${this._translateFanMode(mode)}</span>
                 </div>
             </button>
         `;
     });
   }
   
-  _renderSwingButtons(swingModes, currentSwingMode) {
+  _renderSwingButtons(swingModes, currentSwingMode, activeTextColor) {
       if (!swingModes) return html``;
       
       return swingModes.map(mode => {
@@ -2745,10 +2755,10 @@ _renderExtraButtons(buttonType = 1) {
               <button 
                   class="mode-button ${isActive ? 'active-mode' : ''}" 
                   @click=${() => this._setSwingMode(mode)}
-                  style="color: ${isActive ? 'var(--active-color)' : ''}"
+                  style="${isActive ? `background-color: var(--active-color); color: ${activeTextColor};` : ''}"
               >
                   <div class="swing-button">
-                      <ha-icon class="icon" icon="${this._getSwingIcon(mode)}" style="color: ${isActive ? 'var(--active-color)' : ''}"></ha-icon>
+                      <ha-icon class="icon" icon="${this._getSwingIcon(mode)}" style="color: ${isActive ? activeTextColor : ''}"></ha-icon>
                       <span class="swing-text">${this._translateSwingMode(mode)}</span>
                   </div>
               </button>
@@ -2756,7 +2766,7 @@ _renderExtraButtons(buttonType = 1) {
       });
   }
   
-  _renderPresetButtons(presetModes, currentPresetMode) {
+  _renderPresetButtons(presetModes, currentPresetMode, activeTextColor) {
       if (!presetModes) return html``;
       
       return presetModes.map(mode => {
@@ -2765,10 +2775,10 @@ _renderExtraButtons(buttonType = 1) {
               <button 
                   class="mode-button ${isActive ? 'active-mode' : ''}" 
                   @click=${() => this._setPresetMode(mode)}
-                  style="color: ${isActive ? 'var(--active-color)' : ''}"
+                  style="${isActive ? `background-color: var(--active-color); color: ${activeTextColor};` : ''}"
               >
                   <div class="preset-button">
-                      <ha-icon class="icon" icon="${this._getPresetIcon(mode)}" style="color: ${isActive ? 'var(--active-color)' : ''}"></ha-icon>
+                      <ha-icon class="icon" icon="${this._getPresetIcon(mode)}" style="color: ${isActive ? activeTextColor : ''}"></ha-icon>
                       <span class="preset-text">${this._translatePresetMode(mode)}</span>
                   </div>
               </button>
@@ -2776,7 +2786,7 @@ _renderExtraButtons(buttonType = 1) {
       });
   }
   
-  _renderWaterButtons(operation_list, operation_mode) {
+  _renderWaterButtons(operation_list, operation_mode, activeTextColor) {
     if (!operation_list) return html``;
     
     return operation_list.map(mode => {
@@ -2785,7 +2795,7 @@ _renderExtraButtons(buttonType = 1) {
             <button 
                 class="mode-button ${isActive ? 'active-mode' : ''}" 
                 @click=${() => this._setWaterMode(mode)}
-                style="color: ${isActive ? 'var(--active-color)' : ''}"
+                style="${isActive ? `background-color: var(--active-color); color: ${activeTextColor};` : ''}"
             >
                 <div class="water-button">
                     <span class="water-text">${mode}</span>
