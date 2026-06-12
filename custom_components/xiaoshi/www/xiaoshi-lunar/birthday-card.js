@@ -1105,8 +1105,8 @@ class XiaoshiBirthdayCard extends LitElement {
             const person = birthdayArray[index];
             if (person && person.名称) {
               // 获取阳历和农历天数
-              const solarDays = person.阳历天数 ? parseInt(person.阳历天数) : null;
-              const lunarDays = person.农历天数 ? parseInt(person.农历天数) : null;
+              const solarDays = person.阳历天数 != null && person.阳历天数 !== '' ? parseInt(person.阳历天数) : null;
+              const lunarDays = person.农历天数 != null && person.农历天数 !== '' ? parseInt(person.农历天数) : null;
               
               // 选择较小的天数（排除空值）
               let days = null;
@@ -1238,6 +1238,7 @@ class XiaoshiBirthdayCard extends LitElement {
                   const isWarning = birthdayData.warning_threshold !== undefined && 
                                    !isNaN(numericValue) && 
                                    numericValue < birthdayData.warning_threshold;
+                  const isToday = birthdayData.value == 0;
                   
                   return html`
                     <div class="device-item" @click=${() => this._handleEntityClick(birthdayData)}>
@@ -1246,8 +1247,8 @@ class XiaoshiBirthdayCard extends LitElement {
                         <div class="device-name">${birthdayData.friendly_name}</div>
                       </div>
                       <div class="device-value ${isWarning ? 'warning' : ''}">
-                        ${birthdayData.value}
-                        <span class="device-unit ${isWarning ? 'warning' : ''}">${birthdayData.unit}</span>
+                        ${isToday ? '今天' : birthdayData.value}
+                        <span class="device-unit ${isWarning ? 'warning' : ''}">${isToday ? '' : birthdayData.unit}</span>
                       </div>
                     </div>
                   `;
