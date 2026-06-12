@@ -141,6 +141,7 @@ class XiaoshiPhoneFanCardEditor extends LitElement {
 
     const normalFanEntitySelectors = [
       { key: 'entity', label: '风扇实体fan', filter: 'fan.' },
+      { key: 'fan_mode', label: '风扇模式select', filter: 'select.' },
       { key: 'temperature', label: '温度传感器sensor', filter: 'sensor.' },
       { key: 'humidity', label: '湿度传感器sensor', filter: 'sensor.' },
       { key: 'timer', label: '定时器timer', filter: 'timer.' },
@@ -1193,7 +1194,7 @@ class XiaoshiPhoneFanCard extends LitElement {
         min-width: 0;
         overflow: visible;
         height: 100%;
-        padding: 0;
+        padding: -3px 0 0 0;
       }
 
       .extra-button-content {
@@ -1276,6 +1277,7 @@ class XiaoshiPhoneFanCard extends LitElement {
     this._localSliderValue = 0;
     this._isSliderDragging = false;
     this._timerInterval = null;
+    this._timerWasActive = false;
     this.temperatureData = [];
     this.buttons = [];
     this.buttons2 = [];
@@ -1478,6 +1480,14 @@ class XiaoshiPhoneFanCard extends LitElement {
     });
   }
 
+  _setFanModeSelect(option) {
+    if (!this.config.fan_mode) return;
+    this._callService('select', 'select_option', {
+      entity_id: this.config.fan_mode,
+      option: option
+    });
+  }
+
   _selectOscillateAngle(angle) {
     if (!this.config.oscillate_angle) return;
     this._callService('select', 'select_option', {
@@ -1632,12 +1642,14 @@ class XiaoshiPhoneFanCard extends LitElement {
 
     // 普通风扇档位 - 基于percentage_step计算
     const percentageStep = attrs.percentage_step || 33.333333333333336;
+    const isSteplessSpeed = percentageStep === 1;
+    const hasPercentageStep = !isSteplessSpeed && Math.abs(percentageStep - 33.333333333333336) < 1;
     const maxPercentage = attrs.percentage || 66;
     // 计算3个档位
     const normalSpeedLevels = [
-      { value: Math.round(percentageStep), label: `${Math.round(percentageStep)}%`, icon: 'mdi:fan-speed-1' },
-      { value: Math.round(percentageStep * 2), label: `${Math.round(percentageStep * 2)}%`, icon: 'mdi:fan-speed-2' },
-      { value: 100, label: '100%', icon: 'mdi:fan-speed-3' },
+      { value: Math.round(percentageStep), label: '1档', icon: 'mdi:fan-speed-1' },
+      { value: Math.round(percentageStep * 2), label: '2档', icon: 'mdi:fan-speed-2' },
+      { value: 100, label: '3档', icon: 'mdi:fan-speed-3' },
     ];
 
     // 风速档位（与原版一致：1档1-34, 2档35-69, 3档70-99, 4档100）
@@ -1670,6 +1682,15 @@ class XiaoshiPhoneFanCard extends LitElement {
     const hasExtra2 = this.buttons2 && this.buttons2.length > 0;
     const buttonCount = Math.min((this.buttons || []).length, 7);
     const buttonCount2 = Math.min((this.buttons2 || []).length, 7);
+
+    // 普通风扇模式select
+    const hasFanModeSelect = isNormalFan && this.config.fan_mode;
+    const fanModeEntity = hasFanModeSelect ? this._getEntityState(this.config.fan_mode) : null;
+    const fanModeOptions = fanModeEntity?.attributes?.options || [];
+    const fanModeCurrent = fanModeEntity?.state || '';
+
+    // 普通风扇行偏移计算
+    const normalFanRowOffset = (hasPresetModes ? 1 : 0) + (hasPercentageStep || isSteplessSpeed ? 1 : 0) + (hasFanModeSelect && fanModeOptions.length > 0 ? 1 : 0);
 
     // 普通风扇的当前档位
     const getCurrentNormalLevel = () => {
@@ -1716,15 +1737,16 @@ class XiaoshiPhoneFanCard extends LitElement {
 
           ${isNormalFan ? html`
             <!-- 普通风扇：左侧风扇图标 -->
-            <div class="direction-area" style="grid-row: 2 / 4; margin-right: 0;">
+            <div class="direction-area" style="grid-row: 2 / ${2 + normalFanRowOffset + 1}; margin-right: 0;">
               <div class="normal-fan-icon-container">
                 <ha-icon icon="mdi:fan" class="normal-fan-icon ${isOn ? 'fan-spinning' : ''}" style="--mdc-icon-size: 50px; color: ${isOn ? activeColor : secondaryBg};"></ha-icon>
               </div>
             </div>
 
-            <!-- 普通风扇模式区域 -->
+            <!-- 普通风扇模式区域 - 第一排：模式按钮 + 摇头 -->
+            ${hasPresetModes ? html`
             <div class="mode-area" style="grid-row: 2; grid-column: 2; margin-left: -10px;">
-              ${hasPresetModes ? normalModes.map(m => html`
+              ${normalModes.map(m => html`
                 <button
                   class="mode-button ${presetMode === m.value ? 'active-mode' : ''}"
                   @click=${() => this._setPresetMode(m.value)}
@@ -1732,7 +1754,32 @@ class XiaoshiPhoneFanCard extends LitElement {
                   <ha-icon icon="${m.icon}"></ha-icon>
                   <span class="btn-text">${m.label}</span>
                 </button>
-              `) : normalSpeedLevels.map((level, idx) => {
+              `)}
+              <button
+                class="mode-button ${attrs.oscillating ? 'active-mode' : ''}"
+                @click=${this._toggleOscillate}
+              >
+                <ha-icon icon="mdi:rotate-3d-variant"></ha-icon>
+                <span class="btn-text">摇头</span>
+              </button>
+            </div>
+            ` : ''}
+
+            <!-- 普通风扇无极调速区域 - 风速数值+滑块 -->
+            ${isSteplessSpeed ? html`
+            <div class="fanspeed-area" style="${hasPresetModes ? 'grid-row: 3; grid-column: 2; margin-top: 0px;margin-bottom: 2px; margin-left: -10px;' : 'grid-row: 2; grid-column: 2;'}">
+              <button class="speed-display-btn">
+                <ha-icon icon="mdi:speedometer" style="color: ${activeColor}; --mdc-icon-size: 16px;"></ha-icon>
+                <span class="speed-percent">${this._tempSpeedPct !== null ? this._tempSpeedPct : currentPct}%</span>
+              </button>
+              ${this._renderSunSlider(currentPct, activeColor, secondaryBg, null, this.config.entity)}
+            </div>
+            ` : ''}
+
+            <!-- 普通风扇档位区域 - 第二排：档位按钮 -->
+            ${hasPresetModes && hasPercentageStep ? html`
+            <div class="mode-area" style="grid-row: 3; grid-column: 2; margin-left: -10px; margin-top: 0px;margin-bottom: 2px;">
+              ${normalSpeedLevels.map((level, idx) => {
                 let isActive = false;
                 if (idx === 0 && currentPct > 0 && currentPct <= level.value) isActive = true;
                 else if (idx > 0 && currentPct > normalSpeedLevels[idx - 1].value && currentPct <= level.value) isActive = true;
@@ -1743,7 +1790,25 @@ class XiaoshiPhoneFanCard extends LitElement {
                     @click=${() => this._setFanSpeed(level.value)}
                   >
                     <ha-icon icon="${level.icon}"></ha-icon>
-                    <span class="btn-text">${level.value}%</span>
+                    <span class="btn-text">${level.label}</span>
+                  </button>
+                `;
+              })}
+            </div>
+            ` : !hasPresetModes && hasPercentageStep ? html`
+            <div class="mode-area" style="grid-row: 2; grid-column: 2; margin-left: -10px;">
+              ${normalSpeedLevels.map((level, idx) => {
+                let isActive = false;
+                if (idx === 0 && currentPct > 0 && currentPct <= level.value) isActive = true;
+                else if (idx > 0 && currentPct > normalSpeedLevels[idx - 1].value && currentPct <= level.value) isActive = true;
+                else if (idx === normalSpeedLevels.length - 1 && currentPct === 100) isActive = true;
+                return html`
+                  <button
+                    class="mode-button ${isActive ? 'active-mode' : ''}"
+                    @click=${() => this._setFanSpeed(level.value)}
+                  >
+                    <ha-icon icon="${level.icon}"></ha-icon>
+                    <span class="btn-text">${level.label}</span>
                   </button>
                 `;
               })}
@@ -1755,6 +1820,47 @@ class XiaoshiPhoneFanCard extends LitElement {
                 <span class="btn-text">摇头</span>
               </button>
             </div>
+            ` : !hasPresetModes && !hasPercentageStep ? html`
+            <div class="mode-area" style="grid-row: 2; grid-column: 2; margin-left: -10px;">
+              ${normalSpeedLevels.map((level, idx) => {
+                let isActive = false;
+                if (idx === 0 && currentPct > 0 && currentPct <= level.value) isActive = true;
+                else if (idx > 0 && currentPct > normalSpeedLevels[idx - 1].value && currentPct <= level.value) isActive = true;
+                else if (idx === normalSpeedLevels.length - 1 && currentPct === 100) isActive = true;
+                return html`
+                  <button
+                    class="mode-button ${isActive ? 'active-mode' : ''}"
+                    @click=${() => this._setFanSpeed(level.value)}
+                  >
+                    <ha-icon icon="${level.icon}"></ha-icon>
+                    <span class="btn-text">${level.label}</span>
+                  </button>
+                `;
+              })}
+              <button
+                class="mode-button ${attrs.oscillating ? 'active-mode' : ''}"
+                @click=${this._toggleOscillate}
+              >
+                <ha-icon icon="mdi:rotate-3d-variant"></ha-icon>
+                <span class="btn-text">摇头</span>
+              </button>
+            </div>
+            ` : ''}
+
+            <!-- 普通风扇模式select区域 -->
+            ${hasFanModeSelect && fanModeOptions.length > 0 ? html`
+            <div class="mode-area" style="grid-row: ${2 + (hasPresetModes ? 1 : 0) + (hasPercentageStep || isSteplessSpeed ? 1 : 0)}; grid-column: 2; margin-left: -10px; margin-top: -2px; margin-bottom: 2px;">
+              ${fanModeOptions.map(opt => html`
+                <button
+                  class="mode-button ${fanModeCurrent === opt ? 'active-mode' : ''}"
+                  @click=${() => this._setFanModeSelect(opt)}
+                >
+                  <ha-icon icon="mdi:fan"></ha-icon>
+                  <span class="btn-text">${opt}</span>
+                </button>
+              `)}
+            </div>
+            ` : ''}
 
           ` : html`
             <!-- 循环扇：方向控制区域 -->
@@ -1868,19 +1974,19 @@ class XiaoshiPhoneFanCard extends LitElement {
           `}
 
           ${hasTimer ? html`
-            <div class="timer-area" style="${isNormalFan ? 'grid-row: 3; grid-column: 2; margin-left: -10px;' : ''}">
+            <div class="timer-area" style="${isNormalFan ? `grid-row: ${2 + normalFanRowOffset}; grid-column: 2; margin-left: -10px;` : ''}">
               ${this._renderTimerControls(timerEntity)}
             </div>
           ` : ''}
 
           ${hasExtra ? html`
-            <div class="extra-area" style="grid-template-columns: repeat(${buttonCount}, 1fr); ${isNormalFan ? 'grid-row: 4; grid-column: 2; margin-left: 0;' : ''}">
+            <div class="extra-area" style="grid-template-columns: repeat(${buttonCount}, 1fr); ${isNormalFan ? `grid-row: ${3 + normalFanRowOffset}; grid-column: 2; margin-left: 0;` : ''}">
               ${this._renderExtraButtons(1)}
             </div>
           ` : ''}
 
           ${hasExtra2 ? html`
-            <div class="extra2-area" style="grid-template-columns: repeat(${buttonCount2}, 1fr); ${isNormalFan ? 'grid-row: 5; grid-column: 2; margin-left: 0;' : ''}">
+            <div class="extra2-area" style="grid-template-columns: repeat(${buttonCount2}, 1fr); ${isNormalFan ? `grid-row: ${4 + normalFanRowOffset}; grid-column: 2; margin-left: 0;` : ''}">
               ${this._renderExtraButtons(2)}
             </div>
           ` : ''}
@@ -1910,6 +2016,7 @@ class XiaoshiPhoneFanCard extends LitElement {
     if (this._timerInterval) {
       clearInterval(this._timerInterval);
       this._timerInterval = null;
+    this._timerWasActive = false;
     }
   }
 
@@ -2135,12 +2242,19 @@ class XiaoshiPhoneFanCard extends LitElement {
     let remainingSeconds = Math.max(0, Math.floor((finishesAt - now) / 1000));
 
     const state = timerEntity.state;
-    if (state !== 'active') {
-      remainingSeconds = 0;
-    } else if (remainingSeconds <= 0) {
+    if (state === 'active' && remainingSeconds <= 0) {
       this._turnOffFan();
       this._cancelTimer();
       remainingSeconds = 0;
+    } else if (state !== 'active') {
+      // 定时器结束（idle）且上次是active，关闭风扇
+      if (this._timerWasActive) {
+        this._turnOffFan();
+        this._timerWasActive = false;
+      }
+      remainingSeconds = 0;
+    } else {
+      this._timerWasActive = true;
     }
 
     const remainingTime = this._formatSeconds(remainingSeconds);
