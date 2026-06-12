@@ -3014,29 +3014,30 @@ class  XiaoshiStateGridInfo extends LitElement {
 
     if (uc.hasPeakValley) {
       // ===== 电费：有尖峰平谷 =====
+      const toMonthIdx = (m) => parseInt(m.split('-')[1]) - 1;
       return {
         tip: monthlist.map(item => ({
-          x: new Date(item.month.substr(0,7)+'-01').getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthTPq) || 0
         })),
         peak: monthlist.map(item => ({
-          x: new Date(item.month.substr(0,7)+'-01').getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthPPq) || 0
         })),
         normal: monthlist.map(item => ({
-          x: new Date(item.month.substr(0,7)+'-01').getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthNPq) || 0
         })),
         valley: monthlist.map(item => ({
-          x: new Date(item.month.substr(0,7)+'-01').getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthVPq) || 0
         })),
         total: monthlist.map(item => ({
-          x: new Date(item.month.substr(0,7)+'-01').getTime(),
+          x: toMonthIdx(item.month),
           y: (Number(item.monthTPq) || 0) + (Number(item.monthPPq) || 0) + (Number(item.monthNPq) || 0) + (Number(item.monthVPq) || 0)
         })),
         cost: monthlist.map(item => ({
-          x: new Date(item.month.substr(0,7)+'-01').getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthEleCost) || 0
         })),
         current: {
@@ -3045,27 +3046,27 @@ class  XiaoshiStateGridInfo extends LitElement {
           days: monthlist.length
         },
         lasttip: lastmonthlist.map(item => ({
-          x: new Date(`${currentYear}-${item.month.split("-")[1]}-01`).getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthTPq) || 0
         })),
         lastpeak: lastmonthlist.map(item => ({
-          x: new Date(`${currentYear}-${item.month.split("-")[1]}-01`).getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthPPq) || 0
         })),
         lastnormal: lastmonthlist.map(item => ({
-          x: new Date(`${currentYear}-${item.month.split("-")[1]}-01`).getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthNPq) || 0
         })),
         lastvalley: lastmonthlist.map(item => ({
-          x: new Date(`${currentYear}-${item.month.split("-")[1]}-01`).getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthVPq) || 0
         })),
         lasttotal: lastmonthlist.map(item => ({
-          x: new Date(`${currentYear}-${item.month.split("-")[1]}-01`).getTime(),
+          x: toMonthIdx(item.month),
           y: (Number(item.monthTPq) || 0) + (Number(item.monthPPq) || 0) + (Number(item.monthNPq) || 0) + (Number(item.monthVPq) || 0)
         })),
         lastcost: lastmonthlist.map(item => ({
-          x: new Date(`${currentYear}-${item.month.split("-")[1]}-01`).getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthEleCost) || 0
         })),
         lastcurrent: {
@@ -3076,17 +3077,18 @@ class  XiaoshiStateGridInfo extends LitElement {
       };
     } else {
       // ===== 水费/燃气：无尖峰平谷 =====
+      const toMonthIdx = (m) => parseInt(m.split('-')[1]) - 1;
       return {
         gas: monthlist.map(item => ({
-          x: new Date(item.month.substr(0,7)+'-01').getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthEleNum) || 0
         })),
         total: monthlist.map(item => ({
-          x: new Date(item.month.substr(0,7)+'-01').getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthEleNum) || 0
         })),
         cost: monthlist.map(item => ({
-          x: new Date(item.month.substr(0,7)+'-01').getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthEleCost) || 0
         })),
         current: {
@@ -3095,15 +3097,15 @@ class  XiaoshiStateGridInfo extends LitElement {
           days: monthlist.length
         },
         lastgas: lastmonthlist.map(item => ({
-          x: new Date(`${currentYear}-${item.month.split("-")[1]}-01`).getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthEleNum) || 0
         })),
         lasttotal: lastmonthlist.map(item => ({
-          x: new Date(`${currentYear}-${item.month.split("-")[1]}-01`).getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthEleNum) || 0
         })),
         lastcost: lastmonthlist.map(item => ({
-          x: new Date(`${currentYear}-${item.month.split("-")[1]}-01`).getTime(),
+          x: toMonthIdx(item.month),
           y: Number(item.monthEleCost) || 0
         })),
         lastcurrent: {
@@ -3494,7 +3496,7 @@ class  XiaoshiStateGridInfo extends LitElement {
     const maxLastCost = lastcostValues.length > 0 ? Math.max(...lastcostValues) : 0;
     const yAxisMax = Math.max(maxTotal, maxCost, maxLastTotal, maxLastCost);
 
-    const offsetMs = 12 * 24 * 60 * 60 * 1000;
+    const catOffset = -0.175;
 
     if (uc.hasPeakValley) {
       // ===== 电费：有尖峰平谷 =====
@@ -3507,11 +3509,16 @@ class  XiaoshiStateGridInfo extends LitElement {
       const colorLastNormal = '#4CAF5040';
       const colorLastValley = '#00BCD440';
 
-      const lasttipOffset = data.lasttip.map(item => ({ x: item.x - offsetMs, y: item.y }));
-      const lastpeakOffset = data.lastpeak.map(item => ({ x: item.x - offsetMs, y: item.y }));
-      const lastnormalOffset = data.lastnormal.map(item => ({ x: item.x - offsetMs, y: item.y }));
-      const lastvalleyOffset = data.lastvalley.map(item => ({ x: item.x - offsetMs, y: item.y }));
-      const lastcostOffset = data.lastcost.map(item => ({ x: item.x - offsetMs, y: item.y }));
+      const lasttipOffset = data.lasttip.map(item => ({ x: item.x + catOffset, y: item.y }));
+      const lastpeakOffset = data.lastpeak.map(item => ({ x: item.x + catOffset, y: item.y }));
+      const lastnormalOffset = data.lastnormal.map(item => ({ x: item.x + catOffset, y: item.y }));
+      const lastvalleyOffset = data.lastvalley.map(item => ({ x: item.x + catOffset, y: item.y }));
+      const lastcostOffset = data.lastcost.map(item => ({ x: item.x + catOffset, y: item.y }));
+      const curTipOffset = data.tip.map(item => ({ x: item.x - catOffset, y: item.y }));
+      const curPeakOffset = data.peak.map(item => ({ x: item.x - catOffset, y: item.y }));
+      const curNormalOffset = data.normal.map(item => ({ x: item.x - catOffset, y: item.y }));
+      const curValleyOffset = data.valley.map(item => ({ x: item.x - catOffset, y: item.y }));
+      const curCostOffset = data.cost.map(item => ({ x: item.x - catOffset, y: item.y }));
 
       const hasDataInSeries = (arr) => arr && arr.some(item => item.y > 0);
       const seriesList = [];
@@ -3520,12 +3527,12 @@ class  XiaoshiStateGridInfo extends LitElement {
       if (hasDataInSeries(lastnormalOffset)) seriesList.push({ name: '上年平', data: lastnormalOffset, type: 'column' });
       if (hasDataInSeries(lastpeakOffset)) seriesList.push({ name: '上年峰', data: lastpeakOffset, type: 'column' });
       if (hasDataInSeries(lasttipOffset)) seriesList.push({ name: '上年尖', data: lasttipOffset, type: 'column' });
-      if (hasDataInSeries(data.valley)) seriesList.push({ name: '本年谷', data: data.valley, type: 'column' });
-      if (hasDataInSeries(data.normal)) seriesList.push({ name: '本年平', data: data.normal, type: 'column' });
-      if (hasDataInSeries(data.peak)) seriesList.push({ name: '本年峰', data: data.peak, type: 'column' });
-      if (hasDataInSeries(data.tip)) seriesList.push({ name: '本年尖', data: data.tip, type: 'column' });
+      if (hasDataInSeries(curValleyOffset)) seriesList.push({ name: '本年谷', data: curValleyOffset, type: 'column' });
+      if (hasDataInSeries(curNormalOffset)) seriesList.push({ name: '本年平', data: curNormalOffset, type: 'column' });
+      if (hasDataInSeries(curPeakOffset)) seriesList.push({ name: '本年峰', data: curPeakOffset, type: 'column' });
+      if (hasDataInSeries(curTipOffset)) seriesList.push({ name: '本年尖', data: curTipOffset, type: 'column' });
       if (hasDataInSeries(lastcostOffset)) seriesList.push({ name: `上年${uc.typeLabel}费`, data: lastcostOffset, type: 'line', color: '#f3066040' });
-      if (hasDataInSeries(data.cost)) seriesList.push({ name: `本年${uc.typeLabel}费`, data: data.cost, type: 'line', color: colorCost });
+      if (hasDataInSeries(curCostOffset)) seriesList.push({ name: `本年${uc.typeLabel}费`, data: curCostOffset, type: 'line', color: colorCost });
 
       return {
         series: seriesList,
@@ -3546,11 +3553,10 @@ class  XiaoshiStateGridInfo extends LitElement {
         markers: { size: 3, strokeWidth: 1, colors: ['#f3066040', colorCost], strokeColors: "#fff" },
         dataLabels: { enabled: false },
         xaxis: {
-          type: 'datetime',
-          min: new Date(`${new Date().getFullYear()}-01-01`).getTime() - 15 * 24 * 60 * 60 * 1000,
-          max: new Date(`${new Date().getFullYear()}-12-01`).getTime(),
-          tickAmount: 11,
-          labels: { datetimeFormatter: { day: 'M月', month: 'M月', year: 'M月' }, formatter: function(val) { const date = new Date(val); return (date.getMonth() + 1) + '月'; }, style: { fontSize: '10px' }, hideOverlappingLabels: false },
+          min: -0.2,
+          max: 11.9,
+          tickAmount: 12,
+          labels: { style: { fontSize: '10px' }, hideOverlappingLabels: false, formatter: function(val) { const m = Math.round(parseFloat(val)); return (m >= 0 && m <= 11) ? (m + 1) + '月' : ''; } },
           tooltip: { enabled: false }
         },
         yaxis: { min: 0, max: yAxisMax > 0 ? Math.ceil(yAxisMax * 1.15 / 50) * 50 : undefined, floating: false, labels: { minWidth: 10, maxWidth: 30, formatter: function(val) { return val.toFixed(0); } } },
@@ -3577,26 +3583,13 @@ class  XiaoshiStateGridInfo extends LitElement {
           shared: true, intersect: false,
           custom: function({ series, seriesIndex, dataPointIndex, w }) {
             const currentYear = new Date().getFullYear();
-            let displayDate = '';
-            const seriesNames = w.globals.seriesNames;
             let hoverX;
-            const thisYearNames = seriesNames.filter(n => n.startsWith('本年'));
-            for (const name of thisYearNames) {
-              const idx = seriesNames.indexOf(name);
-              if (w.globals.seriesX[idx]?.[dataPointIndex] !== undefined) { hoverX = w.globals.seriesX[idx][dataPointIndex]; break; }
+            const seriesNames = w.globals.seriesNames;
+            for (let i = 0; i < seriesNames.length; i++) {
+              if (w.globals.seriesX[i]?.[dataPointIndex] !== undefined) { hoverX = Math.round(w.globals.seriesX[i][dataPointIndex]); break; }
             }
-            if (hoverX !== undefined) {
-              const hoverDate = new Date(hoverX);
-              displayDate = `${currentYear}-${String(hoverDate.getMonth() + 1).padStart(2, '0')}`;
-            } else {
-              for (let i = 0; i < w.globals.seriesX.length; i++) {
-                if (w.globals.seriesX[i]?.[dataPointIndex] !== undefined) { hoverX = w.globals.seriesX[i][dataPointIndex]; break; }
-              }
-              if (hoverX !== undefined) {
-                const originalDate = new Date(hoverX + 12 * 24 * 60 * 60 * 1000);
-                displayDate = `${currentYear}-${String(originalDate.getMonth() + 1).padStart(2, '0')}`;
-              }
-            }
+            const mIdx = (hoverX !== undefined && hoverX >= 0 && hoverX <= 11) ? hoverX : 0;
+            const displayDate = `${currentYear}-${String(mIdx + 1).padStart(2, '0')}`;
             const getSeriesIndex = (name) => seriesNames.indexOf(name);
             const ucType = uc.typeLabel;
             let tooltipHTML = `<div style="background: ${BgColor};color: ${Color};padding: 8px;border-radius: 4px;border: 1px solid ${Color};"><div style="font-weight: bold; font-size: 12px;color: ${Color};border-bottom: 1px dashed #999;">${displayDate}</div>`;
@@ -3642,16 +3635,18 @@ class  XiaoshiStateGridInfo extends LitElement {
       const colorGas = uc.barColor;
       const colorLastGas = uc.barColorLast || uc.barColor + '80';
 
-      const lastgasOffset = data.lastgas.map(item => ({ x: item.x - offsetMs, y: item.y }));
-      const lastcostOffset = data.lastcost.map(item => ({ x: item.x - offsetMs, y: item.y }));
+      const lastgasOffset = data.lastgas.map(item => ({ x: item.x + catOffset, y: item.y }));
+      const lastcostOffset = data.lastcost.map(item => ({ x: item.x + catOffset, y: item.y }));
+      const curGasOffset = data.gas.map(item => ({ x: item.x - catOffset, y: item.y }));
+      const curCostOffset = data.cost.map(item => ({ x: item.x - catOffset, y: item.y }));
 
       const hasDataInSeries = (arr) => arr && arr.some(item => item.y > 0);
       const seriesList = [];
       
       if (hasDataInSeries(lastgasOffset)) seriesList.push({ name: uc.lastUsageSeriesName, data: lastgasOffset, type: 'column' });
-      if (hasDataInSeries(data.gas)) seriesList.push({ name: uc.thisUsageSeriesName, data: data.gas, type: 'column' });
+      if (hasDataInSeries(curGasOffset)) seriesList.push({ name: uc.thisUsageSeriesName, data: curGasOffset, type: 'column' });
       if (hasDataInSeries(lastcostOffset)) seriesList.push({ name: uc.lastCostSeriesName, data: lastcostOffset, type: 'line', color: '#f3066040' });
-      if (hasDataInSeries(data.cost)) seriesList.push({ name: uc.thisCostSeriesName, data: data.cost, type: 'line', color: colorCost });
+      if (hasDataInSeries(curCostOffset)) seriesList.push({ name: uc.thisCostSeriesName, data: curCostOffset, type: 'line', color: colorCost });
 
       return {
         series: seriesList,
@@ -3671,11 +3666,10 @@ class  XiaoshiStateGridInfo extends LitElement {
         markers: { size: 3, strokeWidth: 1, colors: ['#f3066040', colorCost], strokeColors: "#fff" },
         dataLabels: { enabled: false },
         xaxis: {
-          type: 'datetime',
-          min: new Date(`${new Date().getFullYear()}-01-01`).getTime() - 15 * 24 * 60 * 60 * 1000,
-          max: new Date(`${new Date().getFullYear()}-12-01`).getTime(),
-          tickAmount: 11,
-          labels: { datetimeFormatter: { day: 'M月', month: 'M月', year: 'M月' }, formatter: function(val) { const date = new Date(val); return (date.getMonth() + 1) + '月'; }, style: { fontSize: '10px' }, hideOverlappingLabels: false },
+          min: -0.2,
+          max: 11.9,
+          tickAmount: 12,
+          labels: { style: { fontSize: '10px' }, hideOverlappingLabels: false, formatter: function(val) { const m = Math.round(parseFloat(val)); return (m >= 0 && m <= 11) ? (m + 1) + '月' : ''; } },
           tooltip: { enabled: false }
         },
         yaxis: { min: 0, max: Math.max(maxCost, maxLastCost) > 0 ? Math.ceil(Math.max(maxCost, maxLastCost) / 5) * 5 + 5 : undefined, floating: false, labels: { minWidth: 10, maxWidth: 30, formatter: function(val) { return val.toFixed(0); } } },
@@ -3701,9 +3695,13 @@ class  XiaoshiStateGridInfo extends LitElement {
         tooltip: {
           shared: true, intersect: false,
           custom: function({ series, seriesIndex, dataPointIndex, w }) {
-            const hoverX = w.globals.seriesX[seriesIndex]?.[dataPointIndex];
-            const currentDate = new Date(hoverX);
-            const monthLabel = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+            let hoverX;
+            for (let i = 0; i < w.globals.seriesNames.length; i++) {
+              if (w.globals.seriesX[i]?.[dataPointIndex] !== undefined) { hoverX = Math.round(w.globals.seriesX[i][dataPointIndex]); break; }
+            }
+            const mIdx = (hoverX !== undefined && hoverX >= 0 && hoverX <= 11) ? hoverX : 0;
+            const currentYear2 = new Date().getFullYear();
+            const monthLabel = `${currentYear2}-${String(mIdx + 1).padStart(2, '0')}`;
             let tooltipHTML = `<div style="background: ${BgColor};color: ${Color};padding: 8px;border-radius: 4px;border: 1px solid ${Color};"><div style="font-weight: bold; font-size: 12px;color: ${Color};border-bottom: 1px dashed #999;">${monthLabel}</div>`;
             seriesList.forEach((s, idx) => {
               const value = series[idx]?.[dataPointIndex];
