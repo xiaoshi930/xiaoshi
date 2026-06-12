@@ -1131,8 +1131,11 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                   >
                     <option value="button">按钮</option>
                     <option value="slider">数值调节</option>
+                    <option value="sun_slider">滑动条</option>
+                    <option value="service">服务按钮</option>
                   </select>
                 </div>
+                ${item.mode !== 'service' ? html`
                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
                   <label style="font-size: 0.8em; min-width: 60px;">功能实体</label>
                   <div class="entity-selector" style="flex: 1;">
@@ -1169,13 +1172,27 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                     ` : ''}
                   </div>
                 </div>
+                ` : ''}
+                ${item.mode === 'service' ? html`
+                <div style="display: flex; gap: 8px; align-items: flex-start; margin-bottom: 4px;">
+                  <label style="font-size: 0.8em; min-width: 60px; margin-top: 4px;">调用动作</label>
+                  <textarea
+                    .value=${item.service_action || ''}
+                    @change=${(e) => this._buttonRowFieldChanged(rowIndex, itemIndex, 'service_action', e.target.value)}
+                    placeholder="action: vacuum.send_command&#10;data:&#10;  command: set_dnd_timer&#10;  params:&#10;    key: value"
+                    rows="5"
+                    style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff); font-family: monospace; font-size: 0.85em; resize: vertical;"
+                  ></textarea>
+                </div>
+                <div class="hint" style="margin-bottom: 4px;">输入YAML格式的服务调用动作，action为域名.服务名，data为服务数据</div>
+                ` : ''}
                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
                   <label style="font-size: 0.8em; min-width: 60px;">名称重定义</label>
                   <input
                     type="text"
                     .value=${item.custom_name || ''}
                     @change=${(e) => this._buttonRowFieldChanged(rowIndex, itemIndex, 'custom_name', e.target.value)}
-                    placeholder="留空使用实体名"
+                    placeholder="${item.mode === 'service' ? '按钮显示名称' : '留空使用实体名'}"
                     style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
                   />
                 </div>
@@ -1813,6 +1830,62 @@ class XiaoshiPhoneOtherCard extends LitElement {
         max-width: 100%;
       }
 
+      /* 滑动条模式（sun_slider）样式 */
+      .sun-slider-wrapper {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        cursor: default;
+      }
+      .sun-slider-wrapper input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 14px;
+        background: transparent;
+        cursor: pointer;
+        margin: 0;
+        padding: 0;
+      }
+      .sun-slider-wrapper input[type="range"]::-webkit-slider-runnable-track {
+        height: 28px;
+        border-radius: 8px;
+        background: linear-gradient(to right, var(--slider-color, #4caf50) calc(var(--slider-pct, 0%) + 6px), var(--slider-bg, #333) calc(var(--slider-pct, 0%) + 6px));
+      }
+      .sun-slider-wrapper input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 12px;
+        height: 12px;
+        margin-top: 8px;
+        border-radius: 50%;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        cursor: grab;
+      }
+      .sun-slider-wrapper input[type="range"]::-moz-range-track {
+        height: 28px;
+        border-radius: 8px;
+        background: var(--slider-bg, #333);
+      }
+      .sun-slider-wrapper input[type="range"]::-moz-range-progress {
+        height: 28px;
+        border-radius: 8px;
+        background: var(--slider-color, #4caf50);
+      }
+      .sun-slider-wrapper input[type="range"]::-moz-range-thumb {
+        width: 12px;
+        height: 12px;
+        margin-top: 8px;
+        border-radius: 50%;
+        background: white;
+        border: none;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        cursor: grab;
+      }
+
       .select-options-row {
         display: flex;
         gap: 3px;
@@ -2355,11 +2428,15 @@ class XiaoshiPhoneOtherCard extends LitElement {
 
           ${[0,1,2,3,4,5,6,7,8,9].map(rowIndex => {
             const row = buttonRows[rowIndex];
-            const items = (row && row.items) ? row.items.filter(item => item.entity) : [];
+            const items = (row && row.items) ? row.items.filter(item => item.entity || (item.mode === 'service' && item.service_action)) : [];
             // 计算实际按钮数量（select选项展开为独立按钮）
             let totalButtons = 0;
             items.forEach(item => {
-                const domain = item.entity.split('.')[0];
+                if (item.mode === 'service') {
+                    totalButtons += 1;
+                    return;
+                }
+                const domain = item.entity ? item.entity.split('.')[0] : '';
                 if (domain === 'select' || domain === 'input_select') {
                     const entity = this.hass.states[item.entity];
                     if (entity) {
@@ -2378,6 +2455,10 @@ class XiaoshiPhoneOtherCard extends LitElement {
                             : allPresets;
                         totalButtons += Math.min(filtered.length, 5);
                     }
+                } else if (domain === 'cover' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
+                    totalButtons += 3;
+                } else if (domain === 'vacuum' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
+                    totalButtons += 4;
                 } else {
                     totalButtons += 1;
                 }
@@ -2526,7 +2607,12 @@ class XiaoshiPhoneOtherCard extends LitElement {
               newSeconds = currentSeconds - (30 * 60);
           } else if (currentMinutes > 10) {
               newSeconds = currentSeconds - (10 * 60);
-          } else {
+          } else if (domain === 'cover' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
+            const coverActions = ['open', 'stop', 'close'];
+            coverActions.forEach(action => {
+                renderUnits.push({ item, entity, domain, coverAction: action });
+            });
+        } else {
               this._cancelTimer();
               return;
           }
@@ -2537,7 +2623,12 @@ class XiaoshiPhoneOtherCard extends LitElement {
               newSeconds = currentSeconds + (10 * 60);
           } else if (currentMinutes < 180) {
               newSeconds = currentSeconds + (30 * 60);
-          } else {
+          } else if (domain === 'cover' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
+            const coverActions = ['open', 'stop', 'close'];
+            coverActions.forEach(action => {
+                renderUnits.push({ item, entity, domain, coverAction: action });
+            });
+        } else {
               newSeconds = currentSeconds + (60 * 60);
           }
       }
@@ -2580,17 +2671,21 @@ class XiaoshiPhoneOtherCard extends LitElement {
     const cardAccentColor = cardAccentRaw ? this._evalTemplate(cardAccentRaw) : '';
     if (cardAccentColor) activeColor = cardAccentColor;
 
-    const itemsToShow = row.items.filter(item => item.entity).slice(0, 7);
+    const itemsToShow = row.items.filter(item => item.entity || (item.mode === 'service' && item.service_action)).slice(0, 7);
 
     // 将所有item展开为独立的渲染单元（select的每个选项展开为一个按钮）
     const renderUnits = [];
     itemsToShow.forEach(item => {
+        if (item.mode === 'service') {
+            renderUnits.push({ item, entity: null, domain: 'service', selectOption: null });
+            return;
+        }
         const buttonEntityId = item.entity;
         const entity = this.hass.states[buttonEntityId];
         if (!entity) return;
         const domain = buttonEntityId.split('.')[0];
 
-        if ((domain === 'select' || domain === 'input_select') && item.mode !== 'slider') {
+        if ((domain === 'select' || domain === 'input_select') && item.mode !== 'slider' && item.mode !== 'sun_slider') {
             const allOptions = entity.attributes.options || [];
             const filteredOptions = (item.select_options && item.select_options.length > 0)
                 ? allOptions.filter(opt => item.select_options.includes(opt))
@@ -2602,7 +2697,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
             filteredOptions.slice(0, 6).forEach(opt => {
                 renderUnits.push({ item, entity, domain, selectOption: opt });
             });
-        } else if (domain === 'fan' && item.mode !== 'slider') {
+        } else if (domain === 'fan' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
             const allPresets = entity.attributes.preset_modes || [];
             const filteredPresets = (item.fan_preset_modes && item.fan_preset_modes.length > 0)
                 ? allPresets.filter(opt => item.fan_preset_modes.includes(opt))
@@ -2614,13 +2709,28 @@ class XiaoshiPhoneOtherCard extends LitElement {
             filteredPresets.slice(0, 6).forEach(opt => {
                 renderUnits.push({ item, entity, domain, selectOption: opt });
             });
-            } else {
+            } else if (domain === 'cover' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
+            const coverActions = ['open', 'stop', 'close'];
+            coverActions.forEach(action => {
+                renderUnits.push({ item, entity, domain, coverAction: action });
+            });
+        } else {
                 // 无预设模式，使用percentage档位控制
                 const speeds = ['off', 'low', 'mid', 'high'];
                 speeds.forEach(speed => {
                     renderUnits.push({ item, entity, domain, selectOption: `speed:${speed}` });
                 });
             }
+        } else if (domain === 'cover' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
+            const coverActions = ['open', 'stop', 'close'];
+            coverActions.forEach(action => {
+                renderUnits.push({ item, entity, domain, coverAction: action });
+            });
+        } else if (domain === 'vacuum' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
+            const vacuumActions = ['start', 'stop', 'pause', 'return_to_base'];
+            vacuumActions.forEach(action => {
+                renderUnits.push({ item, entity, domain, vacuumAction: action });
+            });
         } else {
             renderUnits.push({ item, entity, domain, selectOption: null });
         }
@@ -2629,18 +2739,57 @@ class XiaoshiPhoneOtherCard extends LitElement {
     return renderUnits.map(unit => {
         const { item, entity, domain, selectOption } = unit;
         const buttonEntityId = item.entity;
-        const friendlyName = entity.attributes.friendly_name || '';
+        const friendlyName = entity ? (entity.attributes.friendly_name || '') : '';
         const displayName = (item.custom_name || friendlyName).slice(0, 4);
-        const displayValueColor = entity.state === '低' ? 'red' : fgColor;
+        const displayValueColor = entity && entity.state === '低' ? 'red' : fgColor;
         const mode = item.mode || 'button';
+
+        // 服务按钮模式
+        if (mode === 'service') {
+            const btnName = item.custom_name || '服务';
+            return html`
+                <button class="func-button"
+                        @click=${() => this._callServiceAction(item.service_action)}
+                        title="${btnName}">
+                    <div class="func-button-value" style="color: ${buttonFg}">${btnName.slice(0, 6)}</div>
+                </button>
+            `;
+        }
 
         // 数值调节模式
         if (mode === 'slider') {
-            const min = domain === 'climate' ? (entity.attributes.min_temp ?? 16) : (entity.attributes.min ?? 0);
-            const max = domain === 'climate' ? (entity.attributes.max_temp ?? 30) : (entity.attributes.max ?? 100);
-            const step = domain === 'climate' ? (entity.attributes.target_temp_step ?? 1) : (entity.attributes.step ?? 1);
-            const currentVal = domain === 'climate' ? (entity.attributes.temperature ?? parseFloat(entity.state) ?? 0) : (parseFloat(entity.state) || 0);
-            const unit = domain === 'climate' ? '°C' : (entity.attributes.unit_of_measurement || '');
+            let min, max, step, currentVal, unit;
+            if (domain === 'climate') {
+                min = entity.attributes.min_temp ?? 16;
+                max = entity.attributes.max_temp ?? 30;
+                step = entity.attributes.target_temp_step ?? 1;
+                currentVal = entity.attributes.temperature ?? parseFloat(entity.state) ?? 0;
+                unit = '°C';
+            } else if (domain === 'fan') {
+                min = 0; max = 100;
+                step = entity.attributes.percentage_step ?? 1;
+                currentVal = entity.attributes.percentage ?? 0;
+                unit = '%';
+            } else if (domain === 'cover') {
+                min = 0; max = 100; step = 1;
+                currentVal = entity.attributes.current_position ?? 0;
+                unit = '%';
+            } else if (domain === 'light') {
+                min = 0; max = 100; step = 1;
+                currentVal = entity.attributes.brightness ? Math.round(entity.attributes.brightness / 2.55) : 0;
+                unit = '%';
+            } else if (domain === 'cover' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
+            const coverActions = ['open', 'stop', 'close'];
+            coverActions.forEach(action => {
+                renderUnits.push({ item, entity, domain, coverAction: action });
+            });
+        } else {
+                min = entity.attributes.min ?? 0;
+                max = entity.attributes.max ?? 100;
+                step = entity.attributes.step ?? 1;
+                currentVal = parseFloat(entity.state) || 0;
+                unit = entity.attributes.unit_of_measurement || '';
+            }
             const sliderDomain = domain;
             const sliderName = item.custom_name || friendlyName;
             
@@ -2669,6 +2818,76 @@ class XiaoshiPhoneOtherCard extends LitElement {
                         }}
                         style="width: 90%; margin: auto auto 5px; height: 4px; accent-color: ${activeColor}; --slider-color: ${activeColor};"
                     />
+                </div>
+            `;
+        }
+
+        // 滑动条模式（sun_slider - 填充按钮高度的range滑块）
+        if (mode === 'sun_slider') {
+            let min, max, step, currentVal, unit;
+            if (domain === 'climate') {
+                min = entity.attributes.min_temp ?? 16;
+                max = entity.attributes.max_temp ?? 30;
+                step = entity.attributes.target_temp_step ?? 1;
+                currentVal = entity.attributes.temperature ?? parseFloat(entity.state) ?? 0;
+                unit = '°C';
+            } else if (domain === 'fan') {
+                min = 0; max = 100;
+                step = entity.attributes.percentage_step ?? 1;
+                currentVal = entity.attributes.percentage ?? 0;
+                unit = '%';
+            } else if (domain === 'cover') {
+                min = 0; max = 100; step = 1;
+                currentVal = entity.attributes.current_position ?? 0;
+                unit = '%';
+            } else if (domain === 'light') {
+                min = 0; max = 100; step = 1;
+                currentVal = entity.attributes.brightness ? Math.round(entity.attributes.brightness / 2.55) : 0;
+                unit = '%';
+            } else if (domain === 'cover' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
+            const coverActions = ['open', 'stop', 'close'];
+            coverActions.forEach(action => {
+                renderUnits.push({ item, entity, domain, coverAction: action });
+            });
+        } else {
+                min = entity.attributes.min ?? 0;
+                max = entity.attributes.max ?? 100;
+                step = entity.attributes.step ?? 1;
+                currentVal = parseFloat(entity.state) || 0;
+                unit = entity.attributes.unit_of_measurement || '';
+            }
+            const sliderDomain = domain;
+            const sliderName = item.custom_name || friendlyName;
+            const pct = max > min ? Math.round(((currentVal - min) / (max - min)) * 100) : 0;
+
+            return html`
+                <div class="func-button" style="cursor: default; display: flex; align-items: center; padding: 0;">
+                    <div class="sun-slider-wrapper" style="flex: 1;">
+                        <input type="range"
+                            min="${min}" max="${max}" step="${step}"
+                            .value=${currentVal}
+                            style="--slider-color: ${activeColor}; --slider-bg: ${buttonBg}; --slider-pct: ${pct}%;"
+                            @input=${(e) => {
+                                const val = parseFloat(e.target.value);
+                                const newPct = max > min ? Math.round(((val - min) / (max - min)) * 100) : 0;
+                                e.target.style.setProperty('--slider-pct', newPct + '%');
+                            }}
+                            @change=${(e) => {
+                                const val = parseFloat(e.target.value);
+                                if (sliderDomain === 'number' || sliderDomain === 'input_number') {
+                                    this._callService(sliderDomain, 'set_value', { entity_id: buttonEntityId, value: val });
+                                } else if (sliderDomain === 'climate') {
+                                    this._callService('climate', 'set_temperature', { entity_id: buttonEntityId, temperature: val });
+                                } else if (sliderDomain === 'fan') {
+                                    this._callService('fan', 'set_percentage', { entity_id: buttonEntityId, percentage: val });
+                                } else if (sliderDomain === 'cover') {
+                                    this._callService('cover', 'set_cover_position', { entity_id: buttonEntityId, position: val });
+                                } else if (sliderDomain === 'light') {
+                                    this._callService('light', 'turn_on', { entity_id: buttonEntityId, brightness_pct: val });
+                                }
+                            }}
+                        />
+                    </div>
                 </div>
             `;
         }
@@ -2722,6 +2941,47 @@ class XiaoshiPhoneOtherCard extends LitElement {
                     title="${selectOption}"
                 >
                     <div class="func-button-value" style="color: ${btnFg}">${optionDisplayName}</div>
+                </button>
+            `;
+        }
+
+        if (domain === 'cover') {
+            const action = unit.coverAction;
+            const actionLabels = { 'open': '打开', 'stop': '停止', 'close': '关闭' };
+            const actionServices = { 'open': 'open_cover', 'stop': 'stop_cover', 'close': 'close_cover' };
+            let isActive = false;
+            if (action === 'open') isActive = entity.state === 'open';
+            else if (action === 'close') isActive = entity.state === 'closed';
+            else if (action === 'stop') isActive = entity.state === 'open' || entity.state === 'closed' ? false : true;
+            const btnFg = isActive ? activeColor : buttonFg;
+            return html`
+                <button class="func-button ${isActive ? 'select-active' : ''}"
+                    style="background-color: ${buttonBg};"
+                    @click=${() => this._callService('cover', actionServices[action], { entity_id: buttonEntityId })}
+                    title="${actionLabels[action]}"
+                >
+                    <div class="func-button-value" style="color: ${btnFg}">${actionLabels[action]}</div>
+                </button>
+            `;
+        }
+
+        if (domain === 'vacuum') {
+            const action = unit.vacuumAction;
+            const actionLabels = { 'start': '启动', 'stop': '停止', 'pause': '暂停', 'return_to_base': '回基站' };
+            const actionServices = { 'start': 'start', 'stop': 'stop', 'pause': 'pause', 'return_to_base': 'return_to_base' };
+            let isActive = false;
+            if (action === 'start') isActive = entity.state === 'cleaning';
+            else if (action === 'stop') isActive = entity.state === 'cleaning' || entity.state === 'paused';
+            else if (action === 'pause') isActive = entity.state === 'paused';
+            else if (action === 'return_to_base') isActive = entity.state === 'returning';
+            const btnFg = isActive ? activeColor : buttonFg;
+            return html`
+                <button class="func-button ${isActive ? 'select-active' : ''}"
+                    style="background-color: ${buttonBg};"
+                    @click=${() => this._callService('vacuum', actionServices[action], { entity_id: buttonEntityId })}
+                    title="${actionLabels[action]}"
+                >
+                    <div class="func-button-value" style="color: ${btnFg}">${actionLabels[action]}</div>
                 </button>
             `;
         }
@@ -2941,7 +3201,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
           return html``;
       });
   }
-    
+
   _handleExtraButtonClick(entityId, domain) {
         const entity = this.hass.states[entityId];
         if (!entity) return;
@@ -3051,6 +3311,103 @@ class XiaoshiPhoneOtherCard extends LitElement {
   _callService(domain, service, data) {
       this.hass.callService(domain, service, data);
       this._handleClick();
+  }
+
+  _callServiceAction(actionYaml) {
+      if (!actionYaml || typeof actionYaml !== 'string') return;
+      try {
+          const lines = actionYaml.split('\n');
+          let domain = '', service = '';
+          const data = {};
+          const target = {};
+          let currentSection = null; // 'data' | 'target'
+          const keyStack = [];
+
+          for (let line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed || trimmed.startsWith('#')) continue;
+
+              // 计算缩进级别
+              const indent = line.search(/\S/);
+              const keyMatch = trimmed.match(/^([\w_.-]+)\s*:\s*(.*)$/);
+              if (!keyMatch) continue;
+
+              const key = keyMatch[1];
+              const value = keyMatch[2].trim();
+
+              if (indent === 0) {
+                  // 顶级key
+                  if (key === 'action' || key === 'service') {
+                      const parts = value.split('.');
+                      if (parts.length >= 2) {
+                          domain = parts[0];
+                          service = parts.slice(1).join('.');
+                      }
+                      currentSection = null;
+                      keyStack.length = 0;
+                  } else if (key === 'data') {
+                      currentSection = 'data';
+                      keyStack.length = 0;
+                      // data下如果有直接值
+                      if (value) {
+                          // 单行 data: key: value 格式暂不处理
+                      }
+                  } else if (key === 'target') {
+                      currentSection = 'target';
+                      keyStack.length = 0;
+                  } else {
+                      // 顶级直接字段，归入data
+                      currentSection = null;
+                      keyStack.length = 0;
+                      data[key] = value === '' ? {} : this._parseYamlValue(value);
+                  }
+              } else {
+                  // 缩进层级：根据currentSection决定写入data还是target
+                  const currentObj = currentSection === 'target' ? target : data;
+                  if (keyStack.length === 0) {
+                      if (value === '') {
+                          currentObj[key] = {};
+                          keyStack.push(currentObj[key]);
+                      } else {
+                          currentObj[key] = this._parseYamlValue(value);
+                      }
+                  } else {
+                      const parent = keyStack[keyStack.length - 1];
+                      if (value === '') {
+                          parent[key] = {};
+                          keyStack.push(parent[key]);
+                      } else {
+                          parent[key] = this._parseYamlValue(value);
+                      }
+                  }
+              }
+          }
+
+          if (domain && service) {
+              const hasTarget = Object.keys(target).length > 0;
+              if (hasTarget) {
+                  this.hass.callService(domain, service, data, target);
+              } else {
+                  this.hass.callService(domain, service, data);
+              }
+              this._handleClick();
+          }
+      } catch (e) {
+          console.error('Failed to parse service action:', e);
+      }
+  }
+
+  _parseYamlValue(val) {
+      if (val === 'true') return true;
+      if (val === 'false') return false;
+      if (val === 'null' || val === '~') return null;
+      if (/^-?\d+$/.test(val)) return parseInt(val, 10);
+      if (/^-?\d+\.\d+$/.test(val)) return parseFloat(val);
+      // 去除引号
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          return val.slice(1, -1);
+      }
+      return val;
   }
 } 
 customElements.define('xiaoshi-phone-other-card', XiaoshiPhoneOtherCard);
