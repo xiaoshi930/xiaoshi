@@ -1050,7 +1050,7 @@ class XiaoshiAvatarCard extends LitElement {
         // 渲染生日信息
         let birthdayHtml = html``;
         if (data.birthday && data.birthday.days != null) {
-            birthdayHtml = html`<div class="info-text">🎂 ${data.birthday.days}天</div>`;
+            birthdayHtml = html`<div class="info-text">${data.birthday.days == 0 ? '🎂今天' : `🎂 ${data.birthday.days}天`}</div>`;
         }
 
         // 渲染距家距离和时间
