@@ -603,7 +603,7 @@ class XiaoshiStateGridButton extends LitElement {
 
   static get styles() {
     return css`
-      :host { display: block; width: var(--card-width, 100%); }
+      :host { display: block; }
       .balance-status {
         width: var(--button-width, 16.8vw); height: var(--button-height, 24px);
         padding: 0; margin: 0; background: var(--bg-color, #fff); color: var(--fg-color, #000);
