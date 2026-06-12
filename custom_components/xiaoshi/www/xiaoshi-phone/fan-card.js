@@ -185,6 +185,13 @@ class XiaoshiPhoneFanCardEditor extends LitElement {
           </select>
         </div>
 
+        ${this.config.fan_type === 'normal' ? html`
+        <div class="form-group">
+          <label>显示摇头</label>
+          <input type="checkbox" ?checked=${this.config.show_oscillate !== false} @change=${(e) => { this.config = { ...this.config, show_oscillate: e.target.checked }; this._fireEvent(); }} />
+        </div>
+        ` : ''}
+
         ${(this.config.fan_type === 'normal' ? normalFanEntitySelectors : entitySelectors).map(item => html`
           <div class="form-group">
             <label>${item.label}</label>
@@ -520,6 +527,7 @@ class XiaoshiPhoneFanCard extends LitElement {
       fan_type: "circulator",
       show_temperature: true,
       show_direction_control: true,
+      show_oscillate: true,
       timer: "",
       buttons: [],
       buttons2: [],
@@ -1584,7 +1592,7 @@ class XiaoshiPhoneFanCard extends LitElement {
     let temperature = '-';
     if (this.config.temperature) {
       const tempEntity = this._getEntityState(this.config.temperature);
-      if (tempEntity && tempEntity.state !== 'unavailable') {
+      if (tempEntity && tempEntity.state !== 'unavailable' && tempEntity.state !== 'unknown') {
         temperature = tempEntity.state;
       }
     }
@@ -1593,7 +1601,7 @@ class XiaoshiPhoneFanCard extends LitElement {
     let humidity = '-';
     if (this.config.humidity) {
       const humEntity = this._getEntityState(this.config.humidity);
-      if (humEntity && humEntity.state !== 'unavailable') {
+      if (humEntity && humEntity.state !== 'unavailable' && humEntity.state !== 'unknown') {
         humidity = humEntity.state;
       }
     }
@@ -1731,8 +1739,8 @@ class XiaoshiPhoneFanCard extends LitElement {
             <span class="status-name">${attrs.friendly_name || (isNormalFan ? '风扇' : '循环扇')}</span>
             <span class="status-info">
               <span>${isOn ? presetMode : '关闭'}</span>
-              ${this.config.temperature ? html`<span>${temperature}°C</span>` : ''}
-              ${this.config.humidity ? html`<span>${humidity}%</span>` : ''}
+              ${this.config.temperature && temperature !== '-' ? html`<span>${temperature}°C</span>` : ''}
+              ${this.config.humidity && humidity !== '-' ? html`<span>${humidity}%</span>` : ''}
             </span>
           </div>
 
@@ -1766,6 +1774,7 @@ class XiaoshiPhoneFanCard extends LitElement {
                   <span class="btn-text">${m.label}</span>
                 </button>
               `)}
+              ${this.config.show_oscillate !== false ? html`
               <button
                 class="mode-button ${attrs.oscillating ? 'active-mode' : ''}"
                 @click=${this._toggleOscillate}
@@ -1773,6 +1782,7 @@ class XiaoshiPhoneFanCard extends LitElement {
                 <ha-icon icon="mdi:rotate-3d-variant"></ha-icon>
                 <span class="btn-text">摇头</span>
               </button>
+              ` : ''}
             </div>
             ` : ''}
 
@@ -1823,6 +1833,7 @@ class XiaoshiPhoneFanCard extends LitElement {
                   </button>
                 `;
               })}
+              ${this.config.show_oscillate !== false ? html`
               <button
                 class="mode-button ${attrs.oscillating ? 'active-mode' : ''}"
                 @click=${this._toggleOscillate}
@@ -1830,6 +1841,7 @@ class XiaoshiPhoneFanCard extends LitElement {
                 <ha-icon icon="mdi:rotate-3d-variant"></ha-icon>
                 <span class="btn-text">摇头</span>
               </button>
+              ` : ''}
             </div>
             ` : !hasPresetModes && !hasPercentageStep ? html`
             <div class="mode-area" style="grid-row: 2; grid-column: 2; margin-left: -10px;">
@@ -1848,6 +1860,7 @@ class XiaoshiPhoneFanCard extends LitElement {
                   </button>
                 `;
               })}
+              ${this.config.show_oscillate !== false ? html`
               <button
                 class="mode-button ${attrs.oscillating ? 'active-mode' : ''}"
                 @click=${this._toggleOscillate}
@@ -1855,6 +1868,7 @@ class XiaoshiPhoneFanCard extends LitElement {
                 <ha-icon icon="mdi:rotate-3d-variant"></ha-icon>
                 <span class="btn-text">摇头</span>
               </button>
+              ` : ''}
             </div>
             ` : ''}
 
