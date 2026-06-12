@@ -591,6 +591,8 @@ class XiaoshiPadCardEditor extends LitElement {
                                     <option value="" ?selected="${!di.image_flip}">正常</option>
                                     <option value="flip-h" ?selected="${di.image_flip === 'flip-h'}">左右翻转</option>
                                     <option value="flip-v" ?selected="${di.image_flip === 'flip-v'}">上下翻转</option>
+                                    <option value="rotate-90" ?selected="${di.image_flip === 'rotate-90'}">旋转90°</option>
+                                    <option value="rotate-270" ?selected="${di.image_flip === 'rotate-270'}">旋转270°</option>
                                 </select>
                                 <label style="font-weight:bold;font-size:12px;white-space:nowrap;min-width:auto;margin-left:8px;">条件</label>
                                 <select @change="${(e) => this._updateDeviceIconField(i, 'condition_mode', e.target.value)}">
@@ -1949,6 +1951,10 @@ class XiaoshiPadCard extends LitElement {
         flipStyle = 'transform: scaleX(-1);';
       } else if (item.image_flip === 'flip-v') {
         flipStyle = 'transform: scaleY(-1);';
+      } else if (item.image_flip === 'rotate-90') {
+        flipStyle = 'transform: rotate(90deg);';
+      } else if (item.image_flip === 'rotate-270') {
+        flipStyle = 'transform: rotate(270deg);';
       }
 
       if (imageUrl) {
