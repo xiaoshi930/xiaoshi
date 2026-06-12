@@ -1436,6 +1436,7 @@ class XiaoshiPhoneFanCard extends LitElement {
   }
 
   _setPresetMode(mode) {
+    this._handleClick();
     if (!this.config.entity) return;
     this._callService('fan', 'set_preset_mode', {
       entity_id: this.config.entity,
@@ -1444,6 +1445,7 @@ class XiaoshiPhoneFanCard extends LitElement {
   }
 
   _setFanSpeed(speed) {
+    this._handleClick();
     if (!this.config.entity) return;
     this._callService('fan', 'set_percentage', {
       entity_id: this.config.entity,
@@ -1452,6 +1454,7 @@ class XiaoshiPhoneFanCard extends LitElement {
   }
 
   _setSpeedLevel(value) {
+    this._handleClick();
     // 使用风速档位实体设置档位
     if (this.config.speed_level) {
       this._callService('number', 'set_value', {
@@ -1471,6 +1474,7 @@ class XiaoshiPhoneFanCard extends LitElement {
   }
 
   _toggleOscillate() {
+    this._handleClick();
     if (!this.config.entity) return;
     const entity = this._getEntityState(this.config.entity);
     const currentOscillating = entity?.attributes?.oscillating || false;
@@ -1481,6 +1485,7 @@ class XiaoshiPhoneFanCard extends LitElement {
   }
 
   _setFanModeSelect(option) {
+    this._handleClick();
     if (!this.config.fan_mode) return;
     this._callService('select', 'select_option', {
       entity_id: this.config.fan_mode,
@@ -1489,6 +1494,7 @@ class XiaoshiPhoneFanCard extends LitElement {
   }
 
   _selectOscillateAngle(angle) {
+    this._handleClick();
     if (!this.config.oscillate_angle) return;
     this._callService('select', 'select_option', {
       entity_id: this.config.oscillate_angle,
@@ -1497,11 +1503,13 @@ class XiaoshiPhoneFanCard extends LitElement {
   }
 
   _toggleVerticalSwing() {
+    this._handleClick();
     if (!this.config.vertical_swing) return;
     this._callService('switch', 'toggle', { entity_id: this.config.vertical_swing });
   }
 
   _selectVerticalAngle(angle) {
+    this._handleClick();
     if (!this.config.vertical_angle) return;
     this._callService('select', 'select_option', {
       entity_id: this.config.vertical_angle,
@@ -1510,11 +1518,13 @@ class XiaoshiPhoneFanCard extends LitElement {
   }
 
   _toggleCycleSwing() {
+    this._handleClick();
     if (!this.config.cycle_swing) return;
     this._callService('switch', 'toggle', { entity_id: this.config.cycle_swing });
   }
 
   _toggleSwitch(entityId) {
+    this._handleClick();
     if (!entityId) return;
     const entity = this._getEntityState(entityId);
     if (!entity) return;
@@ -1528,6 +1538,7 @@ class XiaoshiPhoneFanCard extends LitElement {
   }
 
   _setSwingDirection(direction) {
+    this._handleClick();
     // 上下手动摇头
     if ((direction === 'UP' || direction === 'DOWN') && this.config.up_down_swing) {
       this._callService('select', 'select_option', {
@@ -2279,6 +2290,7 @@ class XiaoshiPhoneFanCard extends LitElement {
   }
 
   _adjustTimer(direction, currentSeconds) {
+    this._handleClick();
     if (!this.config.timer) return;
     const currentMinutes = Math.ceil(currentSeconds / 60);
     let newSeconds = 0;
@@ -2306,11 +2318,13 @@ class XiaoshiPhoneFanCard extends LitElement {
   }
 
   _cancelTimer() {
+    this._handleClick();
     if (!this.config.timer) return;
     this._callService('timer', 'cancel', { entity_id: this.config.timer });
   }
 
   _setTimer(totalSeconds) {
+    this._handleClick();
     if (!this.config.timer) return;
     if (this._getEntityState(this.config.timer)?.state === 'active') {
       this._callService('timer', 'cancel', { entity_id: this.config.timer });
