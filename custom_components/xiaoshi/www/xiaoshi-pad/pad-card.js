@@ -585,6 +585,7 @@ class XiaoshiPadCardEditor extends LitElement {
                                 <select @change="${(e) => this._updateDeviceIconField(i, 'image_mode', e.target.value)}">
                                     <option value="" ?selected="${!di.image_mode}">on/off状态</option>
                                     <option value="custom" ?selected="${di.image_mode === 'custom'}">其他状态</option>
+                                    <option value="no_entity" ?selected="${di.image_mode === 'no_entity'}">无实体</option>
                                 </select>
                                 <label style="font-weight:bold;font-size:12px;white-space:nowrap;min-width:auto;margin-left:8px;">方向</label>
                                 <select @change="${(e) => this._updateDeviceIconField(i, 'image_flip', e.target.value)}">
@@ -607,7 +608,12 @@ class XiaoshiPadCardEditor extends LitElement {
                                 <input type="text" .value="${di.status_conditions || ''}" @change="${(e) => this._updateDeviceIconField(i, 'status_conditions', e.target.value)}" placeholder="on,home,有人">
                             </div>
                             ` : ''}
-                            ${!di.image_mode || di.image_mode === '' ? html`
+                            ${di.image_mode === 'no_entity' ? html`
+                            <div class="glow-row">
+                                <label>图片</label>
+                                <input type="text" .value="${di.on_image || ''}" @change="${(e) => this._updateDeviceIconField(i, 'on_image', e.target.value)}" placeholder="/local/images/device.png">
+                            </div>
+                            ` : !di.image_mode || di.image_mode === '' ? html`
                             <div class="glow-row">
                                 <label>开启图片</label>
                                 <input type="text" .value="${di.on_image || ''}" @change="${(e) => this._updateDeviceIconField(i, 'on_image', e.target.value)}" placeholder="/local/images/device_on.png">
@@ -1916,6 +1922,32 @@ class XiaoshiPadCard extends LitElement {
   _renderDeviceIcons() {
     if (!this.hass) return '';
     return (this.config.device_icons || []).map(item => {
+      // 无实体模式：不需要实体，直接显示图片
+      if (item.image_mode === 'no_entity') {
+        const width = item.width || '25px';
+        const height = item.height || '25px';
+        const posSize = `top: ${item.top || '100px'}; left: ${item.left || '100px'}; width: ${width}; height: ${height};`;
+        const imageUrl = item.on_image || '';
+
+        let flipStyle = '';
+        if (item.image_flip === 'flip-h') {
+          flipStyle = 'transform: scaleX(-1);';
+        } else if (item.image_flip === 'flip-v') {
+          flipStyle = 'transform: scaleY(-1);';
+        } else if (item.image_flip === 'rotate-90') {
+          flipStyle = 'transform: rotate(90deg);';
+        } else if (item.image_flip === 'rotate-270') {
+          flipStyle = 'transform: rotate(270deg);';
+        }
+
+        if (imageUrl) {
+          return html`<button class="device-icon-item" style="${posSize}" @click="${() => this._onDeviceIconClick(item)}">
+            <img src="${imageUrl}" alt="device" style="${flipStyle}" />
+          </button>`;
+        }
+        return '';
+      }
+
       if (!item.entity) return '';
       const entity = this.hass.states[item.entity];
       if (!entity) return '';
