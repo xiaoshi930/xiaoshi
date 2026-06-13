@@ -1478,6 +1478,28 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                   />
                 </div>
                 ` : ''}
+                ${(itemDomain === 'number' || itemDomain === 'input_number') && (item.mode === 'slider' || item.mode === 'sun_slider') ? html`
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                  <label style="font-size: 0.8em; min-width: 60px;">最小值</label>
+                  <input
+                    type="number"
+                    .value=${item.min !== undefined ? item.min : ''}
+                    @change=${(e) => this._buttonRowFieldChanged(rowIndex, itemIndex, 'min', e.target.value !== '' ? parseFloat(e.target.value) : undefined)}
+                    placeholder="留空用实体默认"
+                    style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+                  />
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                  <label style="font-size: 0.8em; min-width: 60px;">最大值</label>
+                  <input
+                    type="number"
+                    .value=${item.max !== undefined ? item.max : ''}
+                    @change=${(e) => this._buttonRowFieldChanged(rowIndex, itemIndex, 'max', e.target.value !== '' ? parseFloat(e.target.value) : undefined)}
+                    placeholder="留空用实体默认"
+                    style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+                  />
+                </div>
+                ` : ''}
               </div>
             `})}
             <div class="buttons-row">
@@ -1878,7 +1900,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
         font-size: 16px;
         font-weight: bold;
         overflow: hidden;
-        text-overflow: ellipsis;
+        text-overflow: clip;
         white-space: nowrap;
         margin-left: 10px; 
       }
@@ -1889,7 +1911,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
         align-items: center;
         font-size: 12px;
         overflow: hidden;
-        text-overflow: ellipsis;
+        text-overflow: clip;
         white-space: nowrap;
         margin-left: 5px; 
         gap: 1px;
@@ -2012,7 +2034,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
       }
       .func-button.has-icon {
         height: 25px;
-        padding: 2px 4px;
+        padding: 2px 0px;
         flex-direction: row;
         gap: 3px;
       }
@@ -2022,7 +2044,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
       }
 
       .func-button-icon {
-        --mdc-icon-size: 16px;
+        --mdc-icon-size: 15px;
         height: 16px;
         display: flex;
         align-items: center;
@@ -2034,7 +2056,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
         line-height: 1.2;
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis;
+        text-overflow: clip;
         max-width: 100%;
       }
 
@@ -2044,7 +2066,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
         line-height: 1.2;
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis;
+        text-overflow: clip;
         max-width: 100%;
       }
 
@@ -2108,7 +2130,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
       .num-slider input[type="range"] {
         -webkit-appearance: none;
         appearance: none;
-        width: 100%;
+        width: 90%;
         height: 4px;
         margin: 0 0 6px 0;
         border-radius: 2px;
@@ -2149,7 +2171,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
       .select-options-row {
         display: flex;
         gap: 3px;
-        width: 100%;
+        width: 90%;
       }
 
       .select-option-btn {
@@ -2161,7 +2183,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
         line-height: 1.2;
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis;
+        text-overflow: clip;
         cursor: pointer;
         background: rgba(255,255,255,0.1);
         color: var(--button-fg);
@@ -2261,7 +2283,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
         line-height: 1.5;
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis;
+        text-overflow: clip;
         max-width: 100%;
         cursor: default;
       }
@@ -2271,7 +2293,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
         line-height: 1.2;
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis;
+        text-overflow: clip;
         max-width: 100%;
         height: auto;
         cursor: default;
@@ -2990,7 +3012,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
             if (item.select_label && item.select_label.trim()) {
                 renderUnits.push({ item, entity, domain, selectOption: null, isLabel: true });
             }
-            filteredOptions.slice(0, 6).forEach(opt => {
+            filteredOptions.slice(0, 10).forEach(opt => {
                 renderUnits.push({ item, entity, domain, selectOption: opt });
             });
         } else if (domain === 'fan' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
@@ -3003,7 +3025,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
                 renderUnits.push({ item, entity, domain, selectOption: null, isLabel: true });
             }
             if (filteredPresets.length > 0) {
-            filteredPresets.slice(0, 6).forEach(opt => {
+            filteredPresets.slice(0, 10).forEach(opt => {
                 renderUnits.push({ item, entity, domain, selectOption: opt });
             });
             } else {
@@ -3034,7 +3056,6 @@ class XiaoshiPhoneOtherCard extends LitElement {
         const buttonEntityId = item.entity;
         const friendlyName = entity ? (entity.attributes.friendly_name || '') : '';
         const displayName = (item.custom_name || friendlyName).slice(0, 4);
-        const displayValueColor = entity && entity.state === '低' ? 'red' : fgColor;
         const mode = item.mode || 'button';
 
         // 服务按钮模式
@@ -3087,8 +3108,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
                 renderUnits.push({ item, entity, domain, coverAction: action });
             });
         } else {
-                min = entity.attributes.min ?? 0;
-                max = entity.attributes.max ?? 100;
+                min = item.min !== undefined ? item.min : (entity.attributes.min ?? 0);
+                max = item.max !== undefined ? item.max : (entity.attributes.max ?? 100);
                 step = entity.attributes.step ?? 1;
                 currentVal = parseFloat(entity.state) || 0;
                 unit = entity.attributes.unit_of_measurement || '';
@@ -3101,7 +3122,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
             
             return html`
                 <div class="func-button num-slider" style="cursor: default; display: flex; flex-direction: column; justify-content: space-between; padding:0;">
-                    <div style="color: ${buttonFg}; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${sliderName.slice(0, 4)}：${currentVal}${unit}</div>
+                    <div style="color: ${fgColor}; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: clip;">${sliderName.slice(0, 4)}：${currentVal}${unit}</div>
                     <input type="range" 
                         min="${min}" max="${max}" step="${step}" 
                         .value=${currentVal}
@@ -3169,8 +3190,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
                 renderUnits.push({ item, entity, domain, coverAction: action });
             });
         } else {
-                min = entity.attributes.min ?? 0;
-                max = entity.attributes.max ?? 100;
+                min = item.min !== undefined ? item.min : (entity.attributes.min ?? 0);
+                max = item.max !== undefined ? item.max : (entity.attributes.max ?? 100);
                 step = entity.attributes.step ?? 1;
                 currentVal = parseFloat(entity.state) || 0;
                 unit = entity.attributes.unit_of_measurement || '';
@@ -3492,8 +3513,6 @@ class XiaoshiPhoneOtherCard extends LitElement {
 
       const theme = this._evaluateTheme();
       const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-      const buttonBg = theme === 'light' ? 'rgb(50,50,50)' : 'rgb(120,120,120)';
-      const buttonFg = 'rgb(250,250,250)';
       let activeColor = theme === 'light' ? 'rgba(00, 80, 80)' : 'rgba(180, 230, 230)';
       const cardAccentRaw = this.config.accent_color || '';
       const cardAccentColor = cardAccentRaw ? this._evalTemplate(cardAccentRaw) : '';
