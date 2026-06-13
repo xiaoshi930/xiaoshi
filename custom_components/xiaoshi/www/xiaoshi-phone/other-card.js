@@ -26,7 +26,7 @@ const PRESET_ON_STATES = [
 
 // 通用翻译
 const COMMON_TRANSLATIONS = {
-    'on': '开启', 'off': '关闭',
+    'on': '开启', 'off': '关闭','idle': '空闲',
     'low': '低', 'medium': '中', 'high': '高',
     'brightness': '亮度', 'color_temp': '色温', 'color': '颜色',
     'normal': '正常', 'silent': '静音', 'turbo': '极速', 'max': '最大',
@@ -40,6 +40,7 @@ const COMMON_TRANSLATIONS = {
     '20c': '20°C', '30c': '30°C', '40c': '40°C', '60c': '60°C', '95c': '95°C',
     '2_hours': '2小时', '4_hours': '4小时', '6_hours': '6小时', '8_hours': '8小时',
     '1_time': '1次', '2_times': '2次', '3_times': '3次', '4_times': '4次',
+    '全速模式（Max）':'全速模式'
 };
 
 // 冰箱翻译
@@ -444,6 +445,81 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
     this.requestUpdate();
   }
 
+  _buttonRowSubItemChanged(rowIndex, itemIndex, subKey, field, value) {
+    const rows = [...this._getButtonRows()];
+    if (!rows[rowIndex] || !rows[rowIndex].items[itemIndex]) return;
+    const items = [...rows[rowIndex].items];
+    const subItems = { ...(items[itemIndex].sub_items || {}) };
+    subItems[subKey] = { ...(subItems[subKey] || {}) };
+    if (field === 'visible') subItems[subKey].visible = value !== false;
+    else if (field === 'show_name') subItems[subKey].show_name = value !== false;
+    else if (field === 'custom_name') subItems[subKey].custom_name = value;
+    else if (field === 'show_icon') subItems[subKey].show_icon = value !== false;
+    else if (field === 'custom_icon') subItems[subKey].custom_icon = value;
+    items[itemIndex] = { ...items[itemIndex], sub_items: subItems };
+    rows[rowIndex] = { ...rows[rowIndex], items };
+    this.config = { ...this.config, button_rows: rows };
+    this._fireEvent();
+    this.requestUpdate();
+  }
+
+  _buttonRowShowNameChanged(rowIndex, itemIndex, value) {
+    const rows = [...this._getButtonRows()];
+    if (!rows[rowIndex] || !rows[rowIndex].items[itemIndex]) return;
+    const items = [...rows[rowIndex].items];
+    items[itemIndex] = { ...items[itemIndex], show_name: value === 'true' };
+    rows[rowIndex] = { ...rows[rowIndex], items };
+    this.config = { ...this.config, button_rows: rows };
+    this._fireEvent();
+    this.requestUpdate();
+  }
+
+  _buttonRowShowIconChanged(rowIndex, itemIndex, value) {
+    const rows = [...this._getButtonRows()];
+    if (!rows[rowIndex] || !rows[rowIndex].items[itemIndex]) return;
+    const items = [...rows[rowIndex].items];
+    items[itemIndex] = { ...items[itemIndex], show_icon: value === 'true' };
+    rows[rowIndex] = { ...rows[rowIndex], items };
+    this.config = { ...this.config, button_rows: rows };
+    this._fireEvent();
+    this.requestUpdate();
+  }
+
+  _buttonRowCustomIconsChanged(rowIndex, itemIndex, value) {
+    const rows = [...this._getButtonRows()];
+    if (!rows[rowIndex] || !rows[rowIndex].items[itemIndex]) return;
+    const items = [...rows[rowIndex].items];
+    const customIcons = {};
+    if (value && value.trim()) {
+      const trimmed = value.trim();
+      // 如果直接是图标格式（如 mdi:xxx），设为 default
+      if (trimmed.startsWith('mdi:') || trimmed.startsWith('hass:')) {
+        customIcons.default = trimmed;
+      } else {
+        value.split(',').forEach(pair => {
+          const colonIdx = pair.indexOf(':');
+          if (colonIdx > 0) {
+            const k = pair.substring(0, colonIdx).trim();
+            const v = pair.substring(colonIdx + 1).trim();
+            if (k && v) customIcons[k] = v;
+          }
+        });
+      }
+    }
+    items[itemIndex] = { ...items[itemIndex], custom_icons: customIcons };
+    rows[rowIndex] = { ...rows[rowIndex], items };
+    this.config = { ...this.config, button_rows: rows };
+    this._fireEvent();
+    this.requestUpdate();
+  }
+
+  _formatCustomIcons(icons) {
+    if (!icons || typeof icons !== 'object') return '';
+    const keys = Object.keys(icons);
+    if (keys.length === 1 && keys[0] === 'default') return icons.default;
+    return Object.entries(icons).map(([k, v]) => `${k}:${v}`).join(',');
+  }
+
   _formatSelectOptionNames(names) {
     if (!names || typeof names !== 'object') return '';
     return Object.entries(names).map(([k, v]) => `${k}:${v}`).join(',');
@@ -701,6 +777,23 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
         flex-direction: column;
         gap: 5px;
       }
+      .form-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .form-row label {
+        flex-shrink: 0;
+        white-space: nowrap;
+        min-width: fit-content;
+      }
+      .form-row input,
+      .form-row select,
+      .form-row .entity-selector-with-remove,
+      .form-row .entity-selector {
+        flex: 1;
+        min-width: 0;
+      }
       label {
         font-weight: bold;
       }
@@ -776,7 +869,7 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
 
       .entity-name {
         font-weight: 500;
-        font-size: 14px;
+        font-size: 12px;
         color: #000;
       }
 
@@ -890,8 +983,8 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
         </div>
 
         <!-- 主实体选择 -->
-        <div class="form-group">
-          <label>设备实体 (必选)</label>
+        <div class="form-row">
+          <label>设备实体</label>
           <div class="entity-selector">
             <input
               type="text"
@@ -928,98 +1021,89 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
         </div>
 
         <!-- 名称重定义 -->
-        <div class="form-group">
-          <label>名称重定义 (可选)</label>
+        <div class="form-row">
+          <label>名称重定义</label>
           <input
             type="text"
             .value=${this.config.custom_name || ''}
             @change=${(e) => { this.config = { ...this.config, custom_name: e.target.value }; this._fireEvent(); this.requestUpdate(); }}
             placeholder="留空使用实体名称"
-            style="width: 100%; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+            style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
           />
         </div>
 
         <!-- 图标重定义 -->
-        <div class="form-group">
-          <label>图标重定义 (可选)</label>
+        <div class="form-row">
+          <label>图标重定义</label>
           <input
             type="text"
             .value=${this.config.custom_icon || ''}
             @change=${(e) => { this.config = { ...this.config, custom_icon: e.target.value }; this._fireEvent(); this.requestUpdate(); }}
             placeholder="如: mdi:washing-machine"
-            style="width: 100%; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+            style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
           />
         </div>
 
-        <!-- 是否显示开关 -->
-        <div class="form-group">
-          <label>显示电源开关 (可选)</label>
-          <select
-            .value=${this.config.show_power !== undefined ? this.config.show_power : 'true'}
-            @change=${(e) => { this.config = { ...this.config, show_power: e.target.value }; this._fireEvent(); this.requestUpdate(); }}
-            style="width: 100%; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
-          >
-            <option value="true" ?selected=${(this.config.show_power !== undefined ? this.config.show_power : 'true') === 'true'}>显示</option>
-            <option value="false" ?selected=${this.config.show_power === 'false'}>隐藏</option>
-          </select>
-          <div class="hint">控制右上角电源开关的显示与隐藏</div>
-        </div>
-
-        <!-- 翻译优先 -->
-        <div class="form-group">
-          <label>翻译优先 (可选)</label>
-          <select
-            .value=${this.config.translation_priority || '洗碗机'}
-            @change=${(e) => { this.config = { ...this.config, translation_priority: e.target.value }; this._fireEvent(); this.requestUpdate(); }}
-            style="width: 100%; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
-          >
-            <option value="洗碗机" ?selected=${(this.config.translation_priority || '洗碗机') === '洗碗机'}>洗碗机</option>
-            <option value="洗衣机" ?selected=${this.config.translation_priority === '洗衣机'}>洗衣机</option>
-            <option value="冰箱" ?selected=${this.config.translation_priority === '冰箱'}>冰箱</option>
-          </select>
-          <div class="hint">选项翻译优先匹配的设备类型，同名key按优先级翻译，未匹配则依次查找其他类型</div>
-        </div>
-
-        <!-- 状态显示值 -->
-        <div class="form-group">
-          <label>设备实体状态重定义 (可选)</label>
+        <!-- 设备实体状态重定义 -->
+        <div class="form-row">
+          <label>状态重定义</label>
           <input
             type="text"
             .value=${this.config.on_states || ''}
             @change=${(e) => { this.config = { ...this.config, on_states: e.target.value }; this._fireEvent(); this.requestUpdate(); }}
             placeholder="如: on,open,running"
-            style="width: 100%; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+            style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
           />
-          <div class="hint">逗号分隔的状态值，匹配时视为设备开启。留空使用内置预设状态列表</div>
+        </div>
+
+        <!-- 显示电源开关 + 翻译优先 -->
+        <div class="form-row">
+          <label>电源开关</label>
+          <select
+            .value=${this.config.show_power !== undefined ? this.config.show_power : 'true'}
+            @change=${(e) => { this.config = { ...this.config, show_power: e.target.value }; this._fireEvent(); this.requestUpdate(); }}
+            style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+          >
+            <option value="true" ?selected=${(this.config.show_power !== undefined ? this.config.show_power : 'true') === 'true'}>显示</option>
+            <option value="false" ?selected=${this.config.show_power === 'false'}>隐藏</option>
+          </select>
+          <label>翻译优先</label>
+          <select
+            .value=${this.config.translation_priority || '洗碗机'}
+            @change=${(e) => { this.config = { ...this.config, translation_priority: e.target.value }; this._fireEvent(); this.requestUpdate(); }}
+            style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+          >
+            <option value="洗碗机" ?selected=${(this.config.translation_priority || '洗碗机') === '洗碗机'}>洗碗机</option>
+            <option value="洗衣机" ?selected=${this.config.translation_priority === '洗衣机'}>洗衣机</option>
+            <option value="冰箱" ?selected=${this.config.translation_priority === '冰箱'}>冰箱</option>
+          </select>
         </div>
 
         <!-- 状态显示值 -->
         <div class="form-group">
-          <label>状态显示值 (可选)</label>
+          <label>状态显示值 (支持[[[ ]]]模板语法，如 [[[ entity.state ]]])</label>
           <textarea
             .value=${this.config.state_display || ''}
             @change=${(e) => { this.config = { ...this.config, state_display: e.target.value }; this._fireEvent(); this.requestUpdate(); }}
             placeholder="留空使用默认状态，支持[[[ ]]]模板"
             style="width: 100%; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
           ></textarea>
-          <div class="hint">支持[[[ ]]]模板语法，如 [[[ entity.state ]]]</div>
         </div>
 
         <!-- 强调颜色值 -->
         <div class="form-group">
-          <label>强调颜色值 (可选)</label>
+          <label>强调颜色值 (支持[[[ ]]]模板语法，如 [[[ entity.state ]]])</label>
           <textarea
             .value=${this.config.accent_color || ''}
             @change=${(e) => { this.config = { ...this.config, accent_color: e.target.value }; this._fireEvent(); this.requestUpdate(); }}
             placeholder="默认淡红色，支持[[[ ]]]模板"
             style="width: 100%; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
           ></textarea>
-          <div class="hint">用于背景和按钮高亮，支持hex/rgb/rgba，如 #ff6464、rgb(255,0,0)</div>
         </div>
 
         <!-- 曲线传感器 -->
-        <div class="form-group">
-          <label>曲线传感器 (可选)</label>
+        <div class="form-row">
+          <label>曲线传感器</label>
           <div class="entity-selector-with-remove">
             <div class="entity-selector">
               <input
@@ -1060,9 +1144,20 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
           </div>
         </div>
 
+        <!-- 曲线颜色 -->
+        <div class="form-row">
+          <label>曲线颜色</label>
+          <input
+            type="color"
+            .value=${this.config.curve_color || '#e07070'}
+            @input=${(e) => { this.config = { ...this.config, curve_color: e.target.value }; this._fireEvent(); this.requestUpdate(); }}
+            style="width: 40px; height: 30px; padding: 2px; border: 1px solid #555; border-radius: 4px; cursor: pointer; background: var(--card-background-color, #1c1c1c);"
+          />
+        </div>
+
         <!-- 定时器 -->
-        <div class="form-group">
-          <label>定时器实体 (可选)</label>
+        <div class="form-row">
+          <label>定时器实体</label>
           <div class="entity-selector-with-remove">
             <div class="entity-selector">
               <input
@@ -1186,8 +1281,39 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                 </div>
                 <div class="hint" style="margin-bottom: 4px;">输入YAML格式的服务调用动作，action为域名.服务名，data为服务数据</div>
                 ` : ''}
+                ${itemDomain === 'vacuum' || itemDomain === 'fan' || itemDomain === 'select' || itemDomain === 'input_select' || itemDomain === 'cover' ? html`
                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
-                  <label style="font-size: 0.8em; min-width: 60px;">名称重定义</label>
+                  <label style="font-size: 0.8em; min-width: 50px;">显示名称</label>
+                  <select
+                    .value=${item.show_name !== false ? 'true' : 'false'}
+                    @change=${(e) => this._buttonRowShowNameChanged(rowIndex, itemIndex, e.target.value)}
+                    style="width: 50px; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+                  >
+                    <option value="false" ?selected=${item.show_name === false}>隐藏</option>
+                    <option value="true" ?selected=${item.show_name !== false}>显示</option>
+                  </select>
+                  <label style="font-size: 0.8em; min-width: 50px;">显示图标</label>
+                  <select
+                    .value=${item.show_icon !== false ? 'true' : 'false'}
+                    @change=${(e) => this._buttonRowShowIconChanged(rowIndex, itemIndex, e.target.value)}
+                    style="width: 50px; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+                  >
+                    <option value="false" ?selected=${item.show_icon === false}>隐藏</option>
+                    <option value="true" ?selected=${item.show_icon !== false}>显示</option>
+                  </select>
+                </div>
+                ` : html`
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                  <label style="font-size: 0.8em; min-width: 50px;">显示名称</label>
+                  <select
+                    .value=${item.show_name !== false ? 'true' : 'false'}
+                    @change=${(e) => this._buttonRowShowNameChanged(rowIndex, itemIndex, e.target.value)}
+                    style="width: 50px; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+                  >
+                    <option value="false" ?selected=${item.show_name === false}>隐藏</option>
+                    <option value="true" ?selected=${item.show_name !== false}>显示</option>
+                  </select>
+                  <label style="font-size: 0.8em;">名称重定义</label>
                   <input
                     type="text"
                     .value=${item.custom_name || ''}
@@ -1196,6 +1322,26 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                     style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
                   />
                 </div>
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                  <label style="font-size: 0.8em; min-width: 50px;">显示图标</label>
+                  <select
+                    .value=${item.show_icon !== false ? 'true' : 'false'}
+                    @change=${(e) => this._buttonRowShowIconChanged(rowIndex, itemIndex, e.target.value)}
+                    style="width: 50px; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+                  >
+                    <option value="false" ?selected=${item.show_icon === false}>隐藏</option>
+                    <option value="true" ?selected=${item.show_icon !== false}>显示</option>
+                  </select>
+                  <label style="font-size: 0.8em;">图标重定义</label>
+                  <input
+                    type="text"
+                    .value=${this._formatCustomIcons(item.custom_icons || {})}
+                    @change=${(e) => this._buttonRowCustomIconsChanged(rowIndex, itemIndex, e.target.value)}
+                    placeholder=${item.mode === 'service' ? '如 default:mdi:play-circle-outline' : itemDomain === 'fan' ? '如 speed_off:mdi:fan-off,低:mdi:fan-speed-1' : itemDomain === 'cover' ? '如 open:mdi:arrow-up,close:mdi:arrow-down' : itemDomain === 'vacuum' ? '如 start:mdi:play,pause:mdi:pause' : itemDomain === 'select' || itemDomain === 'input_select' ? '如 选项key:mdi:icon' : itemDomain === 'lock' ? '如 locked:mdi:lock,unlocked:mdi:lock-open' : '如 on:mdi:toggle-switch,off:mdi:toggle-switch-off'}
+                    style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
+                  />
+                </div>
+                `}
                 ${itemDomain === 'select' || itemDomain === 'input_select' ? html`
                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
                   <label style="font-size: 0.8em; min-width: 60px;">选项标签</label>
@@ -1207,27 +1353,23 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                     style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
                   />
                 </div>
-                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
-                  <label style="font-size: 0.8em; min-width: 60px;">筛选选项</label>
-                  <input
-                    type="text"
-                    .value=${(item.select_options || []).join(',')}
-                    @change=${(e) => this._buttonRowSelectOptionsChanged(rowIndex, itemIndex, e.target.value)}
-                    placeholder="留空显示全部，逗号分隔"
-                    style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
-                  />
+                ${(this.hass?.states?.[item.entity]?.attributes?.options || []).map(opt => { const sub = (item.sub_items || {})[opt] || {}; return html`
+                <div style="border: 1px solid #444; border-radius: 4px; padding: 4px 6px; margin-bottom: 4px;">
+                  <div style="font-size: 0.75em; color: #aaa; margin-bottom: 2px;">${opt}(${translateOption(opt, this.config.translation_priority)})</div>
+                  <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 2px;">
+                    <label style="font-size: 0.75em;">显示</label>
+                    <input type="checkbox" .checked=${sub.visible !== false} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, opt, 'visible', e.target.checked)} />
+                    <label style="font-size: 0.75em;">名称</label>
+                    <input type="checkbox" .checked=${sub.show_name !== false} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, opt, 'show_name', e.target.checked)} />
+                    <input type="text" .value=${sub.custom_name || ''} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, opt, 'custom_name', e.target.value)} placeholder="名称" style="flex: 1; padding: 2px 4px; border: 1px solid #555; border-radius: 3px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff); font-size: 0.8em;" />
+                  </div>
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <label style="font-size: 0.75em;">图标</label>
+                    <input type="checkbox" .checked=${sub.show_icon !== false} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, opt, 'show_icon', e.target.checked)} />
+                    <input type="text" .value=${sub.custom_icon || ''} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, opt, 'custom_icon', e.target.value)} placeholder="mdi:icon" style="flex: 1; padding: 2px 4px; border: 1px solid #555; border-radius: 3px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff); font-size: 0.8em;" />
+                  </div>
                 </div>
-                <div class="hint" style="margin-bottom: 4px;">可选值: ${(this.hass?.states?.[item.entity]?.attributes?.options || []).map(opt => `${opt}(${translateOption(opt, this.config.translation_priority)})`).join(', ')}</div>
-                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
-                  <label style="font-size: 0.8em; min-width: 60px;">选项名称</label>
-                  <input
-                    type="text"
-                    .value=${this._formatSelectOptionNames(item.select_option_names || {})}
-                    @change=${(e) => this._buttonRowSelectOptionNamesChanged(rowIndex, itemIndex, e.target.value)}
-                    placeholder="选项:名称, 如 low:低,high:高"
-                    style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
-                  />
-                </div>
+                `; })}
                 ` : ''}
                 ${itemDomain === 'fan' ? html`
                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
@@ -1240,27 +1382,77 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                     style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
                   />
                 </div>
-                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
-                  <label style="font-size: 0.8em; min-width: 60px;">筛选选项</label>
-                  <input
-                    type="text"
-                    .value=${(item.fan_preset_modes || []).join(',')}
-                    @change=${(e) => this._buttonRowFanPresetModesChanged(rowIndex, itemIndex, e.target.value)}
-                    placeholder="留空显示全部，逗号分隔"
-                    style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
-                  />
+                ${(this.hass?.states?.[item.entity]?.attributes?.preset_modes || []).length > 0 ? (this.hass?.states?.[item.entity]?.attributes?.preset_modes || []).map(mode => { const sub = (item.sub_items || {})[mode] || {}; return html`
+                <div style="border: 1px solid #444; border-radius: 4px; padding: 4px 6px; margin-bottom: 4px;">
+                  <div style="font-size: 0.75em; color: #aaa; margin-bottom: 2px;">${mode}</div>
+                  <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 2px;">
+                    <label style="font-size: 0.75em;">显示</label>
+                    <input type="checkbox" .checked=${sub.visible !== false} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, mode, 'visible', e.target.checked)} />
+                    <label style="font-size: 0.75em;">名称</label>
+                    <input type="checkbox" .checked=${sub.show_name !== false} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, mode, 'show_name', e.target.checked)} />
+                    <input type="text" .value=${sub.custom_name || ''} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, mode, 'custom_name', e.target.value)} placeholder="名称" style="flex: 1; padding: 2px 4px; border: 1px solid #555; border-radius: 3px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff); font-size: 0.8em;" />
+                  </div>
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <label style="font-size: 0.75em;">图标</label>
+                    <input type="checkbox" .checked=${sub.show_icon !== false} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, mode, 'show_icon', e.target.checked)} />
+                    <input type="text" .value=${sub.custom_icon || ''} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, mode, 'custom_icon', e.target.value)} placeholder="mdi:icon" style="flex: 1; padding: 2px 4px; border: 1px solid #555; border-radius: 3px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff); font-size: 0.8em;" />
+                  </div>
                 </div>
-                <div class="hint" style="margin-bottom: 4px;">可选值: ${(this.hass?.states?.[item.entity]?.attributes?.preset_modes || []).join(', ')}</div>
-                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
-                  <label style="font-size: 0.8em; min-width: 60px;">选项名称</label>
-                  <input
-                    type="text"
-                    .value=${this._formatSelectOptionNames(item.fan_preset_mode_names || {})}
-                    @change=${(e) => this._buttonRowFanPresetModeNamesChanged(rowIndex, itemIndex, e.target.value)}
-                    placeholder="选项:名称, 如 直吹风:直吹"
-                    style="flex: 1; padding: 4px 0; border: 1px solid #555; border-radius: 4px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff);"
-                  />
+                `; }) : ['speed_off','speed_low','speed_mid','speed_high'].map(speed => { const sub = (item.sub_items || {})[speed] || {}; const speedLabels = {speed_off:'关闭',speed_low:'低',speed_mid:'中',speed_high:'高'}; return html`
+                <div style="border: 1px solid #444; border-radius: 4px; padding: 4px 6px; margin-bottom: 4px;">
+                  <div style="font-size: 0.75em; color: #aaa; margin-bottom: 2px;">${speedLabels[speed]}</div>
+                  <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 2px;">
+                    <label style="font-size: 0.75em;">显示</label>
+                    <input type="checkbox" .checked=${sub.visible !== false} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, speed, 'visible', e.target.checked)} />
+                    <label style="font-size: 0.75em;">名称</label>
+                    <input type="checkbox" .checked=${sub.show_name !== false} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, speed, 'show_name', e.target.checked)} />
+                    <input type="text" .value=${sub.custom_name || ''} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, speed, 'custom_name', e.target.value)} placeholder="名称" style="flex: 1; padding: 2px 4px; border: 1px solid #555; border-radius: 3px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff); font-size: 0.8em;" />
+                  </div>
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <label style="font-size: 0.75em;">图标</label>
+                    <input type="checkbox" .checked=${sub.show_icon !== false} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, speed, 'show_icon', e.target.checked)} />
+                    <input type="text" .value=${sub.custom_icon || ''} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, speed, 'custom_icon', e.target.value)} placeholder="mdi:icon" style="flex: 1; padding: 2px 4px; border: 1px solid #555; border-radius: 3px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff); font-size: 0.8em;" />
+                  </div>
                 </div>
+                `; })}
+                ` : ''}
+                ${itemDomain === 'vacuum' ? html`
+                ${['start','stop','pause','return_to_base'].map(action => { const sub = (item.sub_items || {})[action] || {}; const actionLabels = {start:'启动',stop:'停止',pause:'暂停',return_to_base:'回基站'}; return html`
+                <div style="border: 1px solid #444; border-radius: 4px; padding: 4px 6px; margin-bottom: 4px;">
+                  <div style="font-size: 0.75em; color: #aaa; margin-bottom: 2px;">${actionLabels[action]}</div>
+                  <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 2px;">
+                    <label style="font-size: 0.75em;">显示</label>
+                    <input type="checkbox" .checked=${sub.visible !== false} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, action, 'visible', e.target.checked)} />
+                    <label style="font-size: 0.75em;">名称</label>
+                    <input type="checkbox" .checked=${sub.show_name !== false} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, action, 'show_name', e.target.checked)} />
+                    <input type="text" .value=${sub.custom_name || ''} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, action, 'custom_name', e.target.value)} placeholder="名称" style="flex: 1; padding: 2px 4px; border: 1px solid #555; border-radius: 3px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff); font-size: 0.8em;" />
+                  </div>
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <label style="font-size: 0.75em;">图标</label>
+                    <input type="checkbox" .checked=${sub.show_icon !== false} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, action, 'show_icon', e.target.checked)} />
+                    <input type="text" .value=${sub.custom_icon || ''} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, action, 'custom_icon', e.target.value)} placeholder="mdi:icon" style="flex: 1; padding: 2px 4px; border: 1px solid #555; border-radius: 3px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff); font-size: 0.8em;" />
+                  </div>
+                </div>
+                `; })}
+                ` : ''}
+                ${itemDomain === 'cover' ? html`
+                ${['open','stop','close'].map(action => { const sub = (item.sub_items || {})[action] || {}; const actionLabels = {open:'打开',stop:'停止',close:'关闭'}; return html`
+                <div style="border: 1px solid #444; border-radius: 4px; padding: 4px 6px; margin-bottom: 4px;">
+                  <div style="font-size: 0.75em; color: #aaa; margin-bottom: 2px;">${actionLabels[action]}</div>
+                  <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 2px;">
+                    <label style="font-size: 0.75em;">显示</label>
+                    <input type="checkbox" .checked=${sub.visible !== false} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, action, 'visible', e.target.checked)} />
+                    <label style="font-size: 0.75em;">名称</label>
+                    <input type="checkbox" .checked=${sub.show_name !== false} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, action, 'show_name', e.target.checked)} />
+                    <input type="text" .value=${sub.custom_name || ''} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, action, 'custom_name', e.target.value)} placeholder="名称" style="flex: 1; padding: 2px 4px; border: 1px solid #555; border-radius: 3px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff); font-size: 0.8em;" />
+                  </div>
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <label style="font-size: 0.75em;">图标</label>
+                    <input type="checkbox" .checked=${sub.show_icon !== false} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, action, 'show_icon', e.target.checked)} />
+                    <input type="text" .value=${sub.custom_icon || ''} @change=${(e) => this._buttonRowSubItemChanged(rowIndex, itemIndex, action, 'custom_icon', e.target.value)} placeholder="mdi:icon" style="flex: 1; padding: 2px 4px; border: 1px solid #555; border-radius: 3px; background: var(--card-background-color, #1c1c1c); color: var(--primary-text-color, #fff); font-size: 0.8em;" />
+                  </div>
+                </div>
+                `; })}
                 ` : ''}
                 ${itemDomain === 'sensor' || itemDomain === 'binary_sensor' ? html`
                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
@@ -1522,6 +1714,31 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
     }));
   }
 
+
+  static getDefaultIcon(domain, key) {
+    const icons = {
+      fan: {
+        speed_off: 'mdi:fan-off', speed_low: 'mdi:fan-speed-1', speed_mid: 'mdi:fan-speed-2', speed_high: 'mdi:fan-speed-3',
+      },
+      cover: { open: 'mdi:arrow-up', stop: 'mdi:stop', close: 'mdi:arrow-down' },
+      vacuum: { start: 'mdi:play', stop: 'mdi:stop', pause: 'mdi:pause', return_to_base: 'mdi:home-map-marker' },
+      lock: { locked: 'mdi:lock', unlocked: 'mdi:lock-open' },
+      light: { on: 'mdi:lightbulb-on', off: 'mdi:lightbulb-off' },
+      switch: { on: 'mdi:toggle-switch', off: 'mdi:toggle-switch-off' },
+      input_boolean: { on: 'mdi:toggle-switch', off: 'mdi:toggle-switch-off' },
+      sensor: { default: 'mdi:gauge' },
+      binary_sensor: { on: 'mdi:radiobox-marked', off: 'mdi:radiobox-blank' },
+      button: { default: 'mdi:button-pointer' },
+      input_button: { default: 'mdi:button-pointer' },
+      text: { default: 'mdi:form-textbox' },
+      input_text: { default: 'mdi:form-textbox' },
+      service: { default: 'mdi:play-circle-outline' },
+    };
+    const domainIcons = icons[domain];
+    if (!domainIcons) return '';
+    return domainIcons[key] || domainIcons.default || '';
+  }
+
   constructor() {
     super();
     this._searchTerm = '';
@@ -1569,15 +1786,6 @@ class XiaoshiPhoneOtherCard extends LitElement {
 
   static getStubConfig() {
     return {
-      entity: "",
-      temperature: "",
-      timer: "",
-      theme: "system",
-      button_rows: [],
-      buttons: [],
-      buttons2: [],
-      width: "100%",
-      translation_priority: "洗碗机"
     };
   }
 
@@ -1802,6 +2010,16 @@ class XiaoshiPhoneOtherCard extends LitElement {
         height: 25px;
         min-height: unset;
       }
+      .func-button.has-icon {
+        height: 25px;
+        padding: 2px 4px;
+        flex-direction: row;
+        gap: 3px;
+      }
+      .func-button.has-icon .func-button-value,
+      .func-button.has-icon .func-button-text {
+        font-size: 9px;
+      }
 
       .func-button-icon {
         --mdc-icon-size: 16px;
@@ -1850,40 +2068,82 @@ class XiaoshiPhoneOtherCard extends LitElement {
         padding: 0;
       }
       .sun-slider-wrapper input[type="range"]::-webkit-slider-runnable-track {
-        height: 28px;
+        height: 25px;
         border-radius: 8px;
-        background: linear-gradient(to right, var(--slider-color, #4caf50) calc(var(--slider-pct, 0%) + 6px), var(--slider-bg, #333) calc(var(--slider-pct, 0%) + 6px));
+        background: linear-gradient(to right, var(--slider-color, #4caf50) var(--slider-pct, 0%), var(--slider-bg, #333) var(--slider-pct, 0%));
       }
       .sun-slider-wrapper input[type="range"]::-webkit-slider-thumb {
         -webkit-appearance: none;
         appearance: none;
         width: 12px;
         height: 12px;
-        margin-top: 8px;
+        margin-top: 7px;
         border-radius: 50%;
         background: white;
         box-shadow: 0 1px 3px rgba(0,0,0,0.4);
         cursor: grab;
       }
       .sun-slider-wrapper input[type="range"]::-moz-range-track {
-        height: 28px;
+        height: 25px;
         border-radius: 8px;
         background: var(--slider-bg, #333);
       }
       .sun-slider-wrapper input[type="range"]::-moz-range-progress {
-        height: 28px;
+        height: 25px;
         border-radius: 8px;
         background: var(--slider-color, #4caf50);
       }
       .sun-slider-wrapper input[type="range"]::-moz-range-thumb {
         width: 12px;
         height: 12px;
-        margin-top: 8px;
+        margin-top: 7px;
         border-radius: 50%;
         background: white;
         border: none;
         box-shadow: 0 1px 3px rgba(0,0,0,0.4);
         cursor: grab;
+      }
+
+      /* 数值模式滑块样式 */
+      .num-slider input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 90%;
+        height: 4px;
+        margin: 0 0 6px 0;
+        border-radius: 2px;
+        background: linear-gradient(to right, var(--slider-color, #4caf50) var(--slider-pct, 0%), #fff var(--slider-pct, 0%));
+        outline: none;
+        cursor: pointer;
+      }
+      .num-slider input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        cursor: grab;
+      }
+      .num-slider input[type="range"]::-moz-range-thumb {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: white;
+        border: none;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        cursor: grab;
+      }
+      .num-slider input[type="range"]::-moz-range-track {
+        height: 4px;
+        border-radius: 2px;
+        background: var(--slider-bg, #555);
+      }
+      .num-slider input[type="range"]::-moz-range-progress {
+        height: 4px;
+        border-radius: 2px;
+        background: var(--slider-color, #4caf50);
       }
 
       .select-options-row {
@@ -2028,6 +2288,55 @@ class XiaoshiPhoneOtherCard extends LitElement {
   `;
   }
 
+
+  static getDefaultIcon(domain, key) {
+    const icons = {
+      fan: {
+        speed_off: 'mdi:fan-off', speed_low: 'mdi:fan-speed-1', speed_mid: 'mdi:fan-speed-2', speed_high: 'mdi:fan-speed-3',
+      },
+      cover: { open: 'mdi:arrow-up', stop: 'mdi:stop', close: 'mdi:arrow-down' },
+      vacuum: { start: 'mdi:play', stop: 'mdi:stop', pause: 'mdi:pause', return_to_base: 'mdi:home-map-marker' },
+      lock: { locked: 'mdi:lock', unlocked: 'mdi:lock-open' },
+      light: { on: 'mdi:lightbulb-on', off: 'mdi:lightbulb-off' },
+      switch: { on: 'mdi:toggle-switch', off: 'mdi:toggle-switch-off' },
+      input_boolean: { on: 'mdi:toggle-switch', off: 'mdi:toggle-switch-off' },
+      sensor: { default: 'mdi:gauge' },
+      binary_sensor: { on: 'mdi:radiobox-marked', off: 'mdi:radiobox-blank' },
+      button: { default: 'mdi:button-pointer' },
+      input_button: { default: 'mdi:button-pointer' },
+      text: { default: 'mdi:form-textbox' },
+      input_text: { default: 'mdi:form-textbox' },
+      service: { default: 'mdi:play-circle-outline' },
+    };
+    const domainIcons = icons[domain];
+    if (!domainIcons) return '';
+    return domainIcons[key] || domainIcons.default || '';
+  }
+
+  static getDefaultIcon(domain, key) {
+    const icons = {
+      fan: {
+        speed_off: 'mdi:fan-off', speed_low: 'mdi:fan-speed-1', speed_mid: 'mdi:fan-speed-2', speed_high: 'mdi:fan-speed-3',
+      },
+      cover: { open: 'mdi:arrow-up', stop: 'mdi:stop', close: 'mdi:arrow-down' },
+      vacuum: { start: 'mdi:play', stop: 'mdi:stop', pause: 'mdi:pause', return_to_base: 'mdi:home-map-marker' },
+      lock: { locked: 'mdi:lock', unlocked: 'mdi:lock-open' },
+      light: { on: 'mdi:lightbulb-on', off: 'mdi:lightbulb-off' },
+      switch: { on: 'mdi:toggle-switch', off: 'mdi:toggle-switch-off' },
+      input_boolean: { on: 'mdi:toggle-switch', off: 'mdi:toggle-switch-off' },
+      sensor: { default: 'mdi:gauge' },
+      binary_sensor: { on: 'mdi:radiobox-marked', off: 'mdi:radiobox-blank' },
+      button: { default: 'mdi:button-pointer' },
+      input_button: { default: 'mdi:button-pointer' },
+      text: { default: 'mdi:form-textbox' },
+      input_text: { default: 'mdi:form-textbox' },
+      service: { default: 'mdi:play-circle-outline' },
+    };
+    const domainIcons = icons[domain];
+    if (!domainIcons) return '';
+    return domainIcons[key] || domainIcons.default || '';
+  }
+
   constructor() {
     super();
     this.hass = {};
@@ -2082,43 +2391,42 @@ class XiaoshiPhoneOtherCard extends LitElement {
 
   async _fetchDataAndRenderChart() {
     if (!this.hass) return;
-
     const now = new Date();
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const entityId = this._externalTempSensor || this.config.entity;
     if (!entityId) return;
 
     const result = await this.hass.callWS({
-        type: 'history/history_during_period',
-        start_time: yesterday.toISOString(),
-        end_time: now.toISOString(),
-        entity_ids: [entityId],
-        significant_changes_only: true,
-        minimal_response: true,
-        no_attributes: false
+      type: 'history/history_during_period',
+      start_time: yesterday.toISOString(),
+      end_time: now.toISOString(),
+      entity_ids: [entityId],
+      significant_changes_only: true,
+      minimal_response: true,
+      no_attributes: false
     });
 
     if (!result?.[entityId]?.length) return;
-    
+
     const isSensor = entityId.startsWith('sensor.');
     const rawData = result[entityId]
-        .map(entry => {
-            const value = isSensor ? entry.s : entry.a?.current_temperature;
-            return parseFloat(value);
-        })
-        .filter(value => !isNaN(value));
-    
+      .map(entry => {
+        const value = isSensor ? entry.s : entry.a?.current_temperature;
+        return parseFloat(value);
+      })
+      .filter(value => !isNaN(value));
+
     if (rawData.length === 0) return;
-    
+
     const sampleInterval = Math.max(1, Math.floor(rawData.length / 50));
     const sampledData = [];
     for (let i = 0; i < rawData.length; i += sampleInterval) {
-        const end = Math.min(i + sampleInterval, rawData.length);
-        const slice = rawData.slice(i, end);
-        const avg = slice.reduce((sum, val) => sum + val, 0) / slice.length;
-        sampledData.push(avg);
+      const end = Math.min(i + sampleInterval, rawData.length);
+      const slice = rawData.slice(i, end);
+      const avg = slice.reduce((sum, val) => sum + val, 0) / slice.length;
+      sampledData.push(avg);
     }
-    
+
     this.temperatureData = this._gaussianSmooth(sampledData, 3);
     await this.initCanvas();
     this.drawSmoothCurve();
@@ -2127,79 +2435,67 @@ class XiaoshiPhoneOtherCard extends LitElement {
   async initCanvas() {
     const container = this.shadowRoot.querySelector('#chart-container');
     if (!container) return;
-    
     while (container.firstChild) {
-        container.removeChild(container.firstChild);
+      container.removeChild(container.firstChild);
     }
-    
     this.canvas = document.createElement('canvas');
     this.canvas.className = 'temperature-chart';
     container.appendChild(this.canvas);
-    
     const scale = window.devicePixelRatio || 1;
     const width = container.clientWidth;
     const height = container.clientHeight;
-    
     this.canvas.style.width = `${width}px`;
     this.canvas.style.height = `${height}px`;
-    
     this.canvas.width = Math.floor(width * scale);
     this.canvas.height = Math.floor(height * scale);
-    
     this.ctx = this.canvas.getContext('2d');
     this.ctx.scale(scale, scale);
-    
     await this.updateComplete;
   }
 
   drawSmoothCurve() {
     if (!this.ctx || !this.temperatureData || this.temperatureData.length === 0) return;
-    
-    const entity = this.hass.states[this.config.entity];
-    const state = entity?.state || 'off';
-    const theme = this._evaluateTheme();
-    
-    let statusColor = theme === 'light' ? '#888888' : '#aaaaaa';
-    if (state !== 'off' && state !== 'unavailable' && state !== 'unknown') {
-        statusColor = theme === 'light' ? '#4CAF50' : '#66BB6A';
-    }
-    
+    let statusColor = this.config.curve_color || '#e07070';
     const canvas = this.canvas;
     const ctx = this.ctx;
     const scale = window.devicePixelRatio || 1;
     const width = canvas.width / scale;
     const height = canvas.height / scale;
-    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     const minTemp = Math.min(...this.temperatureData) - 1;
     const maxTemp = Math.max(...this.temperatureData);
     const tempRange = Math.max(maxTemp - minTemp, 0.1);
     const xStep = width / (this.temperatureData.length - 1);
-    
     const points = this.temperatureData.map((temp, i) => {
-        return {
-            x: i * xStep,
-            y: height - ((temp - minTemp) / tempRange) * height,
-            value: temp
-        };
+      return {
+        x: i * xStep,
+        y: height - ((temp - minTemp) / tempRange) * height,
+        value: temp
+      };
     });
-    
+
     ctx.beginPath();
     this.drawMonotonicSpline(ctx, points);
     ctx.lineTo(points[points.length-1].x, height);
     ctx.lineTo(points[0].x, height);
     ctx.closePath();
-    
+
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, `${statusColor}60`);
-    gradient.addColorStop(1, `${statusColor}20`);
+    const isRgba = statusColor.startsWith('rgba');
+    if (isRgba) {
+      gradient.addColorStop(0, statusColor);
+      gradient.addColorStop(1, statusColor);
+    } else {
+      gradient.addColorStop(0, `${statusColor}60`);
+      gradient.addColorStop(1, `${statusColor}20`);
+    }
     ctx.fillStyle = gradient;
     ctx.fill();
-    
+
     ctx.beginPath();
     this.drawMonotonicSpline(ctx, points);
-    ctx.strokeStyle = statusColor;
+    ctx.strokeStyle = isRgba ? statusColor : statusColor;
     ctx.lineWidth = 1;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
@@ -2314,11 +2610,11 @@ class XiaoshiPhoneOtherCard extends LitElement {
     const attrs = entity.attributes;
     
     const theme = this._evaluateTheme();
-    const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const iconColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
-    const buttonBg = theme === 'light' ? 'rgb(50,50,50)' : 'rgb(120,120,120)';
-    const buttonFg = 'rgb(250,250,250)';
+    const buttonBg = theme === 'light' ? 'rgb(230, 230, 230)' : 'rgb(80, 80, 80)';
+    const buttonFg = theme === 'light' ? 'rgb(50, 50, 50)' : 'rgb(240, 240, 240)'; 
 
     let statusColor = 'rgb(250,250,250)';
     let linearColor = 'rgb(0,0,0,0)';
@@ -2376,24 +2672,24 @@ class XiaoshiPhoneOtherCard extends LitElement {
         '4px'
     ].join(' ');
 
-    const entityIcon = this.config.custom_icon || attrs.icon || 'mdi:devices';
+    const entityIcon = attrs.icon || this.config.custom_icon || 'mdi:devices';
     const entityName = this.config.custom_name || attrs.friendly_name;
     const showPower = this.config.show_power !== 'false';
 
     return html` 
       <div class="card" style=" margin-bottom: ${marginBottom};
                                 width: ${this.width};
-                                background: ${isOn ? bgColor : fgColor}; 
+                                background: ${isOn ? `linear-gradient(90deg, ${linearColor} -30%, ${bgColor} 70%)` : bgColor}; 
                                 color: ${fgColor}; 
                                 --button-bg: ${buttonBg}; 
                                 --button-fg: ${buttonFg}; 
                                 --active-color: ${cardAccentColor || statusColor};
                                 --select-active-color: ${cardAccentColor || 'rgba(255, 100, 100, 0.35)'};
                                 --linear-color: ${linearColor};">
-                                                                
+                                                  
         ${isOn ? html`<div class="active-gradient"></div>` : ''}
         <div id="chart-container"></div>
-        <div class="content-container" style="grid-template-rows: ${gridTemplateRows};background: ${isOn ? `linear-gradient(90deg, ${linearColor} -30%, ${bgColor} 70%)` : bgColor};">
+        <div class="content-container" style="grid-template-rows: ${gridTemplateRows};">
             <div class="name-area">${entityName}</div>
                 <div class="status-area" style="color: ${fgColor}">${stateDisplayValue}
                     
@@ -2664,8 +2960,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
 
     const theme = this._evaluateTheme();
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-    const buttonBg = theme === 'light' ? 'rgb(50,50,50)' : 'rgb(120,120,120)';
-    const buttonFg = 'rgb(250,250,250)';
+    const buttonBg = theme === 'light' ? 'rgb(230, 230, 230)' : 'rgb(80, 80, 80)';
+    const buttonFg = theme === 'light' ? 'rgb(50, 50, 50)' : 'rgb(240, 240, 240)'; 
     let activeColor = theme === 'light' ? 'rgba(255, 80, 80)' : 'rgba(220, 80, 80)';
     const cardAccentRaw = this.config.accent_color || '';
     const cardAccentColor = cardAccentRaw ? this._evalTemplate(cardAccentRaw) : '';
@@ -2687,9 +2983,11 @@ class XiaoshiPhoneOtherCard extends LitElement {
 
         if ((domain === 'select' || domain === 'input_select') && item.mode !== 'slider' && item.mode !== 'sun_slider') {
             const allOptions = entity.attributes.options || [];
+            const subItems = item.sub_items || {};
+            // 兼容旧配置：有 select_options 时用旧逻辑，否则用 sub_items.visible
             const filteredOptions = (item.select_options && item.select_options.length > 0)
                 ? allOptions.filter(opt => item.select_options.includes(opt))
-                : allOptions;
+                : allOptions.filter(opt => (subItems[opt] || {}).visible !== false);
             // 如果有标签，先添加标签单元
             if (item.select_label && item.select_label.trim()) {
                 renderUnits.push({ item, entity, domain, selectOption: null, isLabel: true });
@@ -2699,9 +2997,10 @@ class XiaoshiPhoneOtherCard extends LitElement {
             });
         } else if (domain === 'fan' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
             const allPresets = entity.attributes.preset_modes || [];
+            const subItems = item.sub_items || {};
             const filteredPresets = (item.fan_preset_modes && item.fan_preset_modes.length > 0)
                 ? allPresets.filter(opt => item.fan_preset_modes.includes(opt))
-                : allPresets;
+                : allPresets.filter(opt => (subItems[opt] || {}).visible !== false);
             if (item.fan_label && item.fan_label.trim()) {
                 renderUnits.push({ item, entity, domain, selectOption: null, isLabel: true });
             }
@@ -2709,15 +3008,10 @@ class XiaoshiPhoneOtherCard extends LitElement {
             filteredPresets.slice(0, 6).forEach(opt => {
                 renderUnits.push({ item, entity, domain, selectOption: opt });
             });
-            } else if (domain === 'cover' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
-            const coverActions = ['open', 'stop', 'close'];
-            coverActions.forEach(action => {
-                renderUnits.push({ item, entity, domain, coverAction: action });
-            });
-        } else {
+            } else {
                 // 无预设模式，使用percentage档位控制
                 const speeds = ['off', 'low', 'mid', 'high'];
-                speeds.forEach(speed => {
+                speeds.filter(speed => (subItems[speed] || {}).visible !== false).forEach(speed => {
                     renderUnits.push({ item, entity, domain, selectOption: `speed:${speed}` });
                 });
             }
@@ -2728,7 +3022,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
             });
         } else if (domain === 'vacuum' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
             const vacuumActions = ['start', 'stop', 'pause', 'return_to_base'];
-            vacuumActions.forEach(action => {
+            const subItems = item.sub_items || {};
+            vacuumActions.filter(action => (subItems[action] || {}).visible !== false).forEach(action => {
                 renderUnits.push({ item, entity, domain, vacuumAction: action });
             });
         } else {
@@ -2747,11 +3042,15 @@ class XiaoshiPhoneOtherCard extends LitElement {
         // 服务按钮模式
         if (mode === 'service') {
             const btnName = item.custom_name || '服务';
+            const showIcon = item.show_icon !== false;
+            const showName = item.show_name !== false;
+            const iconStr = (item.custom_icons && item.custom_icons.default) || XiaoshiPhoneOtherCard.getDefaultIcon('service', 'default');
             return html`
-                <button class="func-button"
+                <button class="func-button ${showIcon ? 'has-icon service-btn' : ''}"
                         @click=${() => this._callServiceAction(item.service_action)}
                         title="${btnName}">
-                    <div class="func-button-value" style="color: ${buttonFg}">${btnName.slice(0, 6)}</div>
+                    ${showIcon && iconStr ? html`<ha-icon class="func-button-icon" icon="${iconStr}"></ha-icon>` : ''}
+                    ${showName ? html`<div class="func-button-value" style="color: ${buttonFg}">${btnName.slice(0, 6)}</div>` : ''}
                 </button>
             `;
         }
@@ -2792,13 +3091,23 @@ class XiaoshiPhoneOtherCard extends LitElement {
             }
             const sliderDomain = domain;
             const sliderName = item.custom_name || friendlyName;
+            const rawPct = max > min ? ((currentVal - min) / (max - min)) * 100 : 0;
+            const thumbHalfPct = 7 / (this.offsetWidth || 200) * 100;
+            const pct = rawPct === 0 ? 0 : (rawPct / 100) * (100 - thumbHalfPct * 2) + thumbHalfPct;
             
             return html`
-                <div class="func-button" style="cursor: default; display: flex; flex-direction: column; justify-content: space-between;">
+                <div class="func-button num-slider" style="cursor: default; display: flex; flex-direction: column; justify-content: space-between; padding:0;">
                     <div style="color: ${buttonFg}; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${sliderName.slice(0, 4)}：${currentVal}${unit}</div>
                     <input type="range" 
                         min="${min}" max="${max}" step="${step}" 
                         .value=${currentVal}
+                        @input=${(e) => {
+                            const val = parseFloat(e.target.value);
+                            const rp = max > min ? ((val - min) / (max - min)) * 100 : 0;
+                            const thp = 7 / (e.target.offsetWidth || 200) * 100;
+                            const np = rp === 0 ? 0 : (rp / 100) * (100 - thp * 2) + thp;
+                            e.target.style.setProperty('--slider-pct', np + '%');
+                        }}
                         @change=${(e) => {
                             const val = parseFloat(e.target.value);
                             if (sliderDomain === 'number' || sliderDomain === 'input_number') {
@@ -2816,7 +3125,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
                             }
                             this._handleClick();
                         }}
-                        style="width: 90%; margin: auto auto 5px; height: 4px; accent-color: ${activeColor}; --slider-color: ${activeColor};"
+                        style="--slider-color: ${activeColor}; --slider-bg: ${buttonBg}; --slider-pct: ${pct}%;"
                     />
                 </div>
             `;
@@ -2858,7 +3167,10 @@ class XiaoshiPhoneOtherCard extends LitElement {
             }
             const sliderDomain = domain;
             const sliderName = item.custom_name || friendlyName;
-            const pct = max > min ? Math.round(((currentVal - min) / (max - min)) * 100) : 0;
+            const rawPct = max > min ? ((currentVal - min) / (max - min)) * 100 : 0;
+            // 补偿 thumb 半宽(6px) 占轨道宽度的比例，使填充色对齐 thumb 中心
+            const thumbHalfPct = 6 / (this.offsetWidth || 200) * 100;
+            const pct = rawPct === 0 ? 0 : (rawPct / 100) * (100 - thumbHalfPct * 2) + thumbHalfPct;
 
             return html`
                 <div class="func-button" style="cursor: default; display: flex; align-items: center; padding: 0;">
@@ -2869,7 +3181,9 @@ class XiaoshiPhoneOtherCard extends LitElement {
                             style="--slider-color: ${activeColor}; --slider-bg: ${buttonBg}; --slider-pct: ${pct}%;"
                             @input=${(e) => {
                                 const val = parseFloat(e.target.value);
-                                const newPct = max > min ? Math.round(((val - min) / (max - min)) * 100) : 0;
+                                const rawPct = max > min ? ((val - min) / (max - min)) * 100 : 0;
+                                const thumbHalfPct = 6 / (e.target.offsetWidth || 200) * 100;
+                                const newPct = rawPct === 0 ? 0 : (rawPct / 100) * (100 - thumbHalfPct * 2) + thumbHalfPct;
                                 e.target.style.setProperty('--slider-pct', newPct + '%');
                             }}
                             @change=${(e) => {
@@ -2916,31 +3230,44 @@ class XiaoshiPhoneOtherCard extends LitElement {
                 const isActive = speedMode === 'off'
                     ? entity.state === 'off'
                     : entity.state !== 'off' && Math.abs(percentage - speedPercentages[speedMode]) < step / 2;
-                const btnFg = isActive ? activeColor : buttonFg;
+                const btnBgColor = isActive ? activeColor : buttonBg;
+                const sub = (item.sub_items || {})[speedMode] || {};
+                const showIcon = sub.show_icon !== undefined ? sub.show_icon : item.show_icon !== false;
+                const showName = sub.show_name !== undefined ? sub.show_name : item.show_name !== false;
+                const iconKey = 'speed_' + speedMode;
+                const iconStr = sub.custom_icon || (item.custom_icons && item.custom_icons[iconKey]) || XiaoshiPhoneOtherCard.getDefaultIcon('fan', iconKey);
+                const displayName = sub.custom_name || speedLabels[speedMode];
                 return html`
-                    <button class="func-button ${isActive ? 'select-active' : ''}"
-                        style="background-color: ${buttonBg};"
+                    <button class="func-button ${isActive ? 'select-active' : ''} ${showIcon ? 'has-icon' : ''}"
+                        style="background-color: ${btnBgColor};"
                         @click=${() => speedMode === 'off'
                             ? this._callService('fan', 'turn_off', { entity_id: buttonEntityId })
                             : this._callService('fan', 'set_percentage', { entity_id: buttonEntityId, percentage: speedPercentages[speedMode] })}
                         title="${speedLabels[speedMode]}"
                     >
-                        <div class="func-button-value" style="color: ${btnFg}">${speedLabels[speedMode]}</div>
+                        ${showIcon && iconStr ? html`<ha-icon class="func-button-icon" icon="${iconStr}" style="color: ${buttonFg}"></ha-icon>` : ''}
+                        ${showName ? html`<div class="func-button-value" style="color: ${buttonFg}">${displayName}</div>` : ''}
                     </button>
                 `;
             }
             // 预设模式按钮
             const currentPreset = entity.attributes.preset_mode || '';
             const isActive = selectOption === currentPreset;
-            const btnFg = isActive ? activeColor : buttonFg;
+            const btnBgColor = isActive ? activeColor : buttonBg;
             const optionDisplayName = (item.fan_preset_mode_names && item.fan_preset_mode_names[selectOption]) || selectOption;
+            const sub = (item.sub_items || {})[selectOption] || {};
+            const showIcon = sub.show_icon !== undefined ? sub.show_icon : item.show_icon !== false;
+            const showName = sub.show_name !== undefined ? sub.show_name : item.show_name !== false;
+            const iconStr = sub.custom_icon || (item.custom_icons && item.custom_icons[selectOption]) || '';
+            const displayName = sub.custom_name || optionDisplayName;
             return html`
-                <button class="func-button ${isActive ? 'select-active' : ''}"
-                    style="background-color: ${buttonBg};"
+                <button class="func-button ${isActive ? 'select-active' : ''} ${showIcon ? 'has-icon' : ''}"
+                    style="background-color: ${btnBgColor};"
                     @click=${() => this._callService('fan', 'set_preset_mode', { entity_id: buttonEntityId, preset_mode: selectOption })}
                     title="${selectOption}"
                 >
-                    <div class="func-button-value" style="color: ${btnFg}">${optionDisplayName}</div>
+                    ${showIcon && iconStr ? html`<ha-icon class="func-button-icon" icon="${iconStr}" style="color: ${buttonFg}"></ha-icon>` : ''}
+                    ${showName ? html`<div class="func-button-value" style="color: ${buttonFg}">${displayName}</div>` : ''}
                 </button>
             `;
         }
@@ -2953,14 +3280,20 @@ class XiaoshiPhoneOtherCard extends LitElement {
             if (action === 'open') isActive = entity.state === 'open';
             else if (action === 'close') isActive = entity.state === 'closed';
             else if (action === 'stop') isActive = entity.state === 'open' || entity.state === 'closed' ? false : true;
-            const btnFg = isActive ? activeColor : buttonFg;
+            const btnBgColor = isActive ? activeColor : buttonBg;
+            const sub = (item.sub_items || {})[action] || {};
+            const showIcon = sub.show_icon !== undefined ? sub.show_icon : item.show_icon !== false;
+            const showName = sub.show_name !== undefined ? sub.show_name : item.show_name !== false;
+            const iconStr = sub.custom_icon || (item.custom_icons && item.custom_icons[action]) || XiaoshiPhoneOtherCard.getDefaultIcon('cover', action);
+            const displayName = sub.custom_name || actionLabels[action];
             return html`
-                <button class="func-button ${isActive ? 'select-active' : ''}"
-                    style="background-color: ${buttonBg};"
+                <button class="func-button ${isActive ? 'select-active' : ''} ${showIcon ? 'has-icon' : ''}"
+                    style="background-color: ${btnBgColor};"
                     @click=${() => this._callService('cover', actionServices[action], { entity_id: buttonEntityId })}
                     title="${actionLabels[action]}"
                 >
-                    <div class="func-button-value" style="color: ${btnFg}">${actionLabels[action]}</div>
+                    ${showIcon && iconStr ? html`<ha-icon class="func-button-icon" icon="${iconStr}" style="color: ${buttonFg}"></ha-icon>` : ''}
+                    ${showName ? html`<div class="func-button-value" style="color: ${buttonFg}">${displayName}</div>` : ''}
                 </button>
             `;
         }
@@ -2974,14 +3307,20 @@ class XiaoshiPhoneOtherCard extends LitElement {
             else if (action === 'stop') isActive = entity.state === 'cleaning' || entity.state === 'paused';
             else if (action === 'pause') isActive = entity.state === 'paused';
             else if (action === 'return_to_base') isActive = entity.state === 'returning';
-            const btnFg = isActive ? activeColor : buttonFg;
+            const btnBgColor = isActive ? activeColor : buttonBg;
+            const sub = (item.sub_items || {})[action] || {};
+            const showIcon = sub.show_icon !== undefined ? sub.show_icon : item.show_icon !== false;
+            const showName = sub.show_name !== undefined ? sub.show_name : item.show_name !== false;
+            const iconStr = sub.custom_icon || (item.custom_icons && item.custom_icons[action]) || XiaoshiPhoneOtherCard.getDefaultIcon('vacuum', action);
+            const displayName = sub.custom_name || actionLabels[action];
             return html`
-                <button class="func-button ${isActive ? 'select-active' : ''}"
-                    style="background-color: ${buttonBg};"
+                <button class="func-button ${isActive ? 'select-active' : ''} ${showIcon ? 'has-icon' : ''}"
+                    style="background-color: ${btnBgColor};"
                     @click=${() => this._callService('vacuum', actionServices[action], { entity_id: buttonEntityId })}
                     title="${actionLabels[action]}"
                 >
-                    <div class="func-button-value" style="color: ${btnFg}">${actionLabels[action]}</div>
+                    ${showIcon && iconStr ? html`<ha-icon class="func-button-icon" icon="${iconStr}" style="color: ${buttonFg}"></ha-icon>` : ''}
+                    ${showName ? html`<div class="func-button-value" style="color: ${buttonFg}">${displayName}</div>` : ''}
                 </button>
             `;
         }
@@ -2989,16 +3328,21 @@ class XiaoshiPhoneOtherCard extends LitElement {
         if (domain === 'lock') {
             const isLocked = entity.state === 'locked';
             const statusSymbol = isLocked ? ' - 上锁' : ' - 解锁';
-            const btnFg = isLocked ? activeColor : buttonFg;
+            const btnBgColor = isLocked ? activeColor : buttonBg;
+            const showIcon = item.show_icon !== false;
+            const showName = item.show_name !== false;
+            const iconKey = isLocked ? 'locked' : 'unlocked';
+            const iconStr = (item.custom_icons && (item.custom_icons[iconKey] || item.custom_icons.default)) || XiaoshiPhoneOtherCard.getDefaultIcon('lock', iconKey);
             
             return html`
                 <button 
-                    class="func-button" 
-                    style="background-color: ${buttonBg};"
+                    class="func-button ${showIcon ? 'has-icon' : ''}" 
+                    style="background-color: ${btnBgColor};"
                     @click=${() => this._handleExtraButtonClick(buttonEntityId, domain)}
                     title="${friendlyName}"
                 >
-                    <div class="func-button-text" style="color: ${btnFg}">${displayName}${statusSymbol}</div>
+                    ${showIcon && iconStr ? html`<ha-icon class="func-button-icon" icon="${iconStr}"></ha-icon>` : ''}
+                    ${showName ? html`<div class="func-button-text" style="color: ${buttonFg}">${displayName}${statusSymbol}</div>` : ''}
                 </button>
             `;
         } 
@@ -3006,28 +3350,37 @@ class XiaoshiPhoneOtherCard extends LitElement {
         if (domain === 'switch' || domain === 'light' || domain === 'input_boolean') {
             const isActive = entity.state === 'on';
             const statusSymbol = isActive ? '：开启' : '：关闭';
-            const btnFg = isActive ? activeColor : buttonFg;
+            const btnBgColor = isActive ? activeColor : buttonBg;
+            const showIcon = item.show_icon !== false;
+            const showName = item.show_name !== false;
+            const iconKey = isActive ? 'on' : 'off';
+            const iconStr = (item.custom_icons && (item.custom_icons[iconKey] || item.custom_icons.default)) || XiaoshiPhoneOtherCard.getDefaultIcon(domain, iconKey);
             
             return html`
                 <button 
-                    class="func-button" 
-                    style="background-color: ${buttonBg};"
+                    class="func-button ${showIcon ? 'has-icon' : ''}" 
+                    style="background-color: ${btnBgColor};"
                     @click=${() => this._handleExtraButtonClick(buttonEntityId, domain)}
                     title="${friendlyName}"
                 >
-                    <div class="func-button-text" style="color: ${btnFg}">${displayName}${statusSymbol}</div>
+                    ${showIcon && iconStr ? html`<ha-icon class="func-button-icon" icon="${iconStr}"></ha-icon>` : ''}
+                    ${showName ? html`<div class="func-button-text" style="color: ${buttonFg}">${displayName}${statusSymbol}</div>` : ''}
                 </button>
             `;
         }
 
         if (domain === 'sensor') {
-            const unit = entity.attributes.unit_of_measurement || '';
+            const sensorUnit = entity.attributes.unit_of_measurement || '';
             const stateValue = (item.sensor_value_names && item.sensor_value_names[entity.state]) || entity.state;
-            const sensorDisplay = unit ? `${displayName}：${stateValue} ${unit}` : `${displayName}：${stateValue}`;
+            const sensorDisplay = sensorUnit ? `${displayName}：${stateValue} ${sensorUnit}` : `${displayName}：${stateValue}`;
+            const showIcon = item.show_icon !== false;
+            const showName = item.show_name !== false;
+            const iconStr = (item.custom_icons && item.custom_icons.default) || XiaoshiPhoneOtherCard.getDefaultIcon('sensor', 'default');
             
             return html`
-                <button class="func-button" disabled style="cursor: default;">
-                    <div class="func-button-value" style="color: white;">${sensorDisplay}</div>
+                <button class="func-button ${showIcon ? 'has-icon' : ''}" disabled style="cursor: default;">
+                    ${showIcon && iconStr ? html`<ha-icon class="func-button-icon" icon="${iconStr}"></ha-icon>` : ''}
+                    ${showName ? html`<div class="func-button-value" >${sensorDisplay}</div>` : ''}
                 </button>
             `;
         }
@@ -3035,21 +3388,30 @@ class XiaoshiPhoneOtherCard extends LitElement {
         if (domain === 'binary_sensor') {
             const stateValue = (item.sensor_value_names && item.sensor_value_names[entity.state]) || entity.state;
             const statusSymbol = `：${stateValue}`;
+            const showIcon = item.show_icon !== false;
+            const showName = item.show_name !== false;
+            const iconKey = entity.state === 'on' ? 'on' : 'off';
+            const iconStr = (item.custom_icons && (item.custom_icons[iconKey] || item.custom_icons.default)) || XiaoshiPhoneOtherCard.getDefaultIcon('binary_sensor', iconKey);
             
             return html`
-                <button class="func-button" disabled style="cursor: default;">
-                    <div class="func-button-value" style="color: white;">${displayName}${statusSymbol}</div>
+                <button class="func-button ${showIcon ? 'has-icon' : ''}" disabled style="cursor: default;">
+                    ${showIcon && iconStr ? html`<ha-icon class="func-button-icon" icon="${iconStr}"></ha-icon>` : ''}
+                    ${showName ? html`<div class="func-button-value">${displayName}${statusSymbol}</div>` : ''}
                 </button>
             `;
         }
 
         if (domain === 'button' || domain === 'input_button') {
             const btnName = item.custom_name || friendlyName;
+            const showIcon = item.show_icon !== false;
+            const showName = item.show_name !== false;
+            const iconStr = (item.custom_icons && item.custom_icons.default) || XiaoshiPhoneOtherCard.getDefaultIcon('button', 'default');
             return html`
-                <button class="func-button" 
+                <button class="func-button ${showIcon ? 'has-icon' : ''}" 
                         @click=${() => this._handleExtraButtonClick(buttonEntityId, domain)}
                         title="${friendlyName}">
-                    <div class="func-button-value">${btnName.slice(0, 4)}</div>
+                    ${showIcon && iconStr ? html`<ha-icon class="func-button-icon" icon="${iconStr}"></ha-icon>` : ''}
+                    ${showName ? html`<div class="func-button-value">${btnName.slice(0, 4)}</div>` : ''}
                 </button>
             `;
         }
@@ -3068,16 +3430,21 @@ class XiaoshiPhoneOtherCard extends LitElement {
                 `;
             }
             const isActive = selectOption === entity.state;
-            const btnBg = isActive ? buttonBg : buttonBg;
-            const btnFg = isActive ? activeColor : buttonFg;
+            const btnBgColor = isActive ? activeColor : buttonBg;
             const optionDisplayName = (item.select_option_names && item.select_option_names[selectOption]) || translateOption(selectOption, this.config.translation_priority);
+            const sub = (item.sub_items || {})[selectOption] || {};
+            const showIcon = sub.show_icon !== undefined ? sub.show_icon : item.show_icon !== false;
+            const showName = sub.show_name !== undefined ? sub.show_name : item.show_name !== false;
+            const iconStr = sub.custom_icon || (item.custom_icons && item.custom_icons[selectOption]) || '';
+            const displayName = sub.custom_name || optionDisplayName;
             return html`
-                <button class="func-button ${isActive ? 'select-active' : ''}"
-                    style="background-color: ${btnBg};"
+                <button class="func-button ${isActive ? 'select-active' : ''} ${showIcon ? 'has-icon' : ''}"
+                    style="background-color: ${btnBgColor};"
                     @click=${() => this._callService(domain, 'select_option', { entity_id: buttonEntityId, option: selectOption })}
                     title="${selectOption}"
                 >
-                    <div class="func-button-value" style="color: ${btnFg}">${optionDisplayName}</div>
+                    ${showIcon && iconStr ? html`<ha-icon class="func-button-icon" icon="${iconStr}" style="color: ${buttonFg}"></ha-icon>` : ''}
+                    ${showName ? html`<div class="func-button-value" style="color: ${buttonFg}">${displayName}</div>` : ''}
                 </button>
             `;
         }
@@ -3085,9 +3452,12 @@ class XiaoshiPhoneOtherCard extends LitElement {
         if (domain === 'text' || domain === 'input_text') {
             const customName = item.custom_name || friendlyName;
             const customCommand = item.custom_command || '';
+            const showIcon = item.show_icon !== false;
+            const showName = item.show_name !== false;
+            const iconStr = (item.custom_icons && item.custom_icons.default) || XiaoshiPhoneOtherCard.getDefaultIcon('text', 'default');
             
             return html`
-                <button class="func-button" 
+                <button class="func-button ${showIcon ? 'has-icon' : ''}" 
                         @click=${() => {
                             if (customCommand) {
                                 const evaluatedCommand = this._evalTemplate(customCommand);
@@ -3095,7 +3465,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
                             }
                         }}
                         title="${customName}${customCommand ? ' → ' + customCommand : ''}">
-                    <div class="func-button-value">${customName}</div>
+                    ${showIcon && iconStr ? html`<ha-icon class="func-button-icon" icon="${iconStr}"></ha-icon>` : ''}
+                    ${showName ? html`<div class="func-button-value">${customName}</div>` : ''}
                 </button>
             `;
         }
@@ -3133,18 +3504,18 @@ class XiaoshiPhoneOtherCard extends LitElement {
           if (domain === 'switch' || domain === 'light' || domain === 'lock' || domain === 'fan') {
               const isActive = entity.state === 'on';
               const icon = isActive ? 'mdi:toggle-switch' : 'mdi:toggle-switch-off';
-              const btnFg = isActive ? activeColor : buttonFg;
+              const iconColor = isActive ? activeColor : buttonFg;
               
               return html`
                   <button 
                       class="extra-button ${isActive ? 'active-extra' : ''}" 
                       @click=${() => this._handleExtraButtonClick(buttonEntityId, domain)}
-                      style="color: ${btnFg}"
+                      style="color: ${buttonFg}"
                       title="${friendlyName}"
                   >
                       <div class="extra-button-content">
-                          <ha-icon class="extra-button-icon" icon="${icon}" style="color: ${btnFg}"></ha-icon>
-                          <div class="extra-button-text" style="color: ${btnFg}">${displayName}</div>
+                          <ha-icon class="extra-button-icon" icon="${icon}" style="color: ${iconColor}"></ha-icon>
+                          <div class="extra-button-text" style="color: ${buttonFg}">${displayName}</div>
                       </div>
                   </button>
               `;
@@ -3152,7 +3523,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
                   
           if (domain === 'sensor' || domain === 'binary_sensor') {
               const unit = entity.attributes.unit_of_measurement || '';
-              const stateValue = (item.sensor_value_names && item.sensor_value_names[entity.state]) || entity.state;
+              const stateValue = (buttonObj.sensor_value_names && buttonObj.sensor_value_names[entity.state]) || entity.state;
               displayValue = `${stateValue}${domain === 'sensor' ? unit : ''}`.slice(0, 4);
               
               return html`
