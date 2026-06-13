@@ -1281,7 +1281,7 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                 </div>
                 <div class="hint" style="margin-bottom: 4px;">输入YAML格式的服务调用动作，action为域名.服务名，data为服务数据</div>
                 ` : ''}
-                ${itemDomain === 'vacuum' || itemDomain === 'fan' || itemDomain === 'select' || itemDomain === 'input_select' || itemDomain === 'cover' ? html`
+                ${(itemDomain === 'vacuum' || itemDomain === 'select' || itemDomain === 'input_select' || (itemDomain === 'fan' && item.mode !== 'slider' && item.mode !== 'sun_slider') || (itemDomain === 'cover' && item.mode !== 'slider' && item.mode !== 'sun_slider')) ? html`
                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
                   <label style="font-size: 0.8em; min-width: 50px;">显示名称</label>
                   <select
@@ -1371,7 +1371,7 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                 </div>
                 `; })}
                 ` : ''}
-                ${itemDomain === 'fan' ? html`
+                ${itemDomain === 'fan' && item.mode !== 'slider' && item.mode !== 'sun_slider' ? html`
                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
                   <label style="font-size: 0.8em; min-width: 60px;">选项标签</label>
                   <input
@@ -1435,7 +1435,7 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
                 </div>
                 `; })}
                 ` : ''}
-                ${itemDomain === 'cover' ? html`
+                ${itemDomain === 'cover' && item.mode !== 'slider' && item.mode !== 'sun_slider' ? html`
                 ${['open','stop','close'].map(action => { const sub = (item.sub_items || {})[action] || {}; const actionLabels = {open:'打开',stop:'停止',close:'关闭'}; return html`
                 <div style="border: 1px solid #444; border-radius: 4px; padding: 4px 6px; margin-bottom: 4px;">
                   <div style="font-size: 0.75em; color: #aaa; margin-bottom: 2px;">${actionLabels[action]}</div>
@@ -2108,7 +2108,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
       .num-slider input[type="range"] {
         -webkit-appearance: none;
         appearance: none;
-        width: 90%;
+        width: 100%;
         height: 4px;
         margin: 0 0 6px 0;
         border-radius: 2px;
@@ -2279,7 +2279,6 @@ class XiaoshiPhoneOtherCard extends LitElement {
 
       .active-extra {
         color: var(--active-color) !important;
-        background-color: var(--active-color) !important;
       }
 
       .select-active {
@@ -2742,7 +2741,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
                             : allOptions;
                         totalButtons += Math.min(filtered.length, 5);
                     }
-                } else if (domain === 'fan') {
+                } else if (domain === 'fan' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
                     const entity = this.hass.states[item.entity];
                     if (entity) {
                         const allPresets = entity.attributes.preset_modes || [];
@@ -3077,6 +3076,12 @@ class XiaoshiPhoneOtherCard extends LitElement {
                 min = 0; max = 100; step = 1;
                 currentVal = entity.attributes.brightness ? Math.round(entity.attributes.brightness / 2.55) : 0;
                 unit = '%';
+            } else if (domain === 'water_heater') {
+                min = entity.attributes.min_temp ?? 40;
+                max = entity.attributes.max_temp ?? 75;
+                step = entity.attributes.target_temp_step ?? 1;
+                currentVal = entity.attributes.temperature ?? parseFloat(entity.state) ?? 0;
+                unit = '°C';
             } else if (domain === 'cover' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
             const coverActions = ['open', 'stop', 'close'];
             coverActions.forEach(action => {
@@ -3153,6 +3158,12 @@ class XiaoshiPhoneOtherCard extends LitElement {
                 min = 0; max = 100; step = 1;
                 currentVal = entity.attributes.brightness ? Math.round(entity.attributes.brightness / 2.55) : 0;
                 unit = '%';
+            } else if (domain === 'water_heater') {
+                min = entity.attributes.min_temp ?? 40;
+                max = entity.attributes.max_temp ?? 75;
+                step = entity.attributes.target_temp_step ?? 1;
+                currentVal = entity.attributes.temperature ?? parseFloat(entity.state) ?? 0;
+                unit = '°C';
             } else if (domain === 'cover' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
             const coverActions = ['open', 'stop', 'close'];
             coverActions.forEach(action => {
@@ -3504,18 +3515,20 @@ class XiaoshiPhoneOtherCard extends LitElement {
           if (domain === 'switch' || domain === 'light' || domain === 'lock' || domain === 'fan') {
               const isActive = entity.state === 'on';
               const icon = isActive ? 'mdi:toggle-switch' : 'mdi:toggle-switch-off';
-              const iconColor = isActive ? activeColor : buttonFg;
+              const isHighlight = isActive && (domain === 'switch' || domain === 'light' || domain === 'lock');
+              const iconColor = isHighlight ? activeColor : fgColor;
+              const textColor = isHighlight ? activeColor : fgColor;
               
               return html`
                   <button 
-                      class="extra-button ${isActive ? 'active-extra' : ''}" 
+                      class="extra-button" 
                       @click=${() => this._handleExtraButtonClick(buttonEntityId, domain)}
-                      style="color: ${buttonFg}"
+                      style="background-color: transparent; color: ${textColor}"
                       title="${friendlyName}"
                   >
                       <div class="extra-button-content">
                           <ha-icon class="extra-button-icon" icon="${icon}" style="color: ${iconColor}"></ha-icon>
-                          <div class="extra-button-text" style="color: ${buttonFg}">${displayName}</div>
+                          <div class="extra-button-text" style="color: ${textColor}">${displayName}</div>
                       </div>
                   </button>
               `;
@@ -3527,10 +3540,10 @@ class XiaoshiPhoneOtherCard extends LitElement {
               displayValue = `${stateValue}${domain === 'sensor' ? unit : ''}`.slice(0, 4);
               
               return html`
-                  <div class="extra-button" style="color: ${fgColor}; cursor: default;">
+                  <div class="extra-button" style="background-color: transparent; color: ${fgColor}; cursor: default;">
                       <div class="extra-button-content">
                           <div class="extra-button-value" style="color: ${displayValueColor}">${displayValue}</div>
-                          <div class="extra-button-text">${displayName}</div>
+                          <div class="extra-button-text" style="color: ${fgColor}">${displayName}</div>
                       </div>
                   </div>
               `;
@@ -3541,10 +3554,10 @@ class XiaoshiPhoneOtherCard extends LitElement {
               return html`
                   <button class="extra-button" 
                           @click=${() => this._handleExtraButtonClick(buttonEntityId, domain)}
-                          style="color: ${buttonFg}">
+                          style="background-color: transparent; color: ${fgColor}">
                       <div class="extra-button-content">
-                          <ha-icon class="extra-button-icon" icon="${buttonIcon}" style="--mdc-icon-size: 14px; color: ${buttonFg}"></ha-icon>
-                          <div class="extra-button-text">${displayName}</div>
+                          <ha-icon class="extra-button-icon" icon="${buttonIcon}" style="--mdc-icon-size: 14px; color: ${fgColor}"></ha-icon>
+                          <div class="extra-button-text" style="color: ${fgColor}">${displayName}</div>
                       </div>
                   </button>
               `;
@@ -3560,10 +3573,10 @@ class XiaoshiPhoneOtherCard extends LitElement {
               return html`
                   <div class="extra-button" 
                           @click=${() => this._handleExtraButtonClick(buttonEntityId, domain)}
-                          style="color: ${fgColor}; cursor: default;">
+                          style="background-color: transparent; color: ${fgColor}; cursor: default;">
                       <div class="extra-button-content">
-                          <div class="extra-button-value">${displayValue}</div>
-                          <div class="extra-button-text">${displayName}</div>
+                          <div class="extra-button-value" style="color: ${fgColor}">${displayValue}</div>
+                          <div class="extra-button-text" style="color: ${fgColor}">${displayName}</div>
                       </div>
                   </div>
               `;
