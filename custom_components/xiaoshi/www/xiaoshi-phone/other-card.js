@@ -2676,8 +2676,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
     const showPower = this.config.show_power !== 'false';
 
     return html` 
-      <div class="card" style=" margin-bottom: ${marginBottom};
-                                width: ${this.width};
+      <div class="card" style=" width: ${this.width};
                                 background: ${isOn ? `linear-gradient(90deg, ${linearColor} -30%, ${bgColor} 70%)` : bgColor}; 
                                 color: ${fgColor}; 
                                 --button-bg: ${buttonBg}; 
