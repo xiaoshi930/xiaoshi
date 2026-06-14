@@ -23,7 +23,7 @@ const PRESET_ON_STATES = [
     // 扫地机器人
     '正在拖地','正在扫地','启动','cleaning',
     // 厨房
-    '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm'
+    '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm',"低档","中档","高档"
 ];
 class XiaoshiDynamicPadCardEditor extends LitElement {
     static get properties() {
