@@ -81,9 +81,11 @@ class MusicPlayerEditor extends LitElement {
             .value=${this.config.theme !== undefined ? this.config.theme : 'system'}
             name="theme"
           >
-            <option value="on">跟随系统</option>
-            <option value="on">浅色主题（白底黑字）</option>
-            <option value="off">深色主题（深灰底白字）</option>
+            <option value="system">跟随系统</option>
+            <option value="light">浅色主题</option>
+            <option value="dark">深色主题</option>
+            <option value="sun">跟随日出日落</option>
+            <option value="function">跟随函数</option>
           </select>
         </div>
         
@@ -655,7 +657,7 @@ class MusicPlayer extends LitElement {
 
   _evaluateTheme() {
       try {
-          const mode = this.config ? this.config.theme : 'system';
+          const mode = this._config ? this._config.theme : 'system';
           if (mode === 'light') return 'light';
           if (mode === 'dark') return 'dark';
           if (mode === 'system' || !mode) {
