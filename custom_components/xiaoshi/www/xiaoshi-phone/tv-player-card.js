@@ -804,7 +804,7 @@ class TvPlayer extends LitElement {
   static get properties() {
     return {
       _hass: { type: Object },
-      _config: { type: Object },
+      config: { type: Object },
       xiaomiHomeEntity: { type: String },
       xiaomiMiotEntity: { type: String },
       remoteControlEntity: { type: String },
@@ -827,7 +827,6 @@ class TvPlayer extends LitElement {
     return css`
       :host {
         display: block;
-        width: 100%;
         border-radius: 12px;
         padding: 0px;
         cursor: none;
@@ -1245,7 +1244,7 @@ class TvPlayer extends LitElement {
   constructor() {
     super();
     this._hass = null;
-    this._config = {};
+    this.config = {};
     this.xiaomiHomeEntity = '';
     this.xiaomiMiotEntity = '';
     this.remoteControlEntity = '';
@@ -1302,7 +1301,7 @@ class TvPlayer extends LitElement {
 
   _evaluateTheme() {
       try {
-          const mode = this._config ? this._config.theme : 'system';
+          const mode = this.config ? this.config.theme : 'system';
           if (mode === 'light' || mode === 'on') return 'light';
           if (mode === 'dark' || mode === 'off') return 'dark';
           if (mode === 'system' || !mode) {
@@ -1343,7 +1342,7 @@ class TvPlayer extends LitElement {
       throw new Error('You need to define xiaomi_home or xiaomi_miot');
     }
     
-    this._config = {
+    this.config = {
       xiaomi_home: config.xiaomi_home,
       xiaomi_miot: config.xiaomi_miot,
       remote_control: config.remote_control,
@@ -1356,48 +1355,48 @@ class TvPlayer extends LitElement {
     };
     
     // 确保theme有默认值
-    if (this._config.theme === undefined) {
-      this._config.theme = 'system';
+    if (this.config.theme === undefined) {
+      this.config.theme = 'system';
     }
     
     // 确保width有默认值
-    if (this._config.width === undefined) {
-      this._config.width = '100%';
+    if (this.config.width === undefined) {
+      this.config.width = '100%';
     }
     
     // 确保height有默认值
-    if (this._config.height === undefined) {
-      this._config.height = '80px';
+    if (this.config.height === undefined) {
+      this.config.height = '80px';
     }
     
-    this.xiaomiHomeEntity = this._config.xiaomi_home;
-    this.xiaomiMiotEntity = this._config.xiaomi_miot;
-    this.remoteControlEntity = this._config.remote_control;
-    this.turnOnButtonEntity = this._config.turn_on_button;
-    this.appCurrentEntity = this._config.app_current;
-    this.appCurrentConfig = this._config.app_current_config || {};
-    this.adbEntity = this._config.adb_entity;
-    this.tvConnectionMode = this._config.tv_connection_mode || 'integration';
+    this.xiaomiHomeEntity = this.config.xiaomi_home;
+    this.xiaomiMiotEntity = this.config.xiaomi_miot;
+    this.remoteControlEntity = this.config.remote_control;
+    this.turnOnButtonEntity = this.config.turn_on_button;
+    this.appCurrentEntity = this.config.app_current;
+    this.appCurrentConfig = this.config.app_current_config || {};
+    this.adbEntity = this.config.adb_entity;
+    this.tvConnectionMode = this.config.tv_connection_mode || 'integration';
     this.buttonCommands = {
-      power: this._config.adb_command?.power || 'POWER',
-      home: this._config.adb_command?.home || 'HOME',
-      back: this._config.adb_command?.back || 'BACK',
-      menu: this._config.adb_command?.menu || 'MENU',
-      setting: this._config.adb_command?.setting || 'am start -n com.android.settings/.Settings',
-      play: this._config.adb_command?.play || 'CENTER',
-      pause: this._config.adb_command?.pause || 'CENTER',
-      next: this._config.adb_command?.next || 'NEXT',
-      previous: this._config.adb_command?.previous || 'PREVIOUS',
-      volume_up: this._config.adb_command?.volume_up || 'VOLUME_UP',
-      volume_down: this._config.adb_command?.volume_down || 'VOLUME_DOWN',
-      up: this._config.adb_command?.up || 'UP',
-      down: this._config.adb_command?.down || 'DOWN',
-      left: this._config.adb_command?.left || 'LEFT',
-      right: this._config.adb_command?.right || 'RIGHT',
-      center: this._config.adb_command?.center || 'CENTER'
+      power: this.config.adb_command?.power || 'POWER',
+      home: this.config.adb_command?.home || 'HOME',
+      back: this.config.adb_command?.back || 'BACK',
+      menu: this.config.adb_command?.menu || 'MENU',
+      setting: this.config.adb_command?.setting || 'am start -n com.android.settings/.Settings',
+      play: this.config.adb_command?.play || 'CENTER',
+      pause: this.config.adb_command?.pause || 'CENTER',
+      next: this.config.adb_command?.next || 'NEXT',
+      previous: this.config.adb_command?.previous || 'PREVIOUS',
+      volume_up: this.config.adb_command?.volume_up || 'VOLUME_UP',
+      volume_down: this.config.adb_command?.volume_down || 'VOLUME_DOWN',
+      up: this.config.adb_command?.up || 'UP',
+      down: this.config.adb_command?.down || 'DOWN',
+      left: this.config.adb_command?.left || 'LEFT',
+      right: this.config.adb_command?.right || 'RIGHT',
+      center: this.config.adb_command?.center || 'CENTER'
     };
-    this.width = this._config.width;
-    this.height = this._config.height;
+    this.width = this.config.width;
+    this.height = this.config.height;
     
     // 触发重新渲染以应用主题更改
     this.requestUpdate();

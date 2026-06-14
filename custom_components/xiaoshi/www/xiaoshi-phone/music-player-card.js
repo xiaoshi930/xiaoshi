@@ -1,4 +1,13 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+ 
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type: "xiaoshi-music-player",
+  name: "音乐播放器",
+  description: "一个功能完整的音乐播放器控制卡片",
+  preview: true,
+  documentationURL: "https://github.com/xiaoshi930/music_player"
+});
 
 class MusicPlayerEditor extends LitElement {
   static get properties() {
@@ -2029,17 +2038,3 @@ class MusicPlayer extends LitElement {
   }
 }
 customElements.define('xiaoshi-music-player', MusicPlayer);
- 
-window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "xiaoshi-music-player",
-  name: "音乐播放器",
-  description: "一个功能完整的音乐播放器控制卡片",
-  preview: true,
-  documentationURL: "https://github.com/xiaoshi930/music_player"
-});
-
-
-
-
-
