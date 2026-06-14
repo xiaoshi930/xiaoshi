@@ -25,6 +25,7 @@ import('./xiaoshi-phone/computer-card.js');
 import('./xiaoshi-phone/light-card.js');
 import('./xiaoshi-phone/switch-card.js');
 import('./xiaoshi-phone/music-player-card.js');
+import('./xiaoshi-phone/tv-player-card.js');
 import('./xiaoshi-phone/fan-card.js');
 import('./xiaoshi-phone/cover-card.js');
 import('./xiaoshi-phone/other-card.js');
