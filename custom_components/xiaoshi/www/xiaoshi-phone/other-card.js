@@ -1835,6 +1835,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
         border-radius: 12px;
         overflow: hidden;
         box-sizing: border-box;
+        padding-bottom: 3px;
       }
       
       .content-container {
@@ -3012,7 +3013,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
             if (item.select_label && item.select_label.trim()) {
                 renderUnits.push({ item, entity, domain, selectOption: null, isLabel: true });
             }
-            filteredOptions.slice(0, 10).forEach(opt => {
+            filteredOptions.slice(0, 100).forEach(opt => {
                 renderUnits.push({ item, entity, domain, selectOption: opt });
             });
         } else if (domain === 'fan' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
@@ -3025,7 +3026,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
                 renderUnits.push({ item, entity, domain, selectOption: null, isLabel: true });
             }
             if (filteredPresets.length > 0) {
-            filteredPresets.slice(0, 10).forEach(opt => {
+            filteredPresets.slice(0, 100).forEach(opt => {
                 renderUnits.push({ item, entity, domain, selectOption: opt });
             });
             } else {
