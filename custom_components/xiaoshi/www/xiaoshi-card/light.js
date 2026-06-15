@@ -438,29 +438,11 @@ class XiaoshiLghtCard extends LitElement {
     return {
       entities: [],
       room_name: "",
-      rgb: false,
-      show_scene: true,
-      theme: "system",
-      show: "always",
-      total: "on",
-      columns: 1,
-      width: "100%",
-      height: "60px"
+      theme: "system"
     };
   }
 
   static styles = css`
-    .scene-mode-button {
-      padding: 2px 6px;
-      font-size: 0.7rem;
-      border-radius: 6px;
-      background: rgba(180, 180, 180, 0.2);
-      color: #FE6F21;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      width: fit-content;
-      margin-left: auto;
-    }
     .scenes-container {
       display: flex;
       flex-wrap: wrap;
@@ -564,62 +546,83 @@ class XiaoshiLghtCard extends LitElement {
       display: flex;
       align-items: center;
       gap: 12px;
-      min-height: 60px;
+      min-height: 50px;
       position: relative;
       transition: background 0.3s ease;
       border-bottom: 1px solid rgb(150,150,150,0.5);
       margin: 0 24px;
-      padding: 0 12px;
+      padding: 0px 6px;
     }
-    .light-row-scene {
+    .light-name-group {
+      position: relative;
+      flex-shrink: 0;
+      z-index: 1;
+      width: 25%;
+    }
+    .light-name {
+      font-size: 14px;
+      font-weight: 500;
+      width: 25%;
+      flex-shrink: 0;
+      z-index: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .scene-mode-button {
+      position: absolute;
+      margin-bottom: 6px;
+      left: 0;
+      padding: 1px 4px;
+      font-size: 0.7rem;
+      border-radius: 6px;
+      background: rgba(180, 180, 180, 0.2);
+      color: #FE6F21;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: fit-content;
+    }
+    .light-controls {
+      flex: 0 0 55%;
+      max-width: 55%;
       display: flex;
       flex-direction: column;
       gap: 6px;
-      position: relative;
-      transition: background 0.3s ease;
-      border-bottom: 1px solid rgb(150,150,150,0.5);
-      margin: 0 24px;
-      padding: 0 12px;
-    }
-    .light-name {
-      font-size: 1rem;
-      font-weight: 500;
-      min-width: 70px;
-      flex-shrink: 0;
       z-index: 1;
-    }
-    .light-controls {
-      flex: 0 0 45%;
-      max-width: 45%;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 1;
-      padding: 8px 0;
+      padding: 6px 0;
     }
     .slider-group {
       display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 6px;
     }
     .slider-label {
-      width: 30px;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
+      background: rgb(0,0,0,0);
+      line-height: 1.1;
+    }
+    .slider-value {
+      font-size: 0.7rem;
       background: rgb(0,0,0,0);
       line-height: 1.1;
     }
     .slider-track {
-      flex: 1;
-      height: 25px;
+      width: 100%;
+      height: 10px;
       border-radius: 7px;
       position: relative;
       cursor: default;
     }    
     .slider-track.brightness-track {
-      background: rgba(254, 111, 33, 0.2);
+      background: rgba(254, 111, 33, 0.3);
     }    
     .slider-track.color_temp-track {
-      background: linear-gradient(to right, #FE6F21, #FFFFFF) !important;
+      background: linear-gradient(to right, #f6a503, #ADD8E6) !important;
     }    
     .slider-track.inactive {
       background: rgb(180,180,180,0.5) !important;
@@ -629,7 +632,7 @@ class XiaoshiLghtCard extends LitElement {
       left: 0;
       height: 100%;
       background: #fe6f21;
-      border-radius: 7px 0 0 7px;
+      border-radius: 7px;
       transition: width 0.2s ease;
       cursor: default;
     }    
@@ -649,12 +652,10 @@ class XiaoshiLghtCard extends LitElement {
     }
     .slider-thumb {
       position: absolute;
-      width: 3px;
-      height: 19px;
-      background: #999;
-      border-radius: 3px;
-      border: 1.5px solid #fff;
-      box-shadow: 0px 0px 0px 1px #999;
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border-radius: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
       pointer-events: none;
@@ -662,6 +663,9 @@ class XiaoshiLghtCard extends LitElement {
     }    
     .slider-thumb.inactive {
       opacity: 0;
+    }
+    .slider-progress.inactive {
+      width: 0 !important;
     }
     .power-button {
       width: 36px;
@@ -674,9 +678,6 @@ class XiaoshiLghtCard extends LitElement {
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       flex-shrink: 0;
       margin-left: auto;
-    }
-    .light-row-inner:has(.scene-mode-button) .power-button {
-      margin-left: 0;
     }
     .power-button.active {
       background: #fe6f21;
@@ -775,23 +776,13 @@ class XiaoshiLghtCard extends LitElement {
     hapticEvent.detail = 'light';
     this.dispatchEvent(hapticEvent);
   }
-  
-  _getBackground(state) {
-    const theme = this._evaluateTheme();
-    if (state === 'on') {
-      return theme === 'dark' 
-        ? 'linear-gradient(90deg, #FE6F21 0%, #323232 70%)'
-        : 'linear-gradient(90deg, #FE6F21 0%, #FFF 70%)'; 
-    }
-    return theme === 'dark' ? '#323232' : '#FFF';
-  }
 
   _renderHeader(onCount, totalCount) {
     const theme = this._evaluateTheme();
     const isDark = theme === 'dark';
     const textColor = isDark ? '#FFF' : '#333';
     const dotColor = onCount > 0 ? '#FE6F21' : textColor;
-    const countBg = onCount > 0 ? 'rgba(254, 111, 33, 0.5)' : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)');
+    const countBg = onCount > 0 ? 'rgba(254, 111, 33, 0.8)' : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)');
 
     return html`
       <div class="card-header">
@@ -838,20 +829,22 @@ class XiaoshiLghtCard extends LitElement {
     const isDark = theme === 'dark';
     const textColor = isDark ? '#FFF' : '#333';
     const bgColor = isActive
-      ? (isDark ? 'rgba(254, 111, 33, 0.12)' : 'rgba(254, 111, 33, 0.08)')
+      ? (isDark ? 'rgba(254, 111, 33, 0.15)' : 'rgba(254, 111, 33, 0.15)')
       : 'transparent';
 
     if (showScenes && canShowScene) {
       return html`
         <div class="light-row" style="background: ${bgColor};">
-          <span class="light-name" style="color: ${textColor}">${attributes.friendly_name || entity}</span>
+          <div class="light-name-group">
+            <span class="light-name" style="color: ${textColor}">${attributes.friendly_name || entity}</span>
+            <div class="scene-mode-button"
+              style="color: ${isDark ? '#FFF' : '#333'}"
+              @click=${() => this._toggleSceneMode(entity)}>
+              返回
+            </div>
+          </div>
           <div class="light-controls">
             ${this._renderScenes(entity)}
-          </div>
-          <div class="scene-mode-button"
-            style="color: ${isDark ? '#FFF' : '#333'}"
-            @click=${() => this._toggleSceneMode(entity)}>
-            返回
           </div>
           ${this._renderPowerButton(entity, isActive)}
         </div>
@@ -860,15 +853,17 @@ class XiaoshiLghtCard extends LitElement {
 
     return html`
       <div class="light-row" style="background: ${bgColor};">
-        <span class="light-name" style="color: ${textColor}">${attributes.friendly_name || entity}</span>
+        <div class="light-name-group">
+          <span class="light-name" style="color: ${textColor}">${attributes.friendly_name || entity}</span>
+          ${canShowScene ? html`
+            <div class="scene-mode-button"
+              style="color: ${isDark ? '#FFF' : '#333'}"
+              @click=${() => this._toggleSceneMode(entity)}>
+              情景模式
+            </div>
+          ` : ''}
+        </div>
         ${this.config.rgb ? this._renderControls(entity, isActive, attributes) : html`<div class="light-controls"></div>`}
-        ${canShowScene ? html`
-          <div class="scene-mode-button"
-            style="color: ${isDark ? '#FFF' : '#333'}"
-            @click=${() => this._toggleSceneMode(entity)}>
-            情景模式
-          </div>
-        ` : ''}
         ${this._renderPowerButton(entity, isActive)}
       </div>
     `;
@@ -905,13 +900,13 @@ class XiaoshiLghtCard extends LitElement {
     const currentPercent = ((currentValue - min) / (max - min) * 100).toFixed(1);
     return html`
       <div class="slider-group ${isActive ? 'active' : 'inactive'}">
-        <span class="slider-label"\n 
-          style="color: ${color}">
-          ${label}${isActive ? ` ${type === 'brightness' ? Math.round(currentValue/2.55) : currentValue}${type === 'brightness' ? '%' : 'K'}` : ''}
-        </span>
+        <div class="slider-header">
+          <span class="slider-label" style="color: ${color}">${label}</span>
+          ${isActive ? html`<span class="slider-value" style="color: ${color}">${type === 'brightness' ? Math.round(currentValue/2.55) + '%' : currentValue + 'K'}</span>` : ''}
+        </div>
         <div class="slider-track ${type}-track ${isActive ? 'active' : 'inactive'}">
-          <div class="slider-progress ${type}-track"\n 
-          style="width: ${currentPercent}%"></div>
+          <div class="slider-progress ${type}-track ${isActive ? 'active' : 'inactive'}"\n 
+          style="width: calc(7px + (100% - 14px) * ${currentPercent / 100})"></div>
           <input
             class="slider-input"\n
             type="range"\n
@@ -924,7 +919,7 @@ class XiaoshiLghtCard extends LitElement {
             @change=${this._handleSliderChange}\n
           />
           <div class="slider-thumb ${isActive ? 'active' : 'inactive'}"\n 
-               style="left: ${currentPercent}%">
+               style="left: calc(7px + (100% - 14px) * ${currentPercent / 100})">
           </div>
         </div>
       </div>
@@ -996,25 +991,26 @@ class XiaoshiLghtCard extends LitElement {
     const max = parseInt(e.target.max);
     const percent = ((value - min) / (max - min) * 100).toFixed(1);
     this._sliderValues[entity][type] = value;
+    if (!this._pendingSliderUpdates) this._pendingSliderUpdates = {};
+    this._pendingSliderUpdates[`${entity}_${type}`] = true;
     const track = e.target.parentElement;
     if (track) {
-      track.querySelector('.slider-progress').style.width = `${percent}%`;
-      track.querySelector('.slider-thumb').style.left = `${percent}%`;
+      track.querySelector('.slider-progress').style.width = `calc(7px + (100% - 14px) * ${percent / 100})`;
+      track.querySelector('.slider-thumb').style.left = `calc(7px + (100% - 14px) * ${percent / 100})`;
     }
-    this.requestUpdate();
   }
 
   _handleSliderChange(e) {
     const type = e.target.dataset.type;
     const entity = e.target.dataset.entity;
     const value = parseInt(e.target.value);
-    this._debounceTimers[`${entity}_${type}`] = setTimeout(() => {
-      if (type === 'brightness') {
-        this._adjustBrightness(entity, value);
-      } else if (type === 'color_temp') {
-        this._adjustColorTemp(entity, value);
-      }
-    }, 300);
+    if (!this._pendingSliderUpdates) this._pendingSliderUpdates = {};
+    this._pendingSliderUpdates[`${entity}_${type}`] = true;
+    if (type === 'brightness') {
+      this._adjustBrightness(entity, value);
+    } else if (type === 'color_temp') {
+      this._adjustColorTemp(entity, value);
+    }
   }
 
   _togglePower(entity) {
@@ -1042,22 +1038,16 @@ class XiaoshiLghtCard extends LitElement {
   }
 
   async _adjustBrightness(entity, value) {
-    const attributes = this.hass.states[entity]?.attributes || {};
     const params = { brightness: Math.max(5, Math.min(255, value)) };
-    if (this.hass.states[entity]?.state === 'off') {
-      await this.hass.callService('light', 'turn_on', {
-        entity_id: entity,
-        ...params,
-        transition: 0.3
-      });
-    } else {
-      await this.hass.callService('light', 'turn_on', {
-        entity_id: entity,
-        ...params,
-        transition: 0.3
-      });
-    }
+    await this.hass.callService('light', 'turn_on', {
+      entity_id: entity,
+      ...params,
+      transition: 0.3
+    });
     this._syncSliderValue(entity, 'brightness');
+    setTimeout(() => {
+      if (this._pendingSliderUpdates) delete this._pendingSliderUpdates[`${entity}_brightness`];
+    }, 2000);
   }
 
   async _adjustColorTemp(entity, value) {
@@ -1068,23 +1058,19 @@ class XiaoshiLghtCard extends LitElement {
     } else if (attributes.color_temp !== undefined) {
       params.color_temp = Math.round(1000000 / value);
     }
-    if (this.hass.states[entity]?.state === 'off') {
-      await this.hass.callService('light', 'turn_on', {
-        entity_id: entity,
-        ...params,
-        transition: 0.3
-      });
-    } else {
-      await this.hass.callService('light', 'turn_on', {
-        entity_id: entity,
-        ...params,
-        transition: 0.3
-      });
-    }
+    await this.hass.callService('light', 'turn_on', {
+      entity_id: entity,
+      ...params,
+      transition: 0.3
+    });
     this._syncSliderValue(entity, 'color_temp');
+    setTimeout(() => {
+      if (this._pendingSliderUpdates) delete this._pendingSliderUpdates[`${entity}_color_temp`];
+    }, 2000);
   }
 
   _syncSliderValue(entity, type) {
+    if (this._pendingSliderUpdates?.[`${entity}_${type}`]) return;
     const state = this.hass.states[entity];
     if (!state) return;
     const attributes = state.attributes || {};
