@@ -1,4 +1,4 @@
-console.info("%c 消逝卡-汇总卡 \n%c  2026.6.2.17 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
+console.info("%c 消逝卡-汇总卡 \n%c  2026.6.2.18 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
 
 import('./function/function.js');
 import('./xiaoshi/phone-card.js');
@@ -17,6 +17,7 @@ import('./xiaoshi-card/state-grid.js');
 import('./xiaoshi-card/weather.js');
 import('./xiaoshi-card/button.js');
 import('./xiaoshi-card/device.js');
+import('./xiaoshi-card/light.js');
 
 import('./xiaoshi-phone/climate-card.js');
 import('./xiaoshi-phone/humidifier-card.js');
