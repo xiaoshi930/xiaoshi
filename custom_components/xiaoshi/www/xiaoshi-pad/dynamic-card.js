@@ -347,12 +347,12 @@ class XiaoshiDynamicPadCard extends LitElement {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                width: 80%;
-                height: 80%;
+                width: 70%;
+                height: 70%;
                 color: rgba(255,255,255);
             }
             .area-name {
-                font-size: 12px;
+                font-size: 0.8em;
                 font-weight: 500;
                 color: rgba(255,255,255);
                 margin-bottom: 3px;
@@ -364,14 +364,14 @@ class XiaoshiDynamicPadCard extends LitElement {
             }
             .area-badge {
                 position: absolute;
-                top: -8px;
-                right: -8px;
+                top: -15%;
+                right: -15%;
                 background: #f57c00;
                 color: #fff;
-                font-size: 10px;
+                font-size: 0.8em;
                 font-weight: bold;
-                width: 20px;
-                height: 20px;
+                width: 34%;
+                height: 34%;
                 border-radius: 50%;
                 align-items: center;
                 justify-content: center;
