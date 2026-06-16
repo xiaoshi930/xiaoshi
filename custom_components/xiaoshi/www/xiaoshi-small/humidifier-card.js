@@ -3,8 +3,8 @@ import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-e
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-small-humidifier-card',
-    name: '消逝卡(小卡)-加湿器卡',
-    description: '小卡加湿器卡',
+    name: '消逝卡(C微型卡)-加湿器卡',
+    description: '微型卡加湿器卡',
     preview: true
 });
 

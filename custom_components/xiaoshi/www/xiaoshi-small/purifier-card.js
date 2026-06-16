@@ -3,8 +3,8 @@ import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-e
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-small-purifier-card',
-    name: '消逝卡(小卡)-净化器卡',
-    description: '小卡净化器卡',
+    name: '消逝卡(C微型卡)-净化器卡',
+    description: '微型卡净化器卡',
     preview: true
 });
 
@@ -25,9 +25,7 @@ class XiaoshiSmallPurifierCardEditor extends LitElement {
       _pm25SearchTerm: { type: String },
       _filteredPM25Entities: { type: Array },
       _showPM25List: { type: Boolean },
-      _timerSearchTerm: { type: String },
-      _filteredTimerEntities: { type: Array },
-      _showTimerList: { type: Boolean }
+
     };
   }
 
@@ -43,7 +41,6 @@ class XiaoshiSmallPurifierCardEditor extends LitElement {
         this._showSelectList = false;
         this._showNumberList = false;
         this._showPM25List = false;
-        this._showTimerList = false;
 
         this.requestUpdate();
       }
@@ -204,41 +201,6 @@ class XiaoshiSmallPurifierCardEditor extends LitElement {
 
     this._pm25SearchTerm = '';
     this._showPM25List = false;
-
-    this._fireEvent();
-    this.requestUpdate();
-  }
-
-  _onTimerSearch(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    this._timerSearchTerm = searchTerm;
-    this._showTimerList = true;
-
-    if (!this.hass) return;
-
-    const allEntities = Object.values(this.hass.states);
-
-    this._filteredTimerEntities = allEntities.filter(entity => {
-      const entityId = entity.entity_id.toLowerCase();
-      const friendlyName = (entity.attributes.friendly_name || '').toLowerCase();
-
-      const isTimerEntity = entityId.startsWith('timer.');
-      const matchesSearch = entityId.includes(searchTerm) || friendlyName.includes(searchTerm);
-
-      return isTimerEntity && matchesSearch;
-    }).slice(0, 50);
-
-    this.requestUpdate();
-  }
-
-  _selectTimer(entityId) {
-    this.config = {
-      ...this.config,
-      timer: entityId
-    };
-
-    this._timerSearchTerm = '';
-    this._showTimerList = false;
 
     this._fireEvent();
     this.requestUpdate();
