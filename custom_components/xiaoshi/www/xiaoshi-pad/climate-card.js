@@ -2486,7 +2486,7 @@ class XiaoshiPadClimateCard extends LitElement {
       }
 
       .timer-h-btn {
-        height: 32px;
+        height: 40px;
         min-width: 24px;
         border: none;
         border-radius: 8px;
