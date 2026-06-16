@@ -2474,6 +2474,40 @@ class XiaoshiPadClimateCard extends LitElement {
         text-overflow: ellipsis;
       }
 
+      .timer-horizontal-area {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 6px 4px;
+      }
+
+      .timer-h-btn {
+        height: 32px;
+        min-width: 24px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        padding: 0 6px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+      }
+
+      .timer-h-icon {
+        width: 16px;
+        height: 16px;
+        --mdc-icon-size: 16px;
+      }
+
+      .timer-h-text {
+        font-size: 11px;
+        white-space: nowrap;
+      }
+
     `;
   }
 
@@ -2528,6 +2562,24 @@ class XiaoshiPadClimateCard extends LitElement {
     super.firstUpdated();
     await this._preloadHumidifierCard();
     this._loadOfficialThermostat();
+    this._startTimerRefresh();
+  }
+
+  _startTimerRefresh() {
+    if (this._timerInterval) clearInterval(this._timerInterval);
+    this._timerInterval = setInterval(() => {
+      if (this.config.timer) {
+        this.requestUpdate();
+      }
+    }, 1000);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._timerInterval) {
+      clearInterval(this._timerInterval);
+      this._timerInterval = null;
+    }
   }
 
   updated(changedProperties) {
@@ -2719,6 +2771,9 @@ class XiaoshiPadClimateCard extends LitElement {
     const showHumidifierSwitch = this.config.show_humidifier_switch !== false && hasHumidifierSwitch;
     const showSelectModes = this.config.show_select_modes !== false && hasSelectModes;
 
+    // 判断是否有定时器
+    const hasTimer = this.config.timer;
+
     // 动态计算总高度：基础高度310px（包含thermostat容器265px），每个启用模式区域增加48px
     const activeModeCount = (showHvacModes ? 1 : 0) +
                            (showFanModes ? 1 : 0) +
@@ -2727,26 +2782,17 @@ class XiaoshiPadClimateCard extends LitElement {
                            (showWaterModes ? 1 : 0) +
                            (showHumidifierModes ? 1 : 0) +
                            (showHumidifierSwitch ? 1 : 0) +
-                           (showSelectModes ? 1 : 0);
+                           (showSelectModes ? 1 : 0) +
+                           (hasTimer ? 1 : 0);
     const cardHeight = 300 + (activeModeCount * 48);
 
-    // 判断是否有定时器和附加按钮
-    const hasTimer = this.config.timer;
+    // 判断是否有附加按钮
     const hasButtons = this.buttons && this.buttons.length > 0;
     const hasButtons2 = this.buttons2 && this.buttons2.length > 0;
-    const timerPosition = this.config.timer_position || 'left';
     const buttonPosition = this.config.button_position || 'left';
     const button2Position = this.config.button2_position || 'left';
 
     return html`
-        ${hasTimer && timerPosition === 'left' ? html`
-          <div class="side-button-wrapper">
-            <div class="side-button-bar side-button-bar-left" style="background-color: ${bgColor}; height: ${cardHeight}px;">
-              ${this._renderTimerButton()}
-            </div>
-          </div>
-        ` : ''}
-
         ${hasButtons2 && button2Position === 'left' ? html`
           <div class="side-button-wrapper">
             <div class="side-button-bar side-button-bar-left" style="background-color: ${bgColor}; height: ${cardHeight}px;">
@@ -2830,6 +2876,14 @@ class XiaoshiPadClimateCard extends LitElement {
                     </div>
                 </div>
             ` : ''}
+
+            ${hasTimer ? html`
+                <div class="area-bg-wrapper">
+                    <div class="timer-horizontal-area">
+                        ${this._renderTimerButton()}
+                    </div>
+                </div>
+            ` : ''}
           </div>
         </div>
 
@@ -2845,14 +2899,6 @@ class XiaoshiPadClimateCard extends LitElement {
           <div class="side-button-wrapper">
             <div class="side-button-bar side-button-bar-right" style="background-color: ${bgColor}; height: ${cardHeight}px;">
               ${this._renderExtraButtons(2)}
-            </div>
-          </div>
-        ` : ''}
-
-        ${hasTimer && timerPosition === 'right' ? html`
-          <div class="side-button-wrapper">
-            <div class="side-button-bar side-button-bar-right" style="background-color: ${bgColor}; height: ${cardHeight}px;">
-              ${this._renderTimerButton()}
             </div>
           </div>
         ` : ''}
@@ -2896,29 +2942,26 @@ class XiaoshiPadClimateCard extends LitElement {
     }
 
     return html`
-      <button class="side-extra-button" style="cursor: pointer; background: ${bgColor};" @click=${this._cancelTimer}>
-        <ha-icon class="side-icon" icon="mdi:close" style="color: ${fgColor}"></ha-icon>
-        <span class="side-text" style="color: ${fgColor}">取消</span>
+      <button class="timer-h-btn" style="cursor: pointer; background: ${bgColor};" @click=${this._cancelTimer}>
+        <span class="timer-h-text" style="color: ${fgColor}">取消</span>
       </button>
-      <button class="side-extra-button" style="cursor: pointer; background: ${bgColor};" @click=${() => this._adjustTimer(-1, remainingSeconds)}>
-        <ha-icon class="side-icon" icon="mdi:minus" style="color: ${fgColor}"></ha-icon>
-        <span class="side-text" style="color: ${fgColor}"></span>
+      <button class="timer-h-btn" style="cursor: pointer; background: ${bgColor};" @click=${() => this._adjustTimer(-1, remainingSeconds)}>
+        <ha-icon class="timer-h-icon" icon="mdi:minus" style="color: ${fgColor}"></ha-icon>
       </button>
-      <button class="side-extra-button" style="cursor: default; background: ${activeColor};">
-        <span class="side-text" style="color: ${fgColor}; font-size: 12px; font-weight: bold;">${hours > 0 ? hours + 'h' : minutes + 'm'}</span>
+      <button class="timer-h-btn timer-h-active" style="cursor: default; background: ${activeColor};min-width:60px">
+        <span class="timer-h-text" style="color: ${fgColor}; font-weight: bold;">${remainingSeconds === 0 ? '定时无' : (hours > 0 ? hours + '时' + minutes + '分' : minutes + '分' + (remainingSeconds % 60) + '秒')}</span>
       </button>
-      <button class="side-extra-button" style="cursor: pointer; background: ${bgColor};" @click=${() => this._adjustTimer(1, remainingSeconds)}>
-        <ha-icon class="side-icon" icon="mdi:plus" style="color: ${fgColor}"></ha-icon>
-        <span class="side-text" style="color: ${fgColor}"></span>
+      <button class="timer-h-btn" style="cursor: pointer; background: ${bgColor};" @click=${() => this._adjustTimer(1, remainingSeconds)}>
+        <ha-icon class="timer-h-icon" icon="mdi:plus" style="color: ${fgColor}"></ha-icon>
       </button>
-      <button class="side-extra-button" style="cursor: pointer; background: ${bgColor};" @click=${() => this._setTimer(60 * 60)}>
-        <span class="side-text" style="color: ${fgColor}">1h</span>
+      <button class="timer-h-btn" style="cursor: pointer; background: ${bgColor};" @click=${() => this._setTimer(60 * 60)}>
+        <span class="timer-h-text" style="color: ${fgColor}">1时</span>
       </button>
-      <button class="side-extra-button" style="cursor: pointer; background: ${bgColor};" @click=${() => this._setTimer(3 * 60 * 60)}>
-        <span class="side-text" style="color: ${fgColor}">3h</span>
+      <button class="timer-h-btn" style="cursor: pointer; background: ${bgColor};" @click=${() => this._setTimer(3 * 60 * 60)}>
+        <span class="timer-h-text" style="color: ${fgColor}">3时</span>
       </button>
-      <button class="side-extra-button" style="cursor: pointer; background: ${bgColor};" @click=${() => this._setTimer(8 * 60 * 60)}>
-        <span class="side-text" style="color: ${fgColor}">8h</span>
+      <button class="timer-h-btn" style="cursor: pointer; background: ${bgColor};" @click=${() => this._setTimer(8 * 60 * 60)}>
+        <span class="timer-h-text" style="color: ${fgColor}">8时</span>
       </button>
     `;
   } 
@@ -3535,6 +3578,9 @@ _renderExtraButtons(buttonType = 1) {
       this._callService('humidifier', 'turn_off', {
         entity_id: this.config.entity
       });
+      if (this.config.timer) {
+          this._cancelTimer();
+      }
     } else if (mode === 'on') {
       this._callService('humidifier', 'turn_on', {
         entity_id: this.config.entity
@@ -3766,6 +3812,9 @@ _renderExtraButtons(buttonType = 1) {
           entity_id: this.config.entity,
           hvac_mode: mode
       });
+      if (mode === 'off' && this.config.timer) {
+          this._cancelTimer();
+      }
       this._handleClick();
   }
 
