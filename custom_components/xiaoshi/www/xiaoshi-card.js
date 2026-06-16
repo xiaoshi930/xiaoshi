@@ -40,8 +40,10 @@ import('./xiaoshi-pad/pad-card.js');
 import('./xiaoshi-pad/avatar-card.js');
 import('./xiaoshi-pad/dynamic-card.js');
 import('./xiaoshi-pad/top-bar-card.js');
+
 import('./xiaoshi-pad/chinese-poetry-card.js');
 import('./xiaoshi-pad/climate-card.js');
+import('./xiaoshi-pad/fan-card.js');
 import('./xiaoshi-pad/grid-card.js');
 import('./xiaoshi-pad/weather-card.js');
 
