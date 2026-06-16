@@ -52,9 +52,9 @@ class XiaoshiLghtCardEditor extends LitElement {
     this._filteredEntities[index] = allEntities.filter(entity => {
       const entityId = entity.entity_id.toLowerCase();
       const friendlyName = (entity.attributes.friendly_name || '').toLowerCase();
-      const isLightType = entityId.startsWith('light.');
+      const isSupportedType = entityId.startsWith('light.') || entityId.startsWith('switch.');
       const matchesSearch = entityId.includes(searchTerm) || friendlyName.includes(searchTerm);
-      return isLightType && matchesSearch;
+      return isSupportedType && matchesSearch;
     }).slice(0, 50);
 
     this.requestUpdate();
@@ -303,7 +303,7 @@ class XiaoshiLghtCardEditor extends LitElement {
                     @input=${(e) => this._onEntitySearch(e, index)}
                     @focus=${(e) => this._onEntitySearch(e, index)}
                     .value=${this._entitySearchTerms?.[index] || entity || ''}
-                    placeholder="搜索 light 实体..."
+                    placeholder="搜索 light/switch 实体..."
                     class="entity-search-input"
                   />
                   ${this._showEntityLists?.[index] ? html`
@@ -1013,8 +1013,13 @@ class XiaoshiLghtCard extends LitElement {
     }
   }
 
+  _getEntityDomain(entity) {
+    return entity.split('.')[0];
+  }
+
   _togglePower(entity) {
-    this.hass.callService('light', 'toggle', { entity_id: entity });
+    const domain = this._getEntityDomain(entity);
+    this.hass.callService(domain, 'toggle', { entity_id: entity });
     this._handleClick();
     const button = this.shadowRoot.querySelector(`[data-entity="${entity}"] .power-button`);
     if (button) {
@@ -1024,20 +1029,33 @@ class XiaoshiLghtCard extends LitElement {
   }
 
   _turnOffAll() {
-    this.hass.callService('light', 'turn_off', {
-      entity_id: this.config.entities
-    });
+    const entities = this.config.entities;
+    const lightEntities = entities.filter(e => this._getEntityDomain(e) === 'light');
+    const switchEntities = entities.filter(e => this._getEntityDomain(e) === 'switch');
+    if (lightEntities.length > 0) {
+      this.hass.callService('light', 'turn_off', { entity_id: lightEntities });
+    }
+    if (switchEntities.length > 0) {
+      this.hass.callService('switch', 'turn_off', { entity_id: switchEntities });
+    }
     this._handleClick();
   }
 
   _turnOnAll() {
-    this.hass.callService('light', 'turn_on', {
-      entity_id: this.config.entities
-    });
+    const entities = this.config.entities;
+    const lightEntities = entities.filter(e => this._getEntityDomain(e) === 'light');
+    const switchEntities = entities.filter(e => this._getEntityDomain(e) === 'switch');
+    if (lightEntities.length > 0) {
+      this.hass.callService('light', 'turn_on', { entity_id: lightEntities });
+    }
+    if (switchEntities.length > 0) {
+      this.hass.callService('switch', 'turn_on', { entity_id: switchEntities });
+    }
     this._handleClick();
   }
 
   async _adjustBrightness(entity, value) {
+    if (this._getEntityDomain(entity) !== 'light') return;
     const params = { brightness: Math.max(5, Math.min(255, value)) };
     await this.hass.callService('light', 'turn_on', {
       entity_id: entity,
@@ -1051,6 +1069,7 @@ class XiaoshiLghtCard extends LitElement {
   }
 
   async _adjustColorTemp(entity, value) {
+    if (this._getEntityDomain(entity) !== 'light') return;
     const attributes = this.hass.states[entity]?.attributes || {};
     const params = {};
     if (attributes.color_temp_kelvin !== undefined) {
@@ -1093,6 +1112,7 @@ class XiaoshiLghtCard extends LitElement {
   }
 
   _activateScene(entity, scene) {
+    if (this._getEntityDomain(entity) !== 'light') return;
     this._handleClick();
     this.hass.callService('light', 'turn_on', {
       entity_id: entity,
