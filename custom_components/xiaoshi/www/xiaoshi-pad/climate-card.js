@@ -1078,8 +1078,10 @@ class XiaoshiPadClimateCardEditor extends LitElement {
             .value=${this.config.theme !== undefined ? this.config.theme : 'light'}
             name="theme"
           >
+            <option value="system">跟随系统</option>
+            <option value="function">跟随函数</option>
             <option value="light">浅色主题（白底黑字）</option>
-            <option value="dark">深色主题（深灰底白字）</option>
+            <option value="dark">深色主题（黑底白字）</option>
           </select>
         </div>
 
@@ -2949,7 +2951,7 @@ class XiaoshiPadClimateCard extends LitElement {
         <ha-icon class="timer-h-icon" icon="mdi:minus" style="color: ${fgColor}"></ha-icon>
       </button>
       <button class="timer-h-btn timer-h-active" style="cursor: default; background: ${activeColor};min-width:60px">
-        <span class="timer-h-text" style="color: ${fgColor}; font-weight: bold;">${remainingSeconds === 0 ? '定时无' : (hours > 0 ? hours + '时' + minutes + '分' : minutes + '分' + (remainingSeconds % 60) + '秒')}</span>
+        <span class="timer-h-text" style="color: ${fgColor}; font-weight: bold;">${remainingSeconds === 0 ? '无定时' : (hours > 0 ? hours + '时' + minutes + '分' : minutes + '分' + (remainingSeconds % 60) + '秒')}</span>
       </button>
       <button class="timer-h-btn" style="cursor: pointer; background: ${bgColor};" @click=${() => this._adjustTimer(1, remainingSeconds)}>
         <ha-icon class="timer-h-icon" icon="mdi:plus" style="color: ${fgColor}"></ha-icon>
