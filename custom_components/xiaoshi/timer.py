@@ -58,6 +58,7 @@ class TimerTask:
             "service_domain": self.service_domain,
             "service_name": self.service_name,
             "countdown": self.countdown,
+            "deadline": self.deadline.isoformat(),
             "remaining": self.remaining,
         }
 

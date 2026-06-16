@@ -86,12 +86,7 @@ class XiaoshiTimerView(HomeAssistantView):
     async def get(self, request):
         entity_id = request.query.get("entity_id")
         if entity_id:
-            result = self._tm.get_timer(entity_id)
-            if result is None:
-                return self.json_message(
-                    f"No timer for {entity_id}", status_code=404
-                )
-            return self.json(result)
+            return self.json(self._tm.get_timer(entity_id))
         return self.json(self._tm.get_all_timers())
 
     # ---- DELETE: 删除 ----
