@@ -1007,17 +1007,24 @@ class XiaoshiPhoneFanCard extends LitElement {
         border-radius: 50%;
         background: var(--button-bg);
         overflow: hidden;
+        transition: transform 0.15s;
       }
 
+      .dir-bg:active {
+        transform: scale(0.95);
+      }
+      
       .dir扇 {
         position: absolute;
         width: 100%;
         height: 100%;
-        transition: filter 0.2s;
+        transition: background 0.15s;
+        cursor: pointer;
+        background: transparent;
       }
 
-      .dir扇:hover {
-        filter: brightness(1.2);
+      .dir扇:active {
+        background: var(--active-color);
       }
 
       .dir扇-up {
@@ -1044,12 +1051,14 @@ class XiaoshiPhoneFanCard extends LitElement {
         background: transparent;
         transition: color 0.2s;
         z-index: 10;
+        pointer-events: none;
         width: 30px;
         height: 30px;
         display: flex;
         align-items: center;
         justify-content: center;
       }
+
 
       .dir-btn ha-icon {
         --mdc-icon-size: 22px;
@@ -1067,14 +1076,20 @@ class XiaoshiPhoneFanCard extends LitElement {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 35px;
-        height: 35px;
+        width: 27px;
+        height: 27px;
         border-radius: 50%;
         background: var(--secondary-bg);
         z-index: 20;
+        pointer-events: auto;
         display: flex;
         align-items: center;
         justify-content: center;
+      }
+
+      .dir-btn.center:active {
+        background: var(--theme-bg-active, rgba(16, 202, 248, 0.9));
+        transform: translate(-50%, -50%) scale(0.95);
       }
 
       .dir-btn.center ha-icon {
