@@ -2482,7 +2482,7 @@ class XiaoshiPadClimateCard extends LitElement {
         align-items: center;
         justify-content: center;
         gap: 6px;
-        padding: 6px 4px;
+        padding: 0px 4px;
       }
 
       .timer-h-btn {
