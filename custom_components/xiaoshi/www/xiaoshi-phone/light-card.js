@@ -52,9 +52,9 @@ class XiaoshiPhonelightCardEditor extends LitElement {
     this._filteredEntities[index] = allEntities.filter(entity => {
       const entityId = entity.entity_id.toLowerCase();
       const friendlyName = (entity.attributes.friendly_name || '').toLowerCase();
-      const isLightType = entityId.startsWith('light.');
+      const isSupportedType = entityId.startsWith('light.') || entityId.startsWith('switch.');
       const matchesSearch = entityId.includes(searchTerm) || friendlyName.includes(searchTerm);
-      return isLightType && matchesSearch;
+      return isSupportedType && matchesSearch;
     }).slice(0, 50);
 
     this.requestUpdate();
@@ -292,7 +292,7 @@ class XiaoshiPhonelightCardEditor extends LitElement {
                     @input=${(e) => this._onEntitySearch(e, index)}
                     @focus=${(e) => this._onEntitySearch(e, index)}
                     .value=${this._entitySearchTerms?.[index] || entity || ''}
-                    placeholder="搜索 light 实体..."
+                    placeholder="搜索 light/switch 实体..."
                     class="entity-search-input"
                   />
                   ${this._showEntityLists?.[index] ? html`
@@ -988,7 +988,8 @@ class XiaoshiPhonelightCard extends LitElement {
   }
 
   _togglePower(entity) {
-    this.hass.callService('light', 'toggle', { entity_id: entity });
+    const domain = entity.split('.')[0];
+    this.hass.callService(domain, 'toggle', { entity_id: entity });
     this._handleClick();
     const button = this.shadowRoot.querySelector(`[data-entity="${entity}"] .power-button`);
     if (button) {
@@ -998,9 +999,15 @@ class XiaoshiPhonelightCard extends LitElement {
   }
 
   _turnOffAll() {
-    this.hass.callService('light', 'turn_off', {
-      entity_id: this.config.entities
-    });
+    const entities = this.config.entities;
+    const lightEntities = entities.filter(e => e.split('.')[0] === 'light');
+    const switchEntities = entities.filter(e => e.split('.')[0] === 'switch');
+    if (lightEntities.length > 0) {
+      this.hass.callService('light', 'turn_off', { entity_id: lightEntities });
+    }
+    if (switchEntities.length > 0) {
+      this.hass.callService('switch', 'turn_off', { entity_id: switchEntities });
+    }
     const button = this.shadowRoot.querySelector('.all-off-button');
     if (button) {
       button.style.transform = 'scale(0.8)';
@@ -1009,6 +1016,7 @@ class XiaoshiPhonelightCard extends LitElement {
   }
 
   async _adjustBrightness(entity, value) {
+    if (entity.split('.')[0] !== 'light') return;
     const attributes = this.hass.states[entity]?.attributes || {};
     const params = { brightness: Math.max(5, Math.min(255, value)) };
     if (this.hass.states[entity]?.state === 'off') {
@@ -1028,6 +1036,7 @@ class XiaoshiPhonelightCard extends LitElement {
   }
 
   async _adjustColorTemp(entity, value) {
+    if (entity.split('.')[0] !== 'light') return;
     const attributes = this.hass.states[entity]?.attributes || {};
     const params = {};
     if (attributes.color_temp_kelvin !== undefined) {
@@ -1074,6 +1083,7 @@ class XiaoshiPhonelightCard extends LitElement {
   }
 
   _activateScene(entity, scene) {
+    if (entity.split('.')[0] !== 'light') return;
     this._handleClick();
     this.hass.callService('light', 'turn_on', {
       entity_id: entity,
