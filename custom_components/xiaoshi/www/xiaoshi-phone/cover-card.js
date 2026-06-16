@@ -3,8 +3,8 @@ import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-e
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-cover-card',
-    name: '消逝窗帘、卷帘卡片',
-    description: '移动端消逝窗帘、卷帘卡片',
+    name: '消逝(B移动端)-窗帘/卷帘卡片',
+    description: '移动端窗帘/卷帘卡片',
     preview: true
 });
 

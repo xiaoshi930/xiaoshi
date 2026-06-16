@@ -3,10 +3,9 @@ import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-e
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "xiaoshi-music-player",
-  name: "音乐播放器",
-  description: "一个功能完整的音乐播放器控制卡片",
-  preview: true,
-  documentationURL: "https://github.com/xiaoshi930/music_player"
+  name: "消逝卡(B移动端)-音乐播放器",
+  description: "移动端音乐播放器",
+  preview: true
 });
 
 class MusicPlayerEditor extends LitElement {

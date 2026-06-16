@@ -3,7 +3,7 @@ import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-e
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-phone-other-card',
-    name: '消逝卡(移动端)-其他设备卡',
+    name: '消逝卡(B移动端)-其他设备卡',
     description: '移动端其他设备卡',
     preview: true
 }); 
@@ -149,9 +149,6 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
       _temperatureSearchTerm: { type: String },
       _filteredTemperatureEntities: { type: Array },
       _showTemperatureList: { type: Boolean },
-      _timerSearchTerm: { type: String },
-      _filteredTimerEntities: { type: Array },
-      _showTimerList: { type: Boolean },
       _buttonSearchTerms: { type: Object },
       _filteredButtonEntities: { type: Object },
       _showButtonLists: { type: Boolean },
@@ -173,7 +170,6 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
       if (!e.target.closest('.entity-selector')) {
         this._showEntityList = false;
         this._showTemperatureList = false;
-        this._showTimerList = false;
 
         if (this._showButtonLists) {
           Object.keys(this._showButtonLists).forEach(key => {
@@ -258,41 +254,6 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
 
     this._temperatureSearchTerm = '';
     this._showTemperatureList = false;
-
-    this._fireEvent();
-    this.requestUpdate();
-  }
-
-  _onTimerSearch(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    this._timerSearchTerm = searchTerm;
-    this._showTimerList = true;
-
-    if (!this.hass) return;
-
-    const allEntities = Object.values(this.hass.states);
-
-    this._filteredTimerEntities = allEntities.filter(entity => {
-      const entityId = entity.entity_id.toLowerCase();
-      const friendlyName = (entity.attributes.friendly_name || '').toLowerCase();
-
-      const isTimerEntity = entityId.startsWith('timer.');
-      const matchesSearch = entityId.includes(searchTerm) || friendlyName.includes(searchTerm);
-
-      return isTimerEntity && matchesSearch;
-    }).slice(0, 50);
-
-    this.requestUpdate();
-  }
-
-  _selectTimer(entityId) {
-    this.config = {
-      ...this.config,
-      timer: entityId
-    };
-
-    this._timerSearchTerm = '';
-    this._showTimerList = false;
 
     this._fireEvent();
     this.requestUpdate();
@@ -1155,47 +1116,10 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
           />
         </div>
 
-        <!-- 定时器 -->
+        <!-- 启用定时器 -->
         <div class="form-row">
-          <label>定时器实体</label>
-          <div class="entity-selector-with-remove">
-            <div class="entity-selector">
-              <input
-                type="text"
-                @input=${this._onTimerSearch}
-                @focus=${this._onTimerSearch}
-                .value=${this._timerSearchTerm || this.config.timer || ''}
-                placeholder="搜索定时器..."
-                class="entity-search-input"
-              />
-              ${this._showTimerList ? html`
-                <div class="entity-dropdown">
-                  ${this._filteredTimerEntities.map(entity => html`
-                    <div
-                      class="entity-option ${this.config.timer === entity.entity_id ? 'selected' : ''}"
-                      @click=${() => this._selectTimer(entity.entity_id)}
-                    >
-                      <div class="entity-info">
-                        <ha-icon icon="${entity.attributes.icon || 'mdi:help-circle'}"></ha-icon>
-                        <div class="entity-details">
-                          <div class="entity-name">${entity.attributes.friendly_name || entity.entity_id}</div>
-                          <div class="entity-id">${entity.entity_id}</div>
-                        </div>
-                      </div>
-                      ${this.config.timer === entity.entity_id ?
-                        html`<ha-icon icon="mdi:check" class="check-icon"></ha-icon>` : ''}
-                    </div>
-                  `)}
-                  ${this._filteredTimerEntities.length === 0 ? html`
-                    <div class="no-results">未找到匹配的实体</div>
-                  ` : ''}
-                </div>
-              ` : ''}
-            </div>
-            <button class="remove-button" @click=${this._removeTimer} title="移除定时器">
-              <ha-icon icon="mdi:close"></ha-icon>
-            </button>
-          </div>
+          <label>启用定时器</label>
+          <input type="checkbox" ?checked=${this.config.enable_timer || false} @change=${(e) => { this.config = { ...this.config, enable_timer: e.target.checked }; this._fireEvent(); }} />
         </div>
 
         <!-- 按钮排 -->
@@ -1687,21 +1611,6 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
     this.requestUpdate();
   }
 
-  _removeTimer() {
-    if (!this.config) return;
-
-    this._timerSearchTerm = '';
-    this._showTimerList = false;
-    this._filteredTimerEntities = [];
-
-    this.config = {
-      ...this.config,
-      timer: undefined
-    };
-    this._fireEvent();
-    this.requestUpdate();
-  }
-
   _themeSelectChanged(e) {
     if (!this.config) return;
     const theme = e.target.value;
@@ -1769,9 +1678,6 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
     this._temperatureSearchTerm = '';
     this._filteredTemperatureEntities = [];
     this._showTemperatureList = false;
-    this._timerSearchTerm = '';
-    this._filteredTimerEntities = [];
-    this._showTimerList = false;
     this._buttonSearchTerms = {};
     this._filteredButtonEntities = {};
     this._showButtonLists = {};
@@ -2369,6 +2275,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
     this.theme = 'system';
     this.width = '100%';
     this._timerInterval = null;
+    this._timerRemaining = 0;
+    this._xiaoshiTimerDeadline = null;
     this.temperatureData = [];
     this.canvas = null;
     this.ctx = null;
@@ -2657,8 +2565,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
     const translatedState = stateTranslations[state] || state;
     const stateDisplayValue = this.config.state_display ? this._evalTemplate(this.config.state_display) : translatedState;
 
-    const hasTimer = this.config.timer;
-    const timerEntity = hasTimer ? this.hass.states[this.config.timer] : null;
+    const hasTimer = this.config.enable_timer;
     const buttonRows = this.button_rows || [];
     const hasExtra = this.buttons && this.buttons.length > 0;
     const hasExtra2 = this.buttons2 && this.buttons2.length > 0;
@@ -2739,7 +2646,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
 
           ${hasTimer ? html`
               <div class="timer-area">
-                  ${this._renderTimerControls(timerEntity)}
+                  ${this._renderTimerControls()}
               </div>
           ` : ''}
 
@@ -2816,9 +2723,31 @@ class XiaoshiPhoneOtherCard extends LitElement {
   }
 
   _startTimerRefresh() {
-      this._timerInterval = setInterval(() => {
-          this.requestUpdate();
-      }, 1000);
+    if (this._timerInterval) clearInterval(this._timerInterval);
+    // 立即获取一次最新状态
+    if (this.config.enable_timer !== false) {
+      this._fetchXiaoshiTimer();
+    }
+    this._timerInterval = setInterval(() => {
+      if (this.config.enable_timer !== false) {
+        if (this._xiaoshiTimerDeadline) {
+          const remaining = Math.max(0, Math.floor((new Date(this._xiaoshiTimerDeadline) - new Date()) / 1000));
+          if (remaining !== this._timerRemaining) {
+            this._timerRemaining = remaining;
+            if (remaining <= 0) {
+              this._xiaoshiTimerDeadline = null;
+            }
+          }
+        }
+        this.requestUpdate();
+      }
+    }, 1000);
+    if (this._timerPollInterval) clearInterval(this._timerPollInterval);
+    this._timerPollInterval = setInterval(() => {
+      if (this.config.enable_timer !== false) {
+        this._fetchXiaoshiTimer();
+      }
+    }, 5000);
   }
 
   _stopTimerRefresh() {
@@ -2828,8 +2757,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
       }
   }
 
-  _renderTimerControls(timerEntity) {
-    if (!timerEntity) return html``;
+  _renderTimerControls() {
+    if (!this.config.enable_timer) return html``;
 
     const mainEntity = this.hass.states[this.config.entity];
     const mainState = mainEntity ? mainEntity.state : 'off';
@@ -2839,18 +2768,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
     const cardAccentRaw = this.config.accent_color || '';
     const cardAccentColor = cardAccentRaw ? this._evalTemplate(cardAccentRaw) : '';
     if (cardAccentColor) activeColor = cardAccentColor;
-    const now = new Date();
-    const finishesAt = new Date(timerEntity.attributes.finishes_at || 0);
-    let remainingSeconds = Math.max(0, Math.floor((finishesAt - now) / 1000));
-  
-    const state = timerEntity.state;
-    if (state !== 'active') {
-        remainingSeconds = 0;
-    } else if (remainingSeconds <= 0) {
-        this._turnOffEntity();
-        this._cancelTimer();
-        remainingSeconds = 0;
-    }
+
+    let remainingSeconds = this._timerRemaining || 0;
     
     const remainingTime = this._formatSeconds(remainingSeconds);
     const displayColor = remainingSeconds > 0 ? activeColor : 'var(--button-fg)';
@@ -2914,7 +2833,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
   }
 
   _adjustTimer(direction, currentSeconds) {
-      if (!this.config.timer) return;
+      this._handleClick();
+      if (!this.config.enable_timer) return;
       
       const currentMinutes = Math.ceil(currentSeconds / 60);
       let newSeconds = 0;
@@ -2924,12 +2844,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
               newSeconds = currentSeconds - (30 * 60);
           } else if (currentMinutes > 10) {
               newSeconds = currentSeconds - (10 * 60);
-          } else if (domain === 'cover' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
-            const coverActions = ['open', 'stop', 'close'];
-            coverActions.forEach(action => {
-                renderUnits.push({ item, entity, domain, coverAction: action });
-            });
-        } else {
+          } else {
               this._cancelTimer();
               return;
           }
@@ -2940,12 +2855,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
               newSeconds = currentSeconds + (10 * 60);
           } else if (currentMinutes < 180) {
               newSeconds = currentSeconds + (30 * 60);
-          } else if (domain === 'cover' && item.mode !== 'slider' && item.mode !== 'sun_slider') {
-            const coverActions = ['open', 'stop', 'close'];
-            coverActions.forEach(action => {
-                renderUnits.push({ item, entity, domain, coverAction: action });
-            });
-        } else {
+          } else {
               newSeconds = currentSeconds + (60 * 60);
           }
       }
@@ -2954,25 +2864,15 @@ class XiaoshiPhoneOtherCard extends LitElement {
   }
 
   _cancelTimer() {
-      if (!this.config.timer) return;
-      this._callService('timer', 'cancel', {
-          entity_id: this.config.timer
-      });
+      this._handleClick();
+      if (!this.config.enable_timer) return;
+      this._deleteXiaoshiTimer();
   }
 
   _setTimer(totalSeconds) {
-      if (!this.config.timer) return;
-      const now = new Date();
-      const finishesAt = new Date(now.getTime() + totalSeconds * 1000);
-      if (this.hass.states[this.config.timer].state === 'active') {
-          this._callService('timer', 'cancel', {
-              entity_id: this.config.timer
-          });
-      }
-      this._callService('timer', 'start', {
-          entity_id: this.config.timer,
-          duration: this._formatSeconds(totalSeconds)
-      });
+      this._handleClick();
+      if (!this.config.enable_timer) return;
+      this._createXiaoshiTimer(totalSeconds);
   }
 
   _renderButtonRowItems(rowIndex) {
@@ -3811,6 +3711,65 @@ class XiaoshiPhoneOtherCard extends LitElement {
           return val.slice(1, -1);
       }
       return val;
+  }
+
+  async _fetchXiaoshiTimer() {
+    if (!this.hass || !this.config.enable_timer || !this.config.entity) return;
+    try {
+      const data = await this.hass.callApi(
+        'GET',
+        `xiaoshi/timer?entity_id=${encodeURIComponent(this.config.entity)}`
+      );
+      if (data && data.remaining > 0) {
+        this._xiaoshiTimerDeadline = data.deadline;
+        this._timerRemaining = data.remaining;
+      } else {
+        this._xiaoshiTimerDeadline = null;
+        this._timerRemaining = 0;
+      }
+    } catch (e) {
+      this._xiaoshiTimerDeadline = null;
+      this._timerRemaining = 0;
+    }
+    this.requestUpdate();
+  }
+
+  async _createXiaoshiTimer(seconds) {
+    if (!this.hass || !this.config.entity) return;
+    try {
+      const entityId = this.config.entity;
+      const serviceDomain = entityId.split('.')[0];
+      const data = await this.hass.callApi(
+        'POST',
+        'xiaoshi/timer',
+        {
+          entity_id: entityId,
+          service_domain: serviceDomain,
+          service_name: 'turn_off',
+          countdown: seconds
+        }
+      );
+      this._xiaoshiTimerDeadline = data.deadline;
+      this._timerRemaining = seconds;
+    } catch (e) {
+      console.error('Failed to create timer:', e);
+    }
+    this.requestUpdate();
+  }
+
+  async _deleteXiaoshiTimer() {
+    if (!this.hass || !this.config.entity) return;
+    try {
+      await this.hass.callApi(
+        'DELETE',
+        `xiaoshi/timer?entity_id=${encodeURIComponent(this.config.entity)}`
+      );
+    } catch (e) {
+      console.error('Failed to delete timer:', e);
+    }
+    this._xiaoshiTimerDeadline = null;
+    this._timerRemaining = 0;
+    this.requestUpdate();
   }
 } 
 customElements.define('xiaoshi-phone-other-card', XiaoshiPhoneOtherCard);

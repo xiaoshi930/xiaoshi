@@ -3,9 +3,9 @@ import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-e
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "xiaoshi-tv-player",
-  name: "消逝电视播放器",
-  description: "消逝电视播放器",
-  preview: true,
+  name: "消逝卡(B移动端)-电视播放器",
+  description: "移动端电视播放器",
+  preview: true
 });
 
 class TvPlayerEditor extends LitElement {

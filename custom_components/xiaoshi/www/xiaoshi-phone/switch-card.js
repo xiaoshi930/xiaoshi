@@ -3,7 +3,7 @@ import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-e
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-phone-switch-card',
-    name: '消逝卡(移动端)-插座卡',
+    name: '消逝卡(B移动端)-插座卡',
     description: '移动端插座卡'
 });  
 

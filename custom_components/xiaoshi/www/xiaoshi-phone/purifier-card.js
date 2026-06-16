@@ -3,7 +3,7 @@ import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-e
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-phone-purifier-card',
-    name: '消逝卡(移动端)-净化器卡',
+    name: '消逝卡(B移动端)-净化器卡',
     description: '移动端净化器卡',
     preview: true
 });
@@ -31,9 +31,6 @@ class XiaoshiPhonePurifierCardEditor extends LitElement {
       _humiditySearchTerm: { type: String },
       _filteredHumidityEntities: { type: Array },
       _showHumidityList: { type: Boolean },
-      _timerSearchTerm: { type: String },
-      _filteredTimerEntities: { type: Array },
-      _showTimerList: { type: Boolean },
       _buttonSearchTerms: { type: Object },
       _filteredButtonEntities: { type: Object },
       _showButtonLists: { type: Object }
@@ -54,7 +51,6 @@ class XiaoshiPhonePurifierCardEditor extends LitElement {
         this._showPM25List = false;
         this._showTemperatureList = false;
         this._showHumidityList = false;
-        this._showTimerList = false;
 
         // 关闭所有按钮的下拉列表
         if (this._showButtonLists) {
@@ -292,41 +288,6 @@ class XiaoshiPhonePurifierCardEditor extends LitElement {
 
     this._humiditySearchTerm = '';
     this._showHumidityList = false;
-
-    this._fireEvent();
-    this.requestUpdate();
-  }
-
-  _onTimerSearch(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    this._timerSearchTerm = searchTerm;
-    this._showTimerList = true;
-
-    if (!this.hass) return;
-
-    const allEntities = Object.values(this.hass.states);
-
-    this._filteredTimerEntities = allEntities.filter(entity => {
-      const entityId = entity.entity_id.toLowerCase();
-      const friendlyName = (entity.attributes.friendly_name || '').toLowerCase();
-
-      const isTimerEntity = entityId.startsWith('timer.');
-      const matchesSearch = entityId.includes(searchTerm) || friendlyName.includes(searchTerm);
-
-      return isTimerEntity && matchesSearch;
-    }).slice(0, 50);
-
-    this.requestUpdate();
-  }
-
-  _selectTimer(entityId) {
-    this.config = {
-      ...this.config,
-      timer: entityId
-    };
-
-    this._timerSearchTerm = '';
-    this._showTimerList = false;
 
     this._fireEvent();
     this.requestUpdate();
@@ -778,47 +739,10 @@ class XiaoshiPhonePurifierCardEditor extends LitElement {
           </div>
         </div>
 
-        <!-- 定时器 -->
+        <!-- 启用定时器 -->
         <div class="row">
-          <div class="label">定时器实体 (可选)</div>
-          <div class="entity-selector-with-remove">
-            <div class="entity-selector">
-              <input
-                type="text"
-                @input=${this._onTimerSearch}
-                @focus=${this._onTimerSearch}
-                .value=${this._timerSearchTerm || this.config.timer || ''}
-                placeholder="搜索定时器..."
-                class="entity-search-input"
-              />
-              ${this._showTimerList ? html`
-                <div class="entity-dropdown">
-                  ${this._filteredTimerEntities.map(entity => html`
-                    <div
-                      class="entity-option ${this.config.timer === entity.entity_id ? 'selected' : ''}"
-                      @click=${() => this._selectTimer(entity.entity_id)}
-                    >
-                      <div class="entity-info">
-                        <ha-icon icon="${entity.attributes.icon || 'mdi:timer'}"></ha-icon>
-                        <div class="entity-details">
-                          <div class="entity-name">${entity.attributes.friendly_name || entity.entity_id}</div>
-                          <div class="entity-id">${entity.entity_id}</div>
-                        </div>
-                      </div>
-                      ${this.config.timer === entity.entity_id ?
-                        html`<ha-icon icon="mdi:check" class="check-icon"></ha-icon>` : ''}
-                    </div>
-                  `)}
-                  ${this._filteredTimerEntities.length === 0 ? html`
-                    <div class="no-results">未找到匹配的实体</div>
-                  ` : ''}
-                </div>
-              ` : ''}
-            </div>
-            <button class="remove-button" @click=${this._removeTimer} title="移除定时器">
-              <ha-icon icon="mdi:close"></ha-icon>
-            </button>
-          </div>
+          <div class="label">启用定时器</div>
+          <input type="checkbox" ?checked=${this.config.enable_timer !== false} @change=${(e) => { this.config = { ...this.config, enable_timer: e.target.checked }; this._fireEvent(); }} />
         </div>
 
         <!-- 主题选择 -->
@@ -948,13 +872,6 @@ class XiaoshiPhonePurifierCardEditor extends LitElement {
     this._fireEvent();
   }
 
-  _removeTimer() {
-    const newConfig = { ...this.config };
-    delete newConfig.timer;
-    this.config = newConfig;
-    this._fireEvent();
-  }
-
   _themeSelectChanged(ev) {
     if (!this.config) return;
     const theme = ev.target.value;
@@ -994,6 +911,8 @@ class XiaoshiPhonePurifierCard extends LitElement {
       buttons: { type: Array },
       theme: { type: String },
       _timerInterval: { state: true },
+      _timerRemaining: { state: true },
+      _xiaoshiTimerDeadline: { state: true },
       purifierData: { type: Array },
       _externalPurifierSensor: { type: String },
       _fanModeSelectEntity: { type: String },
@@ -1010,7 +929,7 @@ class XiaoshiPhonePurifierCard extends LitElement {
   static getStubConfig() {
     return {
       entity: "",
-      timer: "",
+      enable_timer: false,
       theme: "system",
       buttons: [],
       width: "100%"
@@ -1411,6 +1330,8 @@ class XiaoshiPhonePurifierCard extends LitElement {
     this.theme = 'system';
     this.width = '100%';
     this._timerInterval = null;
+    this._timerRemaining = 0;
+    this._xiaoshiTimerDeadline = null;
     this.purifierData = [];
     this.canvas = null;
     this.ctx = null;
@@ -1744,8 +1665,7 @@ class XiaoshiPhonePurifierCard extends LitElement {
     }
     if (currentFanMode === 'unavailable')  currentFanMode = ' ';
     
-    const hasTimer = this.config.timer;
-    const timerEntity = hasTimer ? this.hass.states[this.config.timer] : null;
+    const hasTimer = this.config.enable_timer !== false;
     const hasExtra = this.buttons && this.buttons.length > 0;
     
     const gridPurifierlateRows = [
@@ -1832,7 +1752,7 @@ class XiaoshiPhonePurifierCard extends LitElement {
 
           ${hasTimer ? html`
               <div class="timer-area">
-                  ${this._renderTimerControls(timerEntity)}
+                  ${this._renderTimerControls()}
               </div>
           ` : ''}
 
@@ -1857,9 +1777,31 @@ class XiaoshiPhonePurifierCard extends LitElement {
   }
 
   _startTimerRefresh() {
-      this._timerInterval = setInterval(() => {
-          this.requestUpdate();
-      }, 1000);
+    if (this._timerInterval) clearInterval(this._timerInterval);
+    // 立即获取一次最新状态
+    if (this.config.enable_timer !== false) {
+      this._fetchXiaoshiTimer();
+    }
+    this._timerInterval = setInterval(() => {
+      if (this.config.enable_timer !== false) {
+        if (this._xiaoshiTimerDeadline) {
+          const remaining = Math.max(0, Math.floor((new Date(this._xiaoshiTimerDeadline) - new Date()) / 1000));
+          if (remaining !== this._timerRemaining) {
+            this._timerRemaining = remaining;
+            if (remaining <= 0) {
+              this._xiaoshiTimerDeadline = null;
+            }
+          }
+        }
+        this.requestUpdate();
+      }
+    }, 1000);
+    if (this._timerPollInterval) clearInterval(this._timerPollInterval);
+    this._timerPollInterval = setInterval(() => {
+      if (this.config.enable_timer !== false) {
+        this._fetchXiaoshiTimer();
+      }
+    }, 5000);
   }
 
   _stopTimerRefresh() {
@@ -1869,8 +1811,8 @@ class XiaoshiPhonePurifierCard extends LitElement {
       }
   }
 
-  _renderTimerControls(timerEntity) {
-    if (!timerEntity) return html``;
+  _renderTimerControls() {
+    if (this.config.enable_timer === false) return html``;
 
     const purifierEntity = this.hass.states[this.config.entity];
     const purifierState = purifierEntity ? purifierEntity.state : 'off';
@@ -1878,18 +1820,7 @@ class XiaoshiPhonePurifierCard extends LitElement {
     let activeColor = 'rgb(255,255,255)';
     if (purifierState === 'on') activeColor = 'rgb(50,205,50)';
     
-    const now = new Date();
-    const finishesAt = new Date(timerEntity.attributes.finishes_at || 0);
-    let remainingSeconds = Math.max(0, Math.floor((finishesAt - now) / 1000));
-  
-    const state = timerEntity.state;
-    if (state !== 'active') {
-        remainingSeconds = 0;
-    } else if (remainingSeconds <= 0) {
-        this._turnOffPurifier();
-        this._cancelTimer();
-        remainingSeconds = 0;
-    }
+    let remainingSeconds = this._timerRemaining || 0;
     
     const remainingTime = this._formatSeconds(remainingSeconds);
     const displayColor = remainingSeconds > 0 ? activeColor : 'var(--button-fg)';
@@ -1953,7 +1884,8 @@ class XiaoshiPhonePurifierCard extends LitElement {
   }
 
   _adjustTimer(direction, currentSeconds) {
-      if (!this.config.timer) return;
+      this._handleClick();
+      if (this.config.enable_timer === false) return;
       
       const currentMinutes = Math.ceil(currentSeconds / 60);
       let newSeconds = 0;
@@ -1983,25 +1915,15 @@ class XiaoshiPhonePurifierCard extends LitElement {
   }
 
   _cancelTimer() {
-      if (!this.config.timer) return;
-      this._callService('timer', 'cancel', {
-          entity_id: this.config.timer
-      });
+      this._handleClick();
+      if (this.config.enable_timer === false) return;
+      this._deleteXiaoshiTimer();
   }
 
   _setTimer(totalSeconds) {
-      if (!this.config.timer) return;
-      const now = new Date();
-      const finishesAt = new Date(now.getTime() + totalSeconds * 1000);
-      if (this.hass.states[this.config.timer].state === 'active') {
-          this._callService('timer', 'cancel', {
-              entity_id: this.config.timer
-          });
-      }
-      this._callService('timer', 'start', {
-          entity_id: this.config.timer,
-          duration: this._formatSeconds(totalSeconds)
-      });
+      this._handleClick();
+      if (this.config.enable_timer === false) return;
+      this._createXiaoshiTimer(totalSeconds);
   }
 
   _renderExtraButtons() {
@@ -2473,6 +2395,65 @@ class XiaoshiPhonePurifierCard extends LitElement {
           this._handleClick();
       }
       
+  }
+
+  async _fetchXiaoshiTimer() {
+    if (!this.hass || this.config.enable_timer === false || !this.config.entity) return;
+    try {
+      const data = await this.hass.callApi(
+        'GET',
+        `xiaoshi/timer?entity_id=${encodeURIComponent(this.config.entity)}`
+      );
+      if (data && data.remaining > 0) {
+        this._xiaoshiTimerDeadline = data.deadline;
+        this._timerRemaining = data.remaining;
+      } else {
+        this._xiaoshiTimerDeadline = null;
+        this._timerRemaining = 0;
+      }
+    } catch (e) {
+      this._xiaoshiTimerDeadline = null;
+      this._timerRemaining = 0;
+    }
+    this.requestUpdate();
+  }
+
+  async _createXiaoshiTimer(seconds) {
+    if (!this.hass || !this.config.entity) return;
+    try {
+      const entityId = this.config.entity;
+      const serviceDomain = entityId.split('.')[0];
+      const data = await this.hass.callApi(
+        'POST',
+        'xiaoshi/timer',
+        {
+          entity_id: entityId,
+          service_domain: serviceDomain,
+          service_name: 'turn_off',
+          countdown: seconds
+        }
+      );
+      this._xiaoshiTimerDeadline = data.deadline;
+      this._timerRemaining = seconds;
+    } catch (e) {
+      console.error('Failed to create timer:', e);
+    }
+    this.requestUpdate();
+  }
+
+  async _deleteXiaoshiTimer() {
+    if (!this.hass || !this.config.entity) return;
+    try {
+      await this.hass.callApi(
+        'DELETE',
+        `xiaoshi/timer?entity_id=${encodeURIComponent(this.config.entity)}`
+      );
+    } catch (e) {
+      console.error('Failed to delete timer:', e);
+    }
+    this._xiaoshiTimerDeadline = null;
+    this._timerRemaining = 0;
+    this.requestUpdate();
   }
 
   _callService(domain, service, data) {

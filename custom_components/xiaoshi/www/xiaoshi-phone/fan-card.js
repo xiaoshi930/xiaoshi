@@ -3,7 +3,7 @@ import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-e
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-phone-fan-card',
-    name: '消逝卡(移动端)-循环扇/风扇卡',
+    name: '消逝卡(B移动端)-循环扇/风扇卡',
     description: '移动端循环扇/风扇卡',
     preview: true
 });
@@ -136,7 +136,6 @@ class XiaoshiPhoneFanCardEditor extends LitElement {
       { key: 'continuous_right', label: '开始向右转switch', filter: 'switch.' },
       { key: 'reset_position', label: '一键回正switch', filter: 'switch.' },
       { key: 'speed_level', label: '风速档位number', filter: 'number.' },
-      { key: 'timer', label: '定时器timer', filter: 'timer.' },
     ];
 
     const normalFanEntitySelectors = [
@@ -144,7 +143,6 @@ class XiaoshiPhoneFanCardEditor extends LitElement {
       { key: 'fan_mode', label: '风扇模式select', filter: 'select.' },
       { key: 'temperature', label: '温度传感器sensor', filter: 'sensor.' },
       { key: 'humidity', label: '湿度传感器sensor', filter: 'sensor.' },
-      { key: 'timer', label: '定时器timer', filter: 'timer.' },
     ];
 
     return html`
@@ -231,6 +229,11 @@ class XiaoshiPhoneFanCardEditor extends LitElement {
             </div>
           </div>
         `)}
+
+        <div class="form-group">
+          <label>启用定时器</label>
+          <input type="checkbox" ?checked=${this.config.enable_timer !== false} @change=${(e) => { this.config = { ...this.config, enable_timer: e.target.checked }; this._fireEvent(); }} />
+        </div>
 
         <!-- 附加按钮 (最多7个) -->
         <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -1300,6 +1303,9 @@ class XiaoshiPhoneFanCard extends LitElement {
     this._localSliderValue = 0;
     this._isSliderDragging = false;
     this._timerInterval = null;
+    this._timerPollInterval = null;
+    this._timerRemaining = 0;
+    this._xiaoshiTimerDeadline = null;
     this._timerWasActive = false;
     this.temperatureData = [];
     this.buttons = [];
@@ -1710,8 +1716,7 @@ class XiaoshiPhoneFanCard extends LitElement {
     const verticalAngles = [30, 60, 90];
 
     // 定时器和附加按钮
-    const hasTimer = this.config.timer;
-    const timerEntity = hasTimer ? this._getEntityState(this.config.timer) : null;
+    const hasTimer = this.config.enable_timer !== false;
     const hasExtra = this.buttons && this.buttons.length > 0;
     const hasExtra2 = this.buttons2 && this.buttons2.length > 0;
     const buttonCount = Math.min((this.buttons || []).length, 7);
@@ -2015,7 +2020,7 @@ class XiaoshiPhoneFanCard extends LitElement {
 
           ${hasTimer ? html`
             <div class="timer-area" style="${isNormalFan ? `grid-row: ${2 + normalFanRowOffset}; grid-column: 2; margin-left: -10px;` : ''}">
-              ${this._renderTimerControls(timerEntity)}
+              ${this._renderTimerControls()}
             </div>
           ` : ''}
 
@@ -2047,17 +2052,45 @@ class XiaoshiPhoneFanCard extends LitElement {
   }
 
   _startTimerRefresh() {
+    if (this._timerInterval) clearInterval(this._timerInterval);
+    // 立即获取一次最新状态
+    if (this.config.enable_timer !== false) {
+      this._fetchXiaoshiTimer();
+    }
     this._timerInterval = setInterval(() => {
-      this.requestUpdate();
+      if (this.config.enable_timer !== false) {
+        if (this._xiaoshiTimerDeadline) {
+          const remaining = Math.max(0, Math.floor((new Date(this._xiaoshiTimerDeadline) - new Date()) / 1000));
+          if (remaining !== this._timerRemaining) {
+            this._timerRemaining = remaining;
+            if (remaining <= 0) {
+              this._xiaoshiTimerDeadline = null;
+            }
+          }
+        }
+        this.requestUpdate();
+      }
     }, 1000);
+    if (this._timerPollInterval) clearInterval(this._timerPollInterval);
+    this._timerPollInterval = setInterval(() => {
+      if (this.config.enable_timer !== false) {
+        this._fetchXiaoshiTimer();
+      }
+    }, 5000);
   }
 
   _stopTimerRefresh() {
     if (this._timerInterval) {
       clearInterval(this._timerInterval);
       this._timerInterval = null;
-    this._timerWasActive = false;
     }
+    if (this._timerPollInterval) {
+      clearInterval(this._timerPollInterval);
+      this._timerPollInterval = null;
+    }
+    this._timerRemaining = 0;
+    this._xiaoshiTimerDeadline = null;
+    this._timerWasActive = false;
   }
 
   async firstUpdated() {
@@ -2273,33 +2306,15 @@ class XiaoshiPhoneFanCard extends LitElement {
     return slopes;
   }
 
-  _renderTimerControls(timerEntity) {
-    if (!timerEntity) return html``;
+  _renderTimerControls() {
+    if (this.config.enable_timer === false) return html``;
+
+    let remainingSeconds = this._timerRemaining || 0;
+
     const activeColor = 'rgb(0, 188, 213)';
-
-    const now = new Date();
-    const finishesAt = new Date(timerEntity.attributes.finishes_at || 0);
-    let remainingSeconds = Math.max(0, Math.floor((finishesAt - now) / 1000));
-
-    const state = timerEntity.state;
-    if (state === 'active' && remainingSeconds <= 0) {
-      this._turnOffFan();
-      this._cancelTimer();
-      remainingSeconds = 0;
-    } else if (state !== 'active') {
-      // 定时器结束（idle）且上次是active，关闭风扇
-      if (this._timerWasActive) {
-        this._turnOffFan();
-        this._timerWasActive = false;
-      }
-      remainingSeconds = 0;
-    } else {
-      this._timerWasActive = true;
-    }
-
     const remainingTime = this._formatSeconds(remainingSeconds);
     const displayColor = remainingSeconds > 0 ? activeColor : 'var(--button-fg)';
-
+    
     return html`
       <button class="timer-button" @click=${this._cancelTimer}>取消</button>
       <button class="timer-button" @click=${() => this._adjustTimer(-1, remainingSeconds)}>-</button>
@@ -2320,7 +2335,7 @@ class XiaoshiPhoneFanCard extends LitElement {
 
   _adjustTimer(direction, currentSeconds) {
     this._handleClick();
-    if (!this.config.timer) return;
+    if (this.config.enable_timer === false) return;
     const currentMinutes = Math.ceil(currentSeconds / 60);
     let newSeconds = 0;
     if (direction === -1) {
@@ -2348,20 +2363,14 @@ class XiaoshiPhoneFanCard extends LitElement {
 
   _cancelTimer() {
     this._handleClick();
-    if (!this.config.timer) return;
-    this._callService('timer', 'cancel', { entity_id: this.config.timer });
+    if (this.config.enable_timer === false) return;
+    this._deleteXiaoshiTimer();
   }
 
   _setTimer(totalSeconds) {
     this._handleClick();
-    if (!this.config.timer) return;
-    if (this._getEntityState(this.config.timer)?.state === 'active') {
-      this._callService('timer', 'cancel', { entity_id: this.config.timer });
-    }
-    this._callService('timer', 'start', {
-      entity_id: this.config.timer,
-      duration: this._formatSeconds(totalSeconds)
-    });
+    if (this.config.enable_timer === false) return;
+    this._createXiaoshiTimer(totalSeconds);
   }
 
   _turnOffFan() {
@@ -2489,6 +2498,65 @@ class XiaoshiPhoneFanCard extends LitElement {
     });
     hapticEvent.detail = 'light';
     this.dispatchEvent(hapticEvent);
+  }
+
+  async _fetchXiaoshiTimer() {
+    if (!this._hass || this.config.enable_timer === false || !this.config.entity) return;
+    try {
+      const data = await this.hass.callApi(
+        'GET',
+        `xiaoshi/timer?entity_id=${encodeURIComponent(this.config.entity)}`
+      );
+      if (data && data.remaining > 0) {
+        this._xiaoshiTimerDeadline = data.deadline;
+        this._timerRemaining = data.remaining;
+      } else {
+        this._xiaoshiTimerDeadline = null;
+        this._timerRemaining = 0;
+      }
+    } catch (e) {
+      this._xiaoshiTimerDeadline = null;
+      this._timerRemaining = 0;
+    }
+    this.requestUpdate();
+  }
+
+  async _createXiaoshiTimer(seconds) {
+    if (!this._hass || !this.config.entity) return;
+    try {
+      const entityId = this.config.entity;
+      const serviceDomain = entityId.split('.')[0];
+      const data = await this.hass.callApi(
+        'POST',
+        'xiaoshi/timer',
+        {
+          entity_id: entityId,
+          service_domain: serviceDomain,
+          service_name: 'turn_off',
+          countdown: seconds
+        }
+      );
+      this._xiaoshiTimerDeadline = data.deadline;
+      this._timerRemaining = seconds;
+    } catch (e) {
+      console.error('Failed to create timer:', e);
+    }
+    this.requestUpdate();
+  }
+
+  async _deleteXiaoshiTimer() {
+    if (!this._hass || !this.config.entity) return;
+    try {
+      await this.hass.callApi(
+        'DELETE',
+        `xiaoshi/timer?entity_id=${encodeURIComponent(this.config.entity)}`
+      );
+    } catch (e) {
+      console.error('Failed to delete timer:', e);
+    }
+    this._xiaoshiTimerDeadline = null;
+    this._timerRemaining = 0;
+    this.requestUpdate();
   }
 }
 customElements.define('xiaoshi-phone-fan-card', XiaoshiPhoneFanCard);
