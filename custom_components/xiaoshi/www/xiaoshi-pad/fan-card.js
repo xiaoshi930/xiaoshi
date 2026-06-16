@@ -661,12 +661,24 @@ class XiaoshiPadFanCard extends LitElement {
       .direction-container {
         flex: none;
         width: var(--card-width, 300px);
-        padding-top: 43px;
+        padding-top: 45px;
         height: 220px;
         position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
+      }
+
+      .direction-overlay-bg {
+        padding-top: 45px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 0;
+        border-radius: 15px 15px 0 0;
       }
 
       .theme-light {
@@ -839,7 +851,7 @@ class XiaoshiPadFanCard extends LitElement {
         border-radius: 10px;
         width: calc(100% - 20px);
         margin: 0 10px;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
         box-sizing: border-box;
       }
 
@@ -885,11 +897,11 @@ class XiaoshiPadFanCard extends LitElement {
         align-items: center;
         justify-content: center;
         gap: 6px;
-        padding: 6px 4px;
+        padding: 0px 4px;
       }
 
       .timer-h-btn {
-        height: 32px;
+        height: 40px;
         min-width: 24px;
         border: none;
         border-radius: 8px;
@@ -1487,6 +1499,9 @@ class XiaoshiPadFanCard extends LitElement {
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
     const activeColor = 'rgb(0, 188, 213)';
 
+    // 开启时径向渐变背景
+    const overlayGradient = isOn ? `radial-gradient(circle at center, rgba(0,188,213,0.95) 0%, rgba(0,188,213,0) 65%)` : '';
+
     // 获取温度
     let temperature = '-';
     if (this.config.temperature) {
@@ -1619,7 +1634,7 @@ class XiaoshiPadFanCard extends LitElement {
     }
     if (hasTimer) activeModeCount++;
 
-    const cardHeight = 290 + (activeModeCount * 48);
+    const cardHeight = 300 + (activeModeCount * 48);
 
     const cardWidth = this.config.width || '300px';
     const secondaryBg = theme === 'light' ? 'rgb(150, 150, 150)' : 'rgb(100, 100, 100)';
@@ -1644,6 +1659,7 @@ class XiaoshiPadFanCard extends LitElement {
         <div class="main-card" style="--bg-color: ${bgColor}; --fg-color: ${fgColor}; --card-width: ${cardWidth}; --active-color: ${activeColor}; --secondary-bg: ${secondaryBg};">
           <div class="fan-card ${themeClass}" style="height: ${cardHeight}px;">
             <div class="direction-container">
+              ${overlayGradient ? html`<div class="direction-overlay-bg" style="background: ${overlayGradient};"></div>` : ''}
               ${isNormalFan ? html`
                 <div class="normal-fan-icon-container">
                   <ha-icon icon="mdi:fan" class="${isOn ? 'fan-spinning' : ''}" style="--mdc-icon-size: 120px; color: ${isOn ? activeColor : secondaryBg};"></ha-icon>
