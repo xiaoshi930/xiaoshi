@@ -4,8 +4,8 @@ import { yamlToJson } from '../function/function.js';
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-avatar-pad-card',
-    name: '消逝平板端头像卡片',
-    description: '消逝平板端头像卡片',
+    name: '消逝(A平板端)-头像卡片',
+    description: '平板端头像卡片',
     preview: true
 });
 

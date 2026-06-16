@@ -4,8 +4,8 @@ import { yamlToJson } from '../function/function.js';
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-dynamic-pad-card',
-    name: '消逝平板端-右侧状态条',
-    description: '消逝平板端-右侧动态区域卡片',
+    name: '消逝(A平板端)-右侧状态条',
+    description: '平板端右侧动态区域卡片',
     preview: true
 });
 

@@ -3,9 +3,9 @@ import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-e
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-chinese-poetry-card',
-    name: '古诗词卡片',
-    description: '显示古诗词标题、朝代、作者、正文，支持刷新和播放',
-    documentationURL: 'https://github.com/xiaoshi'
+    name: '消逝(A平板端)-古诗词卡片',
+    description: '平板端古诗词卡片',
+    preview: true
 });
 
 class ChinesePoetryCardEditor extends LitElement {

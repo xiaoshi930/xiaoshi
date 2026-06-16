@@ -4,8 +4,8 @@ import { yamlToJson } from '../function/function.js';
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-pad-card',
-    name: '消逝卡(平板端)-背景卡',
-    description: '消逝卡(平板端)-背景卡'
+    name: '消逝卡(A平板端)-背景卡',
+    description: '平板端背景卡'
 });
 
 const PRESET_ON_STATES = [

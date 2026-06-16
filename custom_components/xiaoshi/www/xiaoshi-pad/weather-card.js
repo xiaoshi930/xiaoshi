@@ -4,8 +4,8 @@ window.customCards = window.customCards || [];
 window.customCards.push(
   {
     type: "xiaoshi-weather-pad-card",
-    name: "消逝天气卡片 - 平板端",
-    description: '消逝天气卡片 - 平板端',
+    name: "消逝(A平板端)-天气卡片",
+    description: '平板端天气卡片',
     preview: true
   }
 );

@@ -4,8 +4,8 @@ import { yamlToJson } from '../function/function.js';
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-pad-grid-card',
-    name: '消逝卡(平板端)-分布卡',
-    description: '温度分布、湿度分布'
+    name: '消逝卡(A平板端)-分布卡',
+    description: '平板端温度分布/湿度分布'
 });
 
 class XiaoshiPadGridCardEditor extends LitElement {

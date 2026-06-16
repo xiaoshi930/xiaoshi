@@ -4,8 +4,8 @@ import { yamlToJson } from '../function/function.js';
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-top-bar-card',
-    name: '消逝卡(平板端)-顶部状态条',
-    description: '消逝卡(平板端)-顶部状态条'
+    name: '消逝卡(A平板端)-顶部状态条',
+    description: '平板端顶部状态条'
 });
 
 class XiaoshiTopBarCardEditor extends LitElement {
