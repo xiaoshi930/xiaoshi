@@ -35,7 +35,7 @@ import('./xiaoshi-small/climate-card.js');
 import('./xiaoshi-small/humidifier-card.js');
 import('./xiaoshi-small/purifier-card.js');
 
-import('./xiaoshi-pad/pad-card.js');
+import('./xiaoshi-pad/fan-card.js');
 import('./xiaoshi-pad/avatar-card.js');
 import('./xiaoshi-pad/dynamic-card.js');
 import('./xiaoshi-pad/top-bar-card.js');
