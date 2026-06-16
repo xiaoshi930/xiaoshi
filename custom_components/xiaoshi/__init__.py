@@ -24,12 +24,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """通过 UI 配置流程设置"""
     await _register_static_resources(hass)
     await hass.config_entries.async_forward_entry_setups(entry, ["select"])
+
+    # 初始化定时器管理器
+    from .timer import TimerManager
+    from .http import register_views
+
+    timer_manager = TimerManager(hass)
+    hass.data.setdefault(DOMAIN, {})["timer_manager"] = timer_manager
+    register_views(hass, timer_manager)
+    _LOGGER.info("定时器管理功能已启动")
+
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """卸载集成条目"""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, ["select"])
+
+    # 清理所有定时器
+    timer_manager = hass.data.get(DOMAIN, {}).get("timer_manager")
+    if timer_manager:
+        await timer_manager.async_cleanup()
+
     return unload_ok
 
 
