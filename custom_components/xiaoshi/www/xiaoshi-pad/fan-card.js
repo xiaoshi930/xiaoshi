@@ -3,8 +3,8 @@ import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-e
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-pad-fan-card',
-    name: '消逝卡(A平板端)-循环扇卡',
-    description: '平板端循环扇卡',
+    name: '消逝卡(A平板端)-循环扇/风扇/净化器卡',
+    description: '平板端循环扇/风扇/净化器卡',
     preview: true
 });
 
@@ -141,8 +141,10 @@ class XiaoshiPadFanCardEditor extends LitElement {
     const normalFanEntitySelectors = [
       { key: 'entity', label: '风扇实体fan', filter: 'fan.' },
       { key: 'fan_mode', label: '风扇模式select', filter: 'select.' },
+      { key: 'favorite_speed', label: '最爱风速number', filter: 'number.' },
       { key: 'temperature', label: '温度传感器sensor', filter: 'sensor.' },
       { key: 'humidity', label: '湿度传感器sensor', filter: 'sensor.' },
+      { key: 'pm25', label: 'PM2.5传感器sensor', filter: 'sensor.' },
     ];
 
     return html`
@@ -180,7 +182,7 @@ class XiaoshiPadFanCardEditor extends LitElement {
             name="fan_type"
           >
             <option value="circulator">循环扇</option>
-            <option value="normal">普通风扇</option>
+            <option value="normal">普通风扇/净化器</option>
           </select>
         </div>
 
@@ -571,16 +573,6 @@ class XiaoshiPadFanCard extends LitElement {
 
   static getStubConfig() {
     return {
-      entity: "",
-      theme: "auto",
-      width: "100%",
-      fan_type: "circulator",
-      show_temperature: true,
-      show_direction_control: true,
-      show_oscillate: true,
-      timer: "",
-      buttons: [],
-      buttons2: [],
     };
   }
 
@@ -665,11 +657,12 @@ class XiaoshiPadFanCard extends LitElement {
         flex: none;
         width: var(--card-width, 300px);
         padding-top: 45px;
-        height: 220px;
+        min-height: 220px;
         position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
+        overflow: visible;
       }
 
       .direction-overlay-bg {
@@ -1106,8 +1099,181 @@ class XiaoshiPadFanCard extends LitElement {
       /* 普通风扇图标容器 */
       .normal-fan-icon-container {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        overflow: visible;
+      }
+
+      /* 风扇图标与文字覆盖层 */
+      .fan-icon-wrapper {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 200px;
+        height: 200px;
+      }
+
+      .fan-center-info {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        padding-top: 48px;
+        pointer-events: none;
+        line-height: 1.2;
+      }
+
+      .fan-mode-label {
+        font-size: 15px;
+        text-align: center;
+        font-weight: 500;
+        opacity: 0.75;
+        margin-top: 19px;
+        margin-bottom: 15px;
+      }
+
+      .fan-main-row {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .fan-main-value-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: baseline;
+      }
+
+      .fan-main-value {
+        font-size: 55px;
+        font-weight: 500;
+        line-height: 1;
+      }
+
+      .fan-main-unit {
+        position: absolute;
+        left: 100%;
+        bottom: 4px;
+        margin-left: 2px;
+        font-size: 15px;
+        font-weight: 400;
+        white-space: nowrap;
+      }
+
+      .fan-sub-info {
+        font-size: 15px;
+        margin-top: 17px;
+        text-align: center;
+      }
+
+      /* 风速加减按钮 */
+      .fan-speed-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-top: -4px;
+        margin-bottom: 12px;
+      }
+
+      .fan-speed-btn {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        border: 1.5px solid var(--fg-color, #666);
+        background: transparent;
+        color: var(--fg-color, #666);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 20px;
+        transition: all 0.2s;
+      }
+
+      .fan-speed-btn:active {
+        background: rgba(var(--active-rgb), 0.2);
+        border-color: var(--active-color);
+        color: var(--active-color);
+      }
+
+      /* 粒子发射特效 */
+      .fan-particles {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      .fan-particle {
+        position: absolute;
+        border-radius: 50%;
+        animation: particle-fly var(--pd, 2s) ease-out var(--pdl, 0s) infinite;
+      }
+
+      @keyframes particle-fly1 {
+        0%   { transform: translate(0,0) scale(1); opacity: 1; }
+        30%  { transform: translate(40px,-50px) scale(1.3); opacity: 0.8; }
+        100% { transform: translate(110px,-140px) scale(0); opacity: 0; }
+      }
+      @keyframes particle-fly2 {
+        0%   { transform: translate(0,0) scale(1); opacity: 1; }
+        25%  { transform: translate(55px,-35px) scale(0.8); opacity: 0.7; }
+        100% { transform: translate(140px,-90px) scale(0); opacity: 0; }
+      }
+      @keyframes particle-fly3 {
+        0%   { transform: translate(0,0) scale(1); opacity: 1; }
+        35%  { transform: translate(60px,-20px) scale(1.2); opacity: 0.75; }
+        100% { transform: translate(150px,-20px) scale(0); opacity: 0; }
+      }
+      @keyframes particle-fly4 {
+        0%   { transform: translate(0,0) scale(1); opacity: 1; }
+        100% { transform: translate(140px,40px) scale(0); opacity: 0; }
+      }
+      @keyframes particle-fly5 {
+        0%   { transform: translate(0,0) scale(1); opacity: 1; }
+        30%  { transform: translate(60px,50px) scale(0.9); opacity: 0.7; }
+        100% { transform: translate(110px,120px) scale(0); opacity: 0; }
+      }
+      @keyframes particle-fly6 {
+        0%   { transform: translate(0,0) scale(1); opacity: 1; }
+        100% { transform: translate(20px,150px) scale(0); opacity: 0; }
+      }
+      @keyframes particle-fly7 {
+        0%   { transform: translate(0,0) scale(1); opacity: 1; }
+        40%  { transform: translate(-45px,60px) scale(1.1); opacity: 0.65; }
+        100% { transform: translate(-100px,140px) scale(0); opacity: 0; }
+      }
+      @keyframes particle-fly8 {
+        0%   { transform: translate(0,0) scale(1); opacity: 1; }
+        100% { transform: translate(-130px,80px) scale(0); opacity: 0; }
+      }
+      @keyframes particle-fly9 {
+        0%   { transform: translate(0,0) scale(1); opacity: 1; }
+        35%  { transform: translate(-60px,-35px) scale(0.85); opacity: 0.7; }
+        100% { transform: translate(-140px,-70px) scale(0); opacity: 0; }
+      }
+      @keyframes particle-fly10 {
+        0%   { transform: translate(0,0) scale(1); opacity: 1; }
+        100% { transform: translate(-100px,-120px) scale(0); opacity: 0; }
+      }
+      @keyframes particle-fly11 {
+        0%   { transform: translate(0,0) scale(1); opacity: 1; }
+        25%  { transform: translate(-25px,-70px) scale(1.4); opacity: 0.8; }
+        100% { transform: translate(-50px,-150px) scale(0); opacity: 0; }
+      }
+      @keyframes particle-fly12 {
+        0%   { transform: translate(0,0) scale(1); opacity: 1; }
+        100% { transform: translate(90px,-130px) scale(0); opacity: 0; }
       }
 
       /* 风扇旋转动画 */
@@ -1188,6 +1354,8 @@ class XiaoshiPadFanCard extends LitElement {
     this._tempSpeedPct = null;
     this._localSliderValue = 0;
     this._isSliderDragging = false;
+    this._sliderMin = 0;
+    this._sliderMax = 100;
     this._timerInterval = null;
     this._timerPollInterval = null;
     this._timerRemaining = 0;
@@ -1204,13 +1372,18 @@ class XiaoshiPadFanCard extends LitElement {
   }
 
   // ---- 内联滑块（原SunSliderControl）----
-  _renderSunSlider(value, sliderColor, trackColor, speedLevelEntity, fanEntity) {
+  _renderSunSlider(value, sliderColor, trackColor, speedLevelEntity, fanEntity, min = 0, max = 100) {
+    // 存储范围供拖拽事件使用
+    this._sliderMin = min;
+    this._sliderMax = max;
+    const range = max - min;
+
     // 不在拖拽且非刚释放时，才从外部值同步
     if (!this._isSliderDragging && !this._sliderJustReleased) {
       this._localSliderValue = value;
     }
     const displayValue = this._localSliderValue;
-    const ratio = displayValue / 100;
+    const ratio = range > 0 ? (displayValue - min) / range : 0;
     const calcPos = `calc(12px + (100% - 24px) * ${ratio})`;
 
     return html`
@@ -1269,19 +1442,22 @@ class XiaoshiPadFanCard extends LitElement {
     const x = e.clientX - rect.left;
     const availableWidth = rect.width - 24;
     const ratio = Math.max(0, Math.min(1, (x - 12) / availableWidth));
-    const value = Math.round(ratio * 100);
+    const min = this._sliderMin || 0;
+    const max = this._sliderMax || 100;
+    const range = max - min;
+    const value = Math.round(min + ratio * range);
     this._localSliderValue = value;
     this._tempSpeedPct = value;
 
     // 拖拽期间直接更新DOM，避免频繁全量重渲染
-    const calcPos = `calc(12px + (100% - 24px) * ${value / 100})`;
+    const calcPos = `calc(12px + (100% - 24px) * ${ratio})`;
     const bar = track.querySelector('.sun-slider-bar');
     const thumb = track.querySelector('.sun-slider-thumb');
     if (bar) bar.style.width = calcPos;
     if (thumb) thumb.style.left = calcPos;
 
     const speedPercent = this.shadowRoot.querySelector('.speed-percent');
-    if (speedPercent) speedPercent.textContent = `${value}%`;
+    if (speedPercent) speedPercent.textContent = `${value}`;
   }
 
   _sliderCallService(speedLevelEntity, fanEntity) {
@@ -1387,6 +1563,46 @@ class XiaoshiPadFanCard extends LitElement {
         entity_id: this.config.speed_level,
         value: value
       });
+    }
+  }
+
+  _setFavoriteSpeed(value) {
+    this._handleClick();
+    if (this.config.favorite_speed) {
+      this._callService('number', 'set_value', {
+        entity_id: this.config.favorite_speed,
+        value: value
+      });
+    }
+  }
+
+  _adjustSpeed(delta) {
+    this._handleClick();
+    // 优先最爱风速实体，否则风扇百分比
+    if (this.config.favorite_speed) {
+      const entity = this._getEntityState(this.config.favorite_speed);
+      if (entity && entity.state !== 'unavailable' && entity.state !== 'unknown') {
+        const current = parseInt(entity.state) || 0;
+        const min = entity.attributes?.min ?? 0;
+        const max = entity.attributes?.max ?? 100;
+        const step = entity.attributes?.step ?? 1;
+        const newValue = Math.max(min, Math.min(max, current + delta * step));
+        this._callService('number', 'set_value', {
+          entity_id: this.config.favorite_speed,
+          value: newValue
+        });
+      }
+    } else if (this.config.entity) {
+      const entity = this._getEntityState(this.config.entity);
+      if (entity) {
+        const current = entity.attributes?.percentage || 0;
+        const step = Math.round(entity.attributes?.percentage_step || 33);
+        const newValue = Math.max(0, Math.min(100, current + delta * step));
+        this._callService('fan', 'set_percentage', {
+          entity_id: this.config.entity,
+          percentage: newValue
+        });
+      }
     }
   }
 
@@ -1502,10 +1718,17 @@ class XiaoshiPadFanCard extends LitElement {
     const themeClass = theme === 'light' ? 'theme-light' : 'theme-dark';
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
-    const activeColor = 'rgb(0, 188, 213)';
+    const isPurifier = !!this.config.pm25;
+    const activeRgb = isPurifier ? '0,188,100' : '0,188,213';
+    const activeColor = `rgb(${activeRgb})`;
+
+    // 粒子颜色（净化器=绿，风扇=青）
+    const particleColors = isPurifier
+      ? ['rgb(0,188,100)','rgb(0,210,120)','rgb(0,200,110)','rgb(0,170,90)','rgb(100,240,150)','rgb(0,188,100)','rgb(80,225,130)','rgb(0,160,80)','rgb(50,235,120)','rgb(0,188,100)','rgb(0,220,105)','rgb(100,245,155)']
+      : ['rgb(0,188,213)','rgb(0,210,230)','rgb(0,200,220)','rgb(0,170,200)','rgb(100,220,240)','rgb(0,188,213)','rgb(80,200,225)','rgb(0,160,195)','rgb(50,210,235)','rgb(0,188,213)','rgb(0,195,220)','rgb(100,225,245)'];
 
     // 开启时径向渐变背景
-    const overlayGradient = isOn ? `radial-gradient(circle at center, rgba(0,188,213,0.95) 0%, rgba(0,188,213,0) 65%)` : '';
+    const overlayGradient = isOn ? `radial-gradient(circle at center, rgba(${activeRgb},${isNormalFan ? '0.3' : '0.95'}) 0%, rgba(${activeRgb},0) ${isNormalFan ? '40' : '65'}%)` : '';
 
     // 获取温度
     let temperature = '-';
@@ -1522,6 +1745,15 @@ class XiaoshiPadFanCard extends LitElement {
       const humEntity = this._getEntityState(this.config.humidity);
       if (humEntity && humEntity.state !== 'unavailable' && humEntity.state !== 'unknown') {
         humidity = humEntity.state;
+      }
+    }
+
+    // 获取PM2.5
+    let pm25 = '-';
+    if (this.config.pm25) {
+      const pm25Entity = this._getEntityState(this.config.pm25);
+      if (pm25Entity && pm25Entity.state !== 'unavailable' && pm25Entity.state !== 'unknown') {
+        pm25 = pm25Entity.state;
       }
     }
 
@@ -1591,6 +1823,13 @@ class XiaoshiPadFanCard extends LitElement {
       }
       return attrs.percentage || 0;
     })();
+    const hasFavoriteSpeed = isNormalFan && !!this.config.favorite_speed;
+    const favoriteSpeedEntity = hasFavoriteSpeed ? this._getEntityState(this.config.favorite_speed) : null;
+    const favoriteSpeedValue = (favoriteSpeedEntity && favoriteSpeedEntity.state !== 'unavailable' && favoriteSpeedEntity.state !== 'unknown')
+      ? (parseInt(favoriteSpeedEntity.state) || 0) : 0;
+    const favoriteSpeedMin = favoriteSpeedEntity?.attributes?.min ?? 0;
+    const favoriteSpeedMax = favoriteSpeedEntity?.attributes?.max ?? 100;
+
     const normalSpeedLevels = [
       { value: Math.round(percentageStep), label: '1档', icon: 'mdi:fan-speed-1' },
       { value: Math.round(percentageStep * 2), label: '2档', icon: 'mdi:fan-speed-2' },
@@ -1623,6 +1862,27 @@ class XiaoshiPadFanCard extends LitElement {
     const fanModeEntity = hasFanModeSelect ? this._getEntityState(this.config.fan_mode) : null;
     const fanModeOptions = fanModeEntity?.attributes?.options || [];
     const fanModeCurrent = fanModeEntity?.state || '';
+
+    // 普通风扇中心显示：PM2.5 > 最爱风速 > 风扇百分比
+    const displayMode = presetMode || fanModeCurrent || '';
+    const pmNum = parseInt(pm25);
+    const isPmValid = pm25 !== '-' && !isNaN(pmNum);
+    const isFavValid = isNormalFan && !!this.config.favorite_speed && favoriteSpeedValue > 0;
+    let centerValue = currentPct;
+    let centerUnit = '%';
+    if (isPmValid) {
+      centerValue = pmNum;
+      centerUnit = 'µg/m³';
+    } else if (isFavValid) {
+      centerValue = favoriteSpeedValue;
+      centerUnit = '档';
+    }
+
+    // 温湿度组合
+    let tempHumParts = [];
+    if (this.config.temperature && temperature !== '-') tempHumParts.push(temperature + '°C');
+    if (this.config.humidity && humidity !== '-') tempHumParts.push(humidity + '%');
+    const tempHumText = tempHumParts.join('  |  ');
 
     // 计算模式区域数量
     let activeModeCount = 0;
@@ -1660,13 +1920,51 @@ class XiaoshiPadFanCard extends LitElement {
           </div>
         ` : ''}
 
-        <div class="main-card" style="--bg-color: ${bgColor}; --fg-color: ${fgColor}; --card-width: ${cardWidth}; --active-color: ${activeColor}; --secondary-bg: ${secondaryBg};">
+        <div class="main-card" style="--bg-color: ${bgColor}; --fg-color: ${fgColor}; --card-width: ${cardWidth}; --active-color: ${activeColor}; --active-rgb: ${activeRgb}; --secondary-bg: ${secondaryBg};">
           <div class="fan-card ${themeClass}" style="height: ${cardHeight}px;">
             <div class="direction-container">
               ${overlayGradient ? html`<div class="direction-overlay-bg" style="background: ${overlayGradient};"></div>` : ''}
               ${isNormalFan ? html`
                 <div class="normal-fan-icon-container">
-                  <ha-icon icon="mdi:fan" class="${isOn ? 'fan-spinning' : ''}" style="--mdc-icon-size: 120px; color: ${isOn ? activeColor : secondaryBg};"></ha-icon>
+                  <div class="fan-icon-wrapper">
+                    <svg viewBox="0 -24 240 240" width="240" height="240" overflow="visible">
+                      <path d="M224.1,121.4c0-1.8,0.1-3.5,0-5.3c-0.2-2.8-0.4-5.6-0.8-8.3c-0.6-4.4-1.5-8.8-2.6-13.1c-1.1-4.3-2.6-8.5-4.3-12.6c-2.4-5.9-5.3-11.5-8.8-16.8c-2.6-4-5.4-7.8-8.6-11.3c-2.2-2.5-4.4-4.9-6.8-7.2c-5.4-5.1-11.3-9.7-17.7-13.5c-6.4-3.8-13.1-7-20.2-9.4c-5.2-1.7-10.4-3-15.8-4c-2.4-0.4-4.8-0.7-7.2-1c-1-0.1-2.1-0.2-3.1-0.2c-3.2-0.2-6.5-0.5-9.7-0.2c-3.3,0.2-6.7,0.4-10,0.8c-7.2,0.9-14.2,2.5-21.1,4.9c-9,3.1-17.4,7.5-25.3,12.9c-3.2,2.2-6.3,4.6-9.2,7.2c-2.7,2.4-5.2,4.9-7.6,7.5C41,56.7,37.1,62,33.6,67.7c-1.5,2.5-3,5.1-4.3,7.7C25.6,83,22.7,90.9,21,99.2c-0.8,3.7-1.4,7.5-1.8,11.3c-0.2,2.2-0.3,4.5-0.5,6.7c-0.1,1.6-0.2,3.2-0.1,4.8c0.1,3.3,0.3,6.6,0.6,9.9c0.5,5.8,1.7,11.4,3.2,17c1.1,4.2,2.6,8.3,4.3,12.4c2.9,6.8,6.4,13.2,10.6,19.2c1.9,2.8,4,5.5,6.2,8c1.7,2,3.5,3.9,5.3,5.7c1.7,1.8,2.6,4,2.6,6.5c-0.1,5-4.1,8.8-8.4,9.1c-2.9,0.2-5.4-0.7-7.5-2.8c-6-6-11.3-12.5-15.9-19.6c-3.3-5.2-6.3-10.6-8.8-16.2c-2-4.4-3.7-8.9-5.2-13.5c-1.6-5-2.9-10.1-3.7-15.3c-0.5-3.3-1-6.5-1.3-9.8c-0.2-2.6-0.5-5.1-0.4-7.7c0-1-0.2-2.1-0.2-3.1c0.2-2.9,0.1-5.8,0.3-8.7c0.1-2.1,0.4-4.2,0.6-6.4c0.3-2.5,0.7-4.9,1.1-7.4c1-5.7,2.5-11.3,4.3-16.7c1.4-4.3,3.2-8.4,5-12.5c2.8-6.2,6.3-12.1,10.1-17.8c2.7-4,5.7-7.8,9-11.4c2-2.2,4-4.4,6.1-6.5c2.8-2.7,5.6-5.2,8.6-7.6c3-2.5,6.2-4.8,9.4-6.9c4.9-3.2,10-6.1,15.4-8.6c4.5-2.1,9-3.9,13.7-5.5c4.4-1.4,8.8-2.6,13.3-3.5c3.7-0.7,7.4-1.3,11.1-1.7c3.7-0.4,7.4-0.5,11.1-0.7c2.9-0.1,5.8,0.1,8.7,0.1c2.2,0,4.4,0.3,6.6,0.5c3.7,0.4,7.3,1,11,1.7c2.3,0.4,4.5,1,6.8,1.6c3.7,1,7.3,2.1,10.8,3.4c4.1,1.5,8.1,3.2,12,5.2c6,2.9,11.7,6.4,17.1,10.2c2.9,2.1,5.7,4.4,8.5,6.7c3.5,2.9,6.6,6.2,9.8,9.4c2,2.1,3.8,4.3,5.6,6.5c2.6,3.1,4.8,6.4,7,9.7c1.6,2.5,3.1,5,4.5,7.6c3.3,6.1,6.1,12.4,8.4,18.9c1.7,4.8,3.1,9.7,4.1,14.7c0.7,3.5,1.3,7,1.7,10.5c0.3,2.7,0.5,5.3,0.7,8c0.2,3.7,0.2,7.4,0.1,11.1c-0.1,3.2-0.4,6.4-0.8,9.5c-0.6,5.1-1.5,10.2-2.8,15.3c-1.3,5.2-3,10.3-5,15.3c-1.1,2.8-2.3,5.5-3.6,8.2c-1.8,3.7-3.7,7.2-5.9,10.7c-2.2,3.6-4.6,7.1-7.2,10.4c-1.6,2-3.2,4-4.9,5.9c-1.7,2-3.5,3.9-5.3,5.7c-3.1,3.2-8.1,3.6-11.8,1.1c-4.7-3.2-5.2-9.7-1.7-13.6c0.8-0.9,1.6-1.7,2.4-2.6c3.7-3.8,7-8,10.1-12.4c3.1-4.6,5.9-9.3,8.2-14.3c3.4-7.2,5.9-14.6,7.6-22.4c0.7-3.2,1.2-6.4,1.6-9.7c0.2-2,0.4-3.9,0.5-5.9C224.1,125.3,224.1,123.3,224.1,121.4C224.1,121.4,224.1,121.4,224.1,121.4z" fill="${isOn ? activeColor : secondaryBg}"/>
+                    </svg>
+                    <div class="fan-center-info" style="color: ${fgColor};">
+                      <div class="fan-mode-label">${displayMode}</div>
+                      <div class="fan-main-row">
+                        <div class="fan-main-value-wrap">
+                          <span class="fan-main-value">${centerValue}</span>
+                          <span class="fan-main-unit">${centerUnit}</span>
+                        </div>
+                      </div>
+                      ${tempHumText ? html`<div class="fan-sub-info">${tempHumText}</div>` : ''}
+                    </div>
+                  </div>
+                  ${isOn ? html`
+                  <div class="fan-particles">
+                    <div class="fan-particle" style="animation-name:particle-fly1; animation-duration:2.2s; animation-delay:0s; width:10px; height:10px; background:${particleColors[0]};"></div>
+                    <div class="fan-particle" style="animation-name:particle-fly2; animation-duration:1.8s; animation-delay:0.3s; width:7px; height:7px; background:${particleColors[1]};"></div>
+                    <div class="fan-particle" style="animation-name:particle-fly3; animation-duration:2.5s; animation-delay:0.6s; width:9px; height:9px; background:${particleColors[2]};"></div>
+                    <div class="fan-particle" style="animation-name:particle-fly4; animation-duration:1.6s; animation-delay:0.1s; width:12px; height:12px; background:${particleColors[3]};"></div>
+                    <div class="fan-particle" style="animation-name:particle-fly5; animation-duration:2.0s; animation-delay:0.8s; width:6px; height:6px; background:${particleColors[4]};"></div>
+                    <div class="fan-particle" style="animation-name:particle-fly6; animation-duration:2.8s; animation-delay:0.4s; width:8px; height:8px; background:${particleColors[5]};"></div>
+                    <div class="fan-particle" style="animation-name:particle-fly7; animation-duration:1.9s; animation-delay:0.2s; width:7px; height:7px; background:${particleColors[6]};"></div>
+                    <div class="fan-particle" style="animation-name:particle-fly8; animation-duration:2.3s; animation-delay:0.7s; width:11px; height:11px; background:${particleColors[7]};"></div>
+                    <div class="fan-particle" style="animation-name:particle-fly9; animation-duration:1.7s; animation-delay:0.5s; width:5px; height:5px; background:${particleColors[8]};"></div>
+                    <div class="fan-particle" style="animation-name:particle-fly10; animation-duration:2.6s; animation-delay:0.9s; width:9px; height:9px; background:${particleColors[9]};"></div>
+                    <div class="fan-particle" style="animation-name:particle-fly11; animation-duration:2.1s; animation-delay:0.15s; width:13px; height:13px; background:${particleColors[10]};"></div>
+                    <div class="fan-particle" style="animation-name:particle-fly12; animation-duration:1.5s; animation-delay:0.55s; width:7px; height:7px; background:${particleColors[11]};"></div>
+                  </div>
+                  ` : ''}
+                <div class="fan-speed-buttons">
+                  <button class="fan-speed-btn" @click=${() => this._adjustSpeed(-1)}>
+                    <ha-icon icon="mdi:minus" style="--mdc-icon-size:24px;"></ha-icon>
+                  </button>
+                  <button class="fan-speed-btn" @click=${() => this._adjustSpeed(1)}>
+                    <ha-icon icon="mdi:plus" style="--mdc-icon-size:24px;"></ha-icon>
+                  </button>
+                </div>
                 </div>
               ` : html`
                 <div class="direction-control">
@@ -1704,11 +2002,13 @@ class XiaoshiPadFanCard extends LitElement {
               </div>
             </div>
 
+            ${!isNormalFan ? html`
             <div class="status-bar" style="color: ${fgColor};">
               <span class="status-item">风速：${currentPct > 0 ? currentPct + '%' : '-'}</span>
               ${this.config.temperature ? html`<span class="status-item">温度：${temperature !== '-' ? temperature + '°C' : '-'}</span>` : ''}
               ${this.config.humidity ? html`<span class="status-item">湿度：${humidity !== '-' ? humidity + '%' : '-'}</span>` : ''}
-            </div>
+             </div>
+            ` : ''}
 
             ${isNormalFan ? html`
               ${hasPresetModes ? html`
@@ -1742,6 +2042,14 @@ class XiaoshiPadFanCard extends LitElement {
                       <ha-icon class="icon" icon="mdi:power" style="${isOn ? 'color: rgb(255,255,255)' : `color: ${fgColor}`}"></ha-icon>
                       <span class="mode-text" style="${isOn ? 'color: rgb(255,255,255)' : ''}">${isOn ? '关闭' : '开启'}</span>
                     </button>
+                    </div>
+                </div>
+              ` : ''}
+
+              ${hasFavoriteSpeed ? html`
+                <div class="area-bg-wrapper">
+                    <div class="fanspeed-area">
+                      ${this._renderSunSlider(favoriteSpeedValue, activeColor, secondaryBg, this.config.favorite_speed, this.config.entity, favoriteSpeedMin, favoriteSpeedMax)}
                     </div>
                 </div>
               ` : ''}
@@ -2195,7 +2503,7 @@ class XiaoshiPadFanCard extends LitElement {
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(230, 230, 230)' : 'rgb(80, 80, 80)';
 
-    const activeColor = 'rgb(0, 188, 213)';
+    const activeColor = this.config.pm25 ? 'rgb(0, 188, 100)' : 'rgb(0, 188, 213)';
 
     return html`
       <button class="timer-h-btn" style="cursor: pointer; background: ${bgColor};" @click=${this._cancelTimer}>
@@ -2346,7 +2654,7 @@ class XiaoshiPadFanCard extends LitElement {
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(230, 230, 230)' : 'rgb(80, 80, 80)';
     const isOn = state === 'on';
-    let activeColor = 'rgb(0, 188, 213)';
+    let activeColor = this.config.pm25 ? 'rgb(0, 188, 100)' : 'rgb(0, 188, 213)';
 
     // 根据名称自定义图标
     const _getCustomIcon = (name, isActive) => {
