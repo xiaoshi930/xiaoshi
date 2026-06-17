@@ -1,5 +1,5 @@
 # 此为卡片集合汇总
-## 安装前请先在HACS删除以下仪表盘集成并移除自定义仓库：   
+## 安装前请先在HACS删除以下仪表盘集成并移除自定义仓库（如果本来就没安装过，忽略）：   
 1、【xiaoshi-phone-card】https://github.com/xiaoshi930/xiaoshi-phone-card  
 2、【xiaoshi-pad-card】https://github.com/xiaoshi930/xiaoshi-pad-card  
 3、【xiaoshi-card】https://github.com/xiaoshi930/xiaoshi-card  
