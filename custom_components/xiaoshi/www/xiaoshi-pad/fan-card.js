@@ -1888,6 +1888,7 @@ class XiaoshiPadFanCard extends LitElement {
     let activeModeCount = 0;
     if (isNormalFan) {
       if (hasPresetModes) activeModeCount++;
+      if (hasFavoriteSpeed) activeModeCount++;
       if (isSteplessSpeed || hasPercentageStep) activeModeCount++;
       if (hasFanModeSelect && fanModeOptions.length > 0) activeModeCount++;
     } else {
