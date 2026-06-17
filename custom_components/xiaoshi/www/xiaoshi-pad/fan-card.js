@@ -1728,7 +1728,7 @@ class XiaoshiPadFanCard extends LitElement {
       : ['rgb(0,188,213)','rgb(0,210,230)','rgb(0,200,220)','rgb(0,170,200)','rgb(100,220,240)','rgb(0,188,213)','rgb(80,200,225)','rgb(0,160,195)','rgb(50,210,235)','rgb(0,188,213)','rgb(0,195,220)','rgb(100,225,245)'];
 
     // 开启时径向渐变背景
-    const overlayGradient = isOn ? `radial-gradient(circle at center, rgba(${activeRgb},${isNormalFan ? '0.3' : '0.95'}) 0%, rgba(${activeRgb},0) ${isNormalFan ? '40' : '65'}%)` : '';
+    const overlayGradient = isOn ? `radial-gradient(circle at center, rgba(${activeRgb},${isNormalFan ? '0.3' : '0.6'}) 0%, rgba(${activeRgb},0) ${isNormalFan ? '40' : '60'}%)` : '';
 
     // 获取温度
     let temperature = '-';
@@ -2000,6 +2000,22 @@ class XiaoshiPadFanCard extends LitElement {
                   ></ha-icon>
                 </button>
               </div>
+              ${!isNormalFan && isOn ? html`
+              <div class="fan-particles">
+                <div class="fan-particle" style="animation-name:particle-fly1; animation-duration:2.2s; animation-delay:0s; width:10px; height:10px; background:${particleColors[0]};"></div>
+                <div class="fan-particle" style="animation-name:particle-fly2; animation-duration:1.8s; animation-delay:0.3s; width:7px; height:7px; background:${particleColors[1]};"></div>
+                <div class="fan-particle" style="animation-name:particle-fly3; animation-duration:2.5s; animation-delay:0.6s; width:9px; height:9px; background:${particleColors[2]};"></div>
+                <div class="fan-particle" style="animation-name:particle-fly4; animation-duration:1.6s; animation-delay:0.1s; width:12px; height:12px; background:${particleColors[3]};"></div>
+                <div class="fan-particle" style="animation-name:particle-fly5; animation-duration:2.0s; animation-delay:0.8s; width:6px; height:6px; background:${particleColors[4]};"></div>
+                <div class="fan-particle" style="animation-name:particle-fly6; animation-duration:2.8s; animation-delay:0.4s; width:8px; height:8px; background:${particleColors[5]};"></div>
+                <div class="fan-particle" style="animation-name:particle-fly7; animation-duration:1.9s; animation-delay:0.2s; width:7px; height:7px; background:${particleColors[6]};"></div>
+                <div class="fan-particle" style="animation-name:particle-fly8; animation-duration:2.3s; animation-delay:0.7s; width:11px; height:11px; background:${particleColors[7]};"></div>
+                <div class="fan-particle" style="animation-name:particle-fly9; animation-duration:1.7s; animation-delay:0.5s; width:5px; height:5px; background:${particleColors[8]};"></div>
+                <div class="fan-particle" style="animation-name:particle-fly10; animation-duration:2.6s; animation-delay:0.9s; width:9px; height:9px; background:${particleColors[9]};"></div>
+                <div class="fan-particle" style="animation-name:particle-fly11; animation-duration:2.1s; animation-delay:0.15s; width:13px; height:13px; background:${particleColors[10]};"></div>
+                <div class="fan-particle" style="animation-name:particle-fly12; animation-duration:1.5s; animation-delay:0.55s; width:7px; height:7px; background:${particleColors[11]};"></div>
+              </div>
+              ` : ''}
             </div>
 
             ${!isNormalFan ? html`
