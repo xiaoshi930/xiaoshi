@@ -146,10 +146,10 @@ class XiaoshiIOTComputerCardEditor extends LitElement {
             <div class="entity-selector">
               <input
                 type="text"
-                @input=${(e) => this._onEntitySearch(e, 'entity', 'switch.')}
-                @focus=${(e) => this._onEntitySearch(e, 'entity', 'switch.')}
+                @input=${(e) => this._onEntitySearch(e, 'entity', '')}
+                @focus=${(e) => this._onEntitySearch(e, 'entity', '')}
                 .value=${this.config.entity || ''}
-                placeholder="搜索开关实体..."
+                placeholder="搜索 switch 或 binary_sensor 实体..."
                 class="entity-search-input"
               />
               ${this._activeEntityKey === 'entity' && this._searchTerm ? html`
@@ -184,6 +184,17 @@ class XiaoshiIOTComputerCardEditor extends LitElement {
             @change=${(e) => { this.config = { ...this.config, computer_name: e.target.value }; this._fireEvent(); }}
             .value=${this.config.computer_name || ''}
             placeholder="例如: ZHANGQIANG-PC"
+            class="entity-search-input"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>计算机显示名称</label>
+          <input
+            type="text"
+            @change=${(e) => { this.config = { ...this.config, computer_display_name: e.target.value }; this._fireEvent(); }}
+            .value=${this.config.computer_display_name || ''}
+            placeholder="用于显示的计算机名称，优先级最高"
             class="entity-search-input"
           />
         </div>
@@ -285,6 +296,7 @@ class XiaoshiIOTComputerCard extends LitElement {
       theme: "system",
       width: "100%",
       computer_name: "",
+      computer_display_name: "",
       show_network_0: true,
       show_network_1: true,
       show_screenshot: true,
@@ -923,11 +935,12 @@ class XiaoshiIOTComputerCard extends LitElement {
     const entity = this.config.entity ? this.hass.states[this.config.entity] : null;
     const isOn = entity ? entity.state === 'on' : false;
     const hasEntity = !!this.config.entity && !!entity;
+    const isBinarySensor = entity ? entity.entity_id.startsWith('binary_sensor.') : false;
 
     const theme = this._evaluateTheme();
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
-    const pcName = this.config.computer_name || entity?.attributes?.friendly_name || '电脑';
+    const pcName = this.config.computer_display_name || this.config.computer_name || entity?.attributes?.friendly_name || '电脑';
 
     return html`
       <div class="card" style="width: ${this.width}; background: ${bgColor}; color: ${fgColor};">
@@ -947,7 +960,7 @@ class XiaoshiIOTComputerCard extends LitElement {
           </div>
 
           <!-- 第三排: 开关机按钮（仅在配置了 entity 时渲染） -->
-          ${hasEntity ? html`
+          ${hasEntity && !isBinarySensor ? html`
           <div class="power-row">
             <button class="power-btn on"
               @click=${this._turnOn}
