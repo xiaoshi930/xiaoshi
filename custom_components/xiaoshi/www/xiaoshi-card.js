@@ -18,6 +18,7 @@ import('./xiaoshi-card/weather.js');
 import('./xiaoshi-card/button.js');
 import('./xiaoshi-card/device.js');
 import('./xiaoshi-card/light.js');
+import('./xiaoshi-card/iot-computer-card.js');
 
 import('./xiaoshi-phone/climate-card.js');
 import('./xiaoshi-phone/humidifier-card.js');
