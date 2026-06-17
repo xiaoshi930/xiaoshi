@@ -494,6 +494,8 @@ class XiaoshiIOTComputerCard extends LitElement {
     this.memoryData = [];
     this.networkData = {};
     this._discovered = null;
+    this._screenshotFailed = false;
+    this._lastScreenshotSrc = '';
   }
 
   setConfig(config) {
@@ -890,7 +892,33 @@ class XiaoshiIOTComputerCard extends LitElement {
     if (!d.screenshotEntity) return html``;
 
     const entity = this.hass.states[d.screenshotEntity];
+    const entityState = entity?.state;
     const imgSrc = entity?.attributes?.entity_picture || '';
+
+    // 截图地址变化时重置失败标记（例如电脑重新上线）
+    if (imgSrc !== this._lastScreenshotSrc) {
+      this._lastScreenshotSrc = imgSrc;
+      this._screenshotFailed = false;
+    }
+
+    // 实体状态不可用、无图片地址、或之前加载失败 → 不渲染 <img>，避免 500 请求
+    const badState = this._isBadState(entityState);
+    if (!imgSrc || badState || this._screenshotFailed) {
+      let msg = '等待截图...';
+      if (badState) msg = '截图不可用';
+      else if (imgSrc && this._screenshotFailed) msg = '截图不可访问';
+      return html`
+        <div class="screenshot-card" style="--card-bg: ${theme === 'light' ? '#f5f5f5' : '#3a3a3a'}; color: inherit; display: flex; flex-direction: column;">
+          <div class="info-header">
+            <span class="info-header-left">
+              <ha-icon icon="mdi:monitor-screenshot"></ha-icon>
+              <span>屏幕截图</span>
+            </span>
+          </div>
+          <div class="no-data" style="padding:12px;">${msg}</div>
+        </div>
+      `;
+    }
 
     return html`
       <div class="screenshot-card" style="--card-bg: ${theme === 'light' ? '#f5f5f5' : '#3a3a3a'}; color: inherit; display: flex; flex-direction: column;">
@@ -900,10 +928,10 @@ class XiaoshiIOTComputerCard extends LitElement {
             <span>屏幕截图</span>
           </span>
         </div>
-        ${imgSrc ? html`
-          <img class="screenshot-img" src="${imgSrc}" alt="屏幕截图"
-               @click=${() => this._openScreenshot(imgSrc)} />
-        ` : html`<div class="no-data" style="padding:12px;">等待截图...</div>`}
+        <img class="screenshot-img" src="${imgSrc}" alt="屏幕截图"
+             @load=${() => { this._screenshotFailed = false; }}
+             @error=${() => { this._screenshotFailed = true; this.requestUpdate(); }}
+             @click=${() => this._openScreenshot(imgSrc)} />
       </div>
     `;
   }
