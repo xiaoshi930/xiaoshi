@@ -46,6 +46,7 @@ import('./xiaoshi-pad/climate-card.js');
 import('./xiaoshi-pad/fan-card.js');
 import('./xiaoshi-pad/grid-card.js');
 import('./xiaoshi-pad/weather-card.js');
+import('./xiaoshi-pad/sun-moon-card.js');
 
 import('./xiaoshi-lunar/birthday-card.js');
 import('./xiaoshi-lunar/lunar-calendar.js');
