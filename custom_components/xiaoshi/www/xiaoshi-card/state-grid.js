@@ -1,4 +1,5 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+import { yamlToJson } from '../function/function.js';
 
 window.customCards = window.customCards || [];
 window.customCards.push(
@@ -356,7 +357,16 @@ class XiaoshiStateGridButtonEditor extends LitElement {
           <input type="text" @change=${this._entityChanged} .value=${this.config.popup_top !== undefined ? this.config.popup_top : '20px'} name="popup_top" placeholder="默认20px" />
         </div>
 
-        <div class="form-group"><label>下方是弹出的主卡配置项</label></div>
+        <div class="form-group"><label>👇👇👇下方弹出的卡片可增加的其他卡片👇👇👇</label></div>
+        <div class="form-group">
+          <textarea @change=${this._entityChanged} .value=${this.config.other_cards || ''} name="other_cards" placeholder='# 示例配置：添加button卡片
+- type: custom:button-card
+  template: 测试模板
+- type: custom:button-card
+  template: 测试模板'></textarea>
+        </div>
+
+        <div class="form-group"><label>👇👇👇下方是弹出的主卡配置项👇👇👇</label></div>
 
         <div class="form-group">
           <label>主题</label>
@@ -494,7 +504,7 @@ class XiaoshiStateGridButtonEditor extends LitElement {
           name !== 'decimal_precision' && name !== 'width' && name !== 'color_num' &&
           name !== 'color_cost' && name !== 'balance_name' && name !== 'global_warning' &&
           name !== 'entity_layout' && name !== 'entities_per_row' && name !== 'default_show_calendar' &&
-          name !== 'utility_type') return;
+          name !== 'utility_type' && name !== 'other_cards') return;
       finalValue = value;
     }
     if (name === 'button_width') finalValue = value || '16.8vw';
@@ -760,13 +770,32 @@ class XiaoshiStateGridButton extends LitElement {
       'transparent_bg',
       'lock_white_fg'
     ];
+    const cards = [];
     const stateGridCardConfig = {};
     Object.keys(this.config).forEach(key => {
-      if (!excludedParams.includes(key)) {
+      if (!excludedParams.includes(key) && key !== 'other_cards') {
         stateGridCardConfig[key] = this.config[key];
       }
     });
-    const serviceData = { card: { type: 'custom:xiaoshi-state-grid-info', ...stateGridCardConfig } };
+    cards.push({
+      type: 'custom:xiaoshi-state-grid-info',
+      ...stateGridCardConfig
+    });
+    if (this.config.other_cards && this.config.other_cards.trim()) {
+      try {
+        const additionalCardsConfig = yamlToJson(this.config.other_cards);
+        const cardsWithTheme = additionalCardsConfig.map(card => {
+          if (!card.theme && this.config.theme) {
+            return { ...card, theme: this.config.theme };
+          }
+          return card;
+        });
+        cards.push(...cardsWithTheme);
+      } catch (error) {
+        console.error('解析附加卡片配置失败:', error);
+      }
+    }
+    const serviceData = { card: cards };
     const popupWidth = this.config.popup_width || '95%';
     const popupTop = this.config.popup_top || '20px';
     if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
