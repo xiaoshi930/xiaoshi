@@ -1728,7 +1728,7 @@ class XiaoshiPadFanCard extends LitElement {
       : ['rgb(0,188,213)','rgb(0,210,230)','rgb(0,200,220)','rgb(0,170,200)','rgb(100,220,240)','rgb(0,188,213)','rgb(80,200,225)','rgb(0,160,195)','rgb(50,210,235)','rgb(0,188,213)','rgb(0,195,220)','rgb(100,225,245)'];
 
     // 开启时径向渐变背景
-    const overlayGradient = isOn ? `radial-gradient(circle at center, rgba(${activeRgb},${isNormalFan ? '0.3' : '0.6'}) 0%, rgba(${activeRgb},0) ${isNormalFan ? '40' : '60'}%)` : '';
+    const overlayGradient = isOn ? `radial-gradient(circle at center, rgba(${activeRgb},${isNormalFan ? '0.3' : '0.6'}) 0%, rgba(${activeRgb},0) ${isNormalFan ? '40' : '70'}%)` : '';
 
     // 获取温度
     let temperature = '-';
@@ -1901,7 +1901,7 @@ class XiaoshiPadFanCard extends LitElement {
     const cardHeight = 300 + (activeModeCount * 48);
 
     const cardWidth = this.config.width || '300px';
-    const secondaryBg = theme === 'light' ? 'rgb(150, 150, 150)' : 'rgb(100, 100, 100)';
+    const secondaryBg = theme === 'light' ? 'rgb(220, 220, 220)' : 'rgb(100, 100, 100)';
 
     return html`
         ${hasButtons2 && button2Position === 'left' ? html`
