@@ -3334,7 +3334,7 @@ class  XiaoshiStateGridInfo extends LitElement {
           { name: '平时段', data: normalSeriesData, type: 'column' },
           { name: '峰时段', data: peakSeriesData, type: 'column' },
           { name: '尖时段', data: tipSeriesData, type: 'column' },
-          { name: `日${uc.typeLabel}费`, data: costSeriesData, type: 'line', color: colorCost }
+          { name: `日${uc.typeLabel}`, data: costSeriesData, type: 'line', color: colorCost }
         ],
         chart: {
           type: 'bar', height: 230, width: '100%', foreColor: Color, stacked: true,
@@ -3395,7 +3395,7 @@ class  XiaoshiStateGridInfo extends LitElement {
               { name: '峰时段', unit: '度', color: colorPeak, idx: 2 },
               { name: '平时段', unit: '度', color: colorNormal, idx: 1 },
               { name: '谷时段', unit: '度', color: colorValley, idx: 0 },
-              { name: `日${uc.typeLabel}费`, unit: '元', color: colorCost, idx: 4 }
+              { name: `日${uc.typeLabel}`, unit: '元', color: colorCost, idx: 4 }
             ];
             allInfo.forEach((info) => {
               const value = series[info.idx]?.[dataPointIndex];
@@ -3560,8 +3560,8 @@ class  XiaoshiStateGridInfo extends LitElement {
       if (hasDataInSeries(curNormalOffset)) seriesList.push({ name: '本年平', data: curNormalOffset, type: 'column' });
       if (hasDataInSeries(curPeakOffset)) seriesList.push({ name: '本年峰', data: curPeakOffset, type: 'column' });
       if (hasDataInSeries(curTipOffset)) seriesList.push({ name: '本年尖', data: curTipOffset, type: 'column' });
-      if (hasDataInSeries(lastcostOffset)) seriesList.push({ name: `上年${uc.typeLabel}费`, data: lastcostOffset, type: 'line', color: '#f3066040' });
-      if (hasDataInSeries(curCostOffset)) seriesList.push({ name: `本年${uc.typeLabel}费`, data: curCostOffset, type: 'line', color: colorCost });
+      if (hasDataInSeries(lastcostOffset)) seriesList.push({ name: `上年${uc.typeLabel}`, data: lastcostOffset, type: 'line', color: '#f3066040' });
+      if (hasDataInSeries(curCostOffset)) seriesList.push({ name: `本年${uc.typeLabel}`, data: curCostOffset, type: 'line', color: colorCost });
 
       return {
         series: seriesList,
@@ -3574,7 +3574,7 @@ class  XiaoshiStateGridInfo extends LitElement {
           const colorMap = {
             '上年谷': colorLastValley, '上年平': colorLastNormal, '上年峰': colorLastPeak, '上年尖': colorLastTip,
             '本年谷': colorValley, '本年平': colorNormal, '本年峰': colorPeak, '本年尖': colorTip,
-            [`上年${uc.typeLabel}费`]: '#f3066040', [`本年${uc.typeLabel}费`]: colorCost
+            [`上年${uc.typeLabel}`]: '#f3066040', [`本年${uc.typeLabel}`]: colorCost
           };
           return colorMap[s.name] || s.color || '#999';
         }),
@@ -3635,10 +3635,10 @@ class  XiaoshiStateGridInfo extends LitElement {
             const allInfo = [
               { name: '上年尖', unit: '度', color: colorLastTip }, { name: '上年峰', unit: '度', color: colorLastPeak },
               { name: '上年平', unit: '度', color: colorLastNormal }, { name: '上年谷', unit: '度', color: colorLastValley },
-              { name: `上年${ucType}费`, unit: '元', color: '#f3066040' },
+              { name: `上年${ucType}`, unit: '元', color: '#f3066040' },
               { name: '本年尖', unit: '度', color: colorTip }, { name: '本年峰', unit: '度', color: colorPeak },
               { name: '本年平', unit: '度', color: colorNormal }, { name: '本年谷', unit: '度', color: colorValley },
-              { name: `本年${ucType}费`, unit: '元', color: colorCost },
+              { name: `本年${ucType}`, unit: '元', color: colorCost },
             ];
             allInfo.forEach((info) => {
               const idx = getSeriesIndex(info.name);
@@ -4550,7 +4550,7 @@ class  XiaoshiStateGridInfo extends LitElement {
       <div class="cell summary-info" style="grid-area: id99;">
         ${this.monthData ? html`
           <div><span  style="color: ${this.colorNum}">月${this._getUC().usageLabel.replace('用', '').replace('量', '')}量: ${this.monthData.monthEleNum}${this._getUC().usageUnit}</span></div>
-          <div><span  style="color: ${this.colorCost}">月${this._getUC().typeLabel}费: ${this.monthData.monthEleCost}元</span></div>
+          <div><span  style="color: ${this.colorCost}">月${this._getUC().typeLabel}: ${this.monthData.monthEleCost}元</span></div>
         ` : html`<div></div>`}
       </div>
     `;
