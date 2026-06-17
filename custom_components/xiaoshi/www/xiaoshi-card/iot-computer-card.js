@@ -227,34 +227,66 @@ class XiaoshiIOTComputerCardEditor extends LitElement {
         <div class="form-group">
           <label>睡眠命令</label>
           <div class="entity-selector-with-remove">
-            <div class="entity-selector">
-              <input
-                type="text"
-                @input=${(e) => this._onEntitySearch(e, 'sleep_command', 'shell_command.')}
-                @focus=${(e) => this._onEntitySearch(e, 'sleep_command', 'shell_command.')}
-                .value=${this.config.sleep_command || ''}
-                placeholder="搜索 shell_command 实体..."
-                class="entity-search-input"
-              />
-              ${this._activeEntityKey === 'sleep_command' && this._searchTerm ? html`
-                <div class="entity-dropdown">
-                  ${this._filteredEntities.map(entity => html`
-                    <div class="entity-option" @click=${() => this._selectEntity(entity.entity_id, 'sleep_command')}>
-                      <div class="entity-info">
-                        <ha-icon icon="${entity.attributes.icon || 'mdi:help-circle'}"></ha-icon>
-                        <div>
-                          <div class="entity-name">${entity.attributes.friendly_name || entity.entity_id}</div>
-                          <div class="entity-id">${entity.entity_id}</div>
-                        </div>
-                      </div>
-                    </div>
-                  `)}
-                  ${this._filteredEntities.length === 0 ? html`<div class="no-results">未找到匹配的 shell_command 实体</div>` : ''}
-                </div>
-              ` : ''}
-            </div>
+            <input
+              type="text"
+              @input=${(e) => { this.config = { ...this.config, sleep_command: e.target.value }; this._fireEvent(); }}
+              .value=${this.config.sleep_command || ''}
+              placeholder="输入 shell 命令..."
+              class="entity-search-input"
+            />
             ${this.config.sleep_command ? html`
               <button class="remove-button" @click=${() => this._removeEntity('sleep_command')} title="移除">
+                <ha-icon icon="mdi:close"></ha-icon>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>开机shell命令</label>
+          <div class="entity-selector-with-remove">
+            <input type="text"
+              @input=${(e) => { this.config = { ...this.config, power_on_command: e.target.value }; this._fireEvent(); }}
+              .value=${this.config.power_on_command || ''}
+              placeholder="输入 shell 命令..."
+              class="entity-search-input"
+            />
+            ${this.config.power_on_command ? html`
+              <button class="remove-button" @click=${() => this._removeEntity('power_on_command')}>
+                <ha-icon icon="mdi:close"></ha-icon>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>关机shell命令</label>
+          <div class="entity-selector-with-remove">
+            <input type="text"
+              @input=${(e) => { this.config = { ...this.config, power_off_command: e.target.value }; this._fireEvent(); }}
+              .value=${this.config.power_off_command || ''}
+              placeholder="输入 shell 命令..."
+              class="entity-search-input"
+            />
+            ${this.config.power_off_command ? html`
+              <button class="remove-button" @click=${() => this._removeEntity('power_off_command')}>
+                <ha-icon icon="mdi:close"></ha-icon>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>重启shell命令</label>
+          <div class="entity-selector-with-remove">
+            <input type="text"
+              @input=${(e) => { this.config = { ...this.config, restart_command: e.target.value }; this._fireEvent(); }}
+              .value=${this.config.restart_command || ''}
+              placeholder="输入 shell 命令..."
+              class="entity-search-input"
+            />
+            ${this.config.restart_command ? html`
+              <button class="remove-button" @click=${() => this._removeEntity('restart_command')}>
                 <ha-icon icon="mdi:close"></ha-icon>
               </button>
             ` : ''}
@@ -469,6 +501,10 @@ class XiaoshiIOTComputerCard extends LitElement {
       }
       .power-btn.sleep {
         background: #FF9800;
+        color: #fff;
+      }
+      .power-btn.restart {
+        background: #2196F3;
         color: #fff;
       }
       .power-btn:active { transform: scale(0.96); opacity: 0.85; }
@@ -964,6 +1000,9 @@ class XiaoshiIOTComputerCard extends LitElement {
     const isOn = entity ? entity.state === 'on' : false;
     const hasEntity = !!this.config.entity && !!entity;
     const isBinarySensor = entity ? entity.entity_id.startsWith('binary_sensor.') : false;
+    const hasPowerShell = !!this.config.power_on_command || !!this.config.power_off_command;
+    const hasRestart = !!this.config.restart_command;
+    const showPowerButtons = (hasEntity && !isBinarySensor) || hasPowerShell;
 
     const theme = this._evaluateTheme();
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
@@ -987,8 +1026,8 @@ class XiaoshiIOTComputerCard extends LitElement {
             ${this.config.show_screenshot !== false ? this._renderScreenshotCard(d, theme) : ''}
           </div>
 
-          <!-- 第三排: 开关机按钮（仅在配置了 entity 时渲染） -->
-          ${hasEntity && !isBinarySensor ? html`
+          <!-- 第三排: 开关机按钮（配置了 entity 或 shell 命令时渲染） -->
+          ${showPowerButtons ? html`
           <div class="power-row">
             <button class="power-btn on"
               @click=${this._turnOn}
@@ -996,6 +1035,12 @@ class XiaoshiIOTComputerCard extends LitElement {
               ?disabled=${isOn}>
               <ha-icon icon="mdi:power"></ha-icon> 开机
             </button>
+            ${hasRestart ? html`
+              <button class="power-btn restart"
+                @click=${this._restart}>
+                <ha-icon icon="mdi:restart"></ha-icon> 重启
+              </button>
+            ` : ''}
             <button class="power-btn off"
               @click=${this._turnOff}
               style="opacity: ${!isOn ? '0.5' : '1'};"
@@ -1016,14 +1061,29 @@ class XiaoshiIOTComputerCard extends LitElement {
   }
 
   _turnOn() {
-    if (!this.config.entity) return;
-    this.hass.callService('homeassistant', 'turn_on', { entity_id: this.config.entity });
+    if (this.config.power_on_command) {
+      const cmd = this.config.power_on_command.replace('shell_command.', '');
+      this.hass.callService('shell_command', cmd);
+    } else if (this.config.entity) {
+      this.hass.callService('homeassistant', 'turn_on', { entity_id: this.config.entity });
+    }
     this._handleClick();
   }
 
   _turnOff() {
-    if (!this.config.entity) return;
-    this.hass.callService('homeassistant', 'turn_off', { entity_id: this.config.entity });
+    if (this.config.power_off_command) {
+      const cmd = this.config.power_off_command.replace('shell_command.', '');
+      this.hass.callService('shell_command', cmd);
+    } else if (this.config.entity) {
+      this.hass.callService('homeassistant', 'turn_off', { entity_id: this.config.entity });
+    }
+    this._handleClick();
+  }
+
+  _restart() {
+    if (!this.config.restart_command) return;
+    const cmd = this.config.restart_command.replace('shell_command.', '');
+    this.hass.callService('shell_command', cmd);
     this._handleClick();
   }
 
