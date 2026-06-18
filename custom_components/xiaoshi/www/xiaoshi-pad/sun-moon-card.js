@@ -187,7 +187,7 @@ class SunMoonCard extends LitElement {
         const noonH = noon.getUTCHours() + noon.getUTCMinutes() / 60 + noon.getUTCSeconds() / 3600;
 
         // 经度：每差1小时 = 15°
-        const lon = (noonH - 12) * 15;
+        const lon = (12 - noonH) * 15;
 
         // 太阳赤纬
         const doy = this._dayOfYear(sunrise);
