@@ -85,6 +85,13 @@ class XiaoshiPVECardEditor extends LitElement {
                         placeholder="100%" />
                 </div>
                 <div class="form-group">
+                    <label>虚拟机类型</label>
+                    <select name="vm_type" @change="${this._valueChanged}">
+                        <option value="proxmoxve" .selected="${c.vm_type === 'proxmoxve' || !c.vm_type}">ProxmoxVE</option>
+                        <option value="esxi" .selected="${c.vm_type === 'esxi'}">ESXi</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>主题</label>
                     <select name="theme" @change="${this._valueChanged}">
                         <option value="system" .selected="${c.theme === 'system' || !c.theme}">跟随系统</option>
@@ -115,7 +122,7 @@ class XiaoshiPVECard extends LitElement {
             }
             .card-header {
                 display:flex; justify-content:space-between; align-items:center;
-                padding:12px 16px; background:var(--bg-color, #fff); border-radius:12px;
+                padding:8px 16px 2px 16px; background:var(--bg-color, #fff); border-radius:12px;
             }
             .card-title { font-size:18px; font-weight:500; color:var(--fg-color, #000); }
             .entity-count {
@@ -132,7 +139,7 @@ class XiaoshiPVECard extends LitElement {
             }
             .device-header {
                 display:flex; align-items:center; gap:8px;
-                padding:8px 12px; font-size:14px; font-weight:500;
+                padding:6px 12px; font-size:14px; font-weight:500;
                 color:var(--fg-color, #000);
                 border-bottom:1px solid rgba(150,150,150,0.2);
             }
@@ -308,7 +315,8 @@ class XiaoshiPVECard extends LitElement {
 
         for (const entityId in this.hass.states) {
             const regEntry = entityReg[entityId];
-            if (!regEntry || regEntry.platform !== 'proxmoxve') continue;
+            const vmPlatform = this.config.vm_type || 'proxmoxve';
+            if (!regEntry || regEntry.platform !== vmPlatform) continue;
 
             const stateObj = this.hass.states[entityId];
             let deviceName = '';
@@ -909,7 +917,7 @@ class XiaoshiPVECard extends LitElement {
                 </div>
 
                 ${allEntities.length === 0 ? html`
-                    <div class="no-data">未找到 ProxmoxVE 实体</div>
+                    <div class="no-data">未找到 ${this.config.vm_type === 'esxi' ? 'ESXi' : 'ProxmoxVE'} 实体</div>
                 ` : html`
                     <div class="devices-wrap">
                         ${deviceGroups.map(d => this._renderDeviceCard(d, theme))}
