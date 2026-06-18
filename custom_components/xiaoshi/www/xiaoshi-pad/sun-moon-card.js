@@ -135,14 +135,12 @@ class SunMoonCard extends LitElement {
     _calcMoon() {
         const now = new Date(this._now);
         const jd = this._toJD(now);
-        // 已知新月：2000-01-06 18:14 UTC（JD 2451550.260）
         const jdNew = 2451550.260;
         const syn = 29.53058867;
         const age = ((jd - jdNew) % syn + syn) % syn;
         const angle = (age / syn) * 2 * Math.PI;
         const ill = (1 - Math.cos(angle)) / 2;
 
-        // 月相名称
         let name;
         if (age < 1.84566) name = '新月';
         else if (age < 5.53699) name = '蛾眉月';
@@ -154,15 +152,118 @@ class SunMoonCard extends LitElement {
         else if (age < 27.68493) name = '残月';
         else name = '新月';
 
-        // 近似月出月落：新月≈6:00升起, 满月≈18:00升起
-        const riseH = (age / syn) * 24 + 6;
-        const setH = riseH + 12.42;
+        // 从太阳数据反算坐标，再精确计算月出月落
+        const coords = this._calcLatLon();
+        if (coords) {
+            return this._calcMoonAccurate(now, jd, { age, angle, ill, name }, coords);
+        }
 
+        // 回退：近似计算
+        return this._calcMoonApprox(now, { age, angle, ill, name, syn });
+    }
+
+    // ---------- 反算经纬度 ----------
+    _calcLatLon() {
+        const sd = this._sunData;
+        if (!sd?.rising || !sd?.setting) return null;
+        const r = new Date(sd.rising);
+        const s = new Date(sd.setting);
+
+        // 确保日出日落来自同一天
+        let sunrise, sunset;
+        if (r < s) { sunrise = r; sunset = s; }
+        else {
+            // next_rising 是明天，用昨天的近似替代
+            sunrise = new Date(r.getTime() - 86400000);
+            sunset = s;
+        }
+
+        // 昼长（小时）
+        const dayLen = (sunset.getTime() - sunrise.getTime()) / 3600000;
+
+        // 太阳正午 UTC 时刻
+        const noonMs = (sunrise.getTime() + sunset.getTime()) / 2;
+        const noon = new Date(noonMs);
+        const noonH = noon.getUTCHours() + noon.getUTCMinutes() / 60 + noon.getUTCSeconds() / 3600;
+
+        // 经度：每差1小时 = 15°
+        const lon = (noonH - 12) * 15;
+
+        // 太阳赤纬
+        const doy = this._dayOfYear(sunrise);
+        const dec = this._solarDeclination(doy);
+
+        // 纬度：cos(HA) = -tan(lat)·tan(dec)
+        const HA = dayLen * 7.5; // 半天角（度）
+        const cosHA = Math.cos(HA * Math.PI / 180);
+        const tanDec = Math.tan(dec * Math.PI / 180);
+
+        if (Math.abs(tanDec) < 1e-8) return { lat: 35, lon };
+
+        const tanLat = -cosHA / tanDec;
+        let lat = Math.atan(tanLat) * 180 / Math.PI;
+        lat = Math.max(-80, Math.min(80, lat));
+
+        return { lat, lon };
+    }
+
+    _dayOfYear(d) {
+        const start = new Date(Date.UTC(d.getUTCFullYear(), 0, 0));
+        return Math.floor((d.getTime() - start.getTime()) / 86400000);
+    }
+
+    _solarDeclination(doy) {
+        const B = (doy - 1) * 2 * Math.PI / 365;
+        return (0.006918 - 0.399912 * Math.cos(B) + 0.070257 * Math.sin(B)
+              - 0.006758 * Math.cos(2*B) + 0.000907 * Math.sin(2*B)
+              - 0.002697 * Math.cos(3*B) + 0.00148 * Math.sin(3*B)) * 180 / Math.PI;
+    }
+
+    // ---------- 精确月出月落 ----------
+    _calcMoonAccurate(now, jd, phase, coords) {
+        const { lat, lon } = coords;
+
+        // 计算今天0h UT的月球赤经赤纬
+        const jd0 = jd - (jd + 0.5) % 1; // truncate to 0h UT
+        const pos0 = this._moonRaDec(jd0);
+
+        // 第一次近似：用0h UT的月球位置算升落
+        let times = this._moonRST(jd0, pos0.ra, pos0.dec, lat, lon);
+        if (!times) return this._calcMoonApprox(now, phase);
+
+        // 第二次迭代：用近似月出/月落时刻重新算月球位置
+        const jdRise = jd0 + times.riseUT / 24;
+        const jdSet = jd0 + times.setUT / 24;
+        const posRise = this._moonRaDec(jdRise);
+        const posSet = this._moonRaDec(jdSet);
+        const raMid = (posRise.ra + posSet.ra) / 2;
+        const decMid = (posRise.dec + posSet.dec) / 2;
+
+        times = this._moonRST(jd0, raMid, decMid, lat, lon);
+        if (!times) return this._calcMoonApprox(now, phase);
+
+        // UT 小时数
+        let riseUT = times.riseUT, setUT = times.setUT;
+
+        // 归一化到当天 0-24 范围
+        while (riseUT < 0) riseUT += 24;
+        while (riseUT >= 24) riseUT -= 24;
+        while (setUT < 0) setUT += 24;
+        while (setUT >= 24) setUT -= 24;
+
+        // 转换为本地时间
+        const tzOff = -now.getTimezoneOffset() / 60; // 本地时区偏移（小时，如 +8）
+        const riseLocal = (riseUT + tzOff + 48) % 24;
+        const setLocal = (setUT + tzOff + 48) % 24;
+
+        // 构造本地 Date 对象
         const today = new Date(now); today.setHours(0,0,0,0);
-        const mRise = new Date(today); mRise.setHours(0,0,0,0);
-        mRise.setMilliseconds(riseH * 3600000);
-        const mSet = new Date(today); mSet.setHours(0,0,0,0);
-        mSet.setMilliseconds(setH * 3600000);
+        const mRise = new Date(today);
+        mRise.setHours(0,0,0,0);
+        mRise.setMilliseconds(riseLocal * 3600000);
+        const mSet = new Date(today);
+        mSet.setHours(0,0,0,0);
+        mSet.setMilliseconds(setLocal * 3600000);
 
         // 判断当前月亮是否在地平线上
         let up = false;
@@ -172,14 +273,132 @@ class SunMoonCard extends LitElement {
         } else {
             up = t >= mRise.getTime() || t < mSet.getTime();
         }
-        // 同时检查昨天是否延续到今天
         if (!up) {
             const yRise = new Date(mRise); yRise.setDate(yRise.getDate() - 1);
             const ySet = new Date(mSet); ySet.setDate(ySet.getDate() - 1);
             if (ySet > yRise && t >= yRise.getTime() && t < ySet.getTime()) up = true;
         }
 
-        return { age, angle, ill, name, rise: mRise, set: mSet, up, riseH, setH };
+        return {
+            age: phase.age, angle: phase.angle, ill: phase.ill, name: phase.name,
+            rise: mRise, set: mSet, up, riseH: riseLocal, setH: setLocal
+        };
+    }
+
+    // 月球赤经赤纬（低精度，基于轨道根数）
+    _moonRaDec(jd) {
+        const d = jd - 2451545.0;
+        const toR = Math.PI / 180;
+
+        let Lp = (218.316 + 13.176396 * d) % 360;
+        let Mp = (134.963 + 13.064993 * d) % 360;
+        let F  = (93.272  + 13.229350 * d) % 360;
+        let D  = (297.850 + 12.190749 * d) % 360;
+
+        Lp = ((Lp % 360) + 360) % 360;
+        Mp = ((Mp % 360) + 360) % 360;
+        F  = ((F  % 360) + 360) % 360;
+        D  = ((D  % 360) + 360) % 360;
+
+        // 黄经（包含主摄动项）
+        const lambda = Lp
+            + 6.289 * Math.sin(Mp * toR)
+            + 1.274 * Math.sin((2*D - Mp) * toR)
+            + 0.658 * Math.sin(2*D * toR)
+            + 0.214 * Math.sin(2*Mp * toR)
+            - 0.186 * Math.sin(Mp * toR)  // 简化项
+            + 0.114 * Math.sin(2*F * toR);
+
+        // 黄纬
+        const beta = 5.128 * Math.sin(F * toR)
+            + 0.281 * Math.sin((Mp + F) * toR);
+
+        // 黄赤交角
+        const T = d / 36525;
+        const eps = 23.439291 - 0.013004 * T;
+        const epsR = eps * toR;
+
+        const lambdaR = lambda * toR;
+        const betaR = beta * toR;
+
+        const sinDec = Math.sin(betaR) * Math.cos(epsR) + Math.cos(betaR) * Math.sin(epsR) * Math.sin(lambdaR);
+        const dec = Math.asin(sinDec) * 180 / Math.PI;
+
+        const y = Math.sin(lambdaR) * Math.cos(epsR) - Math.tan(betaR) * Math.sin(epsR);
+        const x = Math.cos(lambdaR);
+        let ra = Math.atan2(y, x) * 180 / Math.PI;
+        if (ra < 0) ra += 360;
+
+        return { ra, dec };
+    }
+
+    // 由赤经赤纬计算月出月落 UT 时刻
+    _moonRST(jd0, ra, dec, lat, lon) {
+        const toR = Math.PI / 180;
+
+        // 格林尼治恒星时 (0h UT)
+        const dSince = jd0 - 2451545.0;
+        let GST = (280.46061837 + 360.98564736629 * dSince) % 360;
+        GST = ((GST % 360) + 360) % 360;
+
+        // 月球中天时刻 (UT 小时)
+        let transitRA = ra - lon - GST;
+        transitRA = ((transitRA % 360) + 360) % 360;
+        let transitUT = transitRA / 15 * 0.9972696; // 恒星日→平太阳日
+
+        // 时角公式：cos(HA) = (sin(-0.833°) - sin(lat)*sin(dec)) / (cos(lat)*cos(dec))
+        const sinAlt = Math.sin(-0.833 * toR); // 大气折射 + 视半径
+        const sinLat = Math.sin(lat * toR);
+        const cosLat = Math.cos(lat * toR);
+        const sinDec = Math.sin(dec * toR);
+        const cosDec = Math.cos(dec * toR);
+
+        const cosHA = (sinAlt - sinLat * sinDec) / (cosLat * cosDec);
+
+        if (Math.abs(cosHA) > 1) return null; // 不升不落（极圈内）
+
+        const HA = Math.acos(cosHA) * 180 / Math.PI;
+        const haH = HA / 15;
+
+        let riseUT = transitUT - haH;
+        let setUT = transitUT + haH;
+
+        // 归一化到当天
+        riseUT = ((riseUT % 24) + 24) % 24;
+        setUT = ((setUT % 24) + 24) % 24;
+
+        return { riseUT, setUT, transitUT };
+    }
+
+    // 回退：近似月出月落
+    _calcMoonApprox(now, phase) {
+        const syn = 29.53058867;
+        const riseH = (phase.age / syn) * 24 + 6;
+        const setH = riseH + 12.42;
+
+        const today = new Date(now); today.setHours(0,0,0,0);
+        const mRise = new Date(today); mRise.setHours(0,0,0,0);
+        mRise.setMilliseconds(riseH * 3600000);
+        const mSet = new Date(today); mSet.setHours(0,0,0,0);
+        mSet.setMilliseconds(setH * 3600000);
+
+        let up = false;
+        const t = now.getTime();
+        if (mSet > mRise) {
+            up = t >= mRise.getTime() && t < mSet.getTime();
+        } else {
+            up = t >= mRise.getTime() || t < mSet.getTime();
+        }
+        if (!up) {
+            const yRise = new Date(mRise); yRise.setDate(yRise.getDate() - 1);
+            const ySet = new Date(mSet); ySet.setDate(ySet.getDate() - 1);
+            if (ySet > yRise && t >= yRise.getTime() && t < ySet.getTime()) up = true;
+        }
+
+        return {
+            age: phase.age, angle: phase.angle, ill: phase.ill, name: phase.name,
+            rise: mRise, set: mSet, up, riseH, setH
+        };
     }
 
     _toJD(d) {
@@ -268,9 +487,9 @@ class SunMoonCard extends LitElement {
         const W = cvs.width, H = cvs.height;
         ctx.clearRect(0,0,W,H);
 
-        const hY = H * 0.48;
+        const hY = H * 0.50;
         const cx = W / 2, cy = hY;
-        const rx = W * 0.38, ry = H * 0.38;
+        const rx = W * 0.38, ry = H * 0.35;
 
         // ---- 地平线 ----
         ctx.strokeStyle = 'rgba(255,255,255,0.4)';
@@ -304,7 +523,7 @@ class SunMoonCard extends LitElement {
             const sy = cy + sp.y * ry;
             if (sp.on) {
                 this._drawGlow(ctx, sx, sy, 10, 30,
-                    'rgba(255,200,50)','rgba(255,120,20,0.4)','rgba(255,60,10,0)');
+                    'rgba(255,200,50,0.5)','rgba(255,120,20,0.4)','rgba(255,60,10,0)');
                 ctx.fillStyle = '#FFD54F';
                 ctx.beginPath(); ctx.arc(sx, sy, 14, 0, Math.PI*2); ctx.fill();
             } else {
@@ -320,9 +539,18 @@ class SunMoonCard extends LitElement {
             const mx = cx - rx + mp.x * rx * 2;
             const my = cy + mp.y * ry;
             if (mp.on) {
-                this._drawGlow(ctx, mx, my, 5, 22,
-                    'rgba(170,205,255)','rgba(130,160,240,0.3)','rgba(100,130,220,0)');
-                this._drawMoonBody(ctx, mx, my, 11, mp);
+                // 当太阳和月亮同时在上弧时，月亮使用透明色
+                if (sp?.on) {
+                    ctx.save(); ctx.globalAlpha = 0.35;
+                    this._drawGlow(ctx, mx, my, 5, 22,
+                        'rgba(170,205,255)','rgba(130,160,240,0.3)','rgba(100,130,220,0)');
+                    this._drawMoonBody(ctx, mx, my, 11, mp);
+                    ctx.restore();
+                } else {
+                    this._drawGlow(ctx, mx, my, 5, 22,
+                        'rgba(170,205,255)','rgba(130,160,240,0.3)','rgba(100,130,220,0)');
+                    this._drawMoonBody(ctx, mx, my, 11, mp);
+                }
             } else {
                 ctx.save(); ctx.globalAlpha = 0.4;
                 this._drawMoonBody(ctx, mx, my, 11, mp);
@@ -332,19 +560,43 @@ class SunMoonCard extends LitElement {
     }
 
     _drawMoonBody(ctx, mx, my, r, mp) {
-        // 亮面
+        const angle = mp.angle;
+        const ill = mp.ill;
+        const cosA = Math.cos(angle);
+
+        // 满月：全亮
+        if (ill > 0.99) {
+            ctx.fillStyle = '#D0DEF5';
+            ctx.beginPath(); ctx.arc(mx, my, r, 0, Math.PI*2); ctx.fill();
+            return;
+        }
+        // 新月：全暗
+        if (ill < 0.01) {
+            ctx.fillStyle = 'rgba(18,20,35,0.78)';
+            ctx.beginPath(); ctx.arc(mx, my, r, 0, Math.PI*2); ctx.fill();
+            return;
+        }
+
+        // 先画亮面底圆
         ctx.fillStyle = '#D0DEF5';
         ctx.beginPath(); ctx.arc(mx, my, r, 0, Math.PI*2); ctx.fill();
-        // 暗面
-        if (mp.ill < 0.99) {
-            ctx.save();
-            ctx.beginPath(); ctx.arc(mx, my, r, 0, Math.PI*2); ctx.clip();
-            ctx.fillStyle = 'rgba(18,20,35,0.78)';
-            const dx = Math.cos(mp.angle) * (r + 0.5);
-            ctx.beginPath(); ctx.ellipse(mx + dx, my, r + 0.5, r * Math.abs(Math.sin(mp.angle||0.01)), 0, 0, Math.PI*2);
-            ctx.fill();
-            ctx.restore();
+
+        // 暗面：用大半径偏移圆近似，clipped to moon
+        ctx.save();
+        ctx.beginPath(); ctx.arc(mx, my, r, 0, Math.PI*2); ctx.clip();
+        ctx.fillStyle = 'rgba(18,20,35,0.78)';
+
+        const R = r * 5; // 大半径，接近半平面效果
+        let ox;
+        if (angle <= Math.PI) {
+            // 盈月（0→π）：暗面在左侧，右边界 = mx + r*cos(angle)
+            ox = mx + r * cosA - R;
+        } else {
+            // 亏月（π→2π）：暗面在右侧，左边界 = mx - r*cos(angle)
+            ox = mx - r * cosA + R;
         }
+        ctx.beginPath(); ctx.arc(ox, my, R, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
     }
 
     _drawGlow(ctx, x, y, r0, r1, c0, c1, c2) {
