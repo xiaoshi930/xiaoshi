@@ -1423,6 +1423,10 @@ class TvPlayer extends LitElement {
         border-radius: 12px;
       }
 
+      .power-button {
+        grid-area: power;
+      }
+
       .power-on-button {
         grid-area: power_on;
       }
@@ -2785,7 +2789,7 @@ render() {
           height: ${this.height};
           grid-template-rows: 1fr 1fr 1fr 200px auto 1fr;
           grid-template-areas: 
-            "icon name name name home back menu setting power_on power_off"
+            ${this.tvConnectionMode === 'integration' ? `"icon name name name name home back menu setting power"` : `"icon name name name home back menu setting power_on power_off"`}
             "icon info info info info info info info . ."
             "icon volume volume-down volume-slider volume-slider volume-up prev play pause next"
             "fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang"
@@ -2890,6 +2894,11 @@ render() {
         </div>
 
         <!-- 控制按钮 -->
+        ${this.tvConnectionMode === 'integration' ? html`
+        <button class="control-button power-button" @click=${this.handlePower}>
+          <ha-icon icon="mdi:power"></ha-icon>
+        </button>
+        ` : html`
         <button class="control-button power-on-button" @click=${this.handlePowerOn}>
           <ha-icon icon="mdi:power"></ha-icon>
         </button>
@@ -2897,6 +2906,7 @@ render() {
         <button class="control-button power-off-button" @click=${this.handlePowerOff}>
           <ha-icon icon="mdi:close-circle-outline"></ha-icon>
         </button>
+        `}
 
         <button class="control-button home-button" @click=${this.handleHome}>
           <ha-icon icon="mdi:home"></ha-icon>
