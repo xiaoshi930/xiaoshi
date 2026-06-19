@@ -17,6 +17,8 @@ class TvPlayerEditor extends LitElement {
       _remoteSearchFocused: { type: Boolean },
       _turnOnSearchText: { type: String },
       _turnOnSearchFocused: { type: Boolean },
+      _turnOffSearchText: { type: String },
+      _turnOffSearchFocused: { type: Boolean },
       _appCurrentSearchText: { type: String },
       _appCurrentSearchFocused: { type: Boolean }
     };
@@ -156,8 +158,62 @@ class TvPlayerEditor extends LitElement {
   render() {
     if (!this.hass) return html``;
 
+    const isIntegration = !this.config.tv_connection_mode || this.config.tv_connection_mode === 'integration';
+
     return html`
       <div class="form">
+        <div class="form-group">
+          <label>主题</label>
+          <select 
+            @change=${this._entityChanged}
+            .value=${this.config.theme !== undefined ? this.config.theme : 'system'}
+            name="theme"
+          >
+            <option value="system">跟随系统</option>
+            <option value="light">浅色主题</option>
+            <option value="dark">深色主题</option>
+            <option value="sun">跟随日出日落</option>
+            <option value="function">跟随函数</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>卡片宽度：支持像素(px)和百分比(%)</label>
+          <input 
+            type="text" 
+            @change=${this._entityChanged}
+            .value=${this.config.width !== undefined ? this.config.width : '100%'}
+            name="width"
+            placeholder="默认100%"
+          />
+        </div>
+        
+        <div class="form-group">
+          <label>卡片高度：支持像素(px)和百分比(%)</label>
+          <input 
+            type="text" 
+            @change=${this._entityChanged}
+            .value=${this.config.height !== undefined ? this.config.height : '80px'}
+            name="height"
+            placeholder="默认80px"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>连接电视模式</label>
+          <select 
+            @change=${this._entityChanged}
+            .value=${this.config.tv_connection_mode || 'integration'}
+            name="tv_connection_mode"
+          >
+            <option value="integration">小米集成方式</option>
+            <option value="adb">ADB方式</option>
+            <option value="infrared">红外方式</option>
+            <option value="esphome_ir">ESPHome红外</option>
+          </select>
+        </div>
+
+        ${isIntegration ? html`
         <div class="form-group">
           <label>小米Home实体（主要控制实体）</label>
           <select 
@@ -233,41 +289,6 @@ class TvPlayerEditor extends LitElement {
         </div>
 
         <div class="form-group">
-          <label>打开电视按钮（开机时优先调用）</label>
-          <div class="entity-search-wrapper">
-            ${this.config.turn_on_button ? html`
-              <div class="entity-search-selected" @click=${this._clearTurnOnButton}>
-                <span>${this._getEntityDisplayName(this.config.turn_on_button)}</span>
-                <span class="clear-btn">&times;</span>
-              </div>
-            ` : html`
-              <input 
-                class="entity-search-input"
-                type="text"
-                .value=${this._turnOnSearchText || ''}
-                placeholder="输入关键字搜索按钮/脚本/开关实体..."
-                @input=${this._onTurnOnSearchInput}
-                @focus=${this._onTurnOnSearchFocus}
-                @blur=${this._onTurnOnSearchBlur}
-              />
-              ${this._turnOnSearchFocused && this._getFilteredTurnOnEntities().length > 0 ? html`
-                <div class="entity-search-dropdown">
-                  ${this._getFilteredTurnOnEntities().map(entityId => html`
-                    <div 
-                      class="entity-search-item ${entityId === this.config.turn_on_button ? 'selected' : ''}"
-                      @mousedown=${(e) => this._selectTurnOnEntity(e, entityId)}
-                    >
-                      ${this.hass.states[entityId].attributes.friendly_name || entityId}
-                      <span class="entity-id">${entityId}</span>
-                    </div>
-                  `)}
-                </div>
-              ` : ''}
-            `}
-          </div>
-        </div>
-
-        <div class="form-group">
           <label>播放控制 app_current</label>
           <div class="entity-search-wrapper">
             ${this.config.app_current ? html`
@@ -326,55 +347,78 @@ class TvPlayerEditor extends LitElement {
           ` : ''}
         </div>
 
+        ` : ''}
+
         <div class="form-group">
-          <label>主题</label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.theme !== undefined ? this.config.theme : 'system'}
-            name="theme"
-          >
-            <option value="system">跟随系统</option>
-            <option value="light">浅色主题</option>
-            <option value="dark">深色主题</option>
-            <option value="sun">跟随日出日落</option>
-            <option value="function">跟随函数</option>
-          </select>
+          <label>打开电视按钮（最高优先级，覆盖其他命令）</label>
+          <div class="entity-search-wrapper">
+            ${this.config.turn_on_button ? html`
+              <div class="entity-search-selected" @click=${this._clearTurnOnButton}>
+                <span>${this._getEntityDisplayName(this.config.turn_on_button)}</span>
+                <span class="clear-btn">&times;</span>
+              </div>
+            ` : html`
+              <input 
+                class="entity-search-input"
+                type="text"
+                .value=${this._turnOnSearchText || ''}
+                placeholder="输入关键字搜索按钮/脚本/开关实体..."
+                @input=${this._onTurnOnSearchInput}
+                @focus=${this._onTurnOnSearchFocus}
+                @blur=${this._onTurnOnSearchBlur}
+              />
+              ${this._turnOnSearchFocused && this._getFilteredTurnOnEntities().length > 0 ? html`
+                <div class="entity-search-dropdown">
+                  ${this._getFilteredTurnOnEntities().map(entityId => html`
+                    <div 
+                      class="entity-search-item ${entityId === this.config.turn_on_button ? 'selected' : ''}"
+                      @mousedown=${(e) => this._selectTurnOnEntity(e, entityId)}
+                    >
+                      ${this.hass.states[entityId].attributes.friendly_name || entityId}
+                      <span class="entity-id">${entityId}</span>
+                    </div>
+                  `)}
+                </div>
+              ` : ''}
+            `}
+          </div>
         </div>
-        
+
         <div class="form-group">
-          <label>卡片宽度：支持像素(px)和百分比(%)</label>
-          <input 
-            type="text" 
-            @change=${this._entityChanged}
-            .value=${this.config.width !== undefined ? this.config.width : '100%'}
-            name="width"
-            placeholder="默认100%"
-          />
+          <label>关闭电视按钮（最高优先级，覆盖其他命令）</label>
+          <div class="entity-search-wrapper">
+            ${this.config.turn_off_button ? html`
+              <div class="entity-search-selected" @click=${this._clearTurnOffButton}>
+                <span>${this._getEntityDisplayName(this.config.turn_off_button)}</span>
+                <span class="clear-btn">&times;</span>
+              </div>
+            ` : html`
+              <input 
+                class="entity-search-input"
+                type="text"
+                .value=${this._turnOffSearchText || ''}
+                placeholder="输入关键字搜索按钮/脚本/开关实体..."
+                @input=${this._onTurnOffSearchInput}
+                @focus=${this._onTurnOffSearchFocus}
+                @blur=${this._onTurnOffSearchBlur}
+              />
+              ${this._turnOffSearchFocused && this._getFilteredTurnOffEntities().length > 0 ? html`
+                <div class="entity-search-dropdown">
+                  ${this._getFilteredTurnOffEntities().map(entityId => html`
+                    <div 
+                      class="entity-search-item ${entityId === this.config.turn_off_button ? 'selected' : ''}"
+                      @mousedown=${(e) => this._selectTurnOffEntity(e, entityId)}
+                    >
+                      ${this.hass.states[entityId].attributes.friendly_name || entityId}
+                      <span class="entity-id">${entityId}</span>
+                    </div>
+                  `)}
+                </div>
+              ` : ''}
+            `}
+          </div>
         </div>
-        
-        <div class="form-group">
-          <label>卡片高度：支持像素(px)和百分比(%)</label>
-          <input 
-            type="text" 
-            @change=${this._entityChanged}
-            .value=${this.config.height !== undefined ? this.config.height : '80px'}
-            name="height"
-            placeholder="默认80px"
-          />
-        </div>
-        
-        <div class="form-group">
-          <label>连接电视模式</label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.tv_connection_mode || 'integration'}
-            name="tv_connection_mode"
-          >
-            <option value="integration">集成方式</option>
-            <option value="adb">ADB方式</option>
-          </select>
-        </div>
-        
+
         ${this.config.tv_connection_mode === 'adb' ? html`
           <div class="form-group">
             <label>ADB命令实体</label>
@@ -405,9 +449,16 @@ class TvPlayerEditor extends LitElement {
                   <input 
                     type="text" 
                     @change=${this._entityChanged}
-                    .value=${this.config.adb_command?.power || ''}
-                    name="adb_command_power"
-                    placeholder="开关机按钮命令（默认：POWER）"
+                    .value=${this.config.adb_command?.power_on || ''}
+                    name="adb_command_power_on"
+                    placeholder="开机按钮命令（默认：POWER）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.adb_command?.power_off || ''}
+                    name="adb_command_power_off"
+                    placeholder="关机按钮命令（默认：POWER）"
                   />
                   <input 
                     type="text" 
@@ -540,6 +591,340 @@ class TvPlayerEditor extends LitElement {
             </div>
           </div>
         ` : ''}
+
+        ${this.config.tv_connection_mode === 'infrared' ? html`
+          <div class="form-group">
+            <label>红外遥控实体</label>
+            <select 
+              @change=${this._entityChanged}
+              .value=${this.config.ir_entity || ''}
+              name="ir_entity"
+            >
+              <option value="">选择红外遥控实体</option>
+              ${Object.keys(this.hass.states)
+                .filter(entityId => entityId.startsWith('remote.'))
+                .map(entityId => html`
+                  <option value="${entityId}" 
+                    .selected=${entityId === this.config.ir_entity}>
+                    ${this.hass.states[entityId].attributes.friendly_name || entityId} ${this.hass.states[entityId].attributes.friendly_name ? '(' + entityId + ')' : ''}
+                  </option>
+                `)}
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>红外命令配置</label>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <!-- 基础控制按钮 -->
+              <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                <label style="font-weight: normal; font-size: 12px; color: #666;">基础控制按钮</label>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.power_on || ''}
+                    name="ir_command_power_on"
+                    placeholder="开机命令（默认：KEY_POWER）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.power_off || ''}
+                    name="ir_command_power_off"
+                    placeholder="关机命令（默认：KEY_POWER）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.home || ''}
+                    name="ir_command_home"
+                    placeholder="主页命令（默认：KEY_HOME）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.back || ''}
+                    name="ir_command_back"
+                    placeholder="返回命令（默认：KEY_BACK）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.menu || ''}
+                    name="ir_command_menu"
+                    placeholder="菜单命令（默认：KEY_MENU）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.setting || ''}
+                    name="ir_command_setting"
+                    placeholder="设置命令（默认：KEY_SETTINGS）"
+                  />
+                </div>
+              </div>
+              
+              <!-- 媒体控制按钮 -->
+              <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                <label style="font-weight: normal; font-size: 12px; color: #666;">媒体控制按钮</label>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.play || ''}
+                    name="ir_command_play"
+                    placeholder="播放命令（默认：KEY_PLAY）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.pause || ''}
+                    name="ir_command_pause"
+                    placeholder="暂停命令（默认：KEY_PAUSE）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.next || ''}
+                    name="ir_command_next"
+                    placeholder="下一个命令（默认：KEY_NEXT）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.previous || ''}
+                    name="ir_command_previous"
+                    placeholder="上一个命令（默认：KEY_PREVIOUS）"
+                  />
+                </div>
+              </div>
+              
+              <!-- 音量控制按钮 -->
+              <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                <label style="font-weight: normal; font-size: 12px; color: #666;">音量控制按钮</label>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.volume_up || ''}
+                    name="ir_command_volume_up"
+                    placeholder="音量加命令（默认：KEY_VOLUMEUP）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.volume_down || ''}
+                    name="ir_command_volume_down"
+                    placeholder="音量减命令（默认：KEY_VOLUMEDOWN）"
+                  />
+                </div>
+              </div>
+              
+              <!-- 方向控制按钮 -->
+              <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                <label style="font-weight: normal; font-size: 12px; color: #666;">方向控制按钮</label>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.up || ''}
+                    name="ir_command_up"
+                    placeholder="上键命令（默认：KEY_UP）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.down || ''}
+                    name="ir_command_down"
+                    placeholder="下键命令（默认：KEY_DOWN）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.left || ''}
+                    name="ir_command_left"
+                    placeholder="左键命令（默认：KEY_LEFT）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.right || ''}
+                    name="ir_command_right"
+                    placeholder="右键命令（默认：KEY_RIGHT）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.center || ''}
+                    name="ir_command_center"
+                    placeholder="确认键命令（默认：KEY_ENTER）"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+
+        ${this.config.tv_connection_mode === 'esphome_ir' ? html`
+          <div class="form-group">
+            <label>ESPHome红外服务</label>
+            <input 
+              type="text" 
+              @change=${this._entityChanged}
+              .value=${this.config.esphome_service || ''}
+              name="esphome_service"
+              placeholder="例如：esphome.livingroom_ir_send_pronto"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Pronto红外码配置（十六进制）</label>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                <label style="font-weight: normal; font-size: 12px; color: #666;">基础控制</label>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.power_on || ''}
+                    name="esphome_code_power_on"
+                    placeholder="开机 Pronto码"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.power_off || ''}
+                    name="esphome_code_power_off"
+                    placeholder="关机 Pronto码"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.home || ''}
+                    name="esphome_code_home"
+                    placeholder="主页 Pronto码"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.back || ''}
+                    name="esphome_code_back"
+                    placeholder="返回 Pronto码"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.menu || ''}
+                    name="esphome_code_menu"
+                    placeholder="菜单 Pronto码"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.setting || ''}
+                    name="esphome_code_setting"
+                    placeholder="设置 Pronto码"
+                  />
+                </div>
+              </div>
+
+              <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                <label style="font-weight: normal; font-size: 12px; color: #666;">媒体控制</label>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.play || ''}
+                    name="esphome_code_play"
+                    placeholder="播放 Pronto码"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.pause || ''}
+                    name="esphome_code_pause"
+                    placeholder="暂停 Pronto码"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.next || ''}
+                    name="esphome_code_next"
+                    placeholder="下一个 Pronto码"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.previous || ''}
+                    name="esphome_code_previous"
+                    placeholder="上一个 Pronto码"
+                  />
+                </div>
+              </div>
+
+              <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                <label style="font-weight: normal; font-size: 12px; color: #666;">音量控制</label>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.volume_up || ''}
+                    name="esphome_code_volume_up"
+                    placeholder="音量加 Pronto码"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.volume_down || ''}
+                    name="esphome_code_volume_down"
+                    placeholder="音量减 Pronto码"
+                  />
+                </div>
+              </div>
+
+              <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                <label style="font-weight: normal; font-size: 12px; color: #666;">方向控制</label>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.up || ''}
+                    name="esphome_code_up"
+                    placeholder="上键 Pronto码"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.down || ''}
+                    name="esphome_code_down"
+                    placeholder="下键 Pronto码"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.left || ''}
+                    name="esphome_code_left"
+                    placeholder="左键 Pronto码"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.right || ''}
+                    name="esphome_code_right"
+                    placeholder="右键 Pronto码"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.center || ''}
+                    name="esphome_code_center"
+                    placeholder="确认键 Pronto码"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        ` : ''}
       </div>
     `;
   }
@@ -550,6 +935,8 @@ class TvPlayerEditor extends LitElement {
     this._remoteSearchFocused = false;
     this._turnOnSearchText = '';
     this._turnOnSearchFocused = false;
+    this._turnOffSearchText = '';
+    this._turnOffSearchFocused = false;
     this._appCurrentSearchText = '';
     this._appCurrentSearchFocused = false;
   }
@@ -671,6 +1058,61 @@ class TvPlayerEditor extends LitElement {
     this.requestUpdate();
   }
 
+  _getFilteredTurnOffEntities() {
+    if (!this.hass) return [];
+    const searchText = (this._turnOffSearchText || '').toLowerCase();
+    return Object.keys(this.hass.states)
+      .filter(entityId => entityId.startsWith('button.') || entityId.startsWith('script.') || entityId.startsWith('switch.'))
+      .filter(entityId => {
+        const friendlyName = (this.hass.states[entityId].attributes.friendly_name || '').toLowerCase();
+        return entityId.toLowerCase().includes(searchText) || friendlyName.includes(searchText);
+      });
+  }
+
+  _onTurnOffSearchInput(e) {
+    this._turnOffSearchText = e.target.value;
+    this._turnOffSearchFocused = true;
+    this.requestUpdate();
+  }
+
+  _onTurnOffSearchFocus() {
+    this._turnOffSearchFocused = true;
+    this.requestUpdate();
+  }
+
+  _onTurnOffSearchBlur() {
+    setTimeout(() => {
+      this._turnOffSearchFocused = false;
+      this.requestUpdate();
+    }, 200);
+  }
+
+  _selectTurnOffEntity(e, entityId) {
+    e.preventDefault();
+    const newConfig = { ...this.config, turn_off_button: entityId };
+    this.config = newConfig;
+    this._turnOffSearchText = '';
+    this._turnOffSearchFocused = false;
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config: this.config },
+      bubbles: true,
+      composed: true
+    }));
+    this.requestUpdate();
+  }
+
+  _clearTurnOffButton() {
+    const newConfig = { ...this.config, turn_off_button: '' };
+    this.config = newConfig;
+    this._turnOffSearchText = '';
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config: this.config },
+      bubbles: true,
+      composed: true
+    }));
+    this.requestUpdate();
+  }
+
   _getFilteredAppCurrentEntities() {
     if (!this.hass) return [];
     const searchText = (this._appCurrentSearchText || '').toLowerCase();
@@ -755,7 +1197,7 @@ class TvPlayerEditor extends LitElement {
 
   _entityChanged(e) {
     const { name, value } = e.target;
-    if (!value && name !== 'theme' && name !== 'width' && name !== 'height' && name !== 'remote_control' && name !== 'turn_on_button' && name !== 'app_current' && name !== 'app_current_config') return;
+    if (!value && name !== 'theme' && name !== 'width' && name !== 'height' && name !== 'remote_control' && name !== 'turn_on_button' && name !== 'turn_off_button' && name !== 'app_current' && name !== 'app_current_config') return;
     
     // 对于width字段，如果为空则使用默认值100%
     // 对于height字段，如果为空则使用默认值80px
@@ -775,6 +1217,24 @@ class TvPlayerEditor extends LitElement {
         ...this.config,
         adb_command: {
           ...this.config.adb_command,
+          [commandName]: finalValue
+        }
+      };
+    } else if (name.startsWith('ir_command_')) {
+      const commandName = name.replace('ir_command_', '');
+      newConfig = {
+        ...this.config,
+        ir_command: {
+          ...this.config.ir_command,
+          [commandName]: finalValue
+        }
+      };
+    } else if (name.startsWith('esphome_code_')) {
+      const commandName = name.replace('esphome_code_', '');
+      newConfig = {
+        ...this.config,
+        esphome_code: {
+          ...this.config.esphome_code,
           [commandName]: finalValue
         }
       };
@@ -809,7 +1269,12 @@ class TvPlayer extends LitElement {
       xiaomiMiotEntity: { type: String },
       remoteControlEntity: { type: String },
       turnOnButtonEntity: { type: String },
+      turnOffButtonEntity: { type: String },
       appCurrentEntity: { type: String },
+      infraredEntity: { type: String },
+      irCommands: { type: Object },
+      esphomeService: { type: String },
+      esphomeCode: { type: Object },
       appCurrentConfig: { type: Object },
       adbEntity: { type: String },
       tvConnectionMode: { type: String },
@@ -835,7 +1300,7 @@ class TvPlayer extends LitElement {
 
       .player-grid {
         display: grid;
-        grid-template-columns: 17% 8.5% 8.5% 22% 8.5% 8.5% 8.5% 8.5% 8.5%;
+        grid-template-columns: 17% 8.5% 8.5% 13.5% 8.5%  8.5% 8.5% 8.5% 8.5% 8.5%;
         width: 100%;
         height: 270px;
       }
@@ -958,8 +1423,12 @@ class TvPlayer extends LitElement {
         border-radius: 12px;
       }
 
-      .power-button {
-        grid-area: power;
+      .power-on-button {
+        grid-area: power_on;
+      }
+
+      .power-off-button {
+        grid-area: power_off;
       }
 
       .volume-down {
@@ -1249,12 +1718,54 @@ class TvPlayer extends LitElement {
     this.xiaomiMiotEntity = '';
     this.remoteControlEntity = '';
     this.turnOnButtonEntity = '';
+    this.turnOffButtonEntity = '';
     this.appCurrentEntity = '';
     this.appCurrentConfig = {};
+    this.infraredEntity = '';
+    this.irCommands = {
+      power_on: 'KEY_POWER',
+      power_off: 'KEY_POWER',
+      home: 'KEY_HOME',
+      back: 'KEY_BACK',
+      menu: 'KEY_MENU',
+      setting: 'KEY_SETTINGS',
+      play: 'KEY_PLAY',
+      pause: 'KEY_PAUSE',
+      next: 'KEY_NEXT',
+      previous: 'KEY_PREVIOUS',
+      volume_up: 'KEY_VOLUMEUP',
+      volume_down: 'KEY_VOLUMEDOWN',
+      up: 'KEY_UP',
+      down: 'KEY_DOWN',
+      left: 'KEY_LEFT',
+      right: 'KEY_RIGHT',
+      center: 'KEY_ENTER'
+    };
+    this.esphomeService = '';
+    this.esphomeCode = {
+      power_on: '',
+      power_off: '',
+      home: '',
+      back: '',
+      menu: '',
+      setting: '',
+      play: '',
+      pause: '',
+      next: '',
+      previous: '',
+      volume_up: '',
+      volume_down: '',
+      up: '',
+      down: '',
+      left: '',
+      right: '',
+      center: ''
+    };
     this.adbEntity = '';
     this.tvConnectionMode = 'integration';
     this.buttonCommands = {
-      power: 'POWER',
+      power_on: 'POWER',
+      power_off: 'POWER',
       home: 'HOME',
       back: 'BACK',
       menu: 'MENU',
@@ -1338,10 +1849,7 @@ class TvPlayer extends LitElement {
 
   // Home Assistant 卡片必需的方法
   setConfig(config) {
-    if (!config.xiaomi_home && !config.xiaomi_miot) {
-      throw new Error('You need to define xiaomi_home or xiaomi_miot');
-    }
-    
+  
     this.config = {
       xiaomi_home: config.xiaomi_home,
       xiaomi_miot: config.xiaomi_miot,
@@ -1373,12 +1881,54 @@ class TvPlayer extends LitElement {
     this.xiaomiMiotEntity = this.config.xiaomi_miot;
     this.remoteControlEntity = this.config.remote_control;
     this.turnOnButtonEntity = this.config.turn_on_button;
+    this.turnOffButtonEntity = this.config.turn_off_button;
     this.appCurrentEntity = this.config.app_current;
     this.appCurrentConfig = this.config.app_current_config || {};
     this.adbEntity = this.config.adb_entity;
+    this.infraredEntity = this.config.ir_entity;
+    this.esphomeService = this.config.esphome_service || '';
+    this.esphomeCode = {
+      power_on: this.config.esphome_code?.power_on || '',
+      power_off: this.config.esphome_code?.power_off || '',
+      home: this.config.esphome_code?.home || '',
+      back: this.config.esphome_code?.back || '',
+      menu: this.config.esphome_code?.menu || '',
+      setting: this.config.esphome_code?.setting || '',
+      play: this.config.esphome_code?.play || '',
+      pause: this.config.esphome_code?.pause || '',
+      next: this.config.esphome_code?.next || '',
+      previous: this.config.esphome_code?.previous || '',
+      volume_up: this.config.esphome_code?.volume_up || '',
+      volume_down: this.config.esphome_code?.volume_down || '',
+      up: this.config.esphome_code?.up || '',
+      down: this.config.esphome_code?.down || '',
+      left: this.config.esphome_code?.left || '',
+      right: this.config.esphome_code?.right || '',
+      center: this.config.esphome_code?.center || ''
+    };
+    this.irCommands = {
+      power_on: this.config.ir_command?.power_on || 'KEY_POWER',
+      power_off: this.config.ir_command?.power_off || 'KEY_POWER',
+      home: this.config.ir_command?.home || 'KEY_HOME',
+      back: this.config.ir_command?.back || 'KEY_BACK',
+      menu: this.config.ir_command?.menu || 'KEY_MENU',
+      setting: this.config.ir_command?.setting || 'KEY_SETTINGS',
+      play: this.config.ir_command?.play || 'KEY_PLAY',
+      pause: this.config.ir_command?.pause || 'KEY_PAUSE',
+      next: this.config.ir_command?.next || 'KEY_NEXT',
+      previous: this.config.ir_command?.previous || 'KEY_PREVIOUS',
+      volume_up: this.config.ir_command?.volume_up || 'KEY_VOLUMEUP',
+      volume_down: this.config.ir_command?.volume_down || 'KEY_VOLUMEDOWN',
+      up: this.config.ir_command?.up || 'KEY_UP',
+      down: this.config.ir_command?.down || 'KEY_DOWN',
+      left: this.config.ir_command?.left || 'KEY_LEFT',
+      right: this.config.ir_command?.right || 'KEY_RIGHT',
+      center: this.config.ir_command?.center || 'KEY_ENTER'
+    };
     this.tvConnectionMode = this.config.tv_connection_mode || 'integration';
     this.buttonCommands = {
-      power: this.config.adb_command?.power || 'POWER',
+      power_on: this.config.adb_command?.power_on || 'POWER',
+      power_off: this.config.adb_command?.power_off || 'POWER',
       home: this.config.adb_command?.home || 'HOME',
       back: this.config.adb_command?.back || 'BACK',
       menu: this.config.adb_command?.menu || 'MENU',
@@ -1472,8 +2022,6 @@ class TvPlayer extends LitElement {
 
   static getStubConfig() {
     return {
-      xiaomi_home: "media_player.xiaomi_home",
-      xiaomi_miot: "media_player.xiaomi_miot",
     };
   }
 
@@ -1497,6 +2045,26 @@ class TvPlayer extends LitElement {
         await this._hass.callService(service.split('.')[0], service.split('.')[1], data);
       } catch (error) {
         console.error('服务调用失败:', error);
+      }
+    }
+  }
+
+  sendInfraredCommand(command) {
+    if (this.infraredEntity) {
+      this.callService('remote.send_command', {
+        entity_id: this.infraredEntity,
+        command: command
+      });
+    }
+  }
+
+  sendEsphomeCommand(code) {
+    if (this.esphomeService && code) {
+      const parts = this.esphomeService.split('.');
+      if (parts.length === 2) {
+        this.callService(this.esphomeService, {
+          data: code
+        });
       }
     }
   }
@@ -1545,35 +2113,124 @@ class TvPlayer extends LitElement {
 
   handlePower() {
     this.handleClick();
+    const targetEntity = this.xiaomiMiotEntity || this.xiaomiHomeEntity;
+    const state = this._hass?.states[targetEntity];
+    const isOff = !state || state.state === 'off' || state.state === 'unavailable';
+
+    // 最高优先级：turn_on_button / turn_off_button（适用于所有模式）
+    if (isOff && this.turnOnButtonEntity) {
+      const domain = this.turnOnButtonEntity.split('.')[0];
+      if (domain === 'button') {
+        this.callService('button.press', { entity_id: this.turnOnButtonEntity });
+      } else if (domain === 'script') {
+        this.callService('script.turn_on', { entity_id: this.turnOnButtonEntity });
+      } else if (domain === 'switch') {
+        this.callService('switch.turn_on', { entity_id: this.turnOnButtonEntity });
+      } else {
+        this.callService('media_player.turn_on', { entity_id: targetEntity });
+      }
+      return;
+    }
+    if (!isOff && this.turnOffButtonEntity) {
+      const domain = this.turnOffButtonEntity.split('.')[0];
+      if (domain === 'button') {
+        this.callService('button.press', { entity_id: this.turnOffButtonEntity });
+      } else if (domain === 'script') {
+        this.callService('script.turn_on', { entity_id: this.turnOffButtonEntity });
+      } else if (domain === 'switch') {
+        this.callService('switch.turn_off', { entity_id: this.turnOffButtonEntity });
+      } else {
+        this.callService('media_player.turn_off', { entity_id: targetEntity });
+      }
+      return;
+    }
+
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
-        command: this.buttonCommands.power
+        command: isOff ? this.buttonCommands.power_on : this.buttonCommands.power_off
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(isOff ? this.irCommands.power_on : this.irCommands.power_off);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(isOff ? this.esphomeCode.power_on : this.esphomeCode.power_off);
     } else {
-      const targetEntity = this.xiaomiMiotEntity || this.xiaomiHomeEntity;
-      const state = this._hass?.states[targetEntity];
-      const isOff = !state || state.state === 'off' || state.state === 'unavailable';
       if (isOff) {
-        // 开机：优先调用打开电视按钮
-        if (this.turnOnButtonEntity) {
-          const domain = this.turnOnButtonEntity.split('.')[0];
-          if (domain === 'button') {
-            this.callService('button.press', { entity_id: this.turnOnButtonEntity });
-          } else if (domain === 'script') {
-            this.callService('script.turn_on', { entity_id: this.turnOnButtonEntity });
-          } else if (domain === 'switch') {
-            this.callService('switch.turn_on', { entity_id: this.turnOnButtonEntity });
-          } else {
-            this.callService('media_player.turn_on', { entity_id: targetEntity });
-          }
-        } else {
-          this.callService('media_player.turn_on', { entity_id: targetEntity });
-        }
+        this.callService('media_player.turn_on', { entity_id: targetEntity });
       } else {
         this.callService('media_player.turn_off', { entity_id: targetEntity });
       }
     }
+  }
+
+  handlePowerOn() {
+    this.handleClick();
+    // 最高优先级：打开电视按钮（适用于所有模式）
+    if (this.turnOnButtonEntity) {
+      const domain = this.turnOnButtonEntity.split('.')[0];
+      if (domain === 'button') {
+        this.callService('button.press', { entity_id: this.turnOnButtonEntity });
+        return;
+      } else if (domain === 'script') {
+        this.callService('script.turn_on', { entity_id: this.turnOnButtonEntity });
+        return;
+      } else if (domain === 'switch') {
+        this.callService('switch.turn_on', { entity_id: this.turnOnButtonEntity });
+        return;
+      }
+    }
+    if (this.tvConnectionMode === 'adb' && this.adbEntity) {
+      this.callService('androidtv.adb_command', {
+        entity_id: this.adbEntity,
+        command: this.buttonCommands.power_on
+      });
+      return;
+    }
+    if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.power_on);
+      return;
+    }
+    if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.power_on);
+      return;
+    }
+    const targetEntity = this.xiaomiMiotEntity || this.xiaomiHomeEntity;
+    this.callService('media_player.turn_on', { entity_id: targetEntity });
+  }
+
+  handlePowerOff() {
+    this.handleClick();
+    // 最高优先级：关闭电视按钮（适用于所有模式）
+    if (this.turnOffButtonEntity) {
+      const domain = this.turnOffButtonEntity.split('.')[0];
+      if (domain === 'button') {
+        this.callService('button.press', { entity_id: this.turnOffButtonEntity });
+        return;
+      } else if (domain === 'script') {
+        this.callService('script.turn_on', { entity_id: this.turnOffButtonEntity });
+        return;
+      } else if (domain === 'switch') {
+        this.callService('switch.turn_off', { entity_id: this.turnOffButtonEntity });
+        return;
+      }
+    }
+    if (this.tvConnectionMode === 'adb' && this.adbEntity) {
+      this.callService('androidtv.adb_command', {
+        entity_id: this.adbEntity,
+        command: this.buttonCommands.power_off
+      });
+      return;
+    }
+    if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.power_off);
+      return;
+    }
+    if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.power_off);
+      return;
+    }
+    const targetEntity = this.xiaomiMiotEntity || this.xiaomiHomeEntity;
+    this.callService('media_player.turn_off', { entity_id: targetEntity });
   }
 
   handleVolumeDown() {
@@ -1583,6 +2240,10 @@ class TvPlayer extends LitElement {
         entity_id: this.adbEntity,
         command: this.buttonCommands.volume_down
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.volume_down);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.volume_down);
     } else {
       const newVolume = Math.max(0, this.volumeState - 1);
       
@@ -1612,6 +2273,10 @@ class TvPlayer extends LitElement {
         entity_id: this.adbEntity,
         command: this.buttonCommands.volume_up
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.volume_up);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.volume_up);
     } else {
       const newVolume = Math.min(100, this.volumeState + 1);
       
@@ -1713,6 +2378,10 @@ class TvPlayer extends LitElement {
         entity_id: this.adbEntity,
         command: this.buttonCommands.previous
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.previous);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.previous);
     } else {
       const targetEntity = this.xiaomiHomeEntity || this.xiaomiMiotEntity;
       this.callService('media_player.media_previous_track', {
@@ -1728,6 +2397,10 @@ class TvPlayer extends LitElement {
         entity_id: this.adbEntity,
         command: this.buttonCommands.play
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.play);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.play);
     } else {
       const targetEntity = this.xiaomiHomeEntity || this.xiaomiMiotEntity;
       this.callService('media_player.media_play_pause', {
@@ -1743,6 +2416,10 @@ class TvPlayer extends LitElement {
         entity_id: this.adbEntity,
         command: this.buttonCommands.pause
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.pause);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.pause);
     } else {
       const targetEntity = this.xiaomiMiotEntity || this.xiaomiHomeEntity;
       this.callService('media_player.turn_off', {
@@ -1758,6 +2435,10 @@ class TvPlayer extends LitElement {
         entity_id: this.adbEntity,
         command: this.buttonCommands.next
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.next);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.next);
     } else {
       const targetEntity = this.xiaomiHomeEntity || this.xiaomiMiotEntity;
       this.callService('media_player.media_next_track', {
@@ -1776,6 +2457,10 @@ class TvPlayer extends LitElement {
         entity_id: this.adbEntity,
         command: this.buttonCommands.up
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.up);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.up);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -1791,6 +2476,10 @@ class TvPlayer extends LitElement {
         entity_id: this.adbEntity,
         command: this.buttonCommands.down
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.down);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.down);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -1806,6 +2495,10 @@ class TvPlayer extends LitElement {
         entity_id: this.adbEntity,
         command: this.buttonCommands.left
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.left);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.left);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -1821,6 +2514,10 @@ class TvPlayer extends LitElement {
         entity_id: this.adbEntity,
         command: this.buttonCommands.right
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.right);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.right);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -1836,6 +2533,10 @@ class TvPlayer extends LitElement {
         entity_id: this.adbEntity,
         command: this.buttonCommands.center
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.center);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.center);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -1851,6 +2552,10 @@ class TvPlayer extends LitElement {
         entity_id: this.adbEntity,
         command: this.buttonCommands.home
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.home);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.home);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -1866,6 +2571,10 @@ class TvPlayer extends LitElement {
         entity_id: this.adbEntity,
         command: this.buttonCommands.back
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.back);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.back);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -1881,6 +2590,10 @@ class TvPlayer extends LitElement {
         entity_id: this.adbEntity,
         command: this.buttonCommands.menu
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.menu);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.menu);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -1896,6 +2609,10 @@ class TvPlayer extends LitElement {
         entity_id: this.adbEntity,
         command: this.buttonCommands.setting
       });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.setting);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.setting);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -2068,12 +2785,12 @@ render() {
           height: ${this.height};
           grid-template-rows: 1fr 1fr 1fr 200px auto 1fr;
           grid-template-areas: 
-            "icon name name name home back menu setting power"
-            "icon info info info info info info . ."
-            "icon volume volume-down volume-slider volume-up prev play pause next"
-            "fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang"
-            ${this._getVisibleAppOptions().length > 0 ? `"appbtn appbtn appbtn appbtn appbtn appbtn appbtn appbtn appbtn"` : ''}
-            "progress progress progress progress progress progress progress progress progress"
+            "icon name name name home back menu setting power_on power_off"
+            "icon info info info info info info info . ."
+            "icon volume volume-down volume-slider volume-slider volume-up prev play pause next"
+            "fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang"
+            ${this._getVisibleAppOptions().length > 0 ? `"appbtn appbtn appbtn appbtn appbtn appbtn appbtn appbtn appbtn appbtn"` : ''}
+            "progress progress progress progress progress progress progress progress progress progress"
         }
 
         .directional-area, .app-buttons-area {
@@ -2173,8 +2890,12 @@ render() {
         </div>
 
         <!-- 控制按钮 -->
-        <button class="control-button power-button" @click=${this.handlePower}>
+        <button class="control-button power-on-button" @click=${this.handlePowerOn}>
           <ha-icon icon="mdi:power"></ha-icon>
+        </button>
+
+        <button class="control-button power-off-button" @click=${this.handlePowerOff}>
+          <ha-icon icon="mdi:close-circle-outline"></ha-icon>
         </button>
 
         <button class="control-button home-button" @click=${this.handleHome}>
@@ -2264,7 +2985,7 @@ render() {
               `;
             })}
           </div>
-        ` : ''}
+          ` : ''}
 
         <!-- 进度条区域 -->
         <div class="progress-area">
