@@ -804,8 +804,8 @@ class XiaoshiClassCard extends LitElement {
                 <div class="schedule-wrapper">
                     <table class="schedule-table">
                         <colgroup>
-                            <col style="width:26px">
-                            <col style="width:58px">
+                            <col style="width:30px">
+                            <col style="width:54px">
                         </colgroup>
                         <thead>
                             <tr>
@@ -1089,7 +1089,6 @@ class XiaoshiClassCard extends LitElement {
                 text-align: center;
                 vertical-align: middle;
                 padding: 0;
-                padding-left: 4px;
                 background: var(--side-bg, var(--divider-color, rgba(0,0,0,0.04)));
                 border-radius: 6px;
             }
@@ -1097,8 +1096,14 @@ class XiaoshiClassCard extends LitElement {
                 font-size: 11px;
                 font-weight: 600;
                 color: var(--label-color, var(--secondary-text-color, #9E9E9E));
+                -webkit-writing-mode: vertical-rl;
                 writing-mode: vertical-rl;
+                text-orientation: upright;
                 letter-spacing: 2px;
+                white-space: nowrap;
+                word-break: keep-all;
+                overflow: visible;
+                display: inline-block;
             }
             @keyframes pulse-period {
                 0%, 100% { transform: scale(1); }
