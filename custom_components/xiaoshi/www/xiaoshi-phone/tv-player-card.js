@@ -1294,6 +1294,7 @@ class TvPlayer extends LitElement {
         display: block;
         border-radius: 12px;
         padding: 0px;
+        margin-top: 0;
         cursor: none;
         --mdc-ripple-press-opacity: 0;
       }
@@ -1598,7 +1599,7 @@ class TvPlayer extends LitElement {
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 5px 0;
+        padding: 5px 0 0 0;
       }
 
       .progress-bar {
