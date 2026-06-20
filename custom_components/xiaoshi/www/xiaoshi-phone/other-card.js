@@ -21,7 +21,7 @@ const PRESET_ON_STATES = [
     // 扫地机器人
     '正在拖地','正在扫地','启动','cleaning',
     // 厨房
-    '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm'
+    '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm',"低档","中档","高档"
 ];
 
 // 通用翻译
@@ -1784,7 +1784,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
         left: 0;
         width: 100%;
         height: 100%;
-        background: linear-gradient(to right, var(--linear-color));
+        background: linear-gradient(90deg, var(--linear-color), transparent 50%);
         opacity: 0.4;
         z-index: 0;
       }
@@ -2604,10 +2604,9 @@ class XiaoshiPhoneOtherCard extends LitElement {
     const entityIcon = attrs.icon || this.config.custom_icon || 'mdi:devices';
     const entityName = this.config.custom_name || attrs.friendly_name;
     const showPower = this.config.show_power !== 'false';
-
     return html` 
       <div class="card" style=" width: ${this.width};
-                                background: ${isOn ? `linear-gradient(90deg, ${linearColor} -30%, ${bgColor} 70%)` : bgColor}; 
+                                background: ${isOn ? `linear-gradient(90deg, ${linearColor} -50%, ${bgColor} 60%)` : bgColor}; 
                                 color: ${fgColor}; 
                                 --button-bg: ${buttonBg}; 
                                 --button-fg: ${buttonFg}; 
