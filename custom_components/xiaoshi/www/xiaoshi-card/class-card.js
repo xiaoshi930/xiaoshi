@@ -714,6 +714,8 @@ class XiaoshiClassCard extends LitElement {
     }
 
     _getSubjectStyle(subject) {
+        // 空白或仅空格的课程不渲染颜色
+        if (!subject || !subject.trim()) return null;
         const colorMap = {
             '语文': { bg: '#E8F5E9', text: '#2E7D32', ring: '#66BB6A' },
             '数学': { bg: '#E3F2FD', text: '#1565C0', ring: '#42A5F5' },
@@ -732,7 +734,47 @@ class XiaoshiClassCard extends LitElement {
             '写字': { bg: '#E0F2F1', text: '#00695C', ring: '#4DB6AC' },
             '自习': { bg: '#ECEFF1', text: '#546E7A', ring: '#90A4AE' },
         };
-        return colorMap[subject] || { bg: '#F5F5F5', text: '#616161', ring: '#BDBDBD' };
+        if (colorMap[subject]) return colorMap[subject];
+
+        // 不在 colorMap 内的课程，根据名称哈希分配颜色（同课程固定颜色）
+        if (!this._colorCache) this._colorCache = {};
+        if (this._colorCache[subject]) return this._colorCache[subject];
+
+        const palette = [
+            { bg: '#FCE4EC', text: '#C62828', ring: '#EF5350' },
+            { bg: '#F3E5F5', text: '#6A1B9A', ring: '#AB47BC' },
+            { bg: '#EDE7F6', text: '#4527A0', ring: '#7E57C2' },
+            { bg: '#E8EAF6', text: '#283593', ring: '#5C6BC0' },
+            { bg: '#E3F2FD', text: '#0D47A1', ring: '#42A5F5' },
+            { bg: '#E1F5FE', text: '#01579B', ring: '#29B6F6' },
+            { bg: '#E0F7FA', text: '#006064', ring: '#26C6DA' },
+            { bg: '#E0F2F1', text: '#004D40', ring: '#4DB6AC' },
+            { bg: '#E8F5E9', text: '#1B5E20', ring: '#66BB6A' },
+            { bg: '#F1F8E9', text: '#33691E', ring: '#9CCC65' },
+            { bg: '#F9FBE7', text: '#827717', ring: '#D4E157' },
+            { bg: '#FFFDE7', text: '#F57F17', ring: '#FFEE58' },
+            { bg: '#FFF8E1', text: '#E65100', ring: '#FFCA28' },
+            { bg: '#FFF3E0', text: '#BF360C', ring: '#FFA726' },
+            { bg: '#FBE9E7', text: '#4E342E', ring: '#FF7043' },
+            { bg: '#EFEBE9', text: '#3E2723', ring: '#8D6E63' },
+            { bg: '#ECEFF1', text: '#37474F', ring: '#90A4AE' },
+            { bg: '#E8F0FE', text: '#1565C0', ring: '#4285F4' },
+            { bg: '#FCE8E6', text: '#C5221F', ring: '#EA4335' },
+            { bg: '#FEF7E0', text: '#E37400', ring: '#FBBC04' },
+            { bg: '#E6F4EA', text: '#137333', ring: '#34A853' },
+            { bg: '#FDE8EC', text: '#B80672', ring: '#F06292' },
+            { bg: '#FFF0F5', text: '#C2185B', ring: '#F48FB1' },
+            { bg: '#EFF7FA', text: '#00838F', ring: '#4DD0E1' },
+        ];
+
+        let hash = 0;
+        for (let i = 0; i < subject.length; i++) {
+            hash = ((hash << 5) - hash) + subject.charCodeAt(i);
+            hash |= 0;
+        }
+        const idx = Math.abs(hash) % palette.length;
+        this._colorCache[subject] = palette[idx];
+        return palette[idx];
     }
 
     _getStatusLine() {
@@ -874,6 +916,14 @@ class XiaoshiClassCard extends LitElement {
                                             this._currentPeriod?.num === pn;
                                         if (period) {
                                             const style = this._getSubjectStyle(period.subject);
+                                            // 空白课程不渲染颜色
+                                            if (!style) {
+                                                return html`
+                                                    <td class="cell-subject cell-blank ${isCurrentClass ? 'cell-current' : ''} ${isBreakAfter ? 'cell-break-after' : ''}">
+                                                        <div class="subj-name">${period.subject}</div>
+                                                    </td>
+                                                `;
+                                            }
                                             return html`
                                                 <td class="cell-subject ${isCurrentClass ? 'cell-current' : ''} ${isBreakAfter ? 'cell-break-after' : ''}"
                                                     style="--subj-bg: ${style.bg}; --subj-text: ${style.text}; --subj-ring: ${style.ring};">
@@ -1123,6 +1173,10 @@ class XiaoshiClassCard extends LitElement {
                 min-width: 64px;
                 border: 1.5px solid transparent;
             }
+            .cell-subject.cell-blank {
+                background: #F5F5F5;
+                color: inherit;
+            }
             .cell-subject:hover {
                 transform: scale(1.03);
                 z-index: 1;
@@ -1144,8 +1198,9 @@ class XiaoshiClassCard extends LitElement {
             .subj-name {
                 font-size: 12px;
                 font-weight: 600;
-                line-height: 1.3;
-                white-space: nowrap;
+                line-height: 1.35;
+                white-space: normal;
+                overflow-wrap: break-word;
             }
             .live-dot {
                 position: absolute;
