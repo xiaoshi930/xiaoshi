@@ -176,6 +176,11 @@ class XiaoshiAvatarPadCardEditor extends LitElement {
                         <option value="false" .selected="${c.show_popup_map === 'false'}">隐藏</option>
                     </select>
                 </div>
+                <div class="form-row">
+                    <label>追踪路径时间</label>
+                    <input type="number" name="track_hours" .value="${c.track_hours || 24}" @change="${this._valueChanged}" placeholder="24" style="max-width:80px" min="1" max="144" />
+                    <span style="font-size:12px;color:#888;">小时</span>
+                </div>
 
                 <div class="form-row" style="flex-direction:column;align-items:stretch;">
                     <label style="margin-bottom:4px;">附加卡片配置（YAML格式，参照balance-button的other_cards）</label>
@@ -925,6 +930,7 @@ class XiaoshiAvatarPadCard extends LitElement {
                 type: 'map',
                 entities: mapEntities,
                 aspect_ratio: '16:9',
+                hours_to_show: this.config.track_hours || 24,
                 theme_mode: this._evaluateTheme()
             });
         }
