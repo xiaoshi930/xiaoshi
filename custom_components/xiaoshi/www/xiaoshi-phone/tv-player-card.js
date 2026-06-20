@@ -1,4 +1,4 @@
-import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+﻿import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
  
 window.customCards = window.customCards || [];
 window.customCards.push({
@@ -20,7 +20,9 @@ class TvPlayerEditor extends LitElement {
       _turnOffSearchText: { type: String },
       _turnOffSearchFocused: { type: Boolean },
       _appCurrentSearchText: { type: String },
-      _appCurrentSearchFocused: { type: Boolean }
+      _appCurrentSearchFocused: { type: Boolean },
+      _volumeNumberSearchText: { type: String },
+      _volumeNumberSearchFocused: { type: Boolean }
     };
   }
 
@@ -210,49 +212,66 @@ class TvPlayerEditor extends LitElement {
             <option value="adb">ADB方式</option>
             <option value="infrared">红外方式</option>
             <option value="esphome_ir">ESPHome红外</option>
+            <option value="tuya_ir">涂鸦红外方式</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Media_player主实体</label>
+          <select 
+            @change=${this._entityChanged}
+            .value=${this.config.entity || this.config.xiaomi_home || ''}
+            name="entity"
+          >
+            <option value="">选择 Media_player 实体</option>
+            ${Object.keys(this.hass.states)
+              .filter(entityId => entityId.startsWith('media_player.'))
+              .map(entityId => html`
+                <option value="${entityId}" 
+                  .selected=${entityId === (this.config.entity || this.config.xiaomi_home)}>
+                  ${this.hass.states[entityId].attributes.friendly_name || entityId} ${this.hass.states[entityId].attributes.friendly_name ? '(' + entityId + ')' : ''}
+                </option>
+              `)}
           </select>
         </div>
 
         ${isIntegration ? html`
-        <div class="form-group">
-          <label>小米Home实体（主要控制实体）</label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.xiaomi_home || ''}
-            name="xiaomi_home"
-          >
-            <option value="">选择小米Home实体</option>
-            ${Object.keys(this.hass.states)
-              .filter(entityId => entityId.startsWith('media_player.'))
-              .map(entityId => html`
-                <option value="${entityId}" 
-                  .selected=${entityId === this.config.xiaomi_home}>
-                  ${this.hass.states[entityId].attributes.friendly_name || entityId} ${this.hass.states[entityId].attributes.friendly_name ? '(' + entityId + ')' : ''}
-                </option>
-              `)}
-          </select>
-        </div>
         
         <div class="form-group">
-          <label>小米Miot实体（备用实体）</label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.xiaomi_miot || ''}
-            name="xiaomi_miot"
-          >
-            <option value="">选择小米Miot实体（可选）</option>
-            ${Object.keys(this.hass.states)
-              .filter(entityId => entityId.startsWith('media_player.'))
-              .map(entityId => html`
-                <option value="${entityId}" 
-                  .selected=${entityId === this.config.xiaomi_miot}>
-                  ${this.hass.states[entityId].attributes.friendly_name || entityId} ${this.hass.states[entityId].attributes.friendly_name ? '(' + entityId + ')' : ''}
-                </option>
-              `)}
-          </select>
+          <label>音量Number实体（最高优先级）</label>
+          <div class="entity-search-wrapper">
+            ${this.config.volume_number ? html`
+              <div class="entity-search-selected" @click=${this._clearVolumeNumber}>
+                <span>${this._getEntityDisplayName(this.config.volume_number)}</span>
+                <span class="clear-btn">&times;</span>
+              </div>
+            ` : html`
+              <input 
+                class="entity-search-input"
+                type="text"
+                .value=${this._volumeNumberSearchText || ''}
+                placeholder="输入关键字搜索 number 实体..."
+                @input=${this._onVolumeNumberSearchInput}
+                @focus=${this._onVolumeNumberSearchFocus}
+                @blur=${this._onVolumeNumberSearchBlur}
+              />
+              ${this._volumeNumberSearchFocused && this._getFilteredVolumeNumberEntities().length > 0 ? html`
+                <div class="entity-search-dropdown">
+                  ${this._getFilteredVolumeNumberEntities().map(entityId => html`
+                    <div 
+                      class="entity-search-item ${entityId === this.config.volume_number ? 'selected' : ''}"
+                      @mousedown=${(e) => this._selectVolumeNumberEntity(e, entityId)}
+                    >
+                      ${this.hass.states[entityId].attributes.friendly_name || entityId}
+                      <span class="entity-id">${entityId}</span>
+                    </div>
+                  `)}
+                </div>
+              ` : ''}
+            `}
+          </div>
         </div>
-    
-        
+
         <div class="form-group">
           <label>播放控制 keycodes</label>
           <div class="entity-search-wrapper">
@@ -544,6 +563,13 @@ class TvPlayerEditor extends LitElement {
                     name="adb_command_volume_down"
                     placeholder="音量减按钮命令（默认：VOLUME_DOWN）"
                   />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.adb_command?.volume_mute || ''}
+                    name="adb_command_volume_mute"
+                    placeholder="静音按钮命令（默认：MUTE）"
+                  />
                 </div>
               </div>
               
@@ -590,6 +616,7 @@ class TvPlayerEditor extends LitElement {
               </div>
             </div>
           </div>
+          ${this._renderAppsConfig('adb_app', 'ADB快捷App按钮', 'ADB命令')}
         ` : ''}
 
         ${this.config.tv_connection_mode === 'infrared' ? html`
@@ -717,6 +744,13 @@ class TvPlayerEditor extends LitElement {
                     name="ir_command_volume_down"
                     placeholder="音量减命令（默认：KEY_VOLUMEDOWN）"
                   />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.ir_command?.volume_mute || ''}
+                    name="ir_command_volume_mute"
+                    placeholder="静音命令（默认：KEY_MUTE）"
+                  />
                 </div>
               </div>
               
@@ -763,6 +797,7 @@ class TvPlayerEditor extends LitElement {
               </div>
             </div>
           </div>
+          ${this._renderAppsConfig('ir_app', '红外快捷App按钮', '红外命令(如KEY_1)')}
         ` : ''}
 
         ${this.config.tv_connection_mode === 'esphome_ir' ? html`
@@ -879,6 +914,13 @@ class TvPlayerEditor extends LitElement {
                     name="esphome_code_volume_down"
                     placeholder="音量减 Pronto码"
                   />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.esphome_code?.volume_mute || ''}
+                    name="esphome_code_volume_mute"
+                    placeholder="静音 Pronto码"
+                  />
                 </div>
               </div>
 
@@ -924,6 +966,169 @@ class TvPlayerEditor extends LitElement {
               </div>
             </div>
           </div>
+          ${this._renderAppsConfig('esphome_app', 'ESPHome快捷App按钮', 'Pronto码')}
+        ` : ''}
+
+        ${this.config.tv_connection_mode === 'tuya_ir' ? html`
+          <div class="form-group">
+            <label>涂鸦红外场景实体配置（填写 scene.XXXX 实体）</label>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <!-- 基础控制按钮 -->
+              <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                <label style="font-weight: normal; font-size: 12px; color: #666;">基础控制按钮 - 场景实体</label>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.power_on || ''}
+                    name="tuya_command_power_on"
+                    placeholder="开机 场景实体（如 scene.tv_power_on）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.power_off || ''}
+                    name="tuya_command_power_off"
+                    placeholder="关机 场景实体（如 scene.tv_power_off）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.home || ''}
+                    name="tuya_command_home"
+                    placeholder="主页 场景实体（如 scene.tv_home）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.back || ''}
+                    name="tuya_command_back"
+                    placeholder="返回 场景实体（如 scene.tv_back）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.menu || ''}
+                    name="tuya_command_menu"
+                    placeholder="菜单 场景实体（如 scene.tv_menu）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.setting || ''}
+                    name="tuya_command_setting"
+                    placeholder="设置 场景实体（如 scene.tv_setting）"
+                  />
+                </div>
+              </div>
+              
+              <!-- 媒体控制按钮 -->
+              <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                <label style="font-weight: normal; font-size: 12px; color: #666;">媒体控制按钮 - 场景实体</label>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.play || ''}
+                    name="tuya_command_play"
+                    placeholder="播放 场景实体（如 scene.tv_play）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.pause || ''}
+                    name="tuya_command_pause"
+                    placeholder="暂停 场景实体（如 scene.tv_pause）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.next || ''}
+                    name="tuya_command_next"
+                    placeholder="下一个 场景实体（如 scene.tv_next）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.previous || ''}
+                    name="tuya_command_previous"
+                    placeholder="上一个 场景实体（如 scene.tv_previous）"
+                  />
+                </div>
+              </div>
+              
+              <!-- 音量控制按钮 -->
+              <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                <label style="font-weight: normal; font-size: 12px; color: #666;">音量控制按钮 - 场景实体</label>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.volume_up || ''}
+                    name="tuya_command_volume_up"
+                    placeholder="音量加 场景实体（如 scene.tv_vol_up）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.volume_down || ''}
+                    name="tuya_command_volume_down"
+                    placeholder="音量减 场景实体（如 scene.tv_vol_down）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.volume_mute || ''}
+                    name="tuya_command_volume_mute"
+                    placeholder="静音 场景实体（如 scene.tv_mute）"
+                  />
+                </div>
+              </div>
+              
+              <!-- 方向控制按钮 -->
+              <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                <label style="font-weight: normal; font-size: 12px; color: #666;">方向控制按钮 - 场景实体</label>
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.up || ''}
+                    name="tuya_command_up"
+                    placeholder="上键 场景实体（如 scene.tv_up）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.down || ''}
+                    name="tuya_command_down"
+                    placeholder="下键 场景实体（如 scene.tv_down）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.left || ''}
+                    name="tuya_command_left"
+                    placeholder="左键 场景实体（如 scene.tv_left）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.right || ''}
+                    name="tuya_command_right"
+                    placeholder="右键 场景实体（如 scene.tv_right）"
+                  />
+                  <input 
+                    type="text" 
+                    @change=${this._entityChanged}
+                    .value=${this.config.tuya_command?.center || ''}
+                    name="tuya_command_center"
+                    placeholder="确认键 场景实体（如 scene.tv_enter）"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          ${this._renderAppsConfig('tuya_app', '涂鸦快捷App按钮', '场景实体(scene.xxx)')}
         ` : ''}
       </div>
     `;
@@ -939,6 +1144,33 @@ class TvPlayerEditor extends LitElement {
     this._turnOffSearchFocused = false;
     this._appCurrentSearchText = '';
     this._appCurrentSearchFocused = false;
+    this._volumeNumberSearchText = '';
+    this._volumeNumberSearchFocused = false;
+  }
+
+  _renderAppRow(modeKey, namePlaceholder, cmdPlaceholder, nameVal, cmdVal, index) {
+    const idx = index + 1;
+    const nameName = modeKey + '_app' + idx + '_name';
+    const cmdName = modeKey + '_app' + idx + '_command';
+    return html`
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <input type="text" @change=${this._entityChanged} .value=${nameVal || ''} name=${nameName} placeholder=${namePlaceholder + idx} style="flex:1;min-width:60px;padding:4px 6px;font-size:12px;border:1px solid #ddd;border-radius:3px;" />
+        <input type="text" @change=${this._entityChanged} .value=${cmdVal || ''} name=${cmdName} placeholder=${cmdPlaceholder} style="flex:2;padding:4px 6px;font-size:12px;border:1px solid #ddd;border-radius:3px;" />
+      </div>`;
+  }
+
+  _renderAppsConfig(modeKey, nameLabel, cmdLabel) {
+    const cfg = this.config[modeKey] || {};
+    return html`
+      <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin-top: 10px;">
+        <label style="font-weight: normal; font-size: 12px; color: #666;">${nameLabel}（最多7个）</label>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          ${[0,1,2,3,4,5,6].map(i => {
+            const idx = i + 1;
+            return this._renderAppRow(modeKey, 'App名称', cmdLabel, cfg['app'+idx+'_name'], cfg['app'+idx+'_command'], i);
+          })}
+        </div>
+      </div>`;
   }
 
   _getEntityDisplayName(entityId) {
@@ -1168,6 +1400,61 @@ class TvPlayerEditor extends LitElement {
     this.requestUpdate();
   }
 
+  _getFilteredVolumeNumberEntities() {
+    if (!this.hass) return [];
+    const searchText = (this._volumeNumberSearchText || '').toLowerCase();
+    return Object.keys(this.hass.states)
+      .filter(entityId => entityId.startsWith('number.'))
+      .filter(entityId => {
+        const friendlyName = (this.hass.states[entityId].attributes.friendly_name || '').toLowerCase();
+        return entityId.toLowerCase().includes(searchText) || friendlyName.includes(searchText);
+      });
+  }
+
+  _onVolumeNumberSearchInput(e) {
+    this._volumeNumberSearchText = e.target.value;
+    this._volumeNumberSearchFocused = true;
+    this.requestUpdate();
+  }
+
+  _onVolumeNumberSearchFocus() {
+    this._volumeNumberSearchFocused = true;
+    this.requestUpdate();
+  }
+
+  _onVolumeNumberSearchBlur() {
+    setTimeout(() => {
+      this._volumeNumberSearchFocused = false;
+      this.requestUpdate();
+    }, 200);
+  }
+
+  _selectVolumeNumberEntity(e, entityId) {
+    e.preventDefault();
+    const newConfig = { ...this.config, volume_number: entityId };
+    this.config = newConfig;
+    this._volumeNumberSearchText = '';
+    this._volumeNumberSearchFocused = false;
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config: this.config },
+      bubbles: true,
+      composed: true
+    }));
+    this.requestUpdate();
+  }
+
+  _clearVolumeNumber() {
+    const newConfig = { ...this.config, volume_number: '' };
+    this.config = newConfig;
+    this._volumeNumberSearchText = '';
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config: this.config },
+      bubbles: true,
+      composed: true
+    }));
+    this.requestUpdate();
+  }
+
   _onAppOptionShowChange(e, option) {
     const appConfig = { ...(this.config.app_current_config || {}) };
     const existing = appConfig[option] || { show: true, name: option };
@@ -1238,6 +1525,27 @@ class TvPlayerEditor extends LitElement {
           [commandName]: finalValue
         }
       };
+    } else if (name.startsWith('adb_app_')) {
+      const key = name.replace('adb_app_', '');
+      newConfig = { ...this.config, adb_app: { ...this.config.adb_app, [key]: finalValue } };
+    } else if (name.startsWith('ir_app_')) {
+      const key = name.replace('ir_app_', '');
+      newConfig = { ...this.config, ir_app: { ...this.config.ir_app, [key]: finalValue } };
+    } else if (name.startsWith('esphome_app_')) {
+      const key = name.replace('esphome_app_', '');
+      newConfig = { ...this.config, esphome_app: { ...this.config.esphome_app, [key]: finalValue } };
+    } else if (name.startsWith('tuya_app_')) {
+      const key = name.replace('tuya_app_', '');
+      newConfig = { ...this.config, tuya_app: { ...this.config.tuya_app, [key]: finalValue } };
+    } else if (name.startsWith('tuya_command_')) {
+      const commandName = name.replace('tuya_command_', '');
+      newConfig = {
+        ...this.config,
+        tuya_command: {
+          ...this.config.tuya_command,
+          [commandName]: finalValue
+        }
+      };
     } else {
       newConfig = {
         ...this.config,
@@ -1266,7 +1574,6 @@ class TvPlayer extends LitElement {
       _hass: { type: Object },
       config: { type: Object },
       xiaomiHomeEntity: { type: String },
-      xiaomiMiotEntity: { type: String },
       remoteControlEntity: { type: String },
       turnOnButtonEntity: { type: String },
       turnOffButtonEntity: { type: String },
@@ -1277,14 +1584,15 @@ class TvPlayer extends LitElement {
       esphomeCode: { type: Object },
       appCurrentConfig: { type: Object },
       adbEntity: { type: String },
+      volumeNumberEntity: { type: String },
       tvConnectionMode: { type: String },
       xiaomiHomeState: { type: Object },
-      xiaomiMiotState: { type: Object },
       volumeState: { type: Number },
       isPlaying: { type: Boolean },
       theme: { type: String },
       width: { type: String },
-      height: { type: String }
+      height: { type: String },
+      _showSourcePopup: { type: Boolean }
     };
   }
 
@@ -1296,14 +1604,15 @@ class TvPlayer extends LitElement {
         padding: 0px;
         margin-top: 0;
         cursor: none;
+        overflow: visible;
         --mdc-ripple-press-opacity: 0;
       }
 
       .player-grid {
         display: grid;
-        grid-template-columns: 17% 8.5% 8.5% 13.5% 8.5%  8.5% 8.5% 8.5% 8.5% 8.5%;
         width: 100%;
         height: 270px;
+        overflow: visible;
       }
 
       .icon-area {
@@ -1444,6 +1753,10 @@ class TvPlayer extends LitElement {
         grid-area: volume-up;
       }
 
+      .volume-mute {
+        grid-area: volume-mute;
+      }
+
       .prev-button {
         grid-area: prev;
       }
@@ -1458,6 +1771,81 @@ class TvPlayer extends LitElement {
 
       .next-button {
         grid-area: next;
+      }
+
+      .xinhaoyuan-area {
+        grid-area: xinhaoyuan;
+        display: flex;
+        align-items: flex-start;
+        padding-top: 8px;
+      }
+
+      .xinhaoyuan-button {
+        position: relative;
+        background: var(--theme-bg, rgba(80, 80, 80, 0.7));
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.2));
+        border-radius: 6px;
+        color: var(--theme-fg, rgb(255, 255, 255));
+        cursor: pointer;
+        font-size: 12px;
+        padding: 5px 8px 5px 8px;
+        margin-right: 12px;
+        white-space: nowrap;
+        transition: all 0.2s;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px;
+        --mdc-ripple-press-opacity: 0;
+      }
+
+      .xinhaoyuan-button .arrow {
+        font-size: 10px;
+        transition: transform 0.2s;
+      }
+
+      .xinhaoyuan-button .arrow.open {
+        transform: rotate(180deg);
+      }
+
+      .xinhaoyuan-button:active {
+        background: var(--theme-bg-active, rgba(120, 120, 120, 0.9));
+      }
+
+      .xinhaoyuan-popup {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: 2px;
+        background: var(--theme-bg, rgba(80, 80, 80, 0.7));
+        border: 1px solid var(--divider-color, #555);
+        border-radius: 0 0 6px 6px;
+        border-top: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 1000;
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 0;
+      }
+
+      .xinhaoyuan-popup-item {
+        padding: 8px 14px;
+        font-size: 13px;
+        color: var(--popup-fg, #fff);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.15s;
+      }
+
+      .xinhaoyuan-popup-item:hover {
+        background: var(--secondary-background-color, #555);
+      }
+
+      .xinhaoyuan-popup-item.active {
+        color: rgb(25, 165, 225);
+        font-weight: bold;
       }
 
       .home-button {
@@ -1496,7 +1884,7 @@ class TvPlayer extends LitElement {
 
       .directional-button {
         position: absolute;
-        background: var(--theme-bg, rgba(80, 80, 80, 0.8));
+        background: var(--theme-bg, rgba(80, 80, 80, 0.7));
         border: none;
         border-radius: 50%;
         cursor: none;
@@ -1720,7 +2108,6 @@ class TvPlayer extends LitElement {
     this._hass = null;
     this.config = {};
     this.xiaomiHomeEntity = '';
-    this.xiaomiMiotEntity = '';
     this.remoteControlEntity = '';
     this.turnOnButtonEntity = '';
     this.turnOffButtonEntity = '';
@@ -1740,6 +2127,7 @@ class TvPlayer extends LitElement {
       previous: 'KEY_PREVIOUS',
       volume_up: 'KEY_VOLUMEUP',
       volume_down: 'KEY_VOLUMEDOWN',
+      volume_mute: 'KEY_MUTE',
       up: 'KEY_UP',
       down: 'KEY_DOWN',
       left: 'KEY_LEFT',
@@ -1760,6 +2148,7 @@ class TvPlayer extends LitElement {
       previous: '',
       volume_up: '',
       volume_down: '',
+      volume_mute: '',
       up: '',
       down: '',
       left: '',
@@ -1767,7 +2156,32 @@ class TvPlayer extends LitElement {
       center: ''
     };
     this.adbEntity = '';
+    this.volumeNumberEntity = '';
     this.tvConnectionMode = 'integration';
+    this.tuyaCommands = {
+      power_on: '',
+      power_off: '',
+      home: '',
+      back: '',
+      menu: '',
+      setting: '',
+      play: '',
+      pause: '',
+      next: '',
+      previous: '',
+      volume_up: '',
+      volume_down: '',
+      volume_mute: '',
+      up: '',
+      down: '',
+      left: '',
+      right: '',
+      center: ''
+    };
+    this.adbAppConfigs = [];
+    this.irAppConfigs = [];
+    this.esphomeAppConfigs = [];
+    this.tuyaAppConfigs = [];
     this.buttonCommands = {
       power_on: 'POWER',
       power_off: 'POWER',
@@ -1781,6 +2195,7 @@ class TvPlayer extends LitElement {
       previous: 'PREVIOUS',
       volume_up: 'VOLUME_UP',
       volume_down: 'VOLUME_DOWN',
+      volume_mute: 'MUTE',
       up: 'UP',
       down: 'DOWN',
       left: 'LEFT',
@@ -1799,16 +2214,12 @@ class TvPlayer extends LitElement {
         volume_level: 0.5
       }
     };
-    this.xiaomiMiotState = {
-      attributes: {
-        entity_picture: ''
-      }
-    };
     this.volumeState = 20;
     this.isPlaying = false;
     this.volumeDebounceTimer = null;
     this.isDragging = false;
     this.localVolumeUpdate = false;
+    this._showSourcePopup = false;
     this.theme = 'system';
     this.width = '100%';
     this.height = '80px';
@@ -1856,8 +2267,8 @@ class TvPlayer extends LitElement {
   setConfig(config) {
   
     this.config = {
-      xiaomi_home: config.xiaomi_home,
-      xiaomi_miot: config.xiaomi_miot,
+      entity: config.entity || config.xiaomi_home,
+      volume_number: config.volume_number,
       remote_control: config.remote_control,
       tv_connection_mode: config.tv_connection_mode || 'integration',
       adb_entity: config.adb_entity,
@@ -1882,16 +2293,36 @@ class TvPlayer extends LitElement {
       this.config.height = '80px';
     }
     
-    this.xiaomiHomeEntity = this.config.xiaomi_home;
-    this.xiaomiMiotEntity = this.config.xiaomi_miot;
+    this.xiaomiHomeEntity = this.config.entity;
     this.remoteControlEntity = this.config.remote_control;
     this.turnOnButtonEntity = this.config.turn_on_button;
     this.turnOffButtonEntity = this.config.turn_off_button;
     this.appCurrentEntity = this.config.app_current;
     this.appCurrentConfig = this.config.app_current_config || {};
     this.adbEntity = this.config.adb_entity;
+    this.volumeNumberEntity = this.config.volume_number || '';
     this.infraredEntity = this.config.ir_entity;
     this.esphomeService = this.config.esphome_service || '';
+    this.tuyaCommands = {
+      power_on: this.config.tuya_command?.power_on || '',
+      power_off: this.config.tuya_command?.power_off || '',
+      home: this.config.tuya_command?.home || '',
+      back: this.config.tuya_command?.back || '',
+      menu: this.config.tuya_command?.menu || '',
+      setting: this.config.tuya_command?.setting || '',
+      play: this.config.tuya_command?.play || '',
+      pause: this.config.tuya_command?.pause || '',
+      next: this.config.tuya_command?.next || '',
+      previous: this.config.tuya_command?.previous || '',
+      volume_up: this.config.tuya_command?.volume_up || '',
+      volume_down: this.config.tuya_command?.volume_down || '',
+      volume_mute: this.config.tuya_command?.volume_mute || '',
+      up: this.config.tuya_command?.up || '',
+      down: this.config.tuya_command?.down || '',
+      left: this.config.tuya_command?.left || '',
+      right: this.config.tuya_command?.right || '',
+      center: this.config.tuya_command?.center || ''
+    };
     this.esphomeCode = {
       power_on: this.config.esphome_code?.power_on || '',
       power_off: this.config.esphome_code?.power_off || '',
@@ -1905,6 +2336,7 @@ class TvPlayer extends LitElement {
       previous: this.config.esphome_code?.previous || '',
       volume_up: this.config.esphome_code?.volume_up || '',
       volume_down: this.config.esphome_code?.volume_down || '',
+      volume_mute: this.config.esphome_code?.volume_mute || '',
       up: this.config.esphome_code?.up || '',
       down: this.config.esphome_code?.down || '',
       left: this.config.esphome_code?.left || '',
@@ -1924,6 +2356,7 @@ class TvPlayer extends LitElement {
       previous: this.config.ir_command?.previous || 'KEY_PREVIOUS',
       volume_up: this.config.ir_command?.volume_up || 'KEY_VOLUMEUP',
       volume_down: this.config.ir_command?.volume_down || 'KEY_VOLUMEDOWN',
+      volume_mute: this.config.ir_command?.volume_mute || 'KEY_MUTE',
       up: this.config.ir_command?.up || 'KEY_UP',
       down: this.config.ir_command?.down || 'KEY_DOWN',
       left: this.config.ir_command?.left || 'KEY_LEFT',
@@ -1931,6 +2364,10 @@ class TvPlayer extends LitElement {
       center: this.config.ir_command?.center || 'KEY_ENTER'
     };
     this.tvConnectionMode = this.config.tv_connection_mode || 'integration';
+    this.adbAppConfigs = this._parseAppConfigs(this.config.adb_app);
+    this.irAppConfigs = this._parseAppConfigs(this.config.ir_app);
+    this.esphomeAppConfigs = this._parseAppConfigs(this.config.esphome_app);
+    this.tuyaAppConfigs = this._parseAppConfigs(this.config.tuya_app);
     this.buttonCommands = {
       power_on: this.config.adb_command?.power_on || 'POWER',
       power_off: this.config.adb_command?.power_off || 'POWER',
@@ -1944,6 +2381,7 @@ class TvPlayer extends LitElement {
       previous: this.config.adb_command?.previous || 'PREVIOUS',
       volume_up: this.config.adb_command?.volume_up || 'VOLUME_UP',
       volume_down: this.config.adb_command?.volume_down || 'VOLUME_DOWN',
+      volume_mute: this.config.adb_command?.volume_mute || 'MUTE',
       up: this.config.adb_command?.up || 'UP',
       down: this.config.adb_command?.down || 'DOWN',
       left: this.config.adb_command?.left || 'LEFT',
@@ -1960,60 +2398,29 @@ class TvPlayer extends LitElement {
   set hass(hass) {
     this._hass = hass;
     
-    let usePrimaryEntity = true;
-    let primaryState = null;
-    let backupState = null;
+    // 优先从 volume_number 实体读取音量
+    if (!this.localVolumeUpdate && this.volumeNumberEntity && hass) {
+      const numState = hass.states[this.volumeNumberEntity];
+      if (numState) {
+        const val = parseFloat(numState.state);
+        if (!isNaN(val)) {
+          this.volumeState = Math.round(val);
+        }
+      }
+    }
     
-    // 获取主实体和备用实体状态
     if (hass && this.xiaomiHomeEntity) {
-      primaryState = hass.states[this.xiaomiHomeEntity];
-    }
-    
-    if (hass && this.xiaomiMiotEntity) {
-      backupState = hass.states[this.xiaomiMiotEntity];
-    }
-    
-    // 判断是否使用备用实体：主实体不存在或状态为unavailable
-    if (!primaryState || primaryState.state === 'unavailable') {
-      usePrimaryEntity = false;
-    }
-    
-    // 更新状态
-    if (usePrimaryEntity && primaryState) {
-      // 使用主实体
-      this.xiaomiHomeState = primaryState;
-      this.isPlaying = ['playing', 'Playing', '播放', '播放中', '正在播放'].includes(primaryState.state);
-      
-      // 只有在非本地更新时才从主实体获取音量
-      if (!this.localVolumeUpdate && primaryState.attributes && primaryState.attributes.volume_level !== undefined) {
-        this.volumeState = Math.round((primaryState.attributes.volume_level || 0) * 100);
-      }
-      
-    } else if (backupState) {
-      // 使用备用实体
-      this.xiaomiMiotState = backupState;
-      this.isPlaying = ['playing', 'Playing', '播放', '播放中', '正在播放'].includes(backupState.state);
-      
-      // 从备用实体获取音量
-      if (!this.localVolumeUpdate && backupState.attributes && backupState.attributes.volume_level !== undefined) {
-        this.volumeState = Math.round((backupState.attributes.volume_level || 0) * 100);
+      const state = hass.states[this.xiaomiHomeEntity];
+      if (state) {
+        this.xiaomiHomeState = state;
+        this.isPlaying = ['playing', 'Playing', '播放', '播放中', '正在播放'].includes(state.state);
+        if (!this.localVolumeUpdate && !this.volumeNumberEntity && state.attributes && state.attributes.volume_level !== undefined) {
+          this.volumeState = Math.round((state.attributes.volume_level || 0) * 100);
+        }
       }
     }
     
-    // 更新备用实体状态（用于显示目的，但不用于主要控制）
-    if (backupState && usePrimaryEntity) {
-      this.xiaomiMiotState = backupState;
-    }
-    
-    // 更新主实体状态（用于显示目的，当使用备用实体时）
-    if (primaryState && !usePrimaryEntity) {
-      this.xiaomiHomeState = primaryState;
-    }
-    
-    // 更新进度信息
     this.requestUpdate();
-    
-    // 重置本地更新标志
     this.localVolumeUpdate = false;  
   }
 
@@ -2074,6 +2481,14 @@ class TvPlayer extends LitElement {
     }
   }
 
+  sendTuyaCommand(sceneEntity) {
+    if (sceneEntity && sceneEntity.startsWith('scene.')) {
+      this.callService('scene.turn_on', {
+        entity_id: sceneEntity
+      });
+    }
+  }
+
   _getVisibleAppOptions() {
     if (!this.appCurrentEntity || !this._hass) return [];
     const state = this._hass.states[this.appCurrentEntity];
@@ -2105,6 +2520,83 @@ class TvPlayer extends LitElement {
     }
   }
 
+  _getSourceList() {
+    const targetEntity = this.xiaomiHomeEntity;
+    if (!targetEntity || !this._hass) return [];
+    const state = this._hass.states[targetEntity];
+    if (!state || !state.attributes) return [];
+    return state.attributes.source_list || [];
+  }
+
+  _getCurrentSource() {
+    const targetEntity = this.xiaomiHomeEntity;
+    if (!targetEntity || !this._hass) return '';
+    const state = this._hass.states[targetEntity];
+    if (!state || !state.attributes) return '';
+    return state.attributes.source || '';
+  }
+
+  handleXinhaoyuan() {
+    this.handleClick();
+    this._showSourcePopup = !this._showSourcePopup;
+    this.requestUpdate();
+  }
+
+  handleSourceSelect(source) {
+    this.handleClick();
+    this._showSourcePopup = false;
+    const targetEntity = this.xiaomiHomeEntity;
+    if (targetEntity) {
+      this.callService('media_player.select_source', {
+        entity_id: targetEntity,
+        source: source
+      });
+    }
+    this.requestUpdate();
+  }
+
+  _getVolumeNumberValue() {
+    if (!this.volumeNumberEntity || !this._hass) return this.volumeState;
+    const state = this._hass.states[this.volumeNumberEntity];
+    if (state) {
+      const val = parseFloat(state.state);
+      if (!isNaN(val)) return Math.round(val);
+    }
+    return this.volumeState;
+  }
+
+  _parseAppConfigs(appObj) {
+    if (!appObj) return [];
+    const result = [];
+    for (let i = 1; i <= 7; i++) {
+      const name = appObj['app' + i + '_name'];
+      const command = appObj['app' + i + '_command'];
+      if (name && command) result.push({ name, command });
+    }
+    return result;
+  }
+
+  _getAppButtons() {
+    if (this.tvConnectionMode === 'adb') return this.adbAppConfigs;
+    if (this.tvConnectionMode === 'infrared') return this.irAppConfigs;
+    if (this.tvConnectionMode === 'esphome_ir') return this.esphomeAppConfigs;
+    if (this.tvConnectionMode === 'tuya_ir') return this.tuyaAppConfigs;
+    return [];
+  }
+
+  handleAppButtonClick(appConfig) {
+    this.handleClick();
+    if (this.tvConnectionMode === 'adb' && this.adbEntity) {
+      this.callService('androidtv.adb_command', { entity_id: this.adbEntity, command: appConfig.command });
+    } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(appConfig.command);
+    } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(appConfig.command);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(appConfig.command);
+    }
+  }
+
   handleClick(){
     if (navigator.vibrate) {
       navigator.vibrate(50);
@@ -2118,7 +2610,7 @@ class TvPlayer extends LitElement {
 
   handlePower() {
     this.handleClick();
-    const targetEntity = this.xiaomiMiotEntity || this.xiaomiHomeEntity;
+    const targetEntity = this.xiaomiHomeEntity;
     const state = this._hass?.states[targetEntity];
     const isOff = !state || state.state === 'off' || state.state === 'unavailable';
 
@@ -2159,6 +2651,8 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(isOff ? this.irCommands.power_on : this.irCommands.power_off);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(isOff ? this.esphomeCode.power_on : this.esphomeCode.power_off);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(isOff ? this.tuyaCommands.power_on : this.tuyaCommands.power_off);
     } else {
       if (isOff) {
         this.callService('media_player.turn_on', { entity_id: targetEntity });
@@ -2199,7 +2693,11 @@ class TvPlayer extends LitElement {
       this.sendEsphomeCommand(this.esphomeCode.power_on);
       return;
     }
-    const targetEntity = this.xiaomiMiotEntity || this.xiaomiHomeEntity;
+    if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.power_on);
+      return;
+    }
+    const targetEntity = this.xiaomiHomeEntity;
     this.callService('media_player.turn_on', { entity_id: targetEntity });
   }
 
@@ -2234,12 +2732,27 @@ class TvPlayer extends LitElement {
       this.sendEsphomeCommand(this.esphomeCode.power_off);
       return;
     }
-    const targetEntity = this.xiaomiMiotEntity || this.xiaomiHomeEntity;
+    if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.power_off);
+      return;
+    }
+    const targetEntity = this.xiaomiHomeEntity;
     this.callService('media_player.turn_off', { entity_id: targetEntity });
   }
 
   handleVolumeDown() {
     this.handleClick();
+    // 最高优先级：音量Number实体
+    if (this.volumeNumberEntity) {
+      const currentVal = this._getVolumeNumberValue();
+      const newVal = Math.max(0, currentVal - 1);
+      this.updateVolume(newVal);
+      this.callService('number.set_value', {
+        entity_id: this.volumeNumberEntity,
+        value: newVal
+      });
+      return;
+    }
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
@@ -2249,30 +2762,82 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(this.irCommands.volume_down);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(this.esphomeCode.volume_down);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.volume_down);
     } else {
       const newVolume = Math.max(0, this.volumeState - 1);
-      
       this.updateVolume(newVolume);
-      
-      // 同时设置主实体和备用实体音量
       if (this.xiaomiHomeEntity) {
         this.callService('media_player.volume_set', {
           entity_id: this.xiaomiHomeEntity,
           volume_level: newVolume / 100
         });
       }
-      
-      if (this.xiaomiMiotEntity) {
-        this.callService('media_player.volume_set', {
-          entity_id: this.xiaomiMiotEntity,
-          volume_level: newVolume / 100
-        });
-      }
+    }
+  }
+
+  handleVolumeMute() {
+    this.handleClick();
+    const targetVolume = this.volumeState === 0 ? 5 : 0;
+    // 最高优先级：音量Number实体
+    if (this.volumeNumberEntity) {
+      this.updateVolume(targetVolume);
+      this.callService('number.set_value', {
+        entity_id: this.volumeNumberEntity,
+        value: targetVolume
+      });
+      return;
+    }
+    if (this.tvConnectionMode === 'adb' && this.adbEntity) {
+      this.callService('androidtv.adb_command', {
+        entity_id: this.adbEntity,
+        command: this.buttonCommands.volume_mute
+      });
+      return;
+    }
+    if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
+      this.sendInfraredCommand(this.irCommands.volume_mute);
+      return;
+    }
+    if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
+      this.sendEsphomeCommand(this.esphomeCode.volume_mute);
+      return;
+    }
+    if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.volume_mute);
+      return;
+    }
+    const targetEntity = this.xiaomiHomeEntity;
+    if (targetEntity && this._hass?.states[targetEntity]) {
+      const muteState = this._hass.states[targetEntity].attributes?.is_volume_muted;
+      this.callService('media_player.volume_mute', {
+        entity_id: targetEntity,
+        is_volume_muted: !muteState
+      });
+      return;
+    }
+    this.updateVolume(targetVolume);
+    if (this.xiaomiHomeEntity) {
+      this.callService('media_player.volume_set', {
+        entity_id: this.xiaomiHomeEntity,
+        volume_level: targetVolume / 100
+      });
     }
   }
 
   handleVolumeUp() {
     this.handleClick();
+    // 最高优先级：音量Number实体
+    if (this.volumeNumberEntity) {
+      const currentVal = this._getVolumeNumberValue();
+      const newVal = Math.min(100, currentVal + 1);
+      this.updateVolume(newVal);
+      this.callService('number.set_value', {
+        entity_id: this.volumeNumberEntity,
+        value: newVal
+      });
+      return;
+    }
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
@@ -2282,22 +2847,14 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(this.irCommands.volume_up);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(this.esphomeCode.volume_up);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.volume_up);
     } else {
       const newVolume = Math.min(100, this.volumeState + 1);
-      
       this.updateVolume(newVolume);
-      
-      // 同时设置主实体和备用实体音量
       if (this.xiaomiHomeEntity) {
         this.callService('media_player.volume_set', {
           entity_id: this.xiaomiHomeEntity,
-          volume_level: newVolume / 100
-        });
-      }
-      
-      if (this.xiaomiMiotEntity) {
-        this.callService('media_player.volume_set', {
-          entity_id: this.xiaomiMiotEntity,
           volume_level: newVolume / 100
         });
       }
@@ -2317,24 +2874,19 @@ class TvPlayer extends LitElement {
     
     // 防抖动：停止拖动后300ms才调用服务
     this.volumeDebounceTimer = setTimeout(() => {
-      // 震动反馈
     this.handleClick();
-      
-      // 同时设置主实体和备用实体音量
-      if (this.xiaomiHomeEntity) {
+      // 最高优先级：音量Number实体
+      if (this.volumeNumberEntity) {
+        this.callService('number.set_value', {
+          entity_id: this.volumeNumberEntity,
+          value: newVolume
+        });
+      } else if (this.xiaomiHomeEntity) {
         this.callService('media_player.volume_set', {
           entity_id: this.xiaomiHomeEntity,
           volume_level: newVolume / 100
         });
       }
-      
-      if (this.xiaomiMiotEntity) {
-        this.callService('media_player.volume_set', {
-          entity_id: this.xiaomiMiotEntity,
-          volume_level: newVolume / 100
-        });
-      }
-      
       this.volumeDebounceTimer = null;
     }, 300);
   }
@@ -2346,30 +2898,21 @@ class TvPlayer extends LitElement {
   handleVolumeEnd(e) {
     if (this.isDragging) {
       this.isDragging = false;
-      
-      // 立即调用服务（不等待防抖）
       const newVolume = parseInt(e.target.value);
-      
-      // 清理防抖定时器
       if (this.volumeDebounceTimer) {
         clearTimeout(this.volumeDebounceTimer);
         this.volumeDebounceTimer = null;
       }
-      
-      // 震动反馈
       this.handleClick();
-      
-      // 同时设置主实体和备用实体音量
-      if (this.xiaomiHomeEntity) {
+      // 最高优先级：音量Number实体
+      if (this.volumeNumberEntity) {
+        this.callService('number.set_value', {
+          entity_id: this.volumeNumberEntity,
+          value: newVolume
+        });
+      } else if (this.xiaomiHomeEntity) {
         this.callService('media_player.volume_set', {
           entity_id: this.xiaomiHomeEntity,
-          volume_level: newVolume / 100
-        });
-      }
-      
-      if (this.xiaomiMiotEntity) {
-        this.callService('media_player.volume_set', {
-          entity_id: this.xiaomiMiotEntity,
           volume_level: newVolume / 100
         });
       }
@@ -2387,8 +2930,10 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(this.irCommands.previous);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(this.esphomeCode.previous);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.previous);
     } else {
-      const targetEntity = this.xiaomiHomeEntity || this.xiaomiMiotEntity;
+      const targetEntity = this.xiaomiHomeEntity;
       this.callService('media_player.media_previous_track', {
         entity_id: targetEntity
       });
@@ -2406,8 +2951,10 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(this.irCommands.play);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(this.esphomeCode.play);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.play);
     } else {
-      const targetEntity = this.xiaomiHomeEntity || this.xiaomiMiotEntity;
+      const targetEntity = this.xiaomiHomeEntity;
       this.callService('media_player.media_play_pause', {
         entity_id: targetEntity
       });
@@ -2425,8 +2972,10 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(this.irCommands.pause);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(this.esphomeCode.pause);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.pause);
     } else {
-      const targetEntity = this.xiaomiMiotEntity || this.xiaomiHomeEntity;
+      const targetEntity = this.xiaomiHomeEntity;
       this.callService('media_player.turn_off', {
         entity_id: targetEntity
       });
@@ -2444,8 +2993,10 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(this.irCommands.next);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(this.esphomeCode.next);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.next);
     } else {
-      const targetEntity = this.xiaomiHomeEntity || this.xiaomiMiotEntity;
+      const targetEntity = this.xiaomiHomeEntity;
       this.callService('media_player.media_next_track', {
         entity_id: targetEntity
       });
@@ -2466,6 +3017,8 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(this.irCommands.up);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(this.esphomeCode.up);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.up);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -2485,6 +3038,8 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(this.irCommands.down);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(this.esphomeCode.down);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.down);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -2504,6 +3059,8 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(this.irCommands.left);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(this.esphomeCode.left);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.left);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -2523,6 +3080,8 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(this.irCommands.right);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(this.esphomeCode.right);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.right);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -2542,6 +3101,8 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(this.irCommands.center);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(this.esphomeCode.center);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.center);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -2561,6 +3122,8 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(this.irCommands.home);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(this.esphomeCode.home);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.home);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -2580,6 +3143,8 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(this.irCommands.back);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(this.esphomeCode.back);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.back);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -2599,6 +3164,8 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(this.irCommands.menu);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(this.esphomeCode.menu);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.menu);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -2618,6 +3185,8 @@ class TvPlayer extends LitElement {
       this.sendInfraredCommand(this.irCommands.setting);
     } else if (this.tvConnectionMode === 'esphome_ir' && this.esphomeService) {
       this.sendEsphomeCommand(this.esphomeCode.setting);
+    } else if (this.tvConnectionMode === 'tuya_ir') {
+      this.sendTuyaCommand(this.tuyaCommands.setting);
     } else if (this.remoteControlEntity) {
       this.callService('select.select_option', {
         entity_id: this.remoteControlEntity,
@@ -2627,31 +3196,12 @@ class TvPlayer extends LitElement {
   }
 
   getProgressPercentage() {
-    // 使用与set hass相同的智能实体选择逻辑
-    let primaryState = null;
-    let usePrimaryEntity = true;
-    
-    // 获取主实体状态
-    if (this.xiaomiHomeEntity && this._hass) {
-      primaryState = this._hass.states[this.xiaomiHomeEntity];
-    }
-    
-    // 判断是否使用备用实体：主实体不存在或状态为unavailable
-    if (!primaryState || primaryState.state === 'unavailable') {
-      usePrimaryEntity = false;
-    }
-    
-    // 选择要显示的实体状态
     let displayState = null;
-    if (usePrimaryEntity && primaryState) {
-      displayState = primaryState;
-    } else if (this.xiaomiMiotEntity && this._hass) {
-      displayState = this._hass.states[this.xiaomiMiotEntity];
+    if (this.xiaomiHomeEntity && this._hass) {
+      displayState = this._hass.states[this.xiaomiHomeEntity];
     }
-    
-    // 如果都没有，使用本地状态
     if (!displayState) {
-      displayState = this.xiaomiHomeState || this.xiaomiMiotState;
+      displayState = this.xiaomiHomeState;
     }
     
     if (!displayState || !displayState.attributes) {
@@ -2674,31 +3224,12 @@ class TvPlayer extends LitElement {
   }
 
   getStateText() {
-    // 使用与set hass相同的智能实体选择逻辑
-    let primaryState = null;
-    let usePrimaryEntity = true;
-    
-    // 获取主实体状态
-    if (this.xiaomiHomeEntity && this._hass) {
-      primaryState = this._hass.states[this.xiaomiHomeEntity];
-    }
-    
-    // 判断是否使用备用实体：主实体不存在或状态为unavailable
-    if (!primaryState || primaryState.state === 'unavailable') {
-      usePrimaryEntity = false;
-    }
-    
-    // 选择要显示的实体状态
     let displayState = null;
-    if (usePrimaryEntity && primaryState) {
-      displayState = primaryState;
-    } else if (this.xiaomiMiotEntity && this._hass) {
-      displayState = this._hass.states[this.xiaomiMiotEntity];
+    if (this.xiaomiHomeEntity && this._hass) {
+      displayState = this._hass.states[this.xiaomiHomeEntity];
     }
-    
-    // 如果都没有，使用本地状态
     if (!displayState) {
-      displayState = this.xiaomiHomeState || this.xiaomiMiotState;
+      displayState = this.xiaomiHomeState;
     }
     
     const state = displayState?.state || 'idle';
@@ -2725,50 +3256,14 @@ render() {
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
     
-    // 使用与set hass相同的逻辑判断使用哪个实体
-    let primaryState = null;
-    let backupState = null;
+    // 获取显示状态：优先使用主实体，否则本地状态
     let displayState = null;
-    
-    // 获取主实体和备用实体状态
     if (this.xiaomiHomeEntity && this._hass) {
-      primaryState = this._hass.states[this.xiaomiHomeEntity];
+      displayState = this._hass.states[this.xiaomiHomeEntity];
     }
-    
-    if (this.xiaomiMiotEntity && this._hass) {
-      backupState = this._hass.states[this.xiaomiMiotEntity];
+    if (!displayState) {
+      displayState = this.xiaomiHomeState;
     }
-    
-   // 智能选择逻辑：优先选择有图片的实体
-   if (primaryState && backupState) {
-    const primaryPicture = primaryState.attributes?.entity_picture;
-    const backupPicture = backupState.attributes?.entity_picture;
-    
-    if (primaryPicture && !backupPicture) {
-      // 主实体有图片，备用实体无图片，使用主实体
-      displayState = primaryState;
-    } else if (!primaryPicture && backupPicture) {
-      // 主实体无图片，备用实体有图片，使用备用实体
-      displayState = backupState;
-    } else if (primaryPicture && backupPicture) {
-      // 两个实体都有图片，优先使用主实体
-      displayState = primaryState;
-    } else {
-      // 两个实体都没有图片，按原有逻辑选择（优先主实体）
-      displayState = primaryState.state === 'unavailable' ? backupState : primaryState;
-    }
-  } else if (primaryState) {
-    // 只有主实体存在
-    displayState = primaryState;
-  } else if (backupState) {
-    // 只有备用实体存在
-    displayState = backupState;
-  }
-  
-  // 如果都没有，使用本地状态
-  if (!displayState) {
-    displayState = this.xiaomiHomeState || this.xiaomiMiotState;
-  }
   
   const attributes = displayState?.attributes || {};
   
@@ -2783,26 +3278,30 @@ render() {
           ${entityPicture ? '' : 'background: var(--bg-color);'};
           position: relative;
           width: ${this.width};
+          overflow: visible;
         }
 
         .player-grid {
           padding: 10px 0;
           height: ${this.height};
+          overflow: visible;
           grid-template-rows: 1fr 1fr 1fr 200px auto 1fr;
+          grid-template-columns: 17% 8% 8% 8% 10% 8% 8% 8% 8% 8% 8%;
           grid-template-areas: 
-            ${this.tvConnectionMode === 'integration' ? `"icon name name name name home back menu setting power"` : `"icon name name name home back menu setting power_on power_off"`}
-            "icon info info info info info info info . ."
-            "icon volume volume-down volume-slider volume-slider volume-up prev play pause next"
-            "fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang"
-            ${this._getVisibleAppOptions().length > 0 ? `"appbtn appbtn appbtn appbtn appbtn appbtn appbtn appbtn appbtn appbtn"` : ''}
-            "progress progress progress progress progress progress progress progress progress progress"
+            ${this.tvConnectionMode === 'integration' ? `"icon name name name name name home back menu setting power"` : `"icon name name name name home back menu setting power_on power_off"`}
+            "icon info info info info info info info info . ."
+            "icon volume volume-mute volume-down volume-slider volume-slider volume-up prev play pause next"
+            ". fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang fangxiang xinhaoyuan xinhaoyuan"
+            ${(this._getVisibleAppOptions().length > 0 || this._getAppButtons().length > 0) ? `"appbtn appbtn appbtn appbtn appbtn appbtn appbtn appbtn appbtn appbtn appbtn"` : `". . . . . . . . . . ."`}
+            "progress progress progress progress progress progress progress progress progress progress progress"
         }
 
-        .directional-area, .app-buttons-area {
-          --theme-bg: ${theme === 'light' ? 'rgba(230, 230, 230)' : 'rgba(80, 80, 80)'};
+        .directional-area, .app-buttons-area, .xinhaoyuan-area {
+          --theme-bg: ${theme === 'light' ? 'rgba(230, 230, 230, 0.7)' : 'rgba(80, 80, 80, 0.7)'};
           --theme-fg: ${theme === 'light' ? 'rgb(80, 80, 80)' : 'rgb(230, 230, 230)'};
           --button-fg: ${theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(250, 250, 250)'};
-          --theme-bg-active: ${theme === 'light' ? 'rgba(120, 120, 120, 0.9)' : 'rgba(180, 180, 180, 0.9)'};
+          --popup-fg: ${theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)'};
+          --theme-bg-active: ${theme === 'light' ? 'rgba(120, 120, 120, 0.7)' : 'rgba(180, 180, 180, 0.7)'};
         }
 
         .progress-area {
@@ -2925,6 +3424,10 @@ render() {
           <ha-icon icon="mdi:cog"></ha-icon>
         </button>
 
+        <button class="control-button volume-mute" @click=${this.handleVolumeMute}>
+          <ha-icon icon=${this.volumeState === 0 ? 'mdi:volume-off' : 'mdi:volume-mute'}></ha-icon>
+        </button>
+
         <button class="control-button volume-down" @click=${this.handleVolumeDown}>
           <ha-icon icon="mdi:volume-minus"></ha-icon>
         </button>
@@ -2979,8 +3482,31 @@ render() {
           </div>
         </div>
 
+        <!-- 信号源区域 -->
+        <div class="xinhaoyuan-area">
+          <button class="xinhaoyuan-button" @click=${this.handleXinhaoyuan}>
+            <span>信号源</span>
+            <span class="arrow ${this._showSourcePopup ? 'open' : ''}">▼</span>
+            ${this._showSourcePopup && this._getSourceList().length > 0 ? html`
+              <div class="xinhaoyuan-popup" @click=${(e) => e.stopPropagation()}>
+                ${this._getSourceList().map(source => {
+                  const currentSource = this._getCurrentSource();
+                  return html`
+                    <div 
+                      class="xinhaoyuan-popup-item ${source === currentSource ? 'active' : ''}"
+                      @click=${() => this.handleSourceSelect(source)}
+                    >
+                      ${source}
+                    </div>
+                  `;
+                })}
+              </div>
+            ` : ''}
+          </button>
+        </div>
+
         <!-- App快捷按钮区域 -->
-        ${this._getVisibleAppOptions().length > 0 ? html`
+        ${(this._getVisibleAppOptions().length > 0 || this._getAppButtons().length > 0) ? html`
           <div class="app-buttons-area">
             ${this._getVisibleAppOptions().map(option => {
               const currentState = this.appCurrentEntity && this._hass?.states[this.appCurrentEntity]?.state;
@@ -2995,6 +3521,15 @@ render() {
                 </button>
               `;
             })}
+            ${this._getAppButtons().map(app => html`
+              <button 
+                class="app-button"
+                @click=${() => this.handleAppButtonClick(app)}
+                title="${app.command}"
+              >
+                ${app.name}
+              </button>
+            `)}
           </div>
           ` : ''}
 
