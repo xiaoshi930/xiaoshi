@@ -1,4 +1,8 @@
-import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+const whenDefined = (t) => customElements.whenDefined(t);
+await Promise.race([whenDefined("ha-card"), whenDefined("ha-panel-lovelace")]);
+const LitElement = window.LitElement || Object.getPrototypeOf(customElements.get("ha-card"));
+const html = LitElement.prototype.html;
+const css = LitElement.prototype.css;
 
 // ==================== 注册自定义卡片 ====================
 window.customCards = window.customCards || [];
