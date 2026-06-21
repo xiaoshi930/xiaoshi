@@ -869,6 +869,7 @@ class XiaoshiClassCard extends LitElement {
                                     if (!start) return '';
                                     const h = parseInt(start.split(':')[0]);
                                     if (h < 12) return '上午';
+                                    if (h < 13) return '中午';
                                     if (h < 18) return '下午';
                                     return '晚上';
                                 };
@@ -883,6 +884,28 @@ class XiaoshiClassCard extends LitElement {
                                         groups.push(cur);
                                     } else {
                                         cur.rowspan++;
+                                    }
+                                }
+                                // 检测餐食时段（科目含"饭"或"面"）
+                                const mealPeriods = {};
+                                for (let i = 1; i <= this._periodsPerDay; i++) {
+                                    for (const day of availableDays) {
+                                        const pd = this._scheduleData[day]?.[i];
+                                        if (pd && pd.subject && (pd.subject.includes('饭') || pd.subject.includes('面'))) {
+                                            const startHour = pd.start ? parseInt(pd.start.split(':')[0]) : 0;
+                                            mealPeriods[i] = startHour < 15 ? '午餐' : '晚餐';
+                                            break;
+                                        }
+                                    }
+                                }
+                                // 计算有效节次编号（跳过餐食时段，后续节次往上顺延）
+                                const effectiveNum = {};
+                                let counter = 1;
+                                for (let i = 1; i <= this._periodsPerDay; i++) {
+                                    if (mealPeriods[i]) {
+                                        effectiveNum[i] = 0;
+                                    } else {
+                                        effectiveNum[i] = counter++;
                                     }
                                 }
                                 // 为每个节次映射到分组起始/结束
@@ -902,7 +925,7 @@ class XiaoshiClassCard extends LitElement {
                                     </td>
                                     ` : ''}
                                     <td class="cell-period">
-                                        <span class="period-num ${this._currentPeriod?.type === 'class' && this._currentPeriod?.num === pn ? 'period-now' : ''}">第${pn}节</span>
+                                        <span class="period-num ${this._currentPeriod?.type === 'class' && this._currentPeriod?.num === pn ? 'period-now' : ''}">${mealPeriods[pn] ? mealPeriods[pn] : `第${effectiveNum[pn]}节`}</span>
                                         ${periodTimes[pn] ? html`<div class="period-time">${periodTimes[pn].start}<br>${periodTimes[pn].end}</div>` : ''}
                                     </td>
                                     ${availableDays.map(day => {
@@ -1201,6 +1224,7 @@ class XiaoshiClassCard extends LitElement {
                 line-height: 1.35;
                 white-space: normal;
                 overflow-wrap: break-word;
+                word-break: keep-all;
             }
             .live-dot {
                 position: absolute;
