@@ -427,7 +427,7 @@ class XiaoshiComputerCard extends LitElement {
   }
 
   static getConfigElement() {
-    return document.createElement("xiaoshi-iot-computer-card-editor");
+    return document.createElement("xiaoshi-computer-card-editor");
   }
 
   static getStubConfig() {
