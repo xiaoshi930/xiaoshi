@@ -327,7 +327,6 @@ class XiaoshiDeviceButton extends LitElement {
     return css`
       :host {
         display: block;
-        width: var(--card-width, 100%);
       }
       .device-status {
         width: var(--button-width, 65px);

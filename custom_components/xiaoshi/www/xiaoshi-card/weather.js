@@ -3523,7 +3523,6 @@ class XiaoshiWeatherPhoneButton extends LitElement {
     return css`
       :host {
         display: block;
-        width: var(--card-width, 100%);
       }
 
       .weather-button {

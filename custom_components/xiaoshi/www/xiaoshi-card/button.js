@@ -507,7 +507,6 @@ class XiaoshiButton extends LitElement {
     return css`
       :host {
         display: block;
-        width: var(--card-width, 100%);
       }
       .balance-status {
         width: var(--button-width, 65px);

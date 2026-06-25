@@ -1508,7 +1508,6 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
       css`
         :host {
           display: block;
-          width: var(--card-width, 100%);
         }
         .chart-status {
           width: var(--button-width, 16.8vw);

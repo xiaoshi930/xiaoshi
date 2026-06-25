@@ -1141,7 +1141,6 @@ class XiaoshiHaInfoCard extends HaInfoBaseMixin(LitElement) {
     return css`
       :host {
         display: block;
-        width: var(--card-width, 100%);
       }
       ha-card {
         width: 100%;

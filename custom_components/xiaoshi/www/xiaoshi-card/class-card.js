@@ -993,7 +993,6 @@ class XiaoshiClassCard extends LitElement {
         return css`
             :host {
                 display: block;
-                width: var(--card-width, 100%);
             }
             ha-card {
                 background: var(--bg-color, var(--card-background-color, #fff));
