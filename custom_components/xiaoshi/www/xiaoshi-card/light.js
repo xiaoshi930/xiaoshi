@@ -1,4 +1,4 @@
-﻿const whenDefined = (t) => customElements.whenDefined(t);
+const whenDefined = (t) => customElements.whenDefined(t);
 await Promise.race([whenDefined("ha-card"), whenDefined("ha-panel-lovelace")]);
 const LitElement = window.LitElement || Object.getPrototypeOf(customElements.get("ha-card"));
 const html = LitElement.prototype.html;
@@ -718,11 +718,6 @@ class XiaoshiLghtCard extends LitElement {
       opacity: 0.85;
       transform: scale(1.05);
     }
-
-    .history-icon-btn:hover {
-      opacity: 0.8;
-      transform: scale(1.05);
-    }
   `;
 
   constructor() {
@@ -1169,7 +1164,7 @@ class XiaoshiLghtCard extends LitElement {
     const roomName = this.config.room_name || '灯光';
     const textColor = isDark ? '#fff' : '#333';
     const bgColor = isDark ? '#2c2c2c' : '#fff';
-    const borderColor = isDark ? '#444' : '#eee';
+    const borderColor = isDark ? '#aaa' : '#888';
     const btnBg = isDark ? '#444' : '#f0f0f0';
     const btnIconColor = isDark ? '#ccc' : '#666';
     const chipBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
@@ -1191,7 +1186,7 @@ class XiaoshiLghtCard extends LitElement {
 
     // Header
     const header = document.createElement('div');
-    header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid ${borderColor};`;
+    header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:12px;margin:0 16px;border-bottom:1px solid ${borderColor};`;
     const title = document.createElement('span');
     title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
     title.textContent = `${roomName} - 历史记录`;
@@ -1205,18 +1200,22 @@ class XiaoshiLghtCard extends LitElement {
     // Toolbar row
     const toolbar = document.createElement('div');
     toolbar.className = 'xiaoshi-history-toolbar';
-    toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 20px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
+    toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 20px;margin:0 16px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
 
     // Entity filter - only if multiple lights
     const hasMultiple = this.config.entities.length > 1;
     if (hasMultiple) {
+      // entityRow: label + chips container, no-wrap at this level so chips indent under themselves
+      const entityRow = document.createElement('div');
+      entityRow.style.cssText = 'display:flex;align-items:flex-start;gap:8px;flex-basis:100%;';
+
       const entityLabel = document.createElement('span');
-      entityLabel.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;`;
+      entityLabel.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;padding-top:4px;`;
       entityLabel.textContent = '灯光:';
-      toolbar.appendChild(entityLabel);
+      entityRow.appendChild(entityLabel);
 
       const entityChips = document.createElement('div');
-      entityChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+      entityChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;flex:1;';
       entityChips.className = 'xiaoshi-entity-chips';
 
       const allChip = this._buildFilterChip('全部', '', chipBg, chipActiveBg, chipActiveColor, isDark);
@@ -1238,7 +1237,9 @@ class XiaoshiLghtCard extends LitElement {
         });
         entityChips.appendChild(chip);
       }
-      toolbar.appendChild(entityChips);
+
+      entityRow.appendChild(entityChips);
+      toolbar.appendChild(entityRow);
     }
 
     // Time period filter - on its own row
@@ -1274,7 +1275,7 @@ class XiaoshiLghtCard extends LitElement {
     // Body
     const body = document.createElement('div');
     body.className = 'xiaoshi-history-body';
-    body.style.cssText = 'flex:1;overflow-y:auto;padding:16px 20px;';
+    body.style.cssText = 'flex:1;overflow-y:auto;padding:6px 20px;';
     body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
 
     dialog.appendChild(header);
@@ -1371,17 +1372,17 @@ class XiaoshiLghtCard extends LitElement {
       const onPercent = totalMs > 0 ? Math.round(onTimeMs / totalMs * 100) : 0;
       const offPercent = totalMs > 0 ? Math.round(offTimeMs / totalMs * 100) : 0;
 
-      html += `<div style="margin-bottom:16px;">`;
+      html += `<div style="margin:8px 0px;  border-bottom: 1px solid ${isDark?'#aaa':'#888'};">`;
       // Single row: name + on% + off% + timeline bar
       const periodHours = this._historyFilterPeriod || 24;
       const now = new Date();
       const rangeStart = new Date(now.getTime() - periodHours * 60 * 60 * 1000);
-      const timelineBlocks = this._buildTimeline(data.entries, rangeStart, now, 40);
+      const timelineBlocks = this._buildTimeline(data.entries, rangeStart, now);
       html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">`;
       html += `<span style="display:flex;align-items:center;gap:4px;font-weight:700;font-size:0.85rem;color:${isDark?'#ddd':'#444'};white-space:nowrap;"><ha-icon icon="${icon}" style="--mdc-icon-size:16px;color:#FE6F21;"></ha-icon>${data.name}</span>`;
       html += `<span style="font-size:0.7rem;color:${isDark?'#FE6F21':'#e65c00'};white-space:nowrap;">${onPercent}%</span>`;
       html += `<span style="font-size:0.7rem;color:${isDark?'#aaa':'#888'};white-space:nowrap;">${offPercent}%</span>`;
-      html += `<div style="flex:1;display:flex;gap:1px;height:8px;border-radius:3px;overflow:hidden;">${timelineBlocks}</div>`;
+      html += `<div style="flex:1;display:flex;height:8px;border-radius:3px;overflow:hidden;">${timelineBlocks}</div>`;
       html += `</div>`;
       for (const { entry, time, durationMs } of filtered) {
         const timeStr = time.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -1393,7 +1394,7 @@ class XiaoshiLghtCard extends LitElement {
         const stateColor = isOn ? '#FE6F21' : (isOffline ? '#f44336' : '#999');
         const durationStr = this._formatDuration(durationMs);
         const entryBg = isOn ? (isDark ? 'rgba(254,111,33,0.12)' : 'rgba(254,111,33,0.08)') : (isOffline ? (isDark ? 'rgba(244,67,54,0.12)' : 'rgba(244,67,54,0.06)') : (isDark ? '#383838' : '#f5f5f5'));
-        html += `<div style="border-radius:10px;padding:12px;margin-bottom:8px;background:${entryBg};"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-size:0.8rem;padding:2px 8px;border-radius:10px;font-weight:500;background:${stateBg};color:${stateColor};">${stateLabel} · ${durationStr}</span><span style="font-size:0.75rem;color:${isDark?'#aaa':'#999'};">${timeStr}</span></div></div>`;
+        html += `<div style="border-radius:10px;padding: 0px 12px;margin-bottom:8px;background:${entryBg};"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-size:0.8rem;padding:2px 4px;border-radius:10px;font-weight:500;color:${stateColor};">${stateLabel} · ${durationStr}</span><span style="font-size:0.75rem;color:${isDark?'#aaa':'#999'};">${timeStr}</span></div></div>`;
       }
       html += `</div>`;
     }
@@ -1419,21 +1420,44 @@ class XiaoshiLghtCard extends LitElement {
     return s;
   }
 
-  _buildTimeline(entries, rangeStart, rangeEnd, blockCount) {
+  _buildTimeline(entries, rangeStart, rangeEnd) {
     const rangeMs = rangeEnd - rangeStart;
-    const sortedEntries = [...entries].sort((a, b) => new Date(a.last_changed) - new Date(b.last_changed));
-    let blocks = '';
-    for (let i = 0; i < blockCount; i++) {
-      const t = new Date(rangeStart.getTime() + (rangeMs / blockCount) * (i + 0.5));
-      let state = 'off';
-      for (let j = sortedEntries.length - 1; j >= 0; j--) {
-        if (new Date(sortedEntries[j].last_changed) <= t) {
-          state = sortedEntries[j].state;
-          break;
+    if (rangeMs <= 0 || entries.length === 0) return '';
+
+    // Sort chronologically ascending
+    const sorted = [...entries].sort((a, b) => new Date(a.last_changed) - new Date(b.last_changed));
+
+    // Build proportional state segments within the time range
+    const segments = [];
+
+    for (let i = 0; i < sorted.length; i++) {
+      const entry = sorted[i];
+      const segStart = new Date(entry.last_changed);
+      const segEnd = i + 1 < sorted.length ? new Date(sorted[i + 1].last_changed) : rangeEnd;
+
+      // Clip to visible time range
+      const visibleStart = segStart < rangeStart ? rangeStart : segStart;
+      const visibleEnd = segEnd > rangeEnd ? rangeEnd : segEnd;
+      const durationMs = visibleEnd - visibleStart;
+
+      if (durationMs > 0) {
+        const normState = this._normalizeState(entry.state);
+        const percent = (durationMs / rangeMs) * 100;
+
+        // Merge consecutive segments with the same state
+        const lastSeg = segments[segments.length - 1];
+        if (lastSeg && lastSeg.state === normState) {
+          lastSeg.percent += percent;
+        } else {
+          segments.push({ state: normState, percent });
         }
       }
-      const color = state === 'on' ? '#FE6F21' : 'rgba(180,180,180,0.35)';
-      blocks += `<div style="flex:1;min-width:1px;height:100%;background:${color};"></div>`;
+    }
+
+    let blocks = '';
+    for (const seg of segments) {
+      const color = seg.state === 'on' ? '#FE6F21' : (seg.state === 'offline' ? '#f44336' : 'rgba(180,180,180,0.35)');
+      blocks += `<div style="width:${seg.percent}%;min-width:1px;height:100%;background:${color};flex-shrink:0;"></div>`;
     }
     return blocks;
   }
@@ -1461,6 +1485,7 @@ class XiaoshiLghtCard extends LitElement {
 
   _buildFilterChip(label, value, chipBg, activeBg, activeColor, isDark) {
     const chip = document.createElement('span');
+    chip.setAttribute('data-chip', '1');
     const isActive = (typeof value === 'number' && value === this._historyFilterPeriod) ||
                      (typeof value === 'string' && value === this._historyFilterEntity && value !== '');
     if (isActive) {
@@ -1473,7 +1498,7 @@ class XiaoshiLghtCard extends LitElement {
   }
 
   _refreshHistoryChips(container, activeEntity, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
-    const chips = container.querySelectorAll('span');
+    const chips = container.querySelectorAll('[data-chip]');
     chips.forEach(chip => {
       const label = chip.textContent;
       if (mode === 'time') {
