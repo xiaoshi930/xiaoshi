@@ -23,12 +23,12 @@ import('./xiaoshi-card/computer.js');
 import('./xiaoshi-card/pve.js');
 import('./xiaoshi-card/class.js');
 
+import('./xiaoshi-phone/light-card.js'); //待删除
+import('./xiaoshi-phone/switch-card.js'); //待删除
 import('./xiaoshi-phone/climate-card.js');
 import('./xiaoshi-phone/humidifier-card.js');
 import('./xiaoshi-phone/purifier-card.js');
 import('./xiaoshi-phone/computer-card.js');
-import('./xiaoshi-phone/light-card.js');
-import('./xiaoshi-phone/switch-card.js');
 import('./xiaoshi-phone/music-player-card.js');
 import('./xiaoshi-phone/tv-player-card.js');
 import('./xiaoshi-phone/fan-card.js');
