@@ -644,6 +644,7 @@ class XiaoshiComputerCard extends LitElement {
     this.networkData = {};
     this.cpuCoresData = {};
     this._discovered = null;
+    this._discoveredCacheKey = '';
     this._screenshotFailed = false;
     this._lastScreenshotSrc = '';
   }
@@ -706,11 +707,16 @@ class XiaoshiComputerCard extends LitElement {
     if (!this.config.computer_name || !this.hass || !this.hass.states) return null;
     const prefix = this._convertToPrefix(this.config.computer_name);
     const mode = this.config.integration_mode || 'iotlink';
-
-    if (mode === 'librehardwaremonitor') {
-      return this._discoverLibreEntities(prefix);
+    // 缓存：只有 computer_name 或 integration_mode 变化时才重新扫描实体
+    const cacheKey = `${prefix}|${mode}`;
+    if (this._discoveredCacheKey === cacheKey && this._discovered) {
+      return this._discovered;
     }
-    if (mode === 'fusion') {
+
+    let result;
+    if (mode === 'librehardwaremonitor') {
+      result = this._discoverLibreEntities(prefix);
+    } else if (mode === 'fusion') {
       const libreData = this._discoverLibreEntities(prefix);
       const iotData = this._discoverIotEntities(prefix);
       // 融合: LibreHW 为主，IOTLink 补充截图、网卡和磁盘温度
@@ -771,9 +777,13 @@ class XiaoshiComputerCard extends LitElement {
       libreData.drives = mergedDrives;
       // 标记融合模式
       libreData._isFusion = true;
-      return libreData;
+      result = libreData;
+    } else {
+      result = this._discoverIotEntities(prefix);
     }
-    return this._discoverIotEntities(prefix);
+    // 缓存结果，只在 computer_name 或 mode 变化时才重新扫描
+    this._discoveredCacheKey = cacheKey;
+    return result;
   }
 
   _getEntityValueByEntityId(entityId) {
@@ -786,74 +796,60 @@ class XiaoshiComputerCard extends LitElement {
   _discoverIotEntities(prefix) {
     const allStates = this.hass.states;
     const allIds = Object.keys(allStates);
+    const escPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const sensorPrefix = `sensor.${escPrefix}_`;
+    const cameraPrefix = `camera.${escPrefix}_`;
 
-    // --- 磁盘 ---
+    // IOTLink 实体命名模式
+    const diskEidRegex = new RegExp(`^sensor\\.${escPrefix}_harddrive_${escPrefix}_storage_([a-z])_(.+)$`);
+    const netEidRegex = new RegExp(`^sensor\\.${escPrefix}_networkinfo_${escPrefix}_network_([0-9]+)_(.+)$`);
+
     const drives = {};
-    const diskEidRegex = new RegExp(`^sensor\\.${prefix}_harddrive_${prefix}_storage_([a-z])_(.+)$`);
-    const diskUidRegex = new RegExp(`${prefix}_harddrive_${prefix}_storage_([a-z])_(.+)$`, 'i');
+    const networks = {};
+    let cpuEntity = null;
+    let memoryEntity = null;
+    let screenshotEntity = null;
+
     for (const eid of allIds) {
       if (!this._isTargetPlatformEntity(eid)) continue;
-      const uid = this._getEntityUid(eid);
-      const m = eid.match(diskEidRegex) || uid.match(diskUidRegex);
-      if (m) {
-        const drive = m[1].toUpperCase();
-        const metric = m[2];
+
+      // --- 磁盘 ---
+      const diskMatch = eid.match(diskEidRegex);
+      if (diskMatch) {
+        const drive = diskMatch[1].toUpperCase();
+        const metric = diskMatch[2];
         if (!drives[drive]) drives[drive] = {};
         drives[drive][metric] = eid;
+        continue;
       }
-    }
 
-    // --- 网络 ---
-    const networks = {};
-    const netEidRegex = new RegExp(`^sensor\\.${prefix}_networkinfo_${prefix}_network_([0-9]+)_(.+)$`);
-    const netUidRegex = new RegExp(`${prefix}_networkinfo_${prefix}_network_([0-9]+)_(.+)$`, 'i');
-    for (const eid of allIds) {
-      if (!this._isTargetPlatformEntity(eid)) continue;
-      const uid = this._getEntityUid(eid);
-      const m = eid.match(netEidRegex) || uid.match(netUidRegex);
-      if (m) {
-        const idx = m[1];
-        const metric = m[2];
+      // --- 网络 ---
+      const netMatch = eid.match(netEidRegex);
+      if (netMatch) {
+        const idx = netMatch[1];
+        const metric = netMatch[2];
         if (!networks[idx]) networks[idx] = {};
         networks[idx][metric] = eid;
+        continue;
       }
-    }
 
-    // --- CPU ---
-    let cpuEntity = null;
-    for (const eid of allIds) {
-      if (!this._isTargetPlatformEntity(eid)) continue;
-      const uid = this._getEntityUid(eid);
-      const eidOk = eid.startsWith(`sensor.${prefix}_`) && eid.includes('cpu');
-      const uidOk = uid && uid.toLowerCase().startsWith(prefix + '_') && uid.toLowerCase().includes('cpu');
-      if (eidOk || uidOk) {
+      // --- CPU ---
+      if (!cpuEntity && eid.startsWith(sensorPrefix) && eid.includes('cpu')) {
         const st = allStates[eid];
-        if (st && !isNaN(parseFloat(st.state))) { cpuEntity = eid; break; }
+        if (st && !isNaN(parseFloat(st.state))) { cpuEntity = eid; continue; }
       }
-    }
 
-    // --- 内存 ---
-    let memoryEntity = null;
-    for (const eid of allIds) {
-      if (!this._isTargetPlatformEntity(eid)) continue;
-      const uid = this._getEntityUid(eid);
-      const eidOk = eid.startsWith(`sensor.${prefix}_`) && (eid.includes('memory') || eid.includes('_mem_'));
-      const uidLow = uid ? uid.toLowerCase() : '';
-      const uidOk = uidLow.startsWith(prefix + '_') && (uidLow.includes('memory') || uidLow.includes('_mem_'));
-      if (eidOk || uidOk) {
+      // --- 内存 ---
+      if (!memoryEntity && eid.startsWith(sensorPrefix) && (eid.includes('memory') || eid.includes('_mem_'))) {
         const st = allStates[eid];
-        if (st && !isNaN(parseFloat(st.state))) { memoryEntity = eid; break; }
+        if (st && !isNaN(parseFloat(st.state))) { memoryEntity = eid; continue; }
       }
-    }
 
-    // --- 截图 ---
-    let screenshotEntity = null;
-    for (const eid of allIds) {
-      if (!this._isTargetPlatformEntity(eid)) continue;
-      const uid = this._getEntityUid(eid);
-      const eidOk = eid.startsWith(`camera.${prefix}_display_screenshot`);
-      const uidOk = uid && uid.toLowerCase().includes('display_screenshot') && uid.toLowerCase().includes(prefix);
-      if (eidOk || uidOk) { screenshotEntity = eid; break; }
+      // --- 截图 ---
+      if (!screenshotEntity && eid.startsWith(cameraPrefix) && eid.includes('display_screenshot')) {
+        screenshotEntity = eid;
+        continue;
+      }
     }
 
     return {
@@ -878,192 +874,165 @@ class XiaoshiComputerCard extends LitElement {
     const allStates = this.hass.states;
     const allIds = Object.keys(allStates);
     const escPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const sensorPrefix = `sensor.${escPrefix}_`;
+    const sensorPrefixLen = sensorPrefix.length;
 
-    // --- 磁盘: sensor.{prefix}_{drive_name}_{used_space_load|free_space_data|total_space_data|temperature} ---
+    // ===== 单次遍历收集所有实体 =====
     const drives = {};
-    const diskEidRegex = new RegExp(`^sensor\\.${escPrefix}_(.+)_(used_space_load|free_space_data|total_space_data|temperature)$`);
-    const diskUidRegex = new RegExp(`^${escPrefix}_(.+)_(used_space_load|free_space_data|total_space_data|temperature)$`, 'i');
-    const diskMetricMap = { used_space_load: 'usage', free_space_data: 'available_free_space', total_space_data: 'total_storage', temperature: 'temperature' };
-    for (const eid of allIds) {
-      if (!this._isTargetPlatformEntity(eid)) continue;
-      const uid = this._getEntityUid(eid);
-      const m = eid.match(diskEidRegex) || uid.match(diskUidRegex);
-      if (m) {
-        const driveKey = m[1].toLowerCase();
-        const rawMetric = m[2];
-        const metric = diskMetricMap[rawMetric] || rawMetric;
-        if (!drives[driveKey]) drives[driveKey] = {};
-        drives[driveKey][metric] = eid;
-      }
-    }
-    // 清理：只有同时拥有 usage 或 total_storage 的才算真正硬盘，移除孤立的 temperature
-    for (const dk of Object.keys(drives)) {
-      const d = drives[dk];
-      if (!d.usage && !d.total_storage) delete drives[dk];
-      else delete d.temperature; // 先清除，下面重新添加有效的
-    }
-    // 重新为有效硬盘添加 temperature（二次扫描，避免跨设备污染）
-    const validDrives = new Set(Object.keys(drives));
-    for (const eid of allIds) {
-      if (!this._isTargetPlatformEntity(eid)) continue;
-      const uid = this._getEntityUid(eid);
-      const m = eid.match(diskEidRegex) || uid.match(diskUidRegex);
-      if (m && m[2] === 'temperature') {
-        const driveKey = m[1].toLowerCase();
-        if (validDrives.has(driveKey)) {
-          drives[driveKey].temperature = eid;
-        }
-      }
-    }
-
-    // --- 网络: sensor.{prefix}_{adapter}_{metric} ---
+    const driveTempMap = {};          // driveKey -> entityId (暂存温度，等确认硬盘有效后再合并)
     const networks = {};
-    const netEidRegex = new RegExp(`^sensor\\.${escPrefix}_(.+)_(network_utilization_load|download_speed_throughput|upload_speed_throughput)$`);
-    const netUidRegex = new RegExp(`^${escPrefix}_(.+)_(network_utilization_load|download_speed_throughput|upload_speed_throughput)$`, 'i');
+    let cpuEntity = null;
+    let cpuTemperatureEntity = null;
+    const cpuCoreMap = {};            // { coreNum: { load, temperature } }
+    let memoryEntity = null;
+    let memoryTemperatureEntity = null;
+    const gpu = { loadEntity: null, tempEntity: null, memUsedEntity: null, memTotalEntity: null, fanEntity: null, fanControlEntity: null };
+    const mbCandidates = [];          // 未能立即分类的实体，最后再尝试主板匹配
+
     const netMetricMap = { network_utilization_load: 'speed', download_speed_throughput: 'bps_received', upload_speed_throughput: 'bps_sent' };
-    let netIdx = 0;
     const adapterIndexMap = {};
+    let netIdx = 0;
+
     for (const eid of allIds) {
-      if (!this._isTargetPlatformEntity(eid)) continue;
-      const uid = this._getEntityUid(eid);
-      const m = eid.match(netEidRegex) || uid.match(netUidRegex);
-      if (m) {
-        const adapterKey = m[1].toLowerCase();
-        // 排除虚拟网卡和蓝牙
+      // 快速跳过不相关的实体
+      if (!eid.startsWith(sensorPrefix)) continue;
+      if (!this._isTargetPlatformEntity(eid)) continue; // Libre/融合不限制平台，但保留一致性检查
+
+      const afterPrefix = eid.slice(sensorPrefixLen);
+      if (!afterPrefix) continue;
+
+      // --- 磁盘 ---
+      // 模式: {drive}_{used_space_load|free_space_data|total_space_data|temperature}
+      // 排除包含 cpu/gpu/fan/memory/voltage/network 关键字的实体（避免误匹配主板传感器）
+      const diskMatch = afterPrefix.match(/^(.+)_(used_space_load|free_space_data|total_space_data|temperature)$/);
+      if (diskMatch && !/_cpu_|_gpu_|_fan_|_memory_|_voltage|_network_/.test(diskMatch[1])) {
+        const driveKey = diskMatch[1].toLowerCase();
+        const rawMetric = diskMatch[2];
+        if (rawMetric === 'temperature') {
+          // 温度暂存，等确认硬盘有效后再合并
+          if (!driveTempMap[driveKey]) driveTempMap[driveKey] = eid;
+        } else {
+          const metric = rawMetric === 'used_space_load' ? 'usage' : rawMetric === 'free_space_data' ? 'available_free_space' : 'total_storage';
+          if (!drives[driveKey]) drives[driveKey] = {};
+          drives[driveKey][metric] = eid;
+        }
+        continue;
+      }
+
+      // --- 网络 ---
+      // 模式: {adapter}_network_utilization_load|download_speed_throughput|upload_speed_throughput
+      const netMatch = afterPrefix.match(/^(.+)_(network_utilization_load|download_speed_throughput|upload_speed_throughput)$/);
+      if (netMatch) {
+        const adapterKey = netMatch[1].toLowerCase();
         if (/bluetooth|local|vmware|vethernet/.test(adapterKey)) continue;
-        const rawMetric = m[2];
-        const metric = netMetricMap[rawMetric] || rawMetric;
+        const metric = netMetricMap[netMatch[2]] || netMatch[2];
         if (!(adapterKey in adapterIndexMap)) {
           adapterIndexMap[adapterKey] = String(netIdx++);
         }
         const idx = adapterIndexMap[adapterKey];
         if (!networks[idx]) networks[idx] = {};
         networks[idx][metric] = eid;
+        continue;
       }
-    }
 
-    // --- CPU: sensor.{prefix}_{...}_cpu_total_load ---
-    let cpuEntity = null;
-    for (const eid of allIds) {
-      if (!this._isTargetPlatformEntity(eid)) continue;
-      const uid = this._getEntityUid(eid);
-      const eidOk = eid.startsWith(`sensor.${escPrefix}_`) && eid.endsWith('_cpu_total_load');
-      const uidLow = uid ? uid.toLowerCase() : '';
-      const uidOk = uidLow.startsWith(escPrefix + '_') && uidLow.endsWith('cpu_total_load');
-      if (eidOk || uidOk) {
+      // --- CPU 总负载 ---
+      if (!cpuEntity && afterPrefix.endsWith('_cpu_total_load')) {
         const st = allStates[eid];
-        if (st && !isNaN(parseFloat(st.state))) { cpuEntity = eid; break; }
+        if (st && !isNaN(parseFloat(st.state))) { cpuEntity = eid; }
+        continue;
       }
-    }
 
-    // --- CPU 温度: sensor.{prefix}_{cpu_name}_cpu_package_temperature ---
-    let cpuTemperatureEntity = null;
-    for (const eid of allIds) {
-      if (!this._isTargetPlatformEntity(eid)) continue;
-      const uid = this._getEntityUid(eid);
-      const eidOk = eid.startsWith(`sensor.${escPrefix}_`) && eid.includes('_cpu_package_temperature');
-      const uidLow = uid ? uid.toLowerCase() : '';
-      const uidOk = uidLow.startsWith(escPrefix + '_') && uidLow.includes('cpu_package_temperature');
-      if (eidOk || uidOk) {
+      // --- CPU 温度 ---
+      if (!cpuTemperatureEntity && afterPrefix.includes('_cpu_package_temperature')) {
         const st = allStates[eid];
-        if (st && !isNaN(parseFloat(st.state))) { cpuTemperatureEntity = eid; break; }
+        if (st && !isNaN(parseFloat(st.state))) { cpuTemperatureEntity = eid; }
+        continue;
       }
-    }
 
-    // --- CPU 多核心: sensor.{prefix}_{cpu_name}_cpu_core_{N}_load / _temperature ---
-    const cpuCoreRegex = new RegExp(`^sensor\\.${escPrefix}_.+_cpu_core_(\\d+)_(load|temperature)$`);
-    const cpuCoreUidRegex = new RegExp(`^${escPrefix}_.+_cpu_core_(\\d+)_(load|temperature)$`, 'i');
-    const cpuCoreMap = {};  // { coreNum: { load, temperature } }
-    for (const eid of allIds) {
-      if (!this._isTargetPlatformEntity(eid)) continue;
-      const uid = this._getEntityUid(eid);
-      const m = eid.match(cpuCoreRegex) || uid.match(cpuCoreUidRegex);
-      if (m) {
-        const coreNum = parseInt(m[1], 10);
-        const metric = m[2]; // 'load' or 'temperature'
+      // --- CPU 核心 ---
+      const coreMatch = afterPrefix.match(/_cpu_core_(\d+)_(load|temperature)$/);
+      if (coreMatch) {
+        const coreNum = parseInt(coreMatch[1], 10);
+        const metric = coreMatch[2];
         if (!cpuCoreMap[coreNum]) cpuCoreMap[coreNum] = {};
         cpuCoreMap[coreNum][metric] = eid;
+        continue;
+      }
+
+      // --- 内存 ---
+      if (!memoryEntity && afterPrefix.includes('total_memory_memory_load')) {
+        const st = allStates[eid];
+        if (st && !isNaN(parseFloat(st.state))) { memoryEntity = eid; }
+        continue;
+      }
+
+      // --- 内存温度 ---
+      if (!memoryTemperatureEntity && afterPrefix.includes('_memory_temperature')) {
+        const st = allStates[eid];
+        if (st && !isNaN(parseFloat(st.state))) { memoryTemperatureEntity = eid; }
+        continue;
+      }
+
+      // --- GPU ---
+      if (afterPrefix.includes('gpu')) {
+        if (!gpu.loadEntity && afterPrefix.includes('gpu_core_load')) {
+          const st = allStates[eid]; if (st && !isNaN(parseFloat(st.state))) gpu.loadEntity = eid;
+        } else if (!gpu.tempEntity && afterPrefix.includes('gpu_core_temperature')) {
+          const st = allStates[eid]; if (st && !isNaN(parseFloat(st.state))) gpu.tempEntity = eid;
+        } else if (!gpu.memUsedEntity && afterPrefix.includes('gpu_memory_used_data')) {
+          gpu.memUsedEntity = eid;
+        } else if (!gpu.memTotalEntity && afterPrefix.includes('gpu_memory_total_data')) {
+          gpu.memTotalEntity = eid;
+        } else if (!gpu.fanEntity && afterPrefix.includes('gpu_fan_speed')) {
+          const st = allStates[eid]; if (st && !isNaN(parseFloat(st.state))) gpu.fanEntity = eid;
+        } else if (!gpu.fanControlEntity && afterPrefix.includes('gpu_fan_control')) {
+          const st = allStates[eid]; if (st && !isNaN(parseFloat(st.state))) gpu.fanControlEntity = eid;
+        } else {
+          mbCandidates.push(eid);
+        }
+        continue;
+      }
+
+      // 未匹配 → 候选给主板
+      mbCandidates.push(eid);
+    }
+
+    // ===== 后处理: 清理无效硬盘，合并温度 =====
+    const diskKeys = Object.keys(drives);
+    for (const dk of diskKeys) {
+      const d = drives[dk];
+      if (!d.usage && !d.total_storage) {
+        delete drives[dk];
+      } else if (driveTempMap[dk]) {
+        d.temperature = driveTempMap[dk];
       }
     }
+
+    // ===== 后处理: CPU 核心 =====
     const cpuCores = Object.keys(cpuCoreMap)
       .map(Number).sort((a, b) => a - b)
       .map(core => ({ core, loadEntity: cpuCoreMap[core].load || null, tempEntity: cpuCoreMap[core].temperature || null }));
     const isMultiCore = cpuCores.length > 1;
-    // 提取 CPU 名称: sensor.{prefix}_intel_core_i5_9400f_cpu_... → Intel Core I5 9400F
+
+    // CPU 名称
     const cpuSample = cpuEntity || cpuCores[0]?.loadEntity;
     let cpuName = '';
     if (cpuSample) {
-      const afterPrefix = cpuSample.replace(new RegExp(`^sensor\\.${escPrefix}_`), '');
+      const afterPrefix = cpuSample.slice(sensorPrefixLen);
       cpuName = (afterPrefix.split('_cpu_')[0] || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     }
 
-    // --- 内存: sensor.{prefix}_total_memory_memory_load ---
-    let memoryEntity = null;
-    for (const eid of allIds) {
-      if (!this._isTargetPlatformEntity(eid)) continue;
-      const uid = this._getEntityUid(eid);
-      const eidOk = eid.startsWith(`sensor.${escPrefix}_`) && eid.includes('total_memory_memory_load');
-      const uidLow = uid ? uid.toLowerCase() : '';
-      const uidOk = uidLow.startsWith(escPrefix + '_') && uidLow.includes('total_memory_memory_load');
-      if (eidOk || uidOk) {
-        const st = allStates[eid];
-        if (st && !isNaN(parseFloat(st.state))) { memoryEntity = eid; break; }
-      }
-    }
-
-    // --- 内存温度（可选，通常不存在） ---
-    let memoryTemperatureEntity = null;
-    for (const eid of allIds) {
-      if (!this._isTargetPlatformEntity(eid)) continue;
-      const uid = this._getEntityUid(eid);
-      const eidOk = eid.startsWith(`sensor.${escPrefix}_`) && eid.includes('_memory_temperature');
-      const uidLow = uid ? uid.toLowerCase() : '';
-      const uidOk = uidLow.startsWith(escPrefix + '_') && uidLow.includes('memory_temperature');
-      if (eidOk || uidOk) {
-        const st = allStates[eid];
-        if (st && !isNaN(parseFloat(st.state))) { memoryTemperatureEntity = eid; break; }
-      }
-    }
-
-    // --- GPU: sensor.{prefix}_{gpu_name}_gpu_core_load / _temperature / _memory_used_data / _memory_total_data / _fan_speed ---
-    const gpu = { loadEntity: null, tempEntity: null, memUsedEntity: null, memTotalEntity: null, fanEntity: null, fanControlEntity: null };
-    for (const eid of allIds) {
-      if (!this._isTargetPlatformEntity(eid)) continue;
-      if (!eid.startsWith(`sensor.${escPrefix}_`) || !eid.includes('gpu')) continue;
-      const uid = this._getEntityUid(eid);
-      const uidLow = uid ? uid.toLowerCase() : '';
-      const checkEid = (kw) => eid.includes(kw);
-      const checkUid = (kw) => uidLow && uidLow.includes(kw);
-      if ((checkEid('gpu_core_load') || checkUid('gpu_core_load')) && !gpu.loadEntity) {
-        const st = allStates[eid]; if (st && !isNaN(parseFloat(st.state))) gpu.loadEntity = eid;
-      }
-      if ((checkEid('gpu_core_temperature') || checkUid('gpu_core_temperature')) && !gpu.tempEntity) {
-        const st = allStates[eid]; if (st && !isNaN(parseFloat(st.state))) gpu.tempEntity = eid;
-      }
-      if ((checkEid('gpu_memory_used_data') || checkUid('gpu_memory_used_data')) && !gpu.memUsedEntity) {
-        gpu.memUsedEntity = eid;
-      }
-      if ((checkEid('gpu_memory_total_data') || checkUid('gpu_memory_total_data')) && !gpu.memTotalEntity) {
-        gpu.memTotalEntity = eid;
-      }
-      if ((checkEid('gpu_fan_speed') || checkUid('gpu_fan_speed')) && !gpu.fanEntity) {
-        const st = allStates[eid]; if (st && !isNaN(parseFloat(st.state))) gpu.fanEntity = eid;
-      }
-      if ((checkEid('gpu_fan_control') || checkUid('gpu_fan_control')) && !gpu.fanControlEntity) {
-        const st = allStates[eid]; if (st && !isNaN(parseFloat(st.state))) gpu.fanControlEntity = eid;
-      }
-    }
-    const gpuEntity = gpu.loadEntity; // 兼容旧字段
-    // 提取 GPU 名称: sensor.{prefix}_nvidia_geforce_gtx_1650_gpu_... → Nvidia Geforce Gtx 1650
+    // GPU 名称
+    const gpuEntity = gpu.loadEntity;
     const gpuSample = gpu.loadEntity || gpu.tempEntity || gpu.memUsedEntity || gpu.fanEntity;
     if (gpuSample) {
-      const afterPrefix = gpuSample.replace(new RegExp(`^sensor\\.${escPrefix}_`), '');
+      const afterPrefix = gpuSample.slice(sensorPrefixLen);
       const gpuRaw = afterPrefix.split('_gpu_')[0] || '';
       gpu.name = gpuRaw.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     }
 
-    // --- 主板: sensor.{prefix}_{mb_name}_{sensor} 剩余未匹配的实体归为主板 ---
-    const mbSensors = []; // [{name, entityId, value}]
+    // ===== 后处理: 主板（剩余未匹配的实体） =====
+    const mbSensors = [];
     const mbSensorSuffixes = [
       { regex: /_fan_(\d+)_speed$/, label: (m) => '风扇' + m[1] + ' 转速', unit: ' RPM' },
       { regex: /_fan_(\d+)_control$/, label: (m) => '风扇' + m[1] + ' 控制', unit: '%' },
@@ -1076,29 +1045,30 @@ class XiaoshiComputerCard extends LitElement {
       { regex: /_temperature_(\d+)$/, label: (m) => '温度#' + m[1], unit: '°C' },
       { regex: /_voltage_(\d+)$/, label: (m) => '电压#' + m[1], unit: 'V' },
     ];
-    let mbName = '';
-    const existingIds = new Set([
-      cpuEntity, cpuTemperatureEntity, ...cpuCores.flatMap(c => [c.loadEntity, c.tempEntity]),
+    // 构建已使用的 entity ID 集合（包括 disk metrics 和 network metrics）
+    const usedEntityIds = new Set([
+      cpuEntity, cpuTemperatureEntity,
+      ...cpuCores.flatMap(c => [c.loadEntity, c.tempEntity]),
       memoryEntity, memoryTemperatureEntity,
       gpu.loadEntity, gpu.tempEntity, gpu.memUsedEntity, gpu.memTotalEntity, gpu.fanEntity, gpu.fanControlEntity,
       ...Object.values(drives).flatMap(v => Object.values(v)),
+      ...Object.values(driveTempMap),
       ...Object.values(networks).flatMap(v => Object.values(v).filter(x => typeof x === 'string')),
     ].filter(Boolean));
-    for (const eid of allIds) {
-      if (!this._isTargetPlatformEntity(eid)) continue;
-      if (!eid.startsWith(`sensor.${escPrefix}_`)) continue;
-      if (existingIds.has(eid)) continue;
+
+    let mbName = '';
+    for (const eid of mbCandidates) {
+      if (usedEntityIds.has(eid)) continue;
+      const afterPrefix = eid.slice(sensorPrefixLen);
       for (const s of mbSensorSuffixes) {
-        const m = eid.match(s.regex);
+        const m = afterPrefix.match(s.regex);
         if (m) {
           const st = allStates[eid];
           if (st && !isNaN(parseFloat(st.state))) {
             mbSensors.push({ name: s.label(m), entityId: eid, value: parseFloat(st.state), unit: s.unit });
-            // 提取主板名称: 去掉前缀和传感器后缀
             if (!mbName) {
-              const afterPrefix = eid.replace(new RegExp(`^sensor\\.${escPrefix}_`), '');
               const suffixLen = m[0].length;
-              const raw = afterPrefix.slice(0, afterPrefix.length - suffixLen - 1); // -1 for the separator _
+              const raw = afterPrefix.slice(0, afterPrefix.length - suffixLen - 1);
               mbName = raw.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
             }
           }
@@ -1106,9 +1076,6 @@ class XiaoshiComputerCard extends LitElement {
         }
       }
     }
-
-    // --- 截图: Libre HW Monitor 不提供截图 ---
-    const screenshotEntity = null;
 
     return {
       prefix,
@@ -1124,7 +1091,7 @@ class XiaoshiComputerCard extends LitElement {
       gpuEntity,
       gpu,
       motherboard: { name: mbName, sensors: mbSensors },
-      screenshotEntity,
+      screenshotEntity: null,
     };
   }
 
@@ -1153,7 +1120,6 @@ class XiaoshiComputerCard extends LitElement {
     const entityIds = [];
     if (d.cpuEntity) entityIds.push(d.cpuEntity);
     if (d.memoryEntity) entityIds.push(d.memoryEntity);
-    // 多核心历史数据
     if (d.cpuCores) {
       for (const c of d.cpuCores) {
         if (c.loadEntity) entityIds.push(c.loadEntity);
@@ -1163,12 +1129,11 @@ class XiaoshiComputerCard extends LitElement {
 
     try {
       const now = new Date();
-      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const end = new Date();
+      const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
       const result = await this.hass.callWS({
         type: 'history/history_during_period',
-        start_time: yesterday.toISOString(),
-        end_time: end.toISOString(),
+        start_time: twoHoursAgo.toISOString(),
+        end_time: now.toISOString(),
         entity_ids: entityIds,
         significant_changes_only: false,
         minimal_response: true,
@@ -1185,7 +1150,6 @@ class XiaoshiComputerCard extends LitElement {
           .filter(e => !isNaN(parseFloat(e.s)))
           .map(e => parseFloat(e.s));
       }
-      // 每个核心的曲线数据
       this.cpuCoresData = {};
       if (d.cpuCores) {
         for (const c of d.cpuCores) {
@@ -1249,21 +1213,24 @@ class XiaoshiComputerCard extends LitElement {
   }
 
   async firstUpdated() {
-    await this._fetchAndDraw();
-  }
-
-  async updated(changedProperties) {
-    if (changedProperties.has('hass') || changedProperties.has('config')) {
-      await this._fetchAndDraw();
-    }
-  }
-
-  async _fetchAndDraw() {
     this._discovered = this._discoverEntities();
     await this._fetchHistoryData();
     this.requestUpdate();
     await this.updateComplete;
     this._drawAllCharts();
+  }
+
+  async updated(changedProperties) {
+    if (changedProperties.has('config')) {
+      this._discoveredCacheKey = '';
+      this._discovered = null;
+    }
+    if (changedProperties.has('hass') || changedProperties.has('config')) {
+      this._discovered = this._discoverEntities();
+      this.requestUpdate();
+      await this.updateComplete;
+      this._drawAllCharts();
+    }
   }
 
   _drawAllCharts() {
@@ -1592,10 +1559,10 @@ class XiaoshiComputerCard extends LitElement {
     if (!mb || !mb.sensors || mb.sensors.length === 0) return html``;
     const fans = mb.sensors.filter(s => s.name.includes('风扇') && s.name.includes('转速') && s.value > 0);
     let temps = mb.sensors.filter(s => s.name.includes('温度') && s.value <= 100);
-    // 排除偏离最高温度 >10°C 的过低值
+    // 排除低于最高温度20%的过低值（百分比筛选）
     if (temps.length > 1) {
       const maxTemp = Math.max(...temps.map(t => t.value));
-      temps = temps.filter(t => t.value >= maxTemp - 20);
+      temps = temps.filter(t => t.value >= maxTemp * 0.8);
     }
     const color = '#FF9800';
 
@@ -1656,7 +1623,7 @@ class XiaoshiComputerCard extends LitElement {
     let mbTemps = mb && mb.sensors ? mb.sensors.filter(s => s.name.includes('温度') && s.value <= 100) : [];
     if (mbTemps.length > 1) {
       const maxTemp = Math.max(...mbTemps.map(t => t.value));
-      mbTemps = mbTemps.filter(t => t.value >= maxTemp - 10);
+      mbTemps = mbTemps.filter(t => t.value >= maxTemp * 0.8);
     }
     const mbColor = '#FF9800';
 
