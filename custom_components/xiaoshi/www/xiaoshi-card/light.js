@@ -431,7 +431,10 @@ class XiaoshiLghtCard extends LitElement {
     config: { type: Object, state: true },
     _onCount: { type: Number, state: true },
     _sliderValues: { type: Object, state: true },
-    _showScenes: { type: Object, state: true }
+    _showScenes: { type: Object, state: true },
+    _showHistory: { type: Boolean, state: true },
+    _historyData: { type: Object, state: true },
+    _historyLoading: { type: Boolean, state: true }
   };
 
   static getConfigElement() {
@@ -477,6 +480,8 @@ class XiaoshiLghtCard extends LitElement {
       display: flex;
       flex-direction: column;
       padding-bottom: 10px;
+      max-width: 600px;
+      margin: auto;
     }
     .card-header {
       display: flex;
@@ -537,6 +542,9 @@ class XiaoshiLghtCard extends LitElement {
       cursor: default;
       transition: all 0.2s ease;
       font-weight: 500;
+      display: flex;
+      align-items: center;
+      line-height: 1;
     }
     .header-btn:hover {
       opacity: 0.85;
@@ -693,6 +701,28 @@ class XiaoshiLghtCard extends LitElement {
     .power-button.active ha-icon {
       color: white;
     }
+    .history-icon-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: default;
+      transition: all 0.3s ease;
+      background: rgba(180, 180, 180, 0.2);
+      flex-shrink: 0;
+    }
+
+    .history-icon-btn:hover {
+      opacity: 0.85;
+      transform: scale(1.05);
+    }
+
+    .history-icon-btn:hover {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
   `;
 
   constructor() {
@@ -703,6 +733,9 @@ class XiaoshiLghtCard extends LitElement {
     this._sliderValues = {};
     this._debounceTimers = {};
     this._showScenes = {};
+    this._showHistory = false;
+    this._historyData = {};
+    this._historyLoading = false;
   }
 
   setConfig(config) {
@@ -798,6 +831,13 @@ class XiaoshiLghtCard extends LitElement {
           <span class="light-count" style="color: ${textColor}; background: ${countBg}">${onCount}</span>
         </div>
         <div class="card-header-buttons">
+          <div 
+            class="history-icon-btn"
+            @click=${this._toggleHistory}
+            title="查看灯光历史记录"
+          >
+            <ha-icon icon="mdi:history" style="--mdc-icon-size: 18px; color: ${textColor};"></ha-icon>
+          </div>
           <div 
             class="header-btn"
             style="background: #FE6F21; color: #FFF;"
@@ -1056,6 +1096,419 @@ class XiaoshiLghtCard extends LitElement {
       this.hass.callService('switch', 'turn_on', { entity_id: switchEntities });
     }
     this._handleClick();
+  }
+
+  _toggleHistory() {
+    this._handleClick();
+    if (this._showHistory) {
+      this._closeHistoryOverlay();
+      return;
+    }
+    this._showHistory = true;
+    this._showHistoryOverlay();
+    this._fetchHistory();
+  }
+
+  async _fetchHistory() {
+    try {
+      const filterEntity = this._historyFilterEntity || '';
+      const entityIds = filterEntity || this.config.entities.join(',');
+      const periodHours = this._historyFilterPeriod || 24;
+      const endTime = new Date();
+      const startTime = new Date(endTime.getTime() - periodHours * 60 * 60 * 1000);
+      const startStr = startTime.toISOString();
+      const endStr = endTime.toISOString();
+      
+      const data = await this.hass.callApi(
+        'GET',
+        `history/period/${startStr}?end_time=${endStr}&filter_entity_id=${entityIds}&minimal_response&no_attributes`
+      );
+      
+      const result = {};
+      const allEntities = Array.isArray(data) ? data : [];
+      for (const entityHistory of allEntities) {
+        if (!entityHistory || entityHistory.length === 0) continue;
+        const entityId = entityHistory[0].entity_id;
+        if (!entityId) continue;
+        const stateObj = this.hass.states[entityId];
+        const friendlyName = stateObj?.attributes?.friendly_name || entityId;
+        // Filter, sort, and deduplicate consecutive same-state entries
+        const rawEntries = entityHistory
+          .filter(entry => entry && entry.last_changed)
+          .sort((a, b) => new Date(b.last_changed) - new Date(a.last_changed));
+        const entries = [];
+        for (const entry of rawEntries) {
+          const last = entries[entries.length - 1];
+          const curNorm = this._normalizeState(entry.state);
+          const lastNorm = last ? this._normalizeState(last.state) : null;
+          if (!last || lastNorm !== curNorm) {
+            entries.push(entry);
+          }
+        }
+        if (entries.length > 0) {
+          result[entityId] = {
+            name: friendlyName,
+            entries: entries
+          };
+        }
+      }
+      this._historyData = result;
+    } catch (e) {
+      console.error('获取历史记录失败:', e);
+      this._historyData = {};
+    } finally {
+      this._historyLoading = false;
+      this._updateHistoryContent();
+    }
+  }
+
+  _showHistoryOverlay() {
+    if (this._historyOverlayEl) return;
+    const theme = this._evaluateTheme();
+    const isDark = theme === 'dark';
+    const roomName = this.config.room_name || '灯光';
+    const textColor = isDark ? '#fff' : '#333';
+    const bgColor = isDark ? '#2c2c2c' : '#fff';
+    const borderColor = isDark ? '#444' : '#eee';
+    const btnBg = isDark ? '#444' : '#f0f0f0';
+    const btnIconColor = isDark ? '#ccc' : '#666';
+    const chipBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
+    const chipActiveBg = '#FE6F21';
+    const chipActiveColor = '#fff';
+
+    this._historyFilterEntity = '';
+    this._historyFilterPeriod = 24;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'xiaoshi-history-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;';
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) this._closeHistoryOverlay();
+    });
+
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:600px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
+
+    // Header
+    const header = document.createElement('div');
+    header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid ${borderColor};`;
+    const title = document.createElement('span');
+    title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
+    title.textContent = `${roomName} - 历史记录`;
+    const closeBtn = document.createElement('button');
+    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+    closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
+    closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+
+    // Toolbar row
+    const toolbar = document.createElement('div');
+    toolbar.className = 'xiaoshi-history-toolbar';
+    toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 20px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
+
+    // Entity filter - only if multiple lights
+    const hasMultiple = this.config.entities.length > 1;
+    if (hasMultiple) {
+      const entityLabel = document.createElement('span');
+      entityLabel.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;`;
+      entityLabel.textContent = '灯光:';
+      toolbar.appendChild(entityLabel);
+
+      const entityChips = document.createElement('div');
+      entityChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+      entityChips.className = 'xiaoshi-entity-chips';
+
+      const allChip = this._buildFilterChip('全部', '', chipBg, chipActiveBg, chipActiveColor, isDark);
+      allChip.addEventListener('click', () => {
+        this._historyFilterEntity = '';
+        this._refreshHistoryChips(entityChips, this._historyFilterEntity, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark);
+        this._refetchWithFilters();
+      });
+      entityChips.appendChild(allChip);
+
+      for (const entity of this.config.entities) {
+        const stateObj = this.hass.states[entity];
+        const name = stateObj?.attributes?.friendly_name || entity;
+        const chip = this._buildFilterChip(name, entity, chipBg, chipActiveBg, chipActiveColor, isDark);
+        chip.addEventListener('click', () => {
+          this._historyFilterEntity = entity;
+          this._refreshHistoryChips(entityChips, this._historyFilterEntity, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark);
+          this._refetchWithFilters();
+        });
+        entityChips.appendChild(chip);
+      }
+      toolbar.appendChild(entityChips);
+    }
+
+    // Time period filter - on its own row
+    const timeRow = document.createElement('div');
+    timeRow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-basis:100%;';
+    const timeLabel = document.createElement('span');
+    timeLabel.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;`;
+    timeLabel.textContent = '时段:';
+    timeRow.appendChild(timeLabel);
+
+    const timeChips = document.createElement('div');
+    timeChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+    timeChips.className = 'xiaoshi-time-chips';
+    const periods = [
+      { label: '1小时', value: 1 },
+      { label: '6小时', value: 6 },
+      { label: '24小时', value: 24 },
+      { label: '3天', value: 72 },
+      { label: '7天', value: 168 }
+    ];
+    for (const p of periods) {
+      const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
+      chip.addEventListener('click', () => {
+        this._historyFilterPeriod = p.value;
+        this._refreshHistoryChips(timeChips, this._historyFilterEntity, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
+        this._refetchWithFilters();
+      });
+      timeChips.appendChild(chip);
+    }
+    timeRow.appendChild(timeChips);
+    toolbar.appendChild(timeRow);
+
+    // Body
+    const body = document.createElement('div');
+    body.className = 'xiaoshi-history-body';
+    body.style.cssText = 'flex:1;overflow-y:auto;padding:16px 20px;';
+    body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+
+    dialog.appendChild(header);
+    dialog.appendChild(toolbar);
+    dialog.appendChild(body);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    this._historyOverlayEl = overlay;
+    this._historyBodyEl = body;
+  }
+
+  _updateHistoryContent() {
+    if (!this._historyBodyEl) return;
+    const theme = this._evaluateTheme();
+    const isDark = theme === 'dark';
+    const textColor = isDark ? '#fff' : '#333';
+    
+    if (this._historyLoading) {
+      this._historyBodyEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+      return;
+    }
+
+    const entries = Object.entries(this._historyData);
+    if (entries.length === 0) {
+      this._historyBodyEl.innerHTML = `<div style="text-align:center;padding:40px;color:${isDark?'#aaa':'#999'};font-size:0.9rem;">暂无历史记录</div>`;
+      return;
+    }
+
+    let html = '';
+    for (const [entityId, data] of entries) {
+      const stateObj = this.hass.states[entityId];
+      const icon = stateObj?.attributes?.icon || 'mdi:lightbulb';
+
+      // Calculate on/off totals and entries with duration
+      // First, deduplicate consecutive same-state entries
+      let onTimeMs = 0;
+      let offTimeMs = 0;
+      const entriesWithDuration = [];
+      const dedupedEntries = [];
+      for (const entry of data.entries) {
+        const last = dedupedEntries[dedupedEntries.length - 1];
+        const curNorm = this._normalizeState(entry.state);
+        const lastNorm = last ? this._normalizeState(last.state) : null;
+        if (!last || lastNorm !== curNorm) {
+          dedupedEntries.push(entry);
+        }
+      }
+      for (let i = 0; i < dedupedEntries.length; i++) {
+        const entry = dedupedEntries[i];
+        const time = new Date(entry.last_changed);
+        const prevEntry = dedupedEntries[i - 1];
+        const endTime = prevEntry ? new Date(prevEntry.last_changed) : new Date();
+        const durationMs = Math.max(0, endTime - time);
+        if (entry.state === 'on') {
+          onTimeMs += durationMs;
+        } else {
+          offTimeMs += durationMs;
+        }
+        entriesWithDuration.push({ entry, time, durationMs });
+      }
+
+      // Remove short offline blips (< 1min)
+      const preFiltered = [];
+      for (const item of entriesWithDuration) {
+        const norm = this._normalizeState(item.entry.state);
+        if (norm === 'offline' && item.durationMs < 60000) continue;
+        preFiltered.push(item);
+      }
+      // Merge consecutive same normalized state after filtering
+      const filtered = [];
+      onTimeMs = 0;
+      offTimeMs = 0;
+      for (const item of preFiltered) {
+        const last = filtered[filtered.length - 1];
+        const curNorm = this._normalizeState(item.entry.state);
+        const lastNorm = last ? this._normalizeState(last.entry.state) : null;
+        if (last && lastNorm === curNorm) {
+          last.durationMs += item.durationMs;
+          last.time = item.time; // keep older timestamp
+        } else {
+          filtered.push({ ...item });
+        }
+      }
+      for (const item of filtered) {
+        if (item.entry.state === 'on') {
+          onTimeMs += item.durationMs;
+        } else {
+          offTimeMs += item.durationMs;
+        }
+      }
+
+      const totalMs = onTimeMs + offTimeMs;
+      const onPercent = totalMs > 0 ? Math.round(onTimeMs / totalMs * 100) : 0;
+      const offPercent = totalMs > 0 ? Math.round(offTimeMs / totalMs * 100) : 0;
+
+      html += `<div style="margin-bottom:16px;">`;
+      // Single row: name + on% + off% + timeline bar
+      const periodHours = this._historyFilterPeriod || 24;
+      const now = new Date();
+      const rangeStart = new Date(now.getTime() - periodHours * 60 * 60 * 1000);
+      const timelineBlocks = this._buildTimeline(data.entries, rangeStart, now, 40);
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">`;
+      html += `<span style="display:flex;align-items:center;gap:4px;font-weight:700;font-size:0.85rem;color:${isDark?'#ddd':'#444'};white-space:nowrap;"><ha-icon icon="${icon}" style="--mdc-icon-size:16px;color:#FE6F21;"></ha-icon>${data.name}</span>`;
+      html += `<span style="font-size:0.7rem;color:${isDark?'#FE6F21':'#e65c00'};white-space:nowrap;">${onPercent}%</span>`;
+      html += `<span style="font-size:0.7rem;color:${isDark?'#aaa':'#888'};white-space:nowrap;">${offPercent}%</span>`;
+      html += `<div style="flex:1;display:flex;gap:1px;height:8px;border-radius:3px;overflow:hidden;">${timelineBlocks}</div>`;
+      html += `</div>`;
+      for (const { entry, time, durationMs } of filtered) {
+        const timeStr = time.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const rawState = (entry.state || '').trim();
+        const isOn = rawState === 'on';
+        const isOffline = rawState === 'unavailable' || rawState === 'unknown';
+        const stateLabel = isOn ? '已开启' : (isOffline ? '已离线' : '已关闭');
+        const stateBg = isOn ? 'rgba(254,111,33,0.15)' : (isOffline ? 'rgba(244,67,54,0.15)' : 'rgba(150,150,150,0.15)');
+        const stateColor = isOn ? '#FE6F21' : (isOffline ? '#f44336' : '#999');
+        const durationStr = this._formatDuration(durationMs);
+        const entryBg = isOn ? (isDark ? 'rgba(254,111,33,0.12)' : 'rgba(254,111,33,0.08)') : (isOffline ? (isDark ? 'rgba(244,67,54,0.12)' : 'rgba(244,67,54,0.06)') : (isDark ? '#383838' : '#f5f5f5'));
+        html += `<div style="border-radius:10px;padding:12px;margin-bottom:8px;background:${entryBg};"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-size:0.8rem;padding:2px 8px;border-radius:10px;font-weight:500;background:${stateBg};color:${stateColor};">${stateLabel} · ${durationStr}</span><span style="font-size:0.75rem;color:${isDark?'#aaa':'#999'};">${timeStr}</span></div></div>`;
+      }
+      html += `</div>`;
+    }
+    this._historyBodyEl.innerHTML = html;
+  }
+
+  _closeHistoryOverlay() {
+    if (this._historyOverlayEl) {
+      this._historyOverlayEl.remove();
+      this._historyOverlayEl = null;
+      this._historyBodyEl = null;
+    }
+    this._showHistory = false;
+    this._historyData = {};
+    this._historyLoading = false;
+    this._historyFilterEntity = '';
+    this._historyFilterPeriod = 24;
+  }
+
+  _normalizeState(state) {
+    const s = (state || '').trim();
+    if (s === 'unavailable' || s === 'unknown') return 'offline';
+    return s;
+  }
+
+  _buildTimeline(entries, rangeStart, rangeEnd, blockCount) {
+    const rangeMs = rangeEnd - rangeStart;
+    const sortedEntries = [...entries].sort((a, b) => new Date(a.last_changed) - new Date(b.last_changed));
+    let blocks = '';
+    for (let i = 0; i < blockCount; i++) {
+      const t = new Date(rangeStart.getTime() + (rangeMs / blockCount) * (i + 0.5));
+      let state = 'off';
+      for (let j = sortedEntries.length - 1; j >= 0; j--) {
+        if (new Date(sortedEntries[j].last_changed) <= t) {
+          state = sortedEntries[j].state;
+          break;
+        }
+      }
+      const color = state === 'on' ? '#FE6F21' : 'rgba(180,180,180,0.35)';
+      blocks += `<div style="flex:1;min-width:1px;height:100%;background:${color};"></div>`;
+    }
+    return blocks;
+  }
+
+  _formatDuration(ms) {
+    const periodHours = this._historyFilterPeriod || 24;
+    const periodMs = periodHours * 60 * 60 * 1000;
+    if (ms < 60000) return '少于1分钟';
+    // Cap at query period boundary
+    if (ms >= periodMs) {
+      if (periodHours < 24) return `大于${periodHours}小时`;
+      if (periodHours < 72) return `大于${periodHours}小时`;
+      const days = Math.floor(periodHours / 24);
+      return `大于${days}天`;
+    }
+    const minutes = Math.floor(ms / 60000);
+    if (minutes < 60) return `${minutes}分钟`;
+    const hours = Math.floor(minutes / 60);
+    const remainMin = minutes % 60;
+    if (hours < 24) return remainMin > 0 ? `${hours}小时${remainMin}分钟` : `${hours}小时`;
+    const days = Math.floor(hours / 24);
+    const remainHr = hours % 24;
+    return remainHr > 0 ? `${days}天${remainHr}小时` : `${days}天`;
+  }
+
+  _buildFilterChip(label, value, chipBg, activeBg, activeColor, isDark) {
+    const chip = document.createElement('span');
+    const isActive = (typeof value === 'number' && value === this._historyFilterPeriod) ||
+                     (typeof value === 'string' && value === this._historyFilterEntity && value !== '');
+    if (isActive) {
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};`;
+    } else {
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+    }
+    chip.textContent = label;
+    return chip;
+  }
+
+  _refreshHistoryChips(container, activeEntity, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
+    const chips = container.querySelectorAll('span');
+    chips.forEach(chip => {
+      const label = chip.textContent;
+      if (mode === 'time') {
+        const isActive = (label === '24小时' && activePeriod === 24) ||
+                         (label === '1小时' && activePeriod === 1) ||
+                         (label === '6小时' && activePeriod === 6) ||
+                         (label === '3天' && activePeriod === 72) ||
+                         (label === '7天' && activePeriod === 168);
+        if (isActive) {
+          chip.style.background = activeBg;
+          chip.style.color = activeColor;
+        } else {
+          chip.style.background = chipBg;
+          chip.style.color = isDark ? '#ccc' : '#555';
+        }
+      } else {
+        const isActive = (label === '全部' && activeEntity === '') || (label !== '全部' && activeEntity !== '');
+        if (isActive && chip.textContent === (activeEntity ? (this.hass?.states[activeEntity]?.attributes?.friendly_name || activeEntity) : '全部')) {
+          chip.style.background = activeBg;
+          chip.style.color = activeColor;
+        } else {
+          chip.style.background = chipBg;
+          chip.style.color = isDark ? '#ccc' : '#555';
+        }
+      }
+    });
+  }
+
+  _refetchWithFilters() {
+    this._historyLoading = true;
+    this._historyData = {};
+    if (this._historyBodyEl) {
+      this._updateHistoryContent();
+    }
+    this._fetchHistory();
   }
 
   async _adjustBrightness(entity, value) {
