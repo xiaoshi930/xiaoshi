@@ -1136,7 +1136,10 @@ class XiaoshiLghtCard extends LitElement {
           const last = entries[entries.length - 1];
           const curNorm = this._normalizeState(entry.state);
           const lastNorm = last ? this._normalizeState(last.state) : null;
-          if (!last || lastNorm !== curNorm) {
+          if (last && lastNorm === curNorm) {
+            // 相同连续状态：用更早的时间替换，保留状态切换的起点
+            entries[entries.length - 1] = entry;
+          } else {
             entries.push(entry);
           }
         }
@@ -1320,7 +1323,10 @@ class XiaoshiLghtCard extends LitElement {
         const last = dedupedEntries[dedupedEntries.length - 1];
         const curNorm = this._normalizeState(entry.state);
         const lastNorm = last ? this._normalizeState(last.state) : null;
-        if (!last || lastNorm !== curNorm) {
+        if (last && lastNorm === curNorm) {
+          // 相同连续状态：用更早的时间替换，保留状态切换的起点
+          dedupedEntries[dedupedEntries.length - 1] = entry;
+        } else {
           dedupedEntries.push(entry);
         }
       }
@@ -1426,14 +1432,24 @@ class XiaoshiLghtCard extends LitElement {
 
     // Sort chronologically ascending
     const sorted = [...entries].sort((a, b) => new Date(a.last_changed) - new Date(b.last_changed));
-
-    // Build proportional state segments within the time range
-    const segments = [];
-
+    // 先过滤：离线且持续少于1分钟的段跳过
+    const filtered = [];
     for (let i = 0; i < sorted.length; i++) {
       const entry = sorted[i];
       const segStart = new Date(entry.last_changed);
       const segEnd = i + 1 < sorted.length ? new Date(sorted[i + 1].last_changed) : rangeEnd;
+      const normState = this._normalizeState(entry.state);
+      if (normState === 'offline' && segEnd - segStart < 60000) continue;
+      filtered.push(entry);
+    }
+
+    // Build proportional state segments within the time range
+    const segments = [];
+
+    for (let i = 0; i < filtered.length; i++) {
+      const entry = filtered[i];
+      const segStart = new Date(entry.last_changed);
+      const segEnd = i + 1 < filtered.length ? new Date(filtered[i + 1].last_changed) : rangeEnd;
 
       // Clip to visible time range
       const visibleStart = segStart < rangeStart ? rangeStart : segStart;
