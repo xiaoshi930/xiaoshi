@@ -619,7 +619,7 @@ class XiaoshiStateGridButton extends LitElement {
     return css`
       :host { display: block; }
       .balance-status {
-        width: var(--button-width, 16.8vw); max-width:90px;height: var(--button-height, 24px);
+        width: var(--button-width, 16.8vw); max-width: var(--button-max-width, 90px);height: var(--button-height, 24px);
         padding: 0; margin: 0; background: var(--bg-color, #fff); color: var(--fg-color, #000);
         border-radius: 10px; font-size: var(--button-font-size, 11px); font-weight: 500;
         text-align: center; box-sizing: border-box; display: flex; align-items: center;
@@ -937,6 +937,9 @@ class XiaoshiStateGridButton extends LitElement {
   setConfig(config) {
     this.config = { ...config };
     this.style.setProperty('--button-width', config.button_width || '16.8vw');
+    if (config.button_width) {
+      this.style.setProperty('--button-max-width', config.button_width);
+    }
     this.style.setProperty('--button-height', config.button_height || '24px');
     this.style.setProperty('--button-font-size', config.button_font_size || '11px');
     this.style.setProperty('--button-icon-size', config.button_icon_size || '13px');
