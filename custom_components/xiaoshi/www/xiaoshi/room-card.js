@@ -767,25 +767,28 @@ class XiaoshiRoomCard extends LitElement {
                 display: block;
                 height: 100%;
                 min-height: 0;
+                max-width: 240px;
             }
             ha-card {
                 border: none;
                 box-shadow: none;
+                max-width: 240px;
             }
             .card {
                 background: transparent;
-                border-radius: 3.5vw;
+                border-radius: min(3.5vw, 17.5px);
                 position: relative;
                 overflow: hidden;
                 display: flex;
                 height: 100%;
                 min-height: 0;
                 font-family: var(--paper-font-body1_-_font-family);
+                max-width: 240px;
             }
             /* ===== 左侧区域 ===== */
             .left {
                 width: 45%;
-                padding: 1.2vh 1.2vw 1.2vh 2vw;
+                padding: 1.2vh min(1.2vw, 6px) 1.2vh min(2vw, 10px);
                 display: flex;
                 flex-direction: column;
                 position: relative;
@@ -807,7 +810,7 @@ class XiaoshiRoomCard extends LitElement {
                 top: calc(var(--corner-size, 7.5vh) * 0.16);
                 left: calc(var(--corner-size, 7.5vh) * 0.11);
                 color: white;
-                font-size: 3vw;
+                font-size: min(3vw, 15px);
                 font-weight: bold;
                 transform-origin: center center;
                 white-space: nowrap;
@@ -815,8 +818,7 @@ class XiaoshiRoomCard extends LitElement {
             /* 人在图标 */
             .person-icon {
                 margin-top: var(--chip-h, 2.6vh);
-                margin-left: 7vw;
-                margin-right: 0;
+                margin-left: min(7vw, 35px);
                 color: #ff5722;
                 display: flex;
                 align-items: center;
@@ -846,8 +848,8 @@ class XiaoshiRoomCard extends LitElement {
                 margin-bottom: 0;
             }
             .sensor-chip {
-                border-radius: 4vw;
-                padding: 0 2vw;
+                border-radius: min(4vw, 20px);
+                padding: 0 min(2vw, 10px);
                 height: calc(var(--chip-h, 2.6vh) * 1.1);
                 color: white;
                 font-size: calc(var(--chip-h, 2.6vh) * 0.5);
@@ -881,14 +883,14 @@ class XiaoshiRoomCard extends LitElement {
                 grid-template-columns: 1fr 1fr;
                 grid-template-rows: repeat(3, 1fr);
                 gap: 1.4vh;
-                padding: 1.2vh 2.5vw 1.2vh 1.2vw;
+                padding: 1.2vh min(2.5vw, 12.5px) 1.2vh min(1.2vw, 6px);
                 align-content: center;
             }
             /* 单个设备按钮 */
             .device-btn {
                 position: relative;
                 background: #333;
-                border-radius: 2vw;
+                border-radius: min(2vw, 10px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -961,12 +963,12 @@ class XiaoshiRoomCard extends LitElement {
                 position: absolute;
                 top: -1vw;
                 right: -1vw;
-                width: 3.8vw;
-                height: 3.8vw;
+                width: min(3.8vw, 19px);
+                height: min(3.8vw, 19px);
                 border-radius: 50%;
                 background: #f44336;
                 color: white;
-                font-size: 2.3vw;
+                font-size: min(2.3vw, 11.5px);
                 font-weight: 600;
                 display: flex;
                 align-items: center;
@@ -986,7 +988,7 @@ class XiaoshiRoomCard extends LitElement {
                 flex-direction: column;
                 gap: 0.5vh;
                 width: 45%;
-                padding: 0 1.2vw 0 2vw;
+                padding: 0 min(1.2vw, 6px) 0 min(2vw, 10px);
                 box-sizing: border-box;
                 z-index: 1;
             }
@@ -1008,7 +1010,7 @@ class XiaoshiRoomCard extends LitElement {
                 justify-content: flex-end;
                 align-items: flex-end;
                 gap: 1.4vh;
-                padding: 0 2.5vw 1.2vh 2.5vw;
+                padding: 0 min(2.5vw, 12.5px) 1.2vh min(2.5vw, 12.5px);
                 flex: 1;
             }
             .layout-br .br-devices .device-btn {
@@ -1026,7 +1028,7 @@ class XiaoshiRoomCard extends LitElement {
                 flex-direction: column;
                 gap: 0.5vh;
                 width: 45%;
-                padding: 0 1.2vw 0 2vw;
+                padding: 0 min(1.2vw, 6px) 0 min(2vw, 10px);
                 box-sizing: border-box;
                 z-index: 1;
             }
@@ -1048,7 +1050,7 @@ class XiaoshiRoomCard extends LitElement {
                 justify-content: flex-start;
                 align-items: flex-end;
                 gap: 1.4vh;
-                padding: 0 2.5vw 1.2vh 2.5vw;
+                padding: 0 min(2.5vw, 12.5px) 1.2vh min(2.5vw, 12.5px);
                 flex: 1;
             }
             .layout-bl .bl-devices .device-btn {
@@ -1073,7 +1075,7 @@ class XiaoshiRoomCard extends LitElement {
                 top: calc(var(--corner-size, 7.5vh) * 0.16);
                 right: calc(var(--corner-size, 7.5vh) * 0.11);
                 color: white;
-                font-size: 3vw;
+                font-size: min(3vw, 15px);
                 font-weight: bold;
                 transform: rotate(45deg);
                 transform-origin: center center;
@@ -1176,9 +1178,9 @@ class XiaoshiRoomCard extends LitElement {
             }
             this._handleClick();
             const serviceData = { card: popupCards };
-            const popupWidth = this.config.popup_width || '95%';
+            const popupWidth = this.config.popup_width || 'min(95%, 475px)';
             const popupTop = this.config.popup_top || '20px';
-            if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+            if (popupWidth !== 'min(95%, 475px)') serviceData.popup_width = popupWidth;
             if (popupTop !== '20px') serviceData.popup_top = popupTop;
             serviceData.background = 'transparent';
             this.hass.callService('popup_card', 'show', serviceData);
@@ -1194,9 +1196,9 @@ class XiaoshiRoomCard extends LitElement {
             state_color: true
         }));
         const serviceData = { card: cards };
-        const popupWidth = this.config.popup_width || '95%';
+        const popupWidth = this.config.popup_width || 'min(95%, 475px)';
         const popupTop = this.config.popup_top || '20px';
-        if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+        if (popupWidth !== 'min(95%, 475px)') serviceData.popup_width = popupWidth;
         if (popupTop !== '20px') serviceData.popup_top = popupTop;
         this.hass.callService('popup_card', 'show', serviceData);
     }
@@ -1341,7 +1343,7 @@ class XiaoshiRoomCard extends LitElement {
             cardWidth ? `width:${cardWidth}` : '',
             cardHeight ? `height:${cardHeight}` : '',
             `background:${cardBg}`,
-            'border-radius:3.5vw',
+            'border-radius:min(3.5vw, 17.5px)',
             `--chip-h:${chipH}px`,
             `--corner-size:${cardHeightPx * 0.4}px`,
         ].filter(Boolean).join(';');
@@ -1490,9 +1492,9 @@ class XiaoshiRoomCard extends LitElement {
             }
         }
         const serviceData = { card: cards };
-        const popupWidth = this.config.popup_width || '95%';
+        const popupWidth = this.config.popup_width || 'min(95%, 475px)';
         const popupTop = this.config.popup_top || '20px';
-        if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+        if (popupWidth !== 'min(95%, 475px)') serviceData.popup_width = popupWidth;
         if (popupTop !== '20px') serviceData.popup_top = popupTop;
         this.hass.callService('popup_card', 'show', serviceData);
     }

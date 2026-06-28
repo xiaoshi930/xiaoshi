@@ -1,4 +1,4 @@
-﻿const whenDefined = (t) => customElements.whenDefined(t);
+const whenDefined = (t) => customElements.whenDefined(t);
 await Promise.race([whenDefined("ha-card"), whenDefined("ha-panel-lovelace")]);
 const LitElement = window.LitElement || Object.getPrototypeOf(customElements.get("ha-card"));
 const html = LitElement.prototype.html;
@@ -319,12 +319,15 @@ class XiaoshiAvatarCard extends LitElement {
             :host {
                 display: block;
                 height: 100%;
+                max-width: 90px;
             }
             ha-card {
-                border-radius: 6vw !important;
+                border-radius: min(6vw, 30px) !important;
                 overflow: visible;
+                max-width: 90px;
             }
             .card-wrapper {
+                max-width: 90px;
                 position: relative;
                 width: 100%;
                 height: 100%;
@@ -332,7 +335,7 @@ class XiaoshiAvatarCard extends LitElement {
                 touch-action: pan-y;
             }
             .card-item {  
-                border-radius: 6vw;
+                border-radius: min(6vw, 30px);
                 overflow: hidden;
                 display: flex;
                 flex-direction: column;
@@ -397,7 +400,7 @@ class XiaoshiAvatarCard extends LitElement {
             }
             .status-text {
                 position: relative;
-                font-size: 2.5vw;
+                font-size: min(2.5vw, 12.5px);
                 font-weight: bold;
                 color: #fff;
                 text-shadow: 0 1px 2px rgba(0,0,0,0.3);
@@ -414,7 +417,7 @@ class XiaoshiAvatarCard extends LitElement {
                 right: 0.1em;
                 background: rgba(255,255,255,0.92);
                 color: #333;
-                font-size: 2.2vw;
+                font-size: min(2.2vw, 11px);
                 font-weight: bold;
                 width: 1.6em;
                 height: 1.6em;
@@ -425,7 +428,7 @@ class XiaoshiAvatarCard extends LitElement {
                 z-index: 100;
             }
             .info-text {
-                font-size: 2vw;
+                font-size: min(2vw, 10px);
                 color: rgba(255,255,255,0.9);
                 margin-top: 1%;
                 text-shadow: 0 1px 2px rgba(0,0,0,0.3);
@@ -1034,7 +1037,7 @@ class XiaoshiAvatarCard extends LitElement {
 
         this._handleClick();
         const serviceData = { card: cards };
-        const popupWidth = this.config.popup_width || '95%';
+        const popupWidth = this.config.popup_width || '500px';
         const popupTop = this.config.popup_top || '20px';
         if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
         if (popupTop !== '20px') serviceData.popup_top = popupTop;

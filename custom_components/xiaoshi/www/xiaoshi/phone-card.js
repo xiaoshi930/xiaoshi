@@ -476,6 +476,7 @@ class XiaoshiPhoneCard extends LitElement {
                 width: 100vw;
                 height: 100vh;
                 overflow: visible;
+                max-width: 500px;
             }
             .phone-container {
                 width: 100%;
@@ -516,8 +517,9 @@ class XiaoshiPhoneCard extends LitElement {
                 overflow: visible;
             }
             .avatar-area {
-                padding: 1vh 4vw 1vh 7.5vw;
+                padding: 1vh min(4vw, 20px) 1vh min(7.5vw, 37.5px);
                 width: 20vw;
+                max-width: 90px;
                 height: 14vh;
                 display: flex;
                 align-items: center;
@@ -527,13 +529,14 @@ class XiaoshiPhoneCard extends LitElement {
                 overflow: visible;
             }
             .header-info-area {
-                padding: 1vh 2vw 1vh 2.5vw;
+                padding: 1vh min(2vw, 10px) 1vh min(2.5vw, 12.5px);
                 width: 80vw;
+                max-width: 400px;
                 height: 14vh;
                 display: grid;
                 grid-template-columns: repeat(4, 1fr);
                 grid-template-rows: repeat(3, 1fr);
-                gap: 1vh 2vw;
+                gap: 1vh min(2vw, 10px);
                 box-sizing: border-box;
                 overflow: visible;
                 align-items: center;
@@ -544,11 +547,13 @@ class XiaoshiPhoneCard extends LitElement {
             .dynamic-row {
                 display: flex;
                 width: 100vw;
+                max-width: 500px;
                 height: 5vh;
                 flex-shrink: 0;
             }
             .dynamic-area {
                 width: 80vw;
+                max-width: 400px;
                 height: 5vh;
                 display: flex;
                 align-items: center;
@@ -557,14 +562,15 @@ class XiaoshiPhoneCard extends LitElement {
             }
             .btn-area {
                 width: 20vw;
+                max-width: 100px;
                 height: 5vh;
                 display: flex;
                 align-items: center;
                 justify-content: flex-end;
-                padding-right: 2.5vw;
+                padding-right: min(2.5vw, 12.5px);
                 box-sizing: border-box;
                 flex-shrink: 0;
-                gap: 1vw;
+                gap: min(1vw, 5px);
             }
             .fullscreen-btn, .media-toggle-btn {
                 width: 3.2vh;
@@ -600,11 +606,12 @@ class XiaoshiPhoneCard extends LitElement {
             }
             .room-area {
                 width: 100vw;
+                max-width: 500px;
                 height: 77vh;
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
-                gap: 1vh 3vw;
-                padding: 0 2.5vw;
+                gap: 1vh min(3vw, 15px);
+                padding: 0 min(2.5vw, 12.5px);
                 box-sizing: border-box;
                 align-items: start;
                 align-content: start;
@@ -614,6 +621,7 @@ class XiaoshiPhoneCard extends LitElement {
             }
             .footer-area {
                 width: 100vw;
+                max-width: 500px;
                 height: 4vh;
                 display: flex;
                 align-items: center;

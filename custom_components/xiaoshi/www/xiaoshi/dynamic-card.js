@@ -331,11 +331,12 @@ class XiaoshiDynamicCard extends LitElement {
             :host {
                 display: block;
                 height: 100%;
+                max-width: 400px;
             }
             .areas-grid {
                 display: flex;
-                gap: 2.5vw;
-                padding: 0 2.5vw 1vh 2.5vw;
+                gap: min(2.5vw, 12.5px);
+                padding: 0 min(2.5vw, 12.5px) 1vh min(2.5vw, 12.5px);
                 width: 100%;
                 height: 100%;
                 box-sizing: border-box;
@@ -715,18 +716,18 @@ class XiaoshiDynamicCard extends LitElement {
                 state_color: true
             }));
             const serviceData = { card: entityCards };
-            const popupWidth = this.config.popup_width || '95%';
+            const popupWidth = this.config.popup_width || 'min(95%, 475px)';
             const popupTop = this.config.popup_top || '20px';
-            if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+            if (popupWidth !== 'min(95%, 475px)') serviceData.popup_width = popupWidth;
             if (popupTop !== '20px') serviceData.popup_top = popupTop;
             this.hass.callService('popup_card', 'show', serviceData);
             return;
         }
 
         const serviceData = { card: cards };
-        const popupWidth = this.config.popup_width || '95%';
+        const popupWidth = this.config.popup_width || 'min(95%, 475px)';
         const popupTop = this.config.popup_top || '20px';
-        if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+        if (popupWidth !== 'min(95%, 475px)') serviceData.popup_width = popupWidth;
         if (popupTop !== '20px') serviceData.popup_top = popupTop;
         serviceData.background = 'transparent';
         this.hass.callService('popup_card', 'show', serviceData);
