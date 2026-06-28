@@ -1,4 +1,4 @@
-console.info("%c 消逝卡-汇总卡 \n%c  2026.6.4.13 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
+console.info("%c 消逝卡-汇总卡 \n%c  2026.6.4.14 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
 
 import('./function/function.js');
 import('./xiaoshi/phone-card.js');
@@ -23,12 +23,9 @@ import('./xiaoshi-card/computer.js');
 import('./xiaoshi-card/pve.js');
 import('./xiaoshi-card/class.js');
 
-import('./xiaoshi-phone/light-card.js'); //待删除
-import('./xiaoshi-phone/switch-card.js'); //待删除
 import('./xiaoshi-phone/climate-card.js');
 import('./xiaoshi-phone/humidifier-card.js');
 import('./xiaoshi-phone/purifier-card.js');
-import('./xiaoshi-phone/computer-card.js');
 import('./xiaoshi-phone/music-player-card.js');
 import('./xiaoshi-phone/tv-player-card.js');
 import('./xiaoshi-phone/fan-card.js');
