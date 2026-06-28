@@ -1,4 +1,4 @@
-﻿const whenDefined = (t) => customElements.whenDefined(t);
+const whenDefined = (t) => customElements.whenDefined(t);
 await Promise.race([whenDefined("ha-card"), whenDefined("ha-panel-lovelace")]);
 const LitElement = window.LitElement || Object.getPrototypeOf(customElements.get("ha-card"));
 const html = LitElement.prototype.html;
@@ -406,14 +406,16 @@ class XiaoshiWeatherPhoneCard extends LitElement {
     return css`
       :host {
         display: block;
+        max-width: 500px;
+        margin: 0 auto;
       }
 
       /*主卡片样式*/
       .weather-card {
         position: relative;
-        border-radius: 3vw;
-        padding: 1.6vw;
-        padding-bottom: 0.6vw;
+        border-radius: min(3vw, 15px);
+        padding: min(1.6vw, 8px);
+        padding-bottom: min(0.6vw, 3px);
         font-family: sans-serif;
         overflow: hidden;
       }
@@ -442,8 +444,8 @@ class XiaoshiWeatherPhoneCard extends LitElement {
 
       /*天气头部 图标*/
       .weather-icon {
-        width: 10vw;
-        height: 10vw;
+        width: min(10vw, 50px);
+        height: min(10vw, 50px);
         margin-right: 16px;
         margin-bottom: 0px;
       }
@@ -457,26 +459,26 @@ class XiaoshiWeatherPhoneCard extends LitElement {
 
       /*天气头部 温度*/
       .weather-temperature {
-        height: 7vw;
-        font-size: 5vw;
+        height: min(7vw, 35px);
+        font-size: min(5vw, 25px);
         font-weight: bold;
-        margin-top: 0;
+        margin-top: max(-3vw, -15px);
         margin-bottom: 0;
       }
 
       /*天气头部 天气信息*/
       .weather-info {
-        height: 3vw;
-        font-size: 3vw;
-        margin-top: -1vw;
+        height: min(3vw, 15px);
+        font-size: min(3vw, 15px);
+        margin-top: max(-1vw, -5px);
         white-space: nowrap;
       }
 
       /*天气头部 城市信息*/
       .city-info {
         text-align: right;
-        margin-top: 0.5vw;
-        font-size: 4vw;
+        margin-top: min(0.5vw, 2.5px);
+        font-size: min(4vw, 20px);
         font-weight: bold;
         white-space: nowrap;
       }
@@ -489,10 +491,10 @@ class XiaoshiWeatherPhoneCard extends LitElement {
       }
 
       .toggle-btn {
-        padding: 0.6vw 2vw;
+        padding: min(0.6vw, 3px) min(2vw, 10px);
         border: none;
-        border-radius: 1.2vw;
-        font-size: 1.8vw;
+        border-radius: min(1.2vw, 6px);
+        font-size: min(1.8vw, 9px);
         cursor: pointer;
         transition: all 0.3s ease;
         color: white;
@@ -517,16 +519,16 @@ class XiaoshiWeatherPhoneCard extends LitElement {
         position: absolute;
         left: 0;
         right: 0;
-        height: 3.5vw;
+        height: min(3.5vw, 17.5px);
         background: linear-gradient(to bottom, 
           rgba(156, 39, 176) 0%, 
           rgba(103, 58, 183) 100%);
-        border-radius: 0.5vw;
+        border-radius: min(0.5vw, 2.5px);
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
-        font-size: 2vw;
+        font-size: min(2vw, 10px);
         font-weight: bold;
         text-shadow: 0 1px 2px rgba(0,0,0,0.3);
         z-index: 4;
@@ -537,16 +539,16 @@ class XiaoshiWeatherPhoneCard extends LitElement {
         position: absolute;
         left: 0;
         right: 0;
-        height: 3.5vw;
+        height: min(3.5vw, 17.5px);
         background: linear-gradient(to bottom, 
           rgba(76, 175, 80) 0%, 
           rgba(56, 142, 60) 100%);
-        border-radius: 0.5vw;
+        border-radius: min(0.5vw, 2.5px);
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
-        font-size: 2vw;
+        font-size: min(2vw, 10px);
         font-weight: bold;
         text-shadow: 0 1px 2px rgba(0,0,0,0.3);
         z-index: 4;
@@ -555,8 +557,8 @@ class XiaoshiWeatherPhoneCard extends LitElement {
       /*9日天气部分*/
       .forecast-container {
         display: grid;
-        gap: 0.4vw;
-        margin-top: 2vw;
+        gap: min(0.4vw, 2px);
+        margin-top: min(2vw, 10px);
         position: relative;
       }
 
@@ -564,7 +566,7 @@ class XiaoshiWeatherPhoneCard extends LitElement {
       .hourly-forecast-scroll-container {
         overflow-x: auto;
         overflow-y: hidden;
-        margin-top: 2vw;
+        margin-top: min(2vw, 10px);
         position: relative;
         scrollbar-width: none; /* Firefox */
         -ms-overflow-style: none;  /* IE and Edge */
@@ -589,7 +591,7 @@ class XiaoshiWeatherPhoneCard extends LitElement {
       /*小时天气内容容器*/
       .hourly-forecast-container {
         display: grid;
-        gap: 0.4vw;
+        gap: min(0.4vw, 2px);
         position: relative;
         min-width: max-content;
       }
@@ -600,34 +602,34 @@ class XiaoshiWeatherPhoneCard extends LitElement {
         text-align: center;
         position: relative;
         border-radius: 8px;
-        padding: 1vw;
+        padding: min(1vw, 5px);
         position: relative;
       }
 
       /*9日天气部分 星期*/
       .forecast-weekday {
-        font-size: 2.2vw;
-        height: 2.8vw;
-        margin-top: -1vw;
-        margin-bottom: 0.2vw;
+        font-size: min(2.2vw, 11px);
+        height: min(2.8vw, 14px);
+        margin-top: max(-1vw, -5px);
+        margin-bottom: min(0.2vw, 1px);
         font-weight: 500;
         white-space: nowrap;
       }
       
       /*9日天气部分 日期*/
       .forecast-date {
-        font-size: 1.6vw;
-        margin-bottom: 3vw;
+        font-size: min(1.6vw, 8px);
+        margin-bottom: min(3vw, 15px);
         margin-left: 0vw;
         margin-right: 0vw;
-        height: 2vw;
+        height: min(2vw, 10px);
         white-space: nowrap;
       }
 
       /*9日天气部分 温度区域*/
       .forecast-temp-container {
         position: relative;
-        height: 21vw;
+        height: min(21vw, 105px);
         margin-top: 0;
         margin-bottom: 0;
         white-space: nowrap;
@@ -636,7 +638,7 @@ class XiaoshiWeatherPhoneCard extends LitElement {
       /*9日天气部分 温度区域*/
       .forecast-temp-null {
         position: relative;
-        height: 2vw;
+        height: min(2vw, 10px);
       }
 
       /*9日天气部分 雨量容器*/
@@ -646,8 +648,8 @@ class XiaoshiWeatherPhoneCard extends LitElement {
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 2.5vw;
-        margin-top: -2vw;
+        height: min(2.5vw, 12.5px);
+        margin-top: max(-2vw, -10px);
         margin-bottom: 0;
       }
  
@@ -657,9 +659,9 @@ class XiaoshiWeatherPhoneCard extends LitElement {
         left: 0;
         right: 0;
         background: rgba(80, 177, 200, 0.8);
-        border-radius: 1.2vw;
-        margin: 0 -1vw;
-        bottom: -3vw;
+        border-radius: min(1.2vw, 6px);
+        margin: 0 max(-1vw, -5px);
+        bottom: max(-3vw, -15px);
         transition: all 0.3s ease;
         z-index: 1;
       }
@@ -668,14 +670,14 @@ class XiaoshiWeatherPhoneCard extends LitElement {
       .forecast-rainfall {
         background: rgba(80, 177, 200);
         color: white;
-        font-size: 1.4vw;
+        font-size: min(1.4vw, 7px);
         font-weight: bold;
-        height: 2.5vw;
+        height: min(2.5vw, 12.5px);
         min-width: 80% ;
-        border-radius: 1.2vw;
+        border-radius: min(1.2vw, 6px);
         width: fit-content;
         box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        padding: 0 0.5vw;
+        padding: 0 min(0.5vw, 2.5px);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -690,8 +692,8 @@ class XiaoshiWeatherPhoneCard extends LitElement {
 
       /*9日天气部分 图标*/
       .forecast-icon {
-        width: 5vw;
-        height: 5vw;
+        width: min(5vw, 25px);
+        height: min(5vw, 25px);
         margin: 0px auto;
         margin-top: 0;
       }
@@ -708,24 +710,24 @@ class XiaoshiWeatherPhoneCard extends LitElement {
         grid-row: 4;
         text-align: center;
         position: relative;
-        height: 3vw;
-        margin-top: -1vw;
+        height: min(3vw, 15px);
+        margin-top: max(-1vw, -5px);
       }
 
       /*9日天气部分 风速*/
       .forecast-wind {
-        font-size: 2vw;
+        font-size: min(2vw, 10px);
         margin-top: 0;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 1.5px;
-        height: 3vw;
+        height: min(3vw, 15px);
       }
 
       /*9日天气部分 风速*/
       .wind-direction {
-        font-size: 1.8vw;
+        font-size: min(1.8vw, 9px);
       }
 
       /*9日天气部分 温度曲线 Canvas*/
@@ -738,26 +740,26 @@ class XiaoshiWeatherPhoneCard extends LitElement {
       }
 
       .temp-line-canvas-high {
-        top: 7.7vw;
-        height: 21vw; 
+        top: min(7.7vw, 38.5px);
+        height: min(21vw, 105px); 
       }
 
       .temp-line-canvas-low {
-        top: 7.7vw;
-        height: 21vw; 
+        top: min(7.7vw, 38.5px);
+        height: min(21vw, 105px); 
       }
 
       .temp-curve-high {
         position: absolute;
         left: 0;
         right: 0;
-        height: 3.5vw;
-        border-radius: 0.5vw;
+        height: min(3.5vw, 17.5px);
+        border-radius: min(0.5vw, 2.5px);
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
-        font-size: 2.2vw;
+        font-size: min(2.2vw, 11px);
         font-weight: bold;
         text-shadow: 0 1px 2px rgba(0,0,0,0.3);
         z-index: 5;
@@ -767,13 +769,13 @@ class XiaoshiWeatherPhoneCard extends LitElement {
         position: absolute;
         left: 0;
         right: 0;
-        height: 3.5vw;
-        border-radius: 0.5vw;
+        height: min(3.5vw, 17.5px);
+        border-radius: min(0.5vw, 2.5px);
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
-        font-size: 2.2vw;
+        font-size: min(2.2vw, 11px);
         text-shadow: 0 1px 2px rgba(0,0,0,0.3);
         z-index: 4;
       }
@@ -783,15 +785,15 @@ class XiaoshiWeatherPhoneCard extends LitElement {
       .dot-mode .temp-curve-low,
       .dot-mode .temp-curve-hourly,
       .dot-mode .temp-curve-minutely {
-        width: 1vw;
-        height: 1vw;
+        width: min(1vw, 5px);
+        height: min(1vw, 5px);
         border-radius: 50%;
-        left: calc(50% - 0.5vw);
-        margin-top: -0.65vw;
+        left: calc(50% - min(0.5vw, 2.5px));
+        margin-top: max(-0.65vw, -3.2px);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 2.2vw;
+        font-size: min(2.2vw, 11px);
         font-weight: 600;
         text-shadow: 0 1px 2px rgba(0,0,0,0.3);
       }
@@ -819,30 +821,30 @@ class XiaoshiWeatherPhoneCard extends LitElement {
         position: absolute;
         left: 50%;
         transform: translateX(-50%);
-        font-size: 2.2vw;
+        font-size: min(2.2vw, 11px);
         font-weight: 600;
         white-space: nowrap;
         text-shadow: 0 1px 2px rgba(123, 123, 123, 0.3);
-        margin-left: 0.4vw;
+        margin-left: min(0.4vw, 2px);
       }
 
       .dot-mode .temp-curve-high .temp-text {
         color: rgba(255, 87, 34);
-        top: -3.8vw;
+        top: max(-3.8vw, -19px);
       }
 
       .dot-mode .temp-curve-low .temp-text {
         color: rgba(3, 169, 243);
-        top: 1vw;
+        top: min(1vw, 5px);
       }
       .dot-mode .temp-curve-hourly .temp-text {
         color: rgba(193, 65, 215, 1);
-        top: -3.8vw;
+        top: max(-3.8vw, -19px);
       }
 
       .dot-mode .temp-curve-minutely .temp-text {
         color: rgba(76, 175, 80, 1);
-        top: -3.8vw;
+        top: max(-3.8vw, -19px);
       }
 
       .unavailable {
@@ -859,10 +861,10 @@ class XiaoshiWeatherPhoneCard extends LitElement {
       /*预警图标和文字样式*/
       .warning-icon-text {
         color: #FFA726;
-        height: 7vw;
-        font-size: 4vw;
+        height: min(7vw, 35px);
+        font-size: min(4vw, 20px);
         font-weight: bold;
-        margin-left: 3vw;
+        margin-left: min(3vw, 15px);
         cursor: pointer;
         transition: transform 0.2s ease;
       }
@@ -874,9 +876,9 @@ class XiaoshiWeatherPhoneCard extends LitElement {
       /*预警详情卡片样式*/
       .warning-details-card {
         position: relative;
-        border-radius: 2vw;
-        margin-top: 1vw;
-        padding: 2vw;
+        border-radius: min(2vw, 10px);
+        margin-top: min(1vw, 5px);
+        padding: min(2vw, 10px);
         color: white;
         overflow: hidden;
         backdrop-filter: blur(5px);
@@ -897,22 +899,22 @@ class XiaoshiWeatherPhoneCard extends LitElement {
 
       /*预警标题样式*/
       .warning-title-line {
-        font-size: 2.5vw;
+        font-size: min(2.5vw, 12.5px);
         font-weight: bold;
         white-space: nowrap;
-        height: 8vw;
-        line-height: 3.5vw;
-        margin-bottom: 0.5vw;
+        height: min(8vw, 40px);
+        line-height: min(3.5vw, 17.5px);
+        margin-bottom: min(0.5vw, 2.5px);
       }
 
       /*预警文本滚动容器*/
       .warning-text-container1 {
         display: flex;
         width: 97%;
-        font-size: 2.2vw;
-        line-height: 3vw;
+        font-size: min(2.2vw, 11px);
+        line-height: min(3vw, 15px);
         align-items: center;
-        margin: 0.5vw 2vw;
+        margin: min(0.5vw, 2.5px) min(2vw, 10px);
       }
 
       /*预警文本滚动内容*/
@@ -926,10 +928,10 @@ class XiaoshiWeatherPhoneCard extends LitElement {
         overflow: hidden;
         white-space: nowrap;
         width: 100%;
-        height: 3vw;
-        font-size: 2.5vw;
+        height: min(3vw, 15px);
+        font-size: min(2.5vw, 12.5px);
         align-items: center;
-        margin-bottom: 1vw;
+        margin-bottom: min(1vw, 5px);
       }
 
       /*预警文本滚动内容*/
@@ -948,11 +950,11 @@ class XiaoshiWeatherPhoneCard extends LitElement {
         display: flex;
         align-items: flex-end;
         justify-content: start;
-        margin-bottom: 1vw;
-        margin-top: 2vw;
-        margin-left: 1vw;
-        font-size: 2vw;
-        height: 2vw;
+        margin-bottom: min(1vw, 5px);
+        margin-top: min(2vw, 10px);
+        margin-left: min(1vw, 5px);
+        font-size: min(2vw, 10px);
+        height: min(2vw, 10px);
       }
 
       /*空气质量按钮样式*/
@@ -960,19 +962,19 @@ class XiaoshiWeatherPhoneCard extends LitElement {
         background: transparent;
         padding: 0;
         border: none;
-        font-size: 3vw;
+        font-size: min(3vw, 15px);
         font-weight: bold;
         cursor: pointer;
         transition: all 0.3s ease;
-        margin-left: 1vw;
+        margin-left: min(1vw, 5px);
       }
 
       /*空气质量详情卡片样式*/
       .aqi-details-card {
         position: relative;
-        border-radius: 2vw;
-        margin-top: 1vw;
-        padding: 2vw;
+        border-radius: min(2vw, 10px);
+        margin-top: min(1vw, 5px);
+        padding: min(2vw, 10px);
         overflow: hidden;
         backdrop-filter: blur(5px);
         transition: all 0.3s ease;
@@ -982,9 +984,9 @@ class XiaoshiWeatherPhoneCard extends LitElement {
       /*天气指数详情卡片样式*/
       .indices-details-card {
         position: relative;
-        border-radius: 2vw;
-        margin-top: 1vw;
-        padding: 2vw;
+        border-radius: min(2vw, 10px);
+        margin-top: min(1vw, 5px);
+        padding: min(2vw, 10px);
         overflow: hidden;
         backdrop-filter: blur(5px);
         transition: all 0.3s ease;
@@ -1052,7 +1054,7 @@ class XiaoshiWeatherPhoneCard extends LitElement {
       .sunrise-sunset-wrapper {
         display: flex;
         align-items: center;
-        gap: 1vw;
+        gap: min(1vw, 5px);
         --icon-primary-color: transparent !important;
       }
 
@@ -1060,28 +1062,28 @@ class XiaoshiWeatherPhoneCard extends LitElement {
       .sunset-item {
         display: flex;
         align-items: center;
-        font-size: 2vw;
+        font-size: min(2vw, 10px);
         --icon-primary-color: transparent !important;
       }
 
       .sunrise-icon {
         fill: #FFA726 !important;
         color: #FFA726 !important;
-        margin-right: 0.6vw;
-        --mdc-icon-size: 2.3vw;
+        margin-right: min(0.6vw, 3px);
+        --mdc-icon-size: min(2.3vw, 11.5px);
         --icon-primary-color: #FFA726 !important;
       }
 
       .sunset-icon {
         fill: #FF7043 !important;
         color: #FF7043 !important;
-        margin-right: 0.6vw;
-        --mdc-icon-size: 2.3vw;
+        margin-right: min(0.6vw, 3px);
+        --mdc-icon-size: min(2.3vw, 11.5px);
         --icon-primary-color: #FF7043 !important;
       }
 
       .sunset-time {
-        margin-right: 1vw;
+        margin-right: min(1vw, 5px);
       }
 
     `;
@@ -2014,8 +2016,8 @@ class XiaoshiWeatherPhoneCard extends LitElement {
               </div>
               <div class="weather-details">
                 <div class="weather-temperature">
-                  ${temperature}<font size="1vw"><b> ℃&ensp;</b></font>
-                  ${humidity}<font size="1vw"><b> % </b></font>
+                  ${temperature}<span style="font-size: min(3vw, 15px);"><b> ℃&ensp;</b></span>
+                  ${humidity}<span style="font-size: min(3vw, 15px);"><b> % </b></span>
                   ${hasWarning ? 
                     html`<span class="warning-icon-text" style="color: ${warningColor}; cursor: pointer; user-select: none;" @click="${() => this._toggleWarningDetails()}">⚠ ${warning.length}</span>` : ''}
                 </div>
@@ -2039,7 +2041,7 @@ class XiaoshiWeatherPhoneCard extends LitElement {
                 <!-- 天气指数按钮 -->
                 ${this.entity.attributes?.air_indices && this.entity.attributes.air_indices.length > 0 ? html`
                   <div class="forecast-toggle-button">
-                    <button class="toggle-btn" style="margin-right: 1vw; background: #2E7D32;" @click="${() => this._toggleIndicesDetails()}">
+                    <button class="toggle-btn" style="margin-right: min(1vw, 5px); background: #2E7D32;" @click="${() => this._toggleIndicesDetails()}">
                       天气指数
                     </button>
                   </div>
@@ -2073,7 +2075,7 @@ class XiaoshiWeatherPhoneCard extends LitElement {
         <div class="update-time" style="display: flex; justify-content: space-between; align-items: center;">
           <div>
             ${this._getRelativeTime(update_time)}  
-            <button style="margin-left: 0.3vw; color: #04d2f6ff; background: none; border: none; cursor: pointer; font-size: 2.5vw; height: 2.5vw; font-weight: bold; padding: 0;" 
+            <button style="margin-left: min(0.3vw, 1.5px); color: #04d2f6ff; background: none; border: none; cursor: pointer; font-size: min(2.5vw, 12.5px); height: min(2.5vw, 12.5px); font-weight: bold; padding: 0;" 
               @click="${() => this._refresh_weather()}">↺
             </button>
           </div>
@@ -2199,25 +2201,25 @@ class XiaoshiWeatherPhoneCard extends LitElement {
               <div class="forecast-temp-container">
                 ${this.config.visual_style === 'dot' ? html`
                   <!-- 圆点模式 -->
-                  <div class="temp-curve-high" style="top: ${tempBounds.highTop + 1.75}vw">
+                  <div class="temp-curve-high" style="top: min(${tempBounds.highTop + 1.75}vw, ${(tempBounds.highTop + 1.75) * 5}px)">
                     <div class="temp-text" style="color: ${hightcolor};">${highTemp}°</div>
                   </div>
-                  <div class="temp-curve-low" style="top: ${tempBounds.lowTop + 1.75}vw">
+                  <div class="temp-curve-low" style="top: min(${tempBounds.lowTop + 1.75}vw, ${(tempBounds.lowTop + 1.75) * 5}px)">
                     <div class="temp-text" style="color: ${lowcolor};">${lowTemp}°</div>
                   </div>
                 ` : html`
                   <!-- 按钮模式 -->
-                  <div class="temp-curve-high" style="background: ${hightbackground}; top: ${tempBounds.highTop}vw">
+                  <div class="temp-curve-high" style="background: ${hightbackground}; top: min(${tempBounds.highTop}vw, ${tempBounds.highTop * 5}px)">
                     ${highTemp}°
                   </div>
-                  <div class="temp-curve-low" style="background: ${lowbackground}; top: ${tempBounds.lowTop}vw">
+                  <div class="temp-curve-low" style="background: ${lowbackground}; top: min(${tempBounds.lowTop}vw, ${tempBounds.lowTop * 5}px)">
                     ${lowTemp}°
                   </div>
                 `}
                 
                 <!-- 雨量填充矩形 -->
                 ${rainfall > 0 ? html`
-                  <div class="rainfall-fill" style="height: ${rainfallHeight}vw; opacity: ${0.3 + rainfall / RAINFALL_MAX}"></div>
+                  <div class="rainfall-fill" style="height: min(${rainfallHeight}vw, ${rainfallHeight * 5}px); opacity: ${0.3 + rainfall / RAINFALL_MAX}"></div>
                 ` : ''}
               </div>
               <div class="forecast-temp-null"></div>
@@ -2278,7 +2280,7 @@ class XiaoshiWeatherPhoneCard extends LitElement {
      
     return html`
       <div class="hourly-forecast-scroll-container">
-        <div class="hourly-forecast-container" style="grid-template-columns: repeat(${columns}, ${columnWidth}vw);">
+        <div class="hourly-forecast-container" style="grid-template-columns: repeat(${columns}, min(${columnWidth}vw, ${columnWidth * 5}px));">
           <!-- 小时温度连接线 Canvas -->
           <canvas class="temp-line-canvas temp-line-canvas-high" id="hourly-temp-canvas-${this._getInstanceId()}"></canvas>
           
@@ -2323,19 +2325,19 @@ class XiaoshiWeatherPhoneCard extends LitElement {
                 <div class="forecast-temp-container">
                   ${this.config.visual_style === 'dot' ? html`
                     <!-- 圆点模式 -->
-                    <div class="temp-curve-hourly" style="top: ${finalTopPosition + 1.75}vw">
+                    <div class="temp-curve-hourly" style="top: min(${finalTopPosition + 1.75}vw, ${(finalTopPosition + 1.75) * 5}px)">
                       <div class="temp-text">${temp}°</div>
                     </div>
                   ` : html`
                     <!-- 按钮模式 -->
-                    <div class="temp-curve-hourly" style="top: ${finalTopPosition}vw">
+                    <div class="temp-curve-hourly" style="top: min(${finalTopPosition}vw, ${finalTopPosition * 5}px)">
                       ${temp}°
                     </div>
                   `}
                   
                   <!-- 雨量填充矩形 -->
                   ${rainfall > 0 ? html`
-                    <div class="rainfall-fill" style="height: ${rainfallHeight}vw; opacity: ${0.3 + rainfall / RAINFALL_MAX}"></div>
+                    <div class="rainfall-fill" style="height: min(${rainfallHeight}vw, ${rainfallHeight * 5}px); opacity: ${0.3 + rainfall / RAINFALL_MAX}"></div>
                   ` : ''}
                 </div>
                 <div class="forecast-temp-null"></div>
@@ -2394,7 +2396,7 @@ class XiaoshiWeatherPhoneCard extends LitElement {
      
     return html`
       <div class="hourly-forecast-scroll-container">
-        <div class="hourly-forecast-container" style="grid-template-columns: repeat(${columns}, ${columnWidth}vw);">
+        <div class="hourly-forecast-container" style="grid-template-columns: repeat(${columns}, min(${columnWidth}vw, ${columnWidth * 5}px));">
           <!-- 分钟温度连接线 Canvas -->
           <canvas class="temp-line-canvas temp-line-canvas-high" id="minutely-temp-canvas-${this._getInstanceId()}"></canvas>
           
@@ -2439,19 +2441,19 @@ class XiaoshiWeatherPhoneCard extends LitElement {
                 <div class="forecast-temp-container">
                   ${this.config.visual_style === 'dot' ? html`
                     <!-- 圆点模式 -->
-                    <div class="temp-curve-minutely" style="top: ${finalTopPosition + 1.75}vw">
+                    <div class="temp-curve-minutely" style="top: min(${finalTopPosition + 1.75}vw, ${(finalTopPosition + 1.75) * 5}px)">
                       <div class="temp-text">${temp}°</div>
                     </div>
                   ` : html`
                     <!-- 按钮模式 -->
-                    <div class="temp-curve-minutely" style="top: ${finalTopPosition}vw">
+                    <div class="temp-curve-minutely" style="top: min(${finalTopPosition}vw, ${finalTopPosition * 5}px)">
                       ${temp}°
                     </div>
                   `}
                   
                   <!-- 雨量填充矩形 -->
                   ${rainfall > 0 ? html`
-                    <div class="rainfall-fill" style="height: ${rainfallHeight}vw; opacity: ${0.3 + rainfall / RAINFALL_MAX}"></div>
+                    <div class="rainfall-fill" style="height: min(${rainfallHeight}vw, ${rainfallHeight * 5}px); opacity: ${0.3 + rainfall / RAINFALL_MAX}"></div>
                   ` : ''}
                 </div>
                 <div class="forecast-temp-null"></div>
@@ -2680,7 +2682,7 @@ class XiaoshiWeatherPhoneCard extends LitElement {
           const scrollDuration = Math.max(5, text.length * 0.3);
 
           return html`
-            <div style="margin-bottom: 1vw;">
+            <div style="margin-bottom: min(1vw, 5px);">
               <!-- 第一行：预警标题 -->
               <div class="warning-title-line" style="color: ${warningColor};">
                 ${sender}: 【${typeName}】${level}预警<br>
@@ -2754,65 +2756,65 @@ class XiaoshiWeatherPhoneCard extends LitElement {
     const aqiColor = getAqiColor(category);
 
     return html`
-      <div class="aqi-details-card" style="background-color: ${backgroundColor}; border-radius: 2vw; padding: 2vw; margin-top: 1.5vw;">
+      <div class="aqi-details-card" style="background-color: ${backgroundColor}; border-radius: min(2vw, 10px); padding: min(2vw, 10px); margin-top: min(1.5vw, 7.5px);">
         <!-- 温度湿度信息 -->
         ${summary !== '' ? html`
-          <div style="color: ${secondaryColorblue}; font-size: 2.8vw; line-height: 3.5vw; margin-bottom: 1vw;">
+          <div style="color: ${secondaryColorblue}; font-size: min(2.8vw, 14px); line-height: min(3.5vw, 17.5px); margin-bottom: min(1vw, 5px);">
             天气概况：${summary}&ensp;&ensp;
           </div>
         `: ''}
-        <div style="color: ${secondaryColorblue}; font-size: 2.8vw; line-height: 3.5vw;">
+        <div style="color: ${secondaryColorblue}; font-size: min(2.8vw, 14px); line-height: min(3.5vw, 17.5px);">
           天气温度：${temperature}<span style="font-size: 0.8em;">℃</span>&ensp;&ensp;
           天气湿度：${humidity}<span style="font-size: 0.8em;">%</span>&ensp;
         </div>
-        <div style="color: ${secondaryColorblue}; font-size: 2.8vw; line-height: 3.5vw;">
+        <div style="color: ${secondaryColorblue}; font-size: min(2.8vw, 14px); line-height: min(3.5vw, 17.5px);">
           体感温度：${feels_like}<span style="font-size: 0.8em;">℃</span>&ensp;&ensp;
         </div>
-        <div style="color: ${secondaryColorblue}; font-size: 2.8vw; line-height: 3.5vw;">
+        <div style="color: ${secondaryColorblue}; font-size: min(2.8vw, 14px); line-height: min(3.5vw, 17.5px);">
           ${customTemp !== null ? html`传感器温度：${customTemp}<span style="font-size: 0.8em">℃</span>&ensp;&ensp;`: ''}
           ${customHumidity !== null ? html`传感器湿度：${customHumidity}<span style="font-size: 0.8em;">%</span>&ensp;`: ''}
         </div>
         
-        <div style="color: ${textcolor}; font-size: 2.2vw; line-height: 3.5vw;">
+        <div style="color: ${textcolor}; font-size: min(2.2vw, 11px); line-height: min(3.5vw, 17.5px);">
           &emsp;&ensp;风速: ${windSpeed} <span style="font-size: 0.8em;">km/h</span>（${windscale}级 ${winddir}）&ensp;
         </div>
-        <div style="color: ${textcolor}; font-size: 2.2vw; line-height: 3.5vw;">
+        <div style="color: ${textcolor}; font-size: min(2.2vw, 11px); line-height: min(3.5vw, 17.5px);">
           &emsp;&ensp;气压: ${pressure} <span style="font-size: 0.8em;">hPa</span>&ensp;
         </div>
-        <div style="color: ${textcolor}; font-size: 2.2vw; line-height: 3.5vw;">
+        <div style="color: ${textcolor}; font-size: min(2.2vw, 11px); line-height: min(3.5vw, 17.5px);">
           &emsp;&ensp;云量: ${cloud_coverage} <span style="font-size: 0.8em;">%</span>&ensp;
         </div>
-        <div style="color: ${textcolor}; font-size: 2.2vw; line-height: 3.5vw;">
+        <div style="color: ${textcolor}; font-size: min(2.2vw, 11px); line-height: min(3.5vw, 17.5px);">
           &emsp;&ensp;紫外线: ${uv_index} <span style="font-size: 0.8em;">级</span>&ensp;
         </div>
-        <div style="color: ${textcolor}; font-size: 2.2vw; line-height: 3.5vw;">
+        <div style="color: ${textcolor}; font-size: min(2.2vw, 11px); line-height: min(3.5vw, 17.5px);">
           &emsp;&ensp;能见度: ${visibility} <span style="font-size: 0.8em;">km/h </span>&ensp;
         </div>
 
         ${this.showApiInfo && hasaqi ? html`
         <!-- AQI信息 -->
-        <div style="color: ${textcolor}; font-size: 2.2vw; line-height: 2vw;">
+        <div style="color: ${textcolor}; font-size: min(2.2vw, 11px); line-height: min(2vw, 10px);">
           &emsp;&ensp;
         </div>
-        <div style="color: ${textcolor}; font-size: 2.8vw; line-height: 3.5vw;">
+        <div style="color: ${textcolor}; font-size: min(2.8vw, 14px); line-height: min(3.5vw, 17.5px);">
           空气质量指数: ${aqiValue}<span style="color: ${aqiColor}">（${level}级 ${category}）</span>&ensp;
         </div>
-        <div style="color: ${textcolor}; font-size: 2.2vw; line-height: 3.5vw;">
+        <div style="color: ${textcolor}; font-size: min(2.2vw, 11px); line-height: min(3.5vw, 17.5px);">
           &emsp;&ensp;PM2.5: ${pm25} <span style="font-size: 0.8em;">μg/m³</span>&ensp;
         </div>
-        <div style="color: ${textcolor}; font-size: 2.2vw; line-height: 3.5vw;">
+        <div style="color: ${textcolor}; font-size: min(2.2vw, 11px); line-height: min(3.5vw, 17.5px);">
           &emsp;&ensp;PM10: ${pm10} <span style="font-size: 0.8em;">μg/m³</span>&ensp;
         </div>
-        <div style="color: ${textcolor}; font-size: 2.2vw; line-height: 3.5vw;">
+        <div style="color: ${textcolor}; font-size: min(2.2vw, 11px); line-height: min(3.5vw, 17.5px);">
           &emsp;&ensp;SO₂: ${so2} <span style="font-size: 0.8em;">μg/m³</span>&ensp;
         </div>
-        <div style="color: ${textcolor}; font-size: 2.2vw; line-height: 3.5vw;">
+        <div style="color: ${textcolor}; font-size: min(2.2vw, 11px); line-height: min(3.5vw, 17.5px);">
           &emsp;&ensp;NO₂: ${no2} <span style="font-size: 0.8em;">μg/m³</span>&ensp;
         </div>
-        <div style="color: ${textcolor}; font-size: 2.2vw; line-height: 3.5vw;">
+        <div style="color: ${textcolor}; font-size: min(2.2vw, 11px); line-height: min(3.5vw, 17.5px);">
           &emsp;&ensp;CO: ${co} <span style="font-size: 0.8em;">mg/m³</span>&ensp;
         </div>
-        <div style="color: ${textcolor}; font-size: 2.2vw; line-height: 3.5vw;">
+        <div style="color: ${textcolor}; font-size: min(2.2vw, 11px); line-height: min(3.5vw, 17.5px);">
           &emsp;&ensp;O₃: ${o3} <span style="font-size: 0.8em;">μg/m³</span>&ensp;
         </div>
         ` : ''}
@@ -2833,18 +2835,18 @@ class XiaoshiWeatherPhoneCard extends LitElement {
     const backgroundColor2 = theme === 'light' ? 'rgba(255, 255, 255)' : 'rgba(50, 50, 50)';
 
     return html`
-      <div class="indices-details-card" style="background-color: ${backgroundColor}; border-radius: 2vw; padding: 2vw; margin-top: 1.5vw;">
+      <div class="indices-details-card" style="background-color: ${backgroundColor}; border-radius: min(2vw, 10px); padding: min(2vw, 10px); margin-top: min(1.5vw, 7.5px);">
         
         <!-- 指数列表 -->
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1vw;">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: min(1vw, 5px);">
           ${indices.map(index => html`
-            <div style="padding: 1vw; background: ${backgroundColor2}; border-radius: 1vw;">
+            <div style="padding: min(1vw, 5px); background: ${backgroundColor2}; border-radius: min(1vw, 5px);">
               <div> 
-                <span style="font-size: 2vw; font-weight: bold; color: ${textcolor2}; margin-bottom: 0.2vw;">${index.name} </span>
-                <span style="font-size: 1.8vw; color: ${textcolor}; margin-bottom: 0.2vw;"> 等级:${index.level}  ${index.category}</span>
+                <span style="font-size: min(2vw, 10px); font-weight: bold; color: ${textcolor2}; margin-bottom: min(0.2vw, 1px);">${index.name} </span>
+                <span style="font-size: min(1.8vw, 9px); color: ${textcolor}; margin-bottom: min(0.2vw, 1px);"> 等级:${index.level}  ${index.category}</span>
               </div>
 
-              <div style="font-size: 1.5vw; color: ${textcolor}; opacity: 0.8; line-height: 1.4;">${index.text}</div>
+              <div style="font-size: min(1.5vw, 7.5px); color: ${textcolor}; opacity: 0.8; line-height: 1.4;">${index.text}</div>
             </div>
           `)}
         </div>
@@ -2865,7 +2867,7 @@ class XiaoshiWeatherPhoneCard extends LitElement {
 
     return html`
       <div class="input-container ${themeClass}" \n
-           style="width: ${this.config.width}; height: 12vw ;border-radius: 3vw;">
+           style="width: ${this.config.width}; height: min(12vw, 60px) ;border-radius: min(3vw, 15px);">
         <div class="icon">
           <ha-icon icon="mdi:magnify"></ha-icon>
         </div>
@@ -3280,7 +3282,7 @@ class XiaoshiWeatherPhoneButtonEditor extends LitElement {
 
         <!-- 按钮宽度 -->
         <div class="form-group">
-          <label>按钮宽度：默认16.8vw，支持像素(px)和百分比(%)</label>
+          <label>按钮宽度：默认min(16.8vw, 84px)，支持像素(px)和百分比(%)</label>
           <input
             type="text"
             @change=${this._entityChanged}
@@ -3526,7 +3528,8 @@ class XiaoshiWeatherPhoneButton extends LitElement {
       }
 
       .weather-button {
-        width: var(--button-width, 16.8vw);
+        width: var(--button-width, min(16.8vw, 84px));
+        max-width: 90px;
         height: var(--button-height, 24px);
         padding: 0;
         margin: 0;
@@ -3589,7 +3592,7 @@ class XiaoshiWeatherPhoneButton extends LitElement {
     if (config.button_width) {
       this.style.setProperty('--button-width', config.button_width);
     } else {
-      this.style.setProperty('--button-width', '16.8vw');
+      this.style.setProperty('--button-width', 'min(16.8vw, 84px)');
     }
     if (config.button_height) {
       this.style.setProperty('--button-height', config.button_height);

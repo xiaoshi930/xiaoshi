@@ -118,7 +118,7 @@ class XiaoshiPVECard extends LitElement {
 
     static get styles() {
         return css`
-            :host { display:block; width:var(--card-width, 100%); }
+            :host { display:block; width:var(--card-width, 100%); max-width:500px; margin:0 auto; }
             ha-card {
                 width:100%; height:100%; display:flex; flex-direction:column;
                 background:var(--bg-color, #fff); border-radius:12px; border:none;

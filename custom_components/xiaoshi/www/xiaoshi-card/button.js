@@ -510,6 +510,7 @@ class XiaoshiButton extends LitElement {
       }
       .balance-status {
         width: var(--button-width, 65px);
+        max-width: 90px;
         height: var(--button-height, 24px);
         padding: 0;
         margin: 0;

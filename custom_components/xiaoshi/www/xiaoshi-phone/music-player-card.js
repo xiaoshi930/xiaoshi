@@ -210,12 +210,14 @@ class MusicPlayer extends LitElement {
     return css`
       :host {
         display: block;
-        width: 100%;
         border-radius: 12px;
         padding: 0px;
-        margin-top: 0;
         cursor: none;
+        overflow: visible;
         --mdc-ripple-press-opacity: 0;
+        max-width: 500px;
+        margin: 0 auto;
+        margin-top: 0;
       }
 
       .player-grid {
@@ -1828,8 +1830,6 @@ class MusicPlayer extends LitElement {
           ${entityPicture ? '' : 'background: var(--bg-color);'};
           position: relative;
           width: ${this.width};
-          min-width: ${this.width};
-          max-width: ${this.width};
         }
 
         .player-grid {

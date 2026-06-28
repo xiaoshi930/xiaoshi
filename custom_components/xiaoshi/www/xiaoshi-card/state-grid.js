@@ -619,7 +619,7 @@ class XiaoshiStateGridButton extends LitElement {
     return css`
       :host { display: block; }
       .balance-status {
-        width: var(--button-width, 16.8vw); height: var(--button-height, 24px);
+        width: var(--button-width, 16.8vw); max-width:90px;height: var(--button-height, 24px);
         padding: 0; margin: 0; background: var(--bg-color, #fff); color: var(--fg-color, #000);
         border-radius: 10px; font-size: var(--button-font-size, 11px); font-weight: 500;
         text-align: center; box-sizing: border-box; display: flex; align-items: center;
@@ -1966,6 +1966,8 @@ class  XiaoshiStateGridInfo extends LitElement {
     return css`
       :host {
         display: block;
+        max-width: 500px;
+        margin: 0 auto;
       }
       
       .card-header{

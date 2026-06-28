@@ -1606,10 +1606,12 @@ class TvPlayer extends LitElement {
         display: block;
         border-radius: 12px;
         padding: 0px;
-        margin-top: 0;
         cursor: none;
         overflow: visible;
         --mdc-ripple-press-opacity: 0;
+        max-width: 500px;
+        margin: 0 auto;
+        margin-top: 0;
       }
 
       .player-grid {

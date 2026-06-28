@@ -31,6 +31,8 @@ class XiaoshiPhoneComputerCard extends LitElement {
               border-radius: 12px;
               overflow: hidden;
               box-sizing: border-box;
+              max-width: 500px;
+              margin: 0 auto;
           }
 
           .content-container {

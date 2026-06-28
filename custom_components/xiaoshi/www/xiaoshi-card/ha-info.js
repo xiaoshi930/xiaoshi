@@ -945,9 +945,10 @@ customElements.define('xiaoshi-ha-info-button-editor', XiaoshiHaInfoButtonEditor
 class XiaoshiHaInfoButton extends HaInfoBaseMixin(LitElement) {
   static get styles() {
     return css`
-      :host { display: block; }
+      :host { display: block;}
       .ha-info-status {
         width: var(--button-width, 65px);
+        max-width: 90px;
         height: var(--button-height, 24px);
         padding: 0; margin: 0;
         background: var(--bg-color, #fff);
@@ -1141,6 +1142,8 @@ class XiaoshiHaInfoCard extends HaInfoBaseMixin(LitElement) {
     return css`
       :host {
         display: block;
+        max-width:500px;  
+        margin: 0 auto;
       }
       ha-card {
         width: 100%;

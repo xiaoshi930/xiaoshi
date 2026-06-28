@@ -1199,6 +1199,8 @@ class XiaoshiPhoneClimateCard extends LitElement {
       :host {
         display: block;
         contain: content;
+        max-width: 500px;
+        margin: 0 auto;
       }
       
       .card {

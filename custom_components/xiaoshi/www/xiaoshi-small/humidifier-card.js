@@ -463,6 +463,8 @@ class XiaoshiSmallHumidifierCard extends LitElement {
     return css`
       :host {
         display: block;
+        max-width: 500px;
+        margin: 0 auto;
       }
       
       .card {

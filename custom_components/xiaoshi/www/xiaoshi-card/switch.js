@@ -552,7 +552,7 @@ class XiaoshiSwitchCard extends LitElement {
       display: flex;
       flex-direction: column;
       padding-bottom: 10px;
-      max-width: 600px;
+      max-width: 500px;
       margin: auto;
     }
     .card-header {
@@ -1229,7 +1229,7 @@ class XiaoshiSwitchCard extends LitElement {
     });
 
     const dialog = document.createElement('div');
-    dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:600px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
+    dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
 
     // Header
     const header = document.createElement('div');

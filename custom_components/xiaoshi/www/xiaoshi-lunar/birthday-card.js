@@ -790,6 +790,8 @@ class XiaoshiBirthdayCard extends LitElement {
       :host {
         display: block;
         width: var(--card-width, 100%);
+        max-width: 500px;
+        margin: 0 auto;
       }
 
       ha-card {

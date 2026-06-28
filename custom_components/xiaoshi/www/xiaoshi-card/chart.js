@@ -141,7 +141,7 @@ const editorCommonStyles = css`
 `;
 
 const cardCommonStyles = css`
-  :host { display: block; }
+  :host { display: block; max-width: 500px;margin: 0 auto;}
   ha-card { padding: 8px; transition: background 0.3s, color 0.3s; }
   .card-inner { display: flex; flex-direction: column; gap: 5px; }
   .header {
@@ -1511,6 +1511,7 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
         }
         .chart-status {
           width: var(--button-width, 16.8vw);
+          max-width: 90px;
           height: var(--button-height, 24px);
           padding: 0;
           margin: 0;

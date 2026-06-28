@@ -451,7 +451,7 @@ class XiaoshiComputerCard extends LitElement {
 
   static get styles() {
     return css`
-      :host { display: block; }
+      :host { display: block; max-width: 500px; margin: 0 auto;}
 
       .card {
         position: relative;
