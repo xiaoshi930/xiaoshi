@@ -16,7 +16,7 @@ window.customCards.push({
 const PRESET_ON_STATES = [
     // 通用
     'on', 'open', 'opening','home',  'active', 'running',
-    'detected', 'occupied', 'unlocked', 'power_on','开机',
+    'detected', 'occupied', 'unlocked', 'power_on', '开机','resume',
     // 媒体
     'Playing','playing', '播放中',
     // 空调/HVAC
@@ -26,9 +26,11 @@ const PRESET_ON_STATES = [
     '有人', 'one',
     // 扫地机器人
     '正在拖地','正在扫地','启动','cleaning',
+    'returning','returning_to_base','paused','spot_cleaning',
     // 厨房
     '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm',"低档","中档","高档"
 ];
+
 class XiaoshiRoomCardEditor extends LitElement {
     static get properties() {
         return {
