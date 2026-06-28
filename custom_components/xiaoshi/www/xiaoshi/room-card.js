@@ -963,8 +963,8 @@ class XiaoshiRoomCard extends LitElement {
             /* 右上角圆形角标 */
             .badge {
                 position: absolute;
-                top: -1vw;
-                right: -1vw;
+                top: max(-1vw, -5px);
+                right: max(-1vw, -5px);
                 width: min(3.8vw, 19px);
                 height: min(3.8vw, 19px);
                 border-radius: 50%;
@@ -996,7 +996,7 @@ class XiaoshiRoomCard extends LitElement {
             }
             .layout-br .br-person {
                 position: absolute;
-                left: 7vw;
+                left: max(7vw, 35px);
                 top: 40%;
                 transform: translateY(-50%);
                 z-index: 1;
@@ -1036,7 +1036,7 @@ class XiaoshiRoomCard extends LitElement {
             }
             .layout-bl .bl-person {
                 position: absolute;
-                right: 7vw;
+                right: max(7vw, 35px);
                 top: 40%;
                 transform: translateY(-50%);
                 z-index: 1;
