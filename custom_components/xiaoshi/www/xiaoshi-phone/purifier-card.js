@@ -2537,7 +2537,7 @@ class XiaoshiPhonePurifierCard extends LitElement {
           const last = entries[entries.length - 1];
           const cr = (e.state||'').trim();
           const lr = last ? (last.state||'').trim() : null;
-          if (!last || lr !== cr) entries.push(e);
+          if (last && lr === cr) entries[entries.length - 1] = e; else entries.push(e);
         }
         if (entries.length > 0) result[eId] = { name: fn, entries };
       }
@@ -2610,7 +2610,7 @@ class XiaoshiPhonePurifierCard extends LitElement {
       const so = this.hass.states[entityId]; const icon = so?.attributes?.icon || 'mdi:air-purifier';
       let onT = 0, offT = 0;
       const dd = [];
-      for (const e of data.entries) { const l = dd[dd.length-1]; const cr = (e.state||'').trim(); const lr = l ? (l.state||'').trim() : null; if (!l || lr !== cr) dd.push(e); }
+      for (const e of data.entries) { const l = dd[dd.length-1]; const cr = (e.state||'').trim(); const lr = l ? (l.state||'').trim() : null; if (l && lr === cr) dd[dd.length-1] = e; else dd.push(e); }
       const ewd = [];
       for (let i = 0; i < dd.length; i++) {
         const e = dd[i]; const t = new Date(e.last_changed);
@@ -2621,8 +2621,8 @@ class XiaoshiPhonePurifierCard extends LitElement {
       const fl = []; onT = 0; offT = 0;
       for (const it of pf) {
         const l = fl[fl.length-1]; const cr = (it.entry.state||'').trim(); const lr = l ? (l.entry.state||'').trim() : null;
-        const cn = this._normalizeState(it.entry.state); const ln = l ? this._normalizeState(l.entry.state) : null;
-        if (l && ln === cn && (lr === cr || cn !== 'on')) { l.durationMs += it.durationMs; l.time = it.time; } else { fl.push({ ...it }); }
+        const cn = this._normalizeState(it.entry.state);
+        if (l && lr === cr) { l.durationMs += it.durationMs; l.time = it.time; } else { fl.push({ ...it }); }
       }
       for (const it of fl) { if (this._normalizeState(it.entry.state) === 'on') onT += it.durationMs; else offT += it.durationMs; }
       const tMs = onT + offT;
@@ -2675,10 +2675,12 @@ class XiaoshiPhonePurifierCard extends LitElement {
     const rMs = rangeEnd - rangeStart;
     if (rMs <= 0 || entries.length === 0) return '';
     const sorted = [...entries].sort((a, b) => new Date(a.last_changed) - new Date(b.last_changed));
+    // 先过滤：离线且持续少于1分钟的段跳过，避免时间线出现短红条闪烁
+    const fltd = []; for (let i = 0; i < sorted.length; i++) { const e = sorted[i]; const ss = new Date(e.last_changed); const se = i+1 < sorted.length ? new Date(sorted[i+1].last_changed) : rangeEnd; const nm = this._normalizeState(e.state); if (nm === 'offline' && se-ss < 60000) continue; fltd.push(e); }
     const segs = [];
-    for (let i = 0; i < sorted.length; i++) {
-      const e = sorted[i]; const ss = new Date(e.last_changed);
-      const se = i+1 < sorted.length ? new Date(sorted[i+1].last_changed) : rangeEnd;
+    for (let i = 0; i < fltd.length; i++) {
+      const e = fltd[i]; const ss = new Date(e.last_changed);
+      const se = i+1 < fltd.length ? new Date(fltd[i+1].last_changed) : rangeEnd;
       const vs = ss < rangeStart ? rangeStart : ss; const ve = se > rangeEnd ? rangeEnd : se;
       const d = ve - vs;
       if (d > 0) { const rs = (e.state||'').trim(); const p = (d/rMs)*100; const l = segs[segs.length-1];

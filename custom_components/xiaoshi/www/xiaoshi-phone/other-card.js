@@ -3840,7 +3840,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
         const so = this.hass.states[eId]; const fn = so?.attributes?.friendly_name || eId;
         const raw = eh.filter(e => e && e.last_changed).sort((a, b) => new Date(b.last_changed) - new Date(a.last_changed));
         const entries = [];
-        for (const e of raw) { const l = entries[entries.length-1]; const cr = (e.state||'').trim(); const lr = l ? (l.state||'').trim() : null; if (!l || lr !== cr) entries.push(e); }
+        for (const e of raw) { const l = entries[entries.length-1]; const cr = (e.state||'').trim(); const lr = l ? (l.state||'').trim() : null; if (l && lr === cr) entries[entries.length-1] = e; else entries.push(e); }
         if (entries.length > 0) result[eId] = { name: fn, entries };
       }
       this._historyData = result;
@@ -3897,11 +3897,11 @@ class XiaoshiPhoneOtherCard extends LitElement {
     for (const [entityId, data] of items) {
       const so = this.hass.states[entityId]; const icon = so?.attributes?.icon || 'mdi:devices';
       let onT=0, offT=0;
-      const dd=[]; for (const e of data.entries){const l=dd[dd.length-1];const cr=(e.state||'').trim();const lr=l?(l.state||'').trim():null;if(!l||lr!==cr)dd.push(e);}
+      const dd=[]; for (const e of data.entries){const l=dd[dd.length-1];const cr=(e.state||'').trim();const lr=l?(l.state||'').trim():null;if(l&&lr===cr)dd[dd.length-1]=e;else dd.push(e);}
       const ewd=[]; for(let i=0;i<dd.length;i++){const e=dd[i];const t=new Date(e.last_changed);const pe=dd[i-1];const et=pe?new Date(pe.last_changed):new Date();ewd.push({entry:e,time:t,durationMs:Math.max(0,et-t)});}
       const pf=[]; for(const it of ewd){if(this._normalizeState(it.entry.state)==='offline'&&it.durationMs<60000)continue;pf.push(it);}
       const fl=[];onT=0;offT=0;
-      for(const it of pf){const l=fl[fl.length-1];const cr=(it.entry.state||'').trim();const lr=l?(l.entry.state||'').trim():null;const cn=this._normalizeState(it.entry.state);const ln=l?this._normalizeState(l.entry.state):null;if(l&&ln===cn&&(lr===cr||cn!=='on')){l.durationMs+=it.durationMs;l.time=it.time;}else fl.push({...it});}
+      for(const it of pf){const l=fl[fl.length-1];const cr=(it.entry.state||'').trim();const lr=l?(l.entry.state||'').trim():null;const cn=this._normalizeState(it.entry.state);const ln=l?this._normalizeState(l.entry.state):null;if(l&&(lr===cr||(cn==='off'&&ln==='off'))){l.durationMs+=it.durationMs;l.time=it.time;}else fl.push({...it});}
       for(const it of fl){if(this._normalizeState(it.entry.state)==='on')onT+=it.durationMs;else offT+=it.durationMs;}
       const tMs=onT+offT; const onP=tMs>0?Math.round(onT/tMs*100):0; const offP=tMs>0?Math.round(offT/tMs*100):0;
       h+=`<div style="margin:8px 0px;border-bottom:1px solid ${isDark?'#aaa':'#888'};">`;
@@ -3976,8 +3976,9 @@ class XiaoshiPhoneOtherCard extends LitElement {
   _buildTimeline(entries, rangeStart, rangeEnd) {
     const rMs=rangeEnd-rangeStart; if(rMs<=0||entries.length===0)return'';
     const sorted=[...entries].sort((a,b)=>new Date(a.last_changed)-new Date(b.last_changed));
+    const fltd=[]; for(let i=0;i<sorted.length;i++){const e=sorted[i];const ss=new Date(e.last_changed);const se=i+1<sorted.length?new Date(sorted[i+1].last_changed):rangeEnd;const nm=this._normalizeState(e.state);if(nm==='offline'&&se-ss<60000)continue;fltd.push(e);}
     const segs=[];
-    for(let i=0;i<sorted.length;i++){const e=sorted[i];const ss=new Date(e.last_changed);const se=i+1<sorted.length?new Date(sorted[i+1].last_changed):rangeEnd;
+    for(let i=0;i<fltd.length;i++){const e=fltd[i];const ss=new Date(e.last_changed);const se=i+1<fltd.length?new Date(fltd[i+1].last_changed):rangeEnd;
       const vs=ss<rangeStart?rangeStart:ss;const ve=se>rangeEnd?rangeEnd:se;const d=ve-vs;
       if(d>0){const rs=(e.state||'').trim();const p=(d/rMs)*100;const l=segs[segs.length-1];if(l&&l.state===rs)l.percent+=p;else segs.push({state:rs,percent:p});}}
     let blocks='';

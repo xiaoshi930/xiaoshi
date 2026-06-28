@@ -875,7 +875,10 @@ class XiaoshiCoverCard extends LitElement {
           const last = entries[entries.length - 1];
           const curRaw = (entry.state || '').trim();
           const lastRaw = last ? (last.state || '').trim() : null;
-          if (!last || lastRaw !== curRaw) {
+          if (last && lastRaw === curRaw) {
+            // 相同连续状态：用更早的时间替换，保留状态切换的起点
+            entries[entries.length - 1] = entry;
+          } else {
             entries.push(entry);
           }
         }
@@ -1010,7 +1013,10 @@ class XiaoshiCoverCard extends LitElement {
         const last = dedupedEntries[dedupedEntries.length - 1];
         const curRaw = (entry.state || '').trim();
         const lastRaw = last ? (last.state || '').trim() : null;
-        if (!last || lastRaw !== curRaw) {
+        if (last && lastRaw === curRaw) {
+          // 相同连续状态：用更早的时间替换，保留状态切换的起点
+          dedupedEntries[dedupedEntries.length - 1] = entry;
+        } else {
           dedupedEntries.push(entry);
         }
       }
@@ -1036,9 +1042,8 @@ class XiaoshiCoverCard extends LitElement {
         const last = filtered[filtered.length - 1];
         const curRaw = (item.entry.state || '').trim();
         const lastRaw = last ? (last.entry.state || '').trim() : null;
-        const curNorm = this._normalizeState(item.entry.state);
-        const lastNorm = last ? this._normalizeState(last.entry.state) : null;
-        if (last && lastNorm === curNorm && (lastRaw === curRaw || curNorm !== 'open')) {
+        // 按原始状态合并：相同的原始状态才合并，避免不同状态混在一起
+        if (last && lastRaw === curRaw) {
           last.durationMs += item.durationMs;
           last.time = item.time;
         } else {
@@ -1118,11 +1123,22 @@ class XiaoshiCoverCard extends LitElement {
     const rangeMs = rangeEnd - rangeStart;
     if (rangeMs <= 0 || entries.length === 0) return '';
     const sorted = [...entries].sort((a, b) => new Date(a.last_changed) - new Date(b.last_changed));
-    const segments = [];
+    // 先过滤：离线且持续少于1分钟的段跳过，避免时间线出现短红条闪烁
+    const filtered = [];
     for (let i = 0; i < sorted.length; i++) {
       const entry = sorted[i];
       const segStart = new Date(entry.last_changed);
       const segEnd = i + 1 < sorted.length ? new Date(sorted[i + 1].last_changed) : rangeEnd;
+      const durationMs = segEnd - segStart;
+      const norm = this._normalizeState(entry.state);
+      if (norm === 'offline' && durationMs < 60000) continue;
+      filtered.push(entry);
+    }
+    const segments = [];
+    for (let i = 0; i < filtered.length; i++) {
+      const entry = filtered[i];
+      const segStart = new Date(entry.last_changed);
+      const segEnd = i + 1 < filtered.length ? new Date(filtered[i + 1].last_changed) : rangeEnd;
       const visibleStart = segStart < rangeStart ? rangeStart : segStart;
       const visibleEnd = segEnd > rangeEnd ? rangeEnd : segEnd;
       const durationMs = visibleEnd - visibleStart;
