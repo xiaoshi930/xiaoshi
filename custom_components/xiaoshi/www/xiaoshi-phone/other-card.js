@@ -24,7 +24,6 @@ const PRESET_ON_STATES = [
     '有人', 'one',
     // 扫地机器人
     '正在拖地','正在扫地','启动','cleaning',
-    'returning','returning_to_base','paused','spot_cleaning',
     // 厨房
     '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm',"低档","中档","高档"
 ];
