@@ -1236,7 +1236,7 @@ class XiaoshiSwitchCard extends LitElement {
 
     // Header
     const header = document.createElement('div');
-    header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid ${borderColor};`;
+    header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
     const title = document.createElement('span');
     title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
     title.textContent = `${roomName} - 历史记录`;
@@ -1250,7 +1250,7 @@ class XiaoshiSwitchCard extends LitElement {
     // Toolbar row
     const toolbar = document.createElement('div');
     toolbar.className = 'xiaoshi-history-toolbar';
-    toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 20px;margin:0 16px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
+    toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 5px;margin:0 20px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
 
     // Entity filter - only if multiple switches
     const hasMultiple = this.config.entities.length > 1;
@@ -1310,7 +1310,8 @@ class XiaoshiSwitchCard extends LitElement {
       { label: '6小时', value: 6 },
       { label: '24小时', value: 24 },
       { label: '3天', value: 72 },
-      { label: '7天', value: 168 }
+      { label: '7天', value: 168 },
+      { label: '15天', value: 360 }
     ];
     for (const p of periods) {
       const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
@@ -1446,7 +1447,7 @@ class XiaoshiSwitchCard extends LitElement {
         const stateColor = isOn ? '#c8191d' : (isOffline ? '#f44336' : '#999');
         const durationStr = this._formatDuration(durationMs);
         const entryBg = isOn ? (isDark ? 'rgba(200,25,29,0.12)' : 'rgba(200,25,29,0.08)') : (isOffline ? (isDark ? 'rgba(244,67,54,0.12)' : 'rgba(244,67,54,0.06)') : (isDark ? '#383838' : '#f5f5f5'));
-        htmlStr += `<div style="border-radius:10px;padding: 0px 12px;margin-bottom:8px;background:${entryBg};"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-size:0.8rem;padding:2px 4px;border-radius:10px;font-weight:500;color:${stateColor};">${stateLabel} · ${durationStr}</span><span style="font-size:0.75rem;color:${isDark?'#aaa':'#999'};">${timeStr}</span></div></div>`;
+        htmlStr += `<div style="border-radius:10px;padding: 0px 12px;margin-bottom:8px;background:${entryBg};"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:0.8rem;padding:2px 4px;border-radius:10px;font-weight:500;color:${stateColor};">${stateLabel} · ${durationStr}</span><span style="font-size:0.75rem;color:${isDark?'#aaa':'#999'};">${timeStr}</span></div></div>`;
       }
       htmlStr += `</div>`;
     }
@@ -1562,7 +1563,8 @@ class XiaoshiSwitchCard extends LitElement {
                          (label === '1小时' && activePeriod === 1) ||
                          (label === '6小时' && activePeriod === 6) ||
                          (label === '3天' && activePeriod === 72) ||
-                         (label === '7天' && activePeriod === 168);
+                         (label === '7天' && activePeriod === 168) ||
+                         (label === '15天' && activePeriod === 360);
         if (isActive) {
           chip.style.background = activeBg;
           chip.style.color = activeColor;
