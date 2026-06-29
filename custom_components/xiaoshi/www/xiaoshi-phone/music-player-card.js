@@ -202,7 +202,10 @@ class MusicPlayer extends LitElement {
       showLyrics: { type: Boolean },
       lyrics: { type: Array },
       currentLyricIndex: { type: Number },
-      lyricProgress: { type: Number }
+      lyricProgress: { type: Number },
+      _showHistory: { type: Boolean },
+      _historyData: { type: Array },
+      _historyLoading: { type: Boolean }
     };
   }
 
@@ -540,6 +543,10 @@ class MusicPlayer extends LitElement {
         grid-area: next;
       }
 
+      .history-btn {
+        grid-area: history;
+      }
+
       .progress-area {
         grid-area: progress;
         display: flex;
@@ -666,6 +673,11 @@ class MusicPlayer extends LitElement {
     };
     // 歌词时间调节状态
     this.lyricsTimeAdjustment = 0; // 总调节时间（毫秒）
+    // 历史记录状态
+    this._showHistory = false;
+    this._historyData = [];
+    this._historyLoading = false;
+    this._historyFilterPeriod = 24;
     this._initLyricsCache();
   }
 
@@ -1674,6 +1686,401 @@ class MusicPlayer extends LitElement {
     });
   }
 
+  // ========== 历史记录功能 ==========
+
+  _toggleHistory() {
+    this._handleClick();
+    if (this._showHistory) {
+      this._closeHistoryOverlay();
+      return;
+    }
+    this._showHistory = true;
+    this._showHistoryOverlay();
+    this._fetchHistory();
+  }
+
+  async _fetchHistory() {
+    try {
+      const targetEntity = this.xiaomiHomeEntity || this.xiaomiMiotEntity;
+      if (!targetEntity) return;
+      const periodHours = this._historyFilterPeriod || 24;
+      const endTime = new Date();
+      const startTime = new Date(endTime.getTime() - periodHours * 60 * 60 * 1000);
+      const startStr = startTime.toISOString();
+      const endStr = endTime.toISOString();
+
+      const data = await this._hass.callApi(
+        'GET',
+        `history/period/${startStr}?end_time=${endStr}&filter_entity_id=${targetEntity}&minimal_response&no_attributes`
+      );
+
+      const result = [];
+      const allEntities = Array.isArray(data) ? data : [];
+      for (const entityHistory of allEntities) {
+        if (!entityHistory || entityHistory.length === 0) continue;
+        const eId = entityHistory[0].entity_id;
+        if (!eId) continue;
+        const stateObj = this._hass.states[eId];
+        const friendlyName = stateObj?.attributes?.friendly_name || eId;
+        const rawEntries = entityHistory
+          .filter(entry => entry && entry.last_changed)
+          .sort((a, b) => new Date(b.last_changed) - new Date(a.last_changed));
+        const entries = [];
+        for (const entry of rawEntries) {
+          const last = entries[entries.length - 1];
+          const curRaw = (entry.state || '').trim();
+          const lastRaw = last ? (last.state || '').trim() : null;
+          if (last && lastRaw === curRaw) {
+            entries[entries.length - 1] = entry;
+          } else {
+            entries.push(entry);
+          }
+        }
+        if (entries.length > 0) {
+          result.push({ entityId: eId, name: friendlyName, entries: entries });
+        }
+      }
+      this._historyData = result;
+    } catch (e) {
+      console.error('获取播放历史记录失败:', e);
+      this._historyData = [];
+    } finally {
+      this._historyLoading = false;
+      this._updateHistoryContent();
+    }
+  }
+
+  _showHistoryOverlay() {
+    if (this._historyOverlayEl) return;
+    const theme = this._evaluateTheme();
+    const isDark = theme === 'dark' || theme === 'system';
+    const targetEntity = this.xiaomiHomeEntity || this.xiaomiMiotEntity;
+    const ent = this._hass?.states?.[targetEntity];
+    const roomName = ent?.attributes?.friendly_name || targetEntity || '音乐播放器';
+    const textColor = isDark ? '#fff' : '#333';
+    const bgColor = isDark ? '#2c2c2c' : '#fff';
+    const borderColor = isDark ? '#aaa' : '#888';
+    const btnBg = isDark ? '#444' : '#f0f0f0';
+    const btnIconColor = isDark ? '#ccc' : '#666';
+    const chipBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
+    const chipActiveBg = this._getHistoryAccentColor();
+    const chipActiveColor = '#fff';
+
+    this._historyFilterPeriod = 24;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'xiaoshi-music-history-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;';
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) this._closeHistoryOverlay();
+    });
+
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
+
+    // 标题栏
+    const header = document.createElement('div');
+    header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
+    const title = document.createElement('span');
+    title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
+    title.textContent = `${roomName} - 播放历史`;
+    const closeBtn = document.createElement('button');
+    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+    closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
+    closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+
+    // 时段选择工具栏
+    const toolbar = document.createElement('div');
+    toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 5px;margin:0 20px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
+
+    const timeRow = document.createElement('div');
+    timeRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    const timeLabel = document.createElement('span');
+    timeLabel.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;`;
+    timeLabel.textContent = '时段:';
+    timeRow.appendChild(timeLabel);
+
+    const timeChips = document.createElement('div');
+    timeChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+    const periods = [
+      { label: '1小时', value: 1 },
+      { label: '6小时', value: 6 },
+      { label: '24小时', value: 24 },
+      { label: '3天', value: 72 },
+      { label: '7天', value: 168 },
+      { label: '15天', value: 360 }
+    ];
+    for (const p of periods) {
+      const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
+      chip.addEventListener('click', () => {
+        this._historyFilterPeriod = p.value;
+        this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark);
+        this._refetchWithFilters();
+      });
+      timeChips.appendChild(chip);
+    }
+    timeRow.appendChild(timeChips);
+    toolbar.appendChild(timeRow);
+
+    // 内容区域
+    const body = document.createElement('div');
+    body.style.cssText = 'flex:1;overflow-y:auto;padding:6px 20px;';
+    body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+
+    dialog.appendChild(header);
+    dialog.appendChild(toolbar);
+    dialog.appendChild(body);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    this._historyOverlayEl = overlay;
+    this._historyBodyEl = body;
+    this._historyTimeChipsEl = timeChips;
+  }
+
+  _updateHistoryContent() {
+    if (!this._historyBodyEl) return;
+    const theme = this._evaluateTheme();
+    const isDark = theme === 'dark' || theme === 'system';
+    const ac = this._getHistoryAccentColor();
+
+    if (this._historyLoading) {
+      this._historyBodyEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+      return;
+    }
+
+    if (!this._historyData || this._historyData.length === 0) {
+      this._historyBodyEl.innerHTML = `<div style="text-align:center;padding:40px;color:${isDark?'#aaa':'#999'};font-size:0.9rem;">暂无播放历史记录</div>`;
+      return;
+    }
+
+    let html = '';
+    for (const entityData of this._historyData) {
+      const { entityId, name, entries } = entityData;
+
+      // 计算各状态时长
+      let playingMs = 0, pausedMs = 0, idleMs = 0, otherMs = 0;
+
+      const dedupedEntries = [];
+      for (const entry of entries) {
+        const last = dedupedEntries[dedupedEntries.length - 1];
+        const curRaw = (entry.state || '').trim();
+        const lastRaw = last ? (last.state || '').trim() : null;
+        if (last && lastRaw === curRaw) {
+          dedupedEntries[dedupedEntries.length - 1] = entry;
+        } else {
+          dedupedEntries.push(entry);
+        }
+      }
+
+      const entriesWithDuration = [];
+      for (let i = 0; i < dedupedEntries.length; i++) {
+        const entry = dedupedEntries[i];
+        const time = new Date(entry.last_changed);
+        const prevEntry = dedupedEntries[i - 1];
+        const endTime = prevEntry ? new Date(prevEntry.last_changed) : new Date();
+        const durationMs = Math.max(0, endTime - time);
+        entriesWithDuration.push({ entry, time, durationMs });
+      }
+
+      const filtered = [];
+      for (const item of entriesWithDuration) {
+        const s = (item.entry.state || '').trim();
+        if (s === 'unavailable' && item.durationMs < 60000) continue;
+        const last = filtered[filtered.length - 1];
+        if (last && (last.entry.state || '').trim() === s) {
+          last.durationMs += item.durationMs;
+          last.time = item.time;
+        } else {
+          filtered.push({ ...item });
+        }
+      }
+
+      for (const item of filtered) {
+        const s = (item.entry.state || '').trim();
+        if (s === 'playing') playingMs += item.durationMs;
+        else if (s === 'paused') pausedMs += item.durationMs;
+        else if (s === 'idle') idleMs += item.durationMs;
+        else otherMs += item.durationMs;
+      }
+
+      const totalMs = playingMs + pausedMs + idleMs + otherMs;
+      const playingPercent = totalMs > 0 ? Math.round(playingMs / totalMs * 100) : 0;
+
+      const periodHours = this._historyFilterPeriod || 24;
+      const now = new Date();
+      const rangeStart = new Date(now.getTime() - periodHours * 60 * 60 * 1000);
+      const timelineBlocks = this._buildTimeline(entries, rangeStart, now);
+
+      html += `<div style="margin:8px 0px;border-bottom:1px solid ${isDark?'#aaa':'#888'};">`;
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">`;
+      html += `<span style="display:flex;align-items:center;gap:4px;font-weight:700;font-size:0.85rem;color:${isDark?'#ddd':'#444'};white-space:nowrap;"><ha-icon icon="mdi:music-circle" style="--mdc-icon-size:16px;color:${ac};"></ha-icon>${name}</span>`;
+      html += `<span style="font-size:0.7rem;color:${ac};white-space:nowrap;">播放 ${playingPercent}%</span>`;
+      html += `<div style="flex:1;display:flex;height:8px;border-radius:3px;overflow:hidden;">${timelineBlocks}</div>`;
+      html += `</div>`;
+
+      for (const { entry, time, durationMs } of filtered) {
+        const timeStr = time.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const rawState = (entry.state || '').trim();
+        const stateLabel = this._translateMusicState(rawState);
+        const stateColor = this._getMusicStateColor(rawState);
+        const durationStr = this._formatDuration(durationMs);
+        const scRgb = stateColor.replace(/[^\d,]/g, '');
+        const isPlaying = rawState === 'playing';
+        const isOffline = rawState === 'unavailable' || rawState === 'unknown';
+        const entryBg = isPlaying ? (isDark ? `rgba(${scRgb},0.12)` : `rgba(${scRgb},0.08)`) : (isOffline ? (isDark ? 'rgba(244,67,54,0.12)' : 'rgba(244,67,54,0.06)') : (isDark ? '#383838' : '#f5f5f5'));
+        html += `<div style="border-radius:10px;padding:1px 12px;margin-bottom:8px;background:${entryBg};"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:0.8rem;padding:2px 4px;border-radius:10px;font-weight:500;color:${stateColor};">${stateLabel} · ${durationStr}</span><span style="font-size:0.75rem;color:${isDark?'#aaa':'#999'};">${timeStr}</span></div></div>`;
+      }
+      html += `</div>`;
+    }
+    this._historyBodyEl.innerHTML = html;
+  }
+
+  _closeHistoryOverlay() {
+    if (this._historyOverlayEl) {
+      this._historyOverlayEl.remove();
+      this._historyOverlayEl = null;
+      this._historyBodyEl = null;
+      this._historyTimeChipsEl = null;
+    }
+    this._showHistory = false;
+    this._historyData = [];
+    this._historyLoading = false;
+    this._historyFilterPeriod = 24;
+  }
+
+  _refetchWithFilters() {
+    this._historyLoading = true;
+    this._updateHistoryContent();
+    this._fetchHistory();
+  }
+
+  _getHistoryAccentColor() {
+    const targetEntity = this.xiaomiHomeEntity || this.xiaomiMiotEntity;
+    const entity = this._hass?.states?.[targetEntity];
+    const state = entity?.state || 'idle';
+    return this._getMusicStateColor(state);
+  }
+
+  _getMusicStateColor(state) {
+    const s = (state || '').trim();
+    if (s === 'playing') return 'rgb(76,175,80)';
+    if (s === 'paused') return 'rgb(255,193,7)';
+    if (s === 'idle') return '#999';
+    if (s === 'off') return '#999';
+    if (s === 'unavailable' || s === 'unknown') return '#f44336';
+    return 'rgb(33,150,243)';
+  }
+
+  _translateMusicState(state) {
+    const s = (state || '').trim();
+    const translations = {
+      'playing': '播放中',
+      'paused': '已暂停',
+      'idle': '待机中',
+      'off': '已关闭',
+      'unavailable': '已离线',
+      'unknown': '未知'
+    };
+    return translations[s] || s;
+  }
+
+  _formatDuration(ms) {
+    const periodHours = this._historyFilterPeriod || 24;
+    const periodMs = periodHours * 60 * 60 * 1000;
+    if (ms < 60000) return '少于1分钟';
+    if (ms >= periodMs) {
+      if (periodHours < 24) return `大于${periodHours}小时`;
+      if (periodHours < 72) return `大于${periodHours}小时`;
+      const days = Math.floor(periodHours / 24);
+      return `大于${days}天`;
+    }
+    const minutes = Math.floor(ms / 60000);
+    if (minutes < 60) return `${minutes}分钟`;
+    const hours = Math.floor(minutes / 60);
+    const remainMin = minutes % 60;
+    if (hours < 24) return remainMin > 0 ? `${hours}小时${remainMin}分钟` : `${hours}小时`;
+    const days = Math.floor(hours / 24);
+    const remainHr = hours % 24;
+    return remainHr > 0 ? `${days}天${remainHr}小时` : `${days}天`;
+  }
+
+  _buildFilterChip(label, value, chipBg, activeBg, activeColor, isDark) {
+    const chip = document.createElement('span');
+    chip.setAttribute('data-chip', '1');
+    const isActive = (typeof value === 'number' && value === this._historyFilterPeriod);
+    if (isActive) {
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};`;
+    } else {
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+    }
+    chip.textContent = label;
+    return chip;
+  }
+
+  _refreshHistoryChips(container, activePeriod, chipBg, activeBg, activeColor, isDark) {
+    const chips = container.querySelectorAll('[data-chip]');
+    chips.forEach(chip => {
+      const label = chip.textContent;
+      const isActive = (label === '24小时' && activePeriod === 24) ||
+                       (label === '1小时' && activePeriod === 1) ||
+                       (label === '6小时' && activePeriod === 6) ||
+                       (label === '3天' && activePeriod === 72) ||
+                       (label === '7天' && activePeriod === 168) ||
+                       (label === '15天' && activePeriod === 360);
+      if (isActive) {
+        chip.style.background = activeBg;
+        chip.style.color = activeColor;
+      } else {
+        chip.style.background = chipBg;
+        chip.style.color = isDark ? '#ccc' : '#555';
+      }
+    });
+  }
+
+  _buildTimeline(entries, rangeStart, rangeEnd) {
+    const rangeMs = rangeEnd - rangeStart;
+    if (rangeMs <= 0 || entries.length === 0) return '';
+    const sorted = [...entries].sort((a, b) => new Date(a.last_changed) - new Date(b.last_changed));
+    const filtered = [];
+    for (let i = 0; i < sorted.length; i++) {
+      const entry = sorted[i];
+      const segStart = new Date(entry.last_changed);
+      const segEnd = i + 1 < sorted.length ? new Date(sorted[i + 1].last_changed) : rangeEnd;
+      const durationMs = segEnd - segStart;
+      const s = (entry.state || '').trim();
+      if ((s === 'unavailable' || s === 'unknown') && durationMs < 60000) continue;
+      filtered.push(entry);
+    }
+    const segments = [];
+    for (let i = 0; i < filtered.length; i++) {
+      const entry = filtered[i];
+      const segStart = new Date(entry.last_changed);
+      const segEnd = i + 1 < filtered.length ? new Date(filtered[i + 1].last_changed) : rangeEnd;
+      const visibleStart = segStart < rangeStart ? rangeStart : segStart;
+      const visibleEnd = segEnd > rangeEnd ? rangeEnd : segEnd;
+      const durationMs = visibleEnd - visibleStart;
+      if (durationMs > 0) {
+        const rawState = (entry.state || '').trim();
+        const percent = (durationMs / rangeMs) * 100;
+        const lastSeg = segments[segments.length - 1];
+        if (lastSeg && lastSeg.state === rawState) {
+          lastSeg.percent += percent;
+        } else {
+          segments.push({ state: rawState, percent });
+        }
+      }
+    }
+    let blocks = '';
+    for (const seg of segments) {
+      const color = this._getMusicStateColor(seg.state);
+      blocks += `<div style="width:${seg.percent}%;min-width:1px;height:100%;background:${color};flex-shrink:0;"></div>`;
+    }
+    return blocks;
+  }
+
   getProgressPercentage() {
     // 使用与set hass相同的智能实体选择逻辑
     let primaryState = null;
@@ -1840,7 +2247,7 @@ class MusicPlayer extends LitElement {
           grid-template-rows: ${this.showLyrics ? '33% 33% 33%' : '33% 33% 33%'};
           grid-template-areas: 
             "icon name name name name name name . power"
-            "icon info info info info info info lyrics-button lyrics-button"
+            "icon info info info info info lyrics-button lyrics-button history"
             "icon volume volume-down volume-slider volume-up prev play pause next";
         }
 
@@ -1951,6 +2358,10 @@ class MusicPlayer extends LitElement {
         <!-- 控制按钮 -->
         <button class="control-button power-button" @click=${this.handlePower}>
           <ha-icon icon="mdi:power"></ha-icon>
+        </button>
+
+        <button class="control-button history-btn" @click=${this._toggleHistory}>
+          <ha-icon icon="mdi:history"></ha-icon>
         </button>
 
         <button class="control-button volume-down" @click=${this.handleVolumeDown}>

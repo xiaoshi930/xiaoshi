@@ -2185,18 +2185,18 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;';
     overlay.addEventListener('click', (e) => { if (e.target === overlay) this._closeHistoryOverlay(); });
     const dialog = document.createElement('div'); dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
-    const header = document.createElement('div'); header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:12px;margin:0 16px;border-bottom:1px solid ${borderColor};`;
+    const header = document.createElement('div'); header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
     const tit = document.createElement('span'); tit.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`; tit.textContent = `${roomName} - 历史记录`;
     const closeBtn = document.createElement('button'); closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
     closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
     closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
     header.appendChild(tit); header.appendChild(closeBtn);
-    const toolbar = document.createElement('div'); toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 20px;margin:0 16px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
+    const toolbar = document.createElement('div'); toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 5px;margin:0 20px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
     const timeRow = document.createElement('div'); timeRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
     const timeLabel = document.createElement('span'); timeLabel.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;`; timeLabel.textContent = '时段:';
     timeRow.appendChild(timeLabel);
     const timeChips = document.createElement('div'); timeChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;'; timeChips.className = 'xiaoshi-time-chips';
-    const periods = [{ label: '1小时', value: 1 },{ label: '6小时', value: 6 },{ label: '24小时', value: 24 },{ label: '3天', value: 72 },{ label: '7天', value: 168 }];
+    const periods = [{ label: '1小时', value: 1 },{ label: '6小时', value: 6 },{ label: '24小时', value: 24 },{ label: '3天', value: 72 },{ label: '7天', value: 168 },{ label: '15天', value: 360 }];
     for (const p of periods) {
       const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
       chip.addEventListener('click', () => { this._historyFilterPeriod = p.value; this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time'); this._refetchWithFilters(); });
@@ -2242,7 +2242,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
         const ds=this._formatDuration(durationMs);
         const scRgb=sc.replace(/[^\d,]/g,'');
         const eb=isOn?(isDark?`rgba(${scRgb},0.12)`:`rgba(${scRgb},0.08)`):(isOffline?(isDark?'rgba(244,67,54,0.12)':'rgba(244,67,54,0.06)'):(isDark?'#383838':'#f5f5f5'));
-        h+=`<div style="border-radius:10px;padding:1px 12px;margin-bottom:8px;background:${eb};"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-size:0.8rem;padding:2px 4px;border-radius:10px;font-weight:500;color:${sc};">${sl} · ${ds}</span><span style="font-size:0.75rem;color:${isDark?'#aaa':'#999'};">${ts}</span></div></div>`;
+        h+=`<div style="border-radius:10px;padding:1px 12px;margin-bottom:8px;background:${eb};"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:0.8rem;padding:2px 4px;border-radius:10px;font-weight:500;color:${sc};">${sl} · ${ds}</span><span style="font-size:0.75rem;color:${isDark?'#aaa':'#999'};">${ts}</span></div></div>`;
       }
       h+=`</div>`;
     }
@@ -2297,7 +2297,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
 
   _refreshHistoryChips(container, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
     const chips=container.querySelectorAll('[data-chip]');
-    chips.forEach(chip=>{const label=chip.textContent;if(mode==='time'){const isActive=(label==='24小时'&&activePeriod===24)||(label==='1小时'&&activePeriod===1)||(label==='6小时'&&activePeriod===6)||(label==='3天'&&activePeriod===72)||(label==='7天'&&activePeriod===168);if(isActive){chip.style.background=activeBg;chip.style.color=activeColor;}else{chip.style.background=chipBg;chip.style.color=isDark?'#ccc':'#555';}}});
+    chips.forEach(chip=>{const label=chip.textContent;if(mode==='time'){const isActive=(label==='24小时'&&activePeriod===24)||(label==='1小时'&&activePeriod===1)||(label==='6小时'&&activePeriod===6)||(label==='3天'&&activePeriod===72)||(label==='7天'&&activePeriod===168)||(label==='15天'&&activePeriod===360);if(isActive){chip.style.background=activeBg;chip.style.color=activeColor;}else{chip.style.background=chipBg;chip.style.color=isDark?'#ccc':'#555';}}});
   }
 
   _refetchWithFilters() {
