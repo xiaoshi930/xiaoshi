@@ -1361,6 +1361,7 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
     this.config = { ...config };
     if (config.button_width) {
       this.style.setProperty('--button-width', config.button_width);
+      this.style.setProperty('--button-max-width', config.button_width);
     } else {
       this.style.setProperty('--button-width', '16.8vw');
     }
@@ -1511,7 +1512,7 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
         }
         .chart-status {
           width: var(--button-width, 16.8vw);
-          max-width: 90px;
+          max-width: var(--button-max-width, 90px);
           height: var(--button-height, 24px);
           padding: 0;
           margin: 0;

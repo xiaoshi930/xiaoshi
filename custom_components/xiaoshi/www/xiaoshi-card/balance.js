@@ -1405,7 +1405,7 @@ class XiaoshiBalanceButton extends BalanceBaseMixin(LitElement) {
       }
       .balance-status {
         width: var(--button-width, 65px);
-        max-width: 90px;
+        max-width: var(--button-max-width, 90px);
         height: var(--button-height, 24px);
         padding: 0;
         margin: 0;
@@ -1569,6 +1569,7 @@ class XiaoshiBalanceButton extends BalanceBaseMixin(LitElement) {
     this.config = { ...config };
     if (config.button_width) {
       this.style.setProperty('--button-width', config.button_width);
+      this.style.setProperty('--button-max-width', config.button_width);
     } else {
       this.style.setProperty('--button-width', '16.8vw');
     }

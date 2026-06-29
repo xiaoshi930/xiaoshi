@@ -948,7 +948,7 @@ class XiaoshiHaInfoButton extends HaInfoBaseMixin(LitElement) {
       :host { display: block;}
       .ha-info-status {
         width: var(--button-width, 65px);
-        max-width: 90px;
+        max-width: var(--button-max-width, 90px);
         height: var(--button-height, 24px);
         padding: 0; margin: 0;
         background: var(--bg-color, #fff);
@@ -1055,6 +1055,9 @@ class XiaoshiHaInfoButton extends HaInfoBaseMixin(LitElement) {
   setConfig(config) {
     this.config = { ...config };
     this.style.setProperty('--button-width', config.button_width || '16.8vw');
+    if (config.button_width) {
+      this.style.setProperty('--button-max-width', config.button_width);
+    }
     this.style.setProperty('--button-height', config.button_height || '24px');
     this.style.setProperty('--button-font-size', config.button_font_size || '11px');
     this.style.setProperty('--button-icon-size', config.button_icon_size || '13px');

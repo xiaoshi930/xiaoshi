@@ -3529,7 +3529,7 @@ class XiaoshiWeatherPhoneButton extends LitElement {
 
       .weather-button {
         width: var(--button-width, min(16.8vw, 84px));
-        max-width: 90px;
+        max-width: var(--button-max-width, 90px);
         height: var(--button-height, 24px);
         padding: 0;
         margin: 0;
@@ -3591,6 +3591,7 @@ class XiaoshiWeatherPhoneButton extends LitElement {
     };
     if (config.button_width) {
       this.style.setProperty('--button-width', config.button_width);
+      this.style.setProperty('--button-max-width', config.button_width);
     } else {
       this.style.setProperty('--button-width', 'min(16.8vw, 84px)');
     }
