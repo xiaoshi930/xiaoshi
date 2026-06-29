@@ -16,21 +16,27 @@ window.customCards.push({
 
 // ==================== 预置开/关状态 ====================
 const PRESET_ON_STATES = [
-  'on', 'open', 'opening', 'home', 'active', 'running',
-  'detected', 'occupied', 'unlocked',
-  'Playing', 'playing', '播放中',
-  'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
-  'auto', 'heat_cool', 'fan_only',
-  '有人', '2～5分钟无人移动',
-  '正在拖地', '正在扫地', '启动', 'cleaning',
-  '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm'
+    // 通用
+    'on', 'open', 'opening','home',  'active', 'running',
+    'detected', 'occupied', 'unlocked', 'power_on', '开机','resume',
+    // 媒体
+    'Playing','playing', '播放中',
+    // 空调/HVAC
+    'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
+    'auto', 'heat_cool', 'fan_only',
+    // 人在
+    '有人', 'one',
+    // 扫地机器人
+    '正在拖地','正在扫地','启动','cleaning',
+    // 厨房
+    '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm',"低档","中档","高档"
 ];
+
 const PRESET_OFF_STATES = [
   'off', 'closed', 'closing', 'not_home', 'unavailable', 'unknown', 'idle', 'standby',
   'unlocked',
-  '无人', '2～5分钟无人移动',
+  '无人',
   'Paused', 'paused', '停止',
-  'off',
   'docked', 'charging', 'error', 'returning',
   'Idle', 'Shut Off'
 ];
