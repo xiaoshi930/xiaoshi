@@ -107,6 +107,10 @@ class XiaoshiTopBarCardEditor extends LitElement {
                     </div>
                 </div>
                 <div class="field">
+                    <label>楼层编号（留空则不限制显示）</label>
+                    <input type="text" .value=${this._config.floor || ''} configKey="floor" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="例如: 1" />
+                </div>
+                <div class="field">
                     <label>👇👇👇按钮卡片配置（YAML格式，支持多组卡片）👇👇👇</label>
                     <textarea
                         .value=${this._config.cards || ''}
@@ -188,13 +192,41 @@ class XiaoshiTopBar extends LitElement {
             height: config.height || '32px',
             border_radius: config.border_radius || '8px',
             theme: config.theme || 'theme()',
+            floor: config.floor || '',
             cards: config.cards || '',
         };
         this._buildCards();
     }
 
+    connectedCallback() {
+        super.connectedCallback();
+        this.__floorHandler = () => this.requestUpdate();
+        window.addEventListener('floor-changed', this.__floorHandler);
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this.__floorHandler) {
+            window.removeEventListener('floor-changed', this.__floorHandler);
+        }
+    }
+
     render() {
         if (!this.config) return html``;
+
+        if (this.config.floor) {
+            if (typeof window.floor === 'function') {
+                try {
+                    if (String(window.floor()) !== String(this.config.floor)) {
+                        return html``;
+                    }
+                } catch(e) {
+                    console.error('楼层判断出错:', e);
+                    return html``;
+                }
+            }
+        }
+
         const theme = this._evaluateTheme();
         const btnBg = theme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.3)';
         const cards = this._cardElements || [];

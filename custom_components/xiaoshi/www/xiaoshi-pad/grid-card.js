@@ -200,6 +200,10 @@ class XiaoshiPadGridCardEditor extends LitElement {
             <option value="湿度" ?selected=${this._config.mode === '湿度'}>湿度</option>
           </select>
         </div>
+        <div class="field">
+          <label>楼层编号（留空则不限制显示）</label>
+          <input type="text" .value=${this._config.floor || ''} configKey="floor" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="例如: 1" />
+        </div>
         <div class="entities-section">
           <h4>实体列表</h4>
           ${(this._config.entities || []).map((entity, index) => html`
@@ -292,6 +296,7 @@ class XiaoshiPadGridCard extends LitElement {
       max: config.max || 100,
       mode: config.mode || '温度',
       display: config.display || false,
+      floor: config.floor || '',
       popup_width: config.popup_width || '95%',
       popup_top: config.popup_top || '20px',
       popup_cards: config.popup_cards || config.other_cards || config.popup || '',
@@ -302,8 +307,33 @@ class XiaoshiPadGridCard extends LitElement {
     };
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    this.__floorHandler = () => this.requestUpdate();
+    window.addEventListener('floor-changed', this.__floorHandler);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this.__floorHandler) {
+      window.removeEventListener('floor-changed', this.__floorHandler);
+    }
+  }
+
   render() {
     if(this._display()) return;
+    if (this.config.floor) {
+      if (typeof window.floor === 'function') {
+        try {
+          if (String(window.floor()) !== String(this.config.floor)) {
+            return html``;
+          }
+        } catch(e) {
+          console.error('楼层判断出错:', e);
+          return html``;
+        }
+      }
+    }
     return html`
       <div class="container"\n
         style="width: ${this.config.width}; height: ${this.config.height};">

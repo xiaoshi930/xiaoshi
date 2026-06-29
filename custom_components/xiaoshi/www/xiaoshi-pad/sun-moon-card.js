@@ -37,6 +37,12 @@ class SunMoonCardEditor extends LitElement {
                     <input type="number" .value=${this._config.height || '240'}
                         @input=${(e) => this._valueChanged('height', e.target.value)}>
                 </div>
+                <div class="field">
+                    <label>楼层编号（留空则不限制显示）</label>
+                    <input type="text" .value=${this._config.floor || ''}
+                        @input=${(e) => this._valueChanged('floor', e.target.value)}
+                        placeholder="例如: 1">
+                </div>
             </div>`;
     }
     _valueChanged(key, value) {
@@ -105,11 +111,16 @@ class SunMoonCard extends LitElement {
             this.requestUpdate();
         }, 60000);
         this._computeData();
+        this.__floorHandler = () => this.requestUpdate();
+        window.addEventListener('floor-changed', this.__floorHandler);
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
         if (this._updateTimer) { clearInterval(this._updateTimer); this._updateTimer = null; }
+        if (this.__floorHandler) {
+            window.removeEventListener('floor-changed', this.__floorHandler);
+        }
     }
 
     set hass(hass) {
@@ -471,6 +482,19 @@ class SunMoonCard extends LitElement {
 
     // ---------- 渲染 ----------
     render() {
+        if (this.config?.floor) {
+            if (typeof window.floor === 'function') {
+                try {
+                    if (String(window.floor()) !== String(this.config.floor)) {
+                        return html``;
+                    }
+                } catch(e) {
+                    console.error('楼层判断出错:', e);
+                    return html``;
+                }
+            }
+        }
+
         const sd = this._sunData;
         if (!sd) return html`<ha-card><div class="loading">加载中...</div></ha-card>`;
         const w = this._width, h = this._height;

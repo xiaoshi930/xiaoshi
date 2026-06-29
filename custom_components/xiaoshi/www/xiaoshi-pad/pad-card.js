@@ -189,10 +189,133 @@ class XiaoshiPadCardEditor extends LitElement {
 
     constructor() {
         super();
+        this._editFloorIdx = 0;
     }
 
     setConfig(config) {
         this.config = config;
+    }
+
+    // ========== 多楼层辅助方法 ==========
+    _getData() {
+        if (this.config && this.config.enable_multi_floor && this.config.floors && this.config.floors.length > 0) {
+            const idx = Math.min(this._editFloorIdx, this.config.floors.length - 1);
+            return this.config.floors[idx] || {};
+        }
+        return this.config || {};
+    }
+
+    _updateData(key, value) {
+        if (this.config && this.config.enable_multi_floor && this.config.floors && this.config.floors.length > 0) {
+            const idx = Math.min(this._editFloorIdx, this.config.floors.length - 1);
+            const floors = [...this.config.floors];
+            floors[idx] = { ...floors[idx], [key]: value };
+            this.config = { ...this.config, floors };
+        } else {
+            this.config = { ...this.config, [key]: value };
+        }
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _multiFloorChanged(e) {
+        const enabled = e.target.checked;
+        if (enabled) {
+            // 启用时，将现有数据迁移到第一个楼层
+            const existingFloor = {
+                id: '1',
+                name: '一楼',
+                background_image: this.config.background_image || '',
+                light_buttons: this.config.light_buttons || [],
+                person_icons: this.config.person_icons || [],
+                device_glows: this.config.device_glows || [],
+                device_icons: this.config.device_icons || []
+            };
+            this.config = {
+                ...this.config,
+                enable_multi_floor: true,
+                floors: [existingFloor],
+                active_floor_idx: 0
+            };
+            this._editFloorIdx = 0;
+        } else {
+            // 禁用时，恢复第一个楼层数据到顶层
+            const firstFloor = (this.config.floors && this.config.floors[0]) ? this.config.floors[0] : {};
+            this.config = {
+                ...this.config,
+                enable_multi_floor: false,
+                active_floor_idx: 0,
+                background_image: firstFloor.background_image || this.config.background_image || '',
+                light_buttons: firstFloor.light_buttons || this.config.light_buttons || [],
+                person_icons: firstFloor.person_icons || this.config.person_icons || [],
+                device_glows: firstFloor.device_glows || this.config.device_glows || [],
+                device_icons: firstFloor.device_icons || this.config.device_icons || []
+            };
+        }
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _addFloor() {
+        const floors = [...(this.config.floors || [])];
+        const newId = String(floors.length + 1);
+        floors.push({
+            id: newId,
+            name: '楼层' + newId,
+            background_image: '',
+            light_buttons: [],
+            person_icons: [],
+            device_glows: [],
+            device_icons: []
+        });
+        this.config = { ...this.config, floors, active_floor_idx: floors.length - 1 };
+        this._editFloorIdx = floors.length - 1;
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _removeFloor(index) {
+        const floors = [...(this.config.floors || [])];
+        floors.splice(index, 1);
+        this.config = { ...this.config, floors };
+        if (this._editFloorIdx >= floors.length) {
+            this._editFloorIdx = Math.max(0, floors.length - 1);
+        }
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _updateFloorField(index, field, value) {
+        const floors = [...(this.config.floors || [])];
+        floors[index] = { ...floors[index], [field]: value };
+        this.config = { ...this.config, floors };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _editFloorChanged(e) {
+        this._editFloorIdx = parseInt(e.target.value, 10) || 0;
+        this.config = { ...this.config, active_floor_idx: this._editFloorIdx };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
     }
 
     _valueChanged(e) {
@@ -244,114 +367,114 @@ class XiaoshiPadCardEditor extends LitElement {
     }
 
     _addLightButton() {
-        const btns = [...(this.config.light_buttons || [])];
+        const data = this._getData();
+        const btns = [...(data.light_buttons || [])];
         btns.push({ entity: '', color: 'rgb(220,130,0)', shape: '圆形', width: '25px', height: '25px', top: '100px', left: '100px' });
-        this.config = { ...this.config, light_buttons: btns };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+        this._updateData('light_buttons', btns);
     }
 
     _removeLightButton(index) {
-        const btns = [...(this.config.light_buttons || [])];
+        const data = this._getData();
+        const btns = [...(data.light_buttons || [])];
         btns.splice(index, 1);
-        this.config = { ...this.config, light_buttons: btns };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+        this._updateData('light_buttons', btns);
     }
 
     _updateLightButtonField(index, field, value) {
-        const btns = [...(this.config.light_buttons || [])];
+        const data = this._getData();
+        const btns = [...(data.light_buttons || [])];
         btns[index] = { ...btns[index], [field]: value };
-        this.config = { ...this.config, light_buttons: btns };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+        this._updateData('light_buttons', btns);
     }
 
     _addPersonIcon() {
-        const icons = [...(this.config.person_icons || [])];
+        const data = this._getData();
+        const icons = [...(data.person_icons || [])];
         icons.push({ entity: '', width: '20px', height: '20px', color: 'rgb(255,87,34)', top: '100px', left: '100px', condition_mode: '', status_conditions: '' });
-        this.config = { ...this.config, person_icons: icons };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+        this._updateData('person_icons', icons);
     }
 
     _removePersonIcon(index) {
-        const icons = [...(this.config.person_icons || [])];
+        const data = this._getData();
+        const icons = [...(data.person_icons || [])];
         icons.splice(index, 1);
-        this.config = { ...this.config, person_icons: icons };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+        this._updateData('person_icons', icons);
     }
 
     _updatePersonIconField(index, field, value) {
-        const icons = [...(this.config.person_icons || [])];
+        const data = this._getData();
+        const icons = [...(data.person_icons || [])];
         icons[index] = { ...icons[index], [field]: value };
-        this.config = { ...this.config, person_icons: icons };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+        this._updateData('person_icons', icons);
     }
 
     _addDeviceIcon() {
-        const icons = [...(this.config.device_icons || [])];
+        const data = this._getData();
+        const icons = [...(data.device_icons || [])];
         icons.push({ entity: '', width: '25px', height: '25px', top: '100px', left: '100px', popup_cards: '' });
-        this.config = { ...this.config, device_icons: icons };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+        this._updateData('device_icons', icons);
     }
 
     _removeDeviceIcon(index) {
-        const icons = [...(this.config.device_icons || [])];
+        const data = this._getData();
+        const icons = [...(data.device_icons || [])];
         icons.splice(index, 1);
-        this.config = { ...this.config, device_icons: icons };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+        this._updateData('device_icons', icons);
     }
 
     _updateDeviceIconField(index, field, value) {
-        const icons = [...(this.config.device_icons || [])];
+        const data = this._getData();
+        const icons = [...(data.device_icons || [])];
         icons[index] = { ...icons[index], [field]: value };
-        this.config = { ...this.config, device_icons: icons };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+        this._updateData('device_icons', icons);
     }
 
     _addDeviceIconStateImage(index) {
-        const icons = [...(this.config.device_icons || [])];
+        const data = this._getData();
+        const icons = [...(data.device_icons || [])];
         const sis = [...(icons[index].state_images || [])];
         sis.push({ state: '', image: '' });
         icons[index] = { ...icons[index], state_images: sis };
-        this.config = { ...this.config, device_icons: icons };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+        this._updateData('device_icons', icons);
     }
 
     _removeDeviceIconStateImage(index, siIndex) {
-        const icons = [...(this.config.device_icons || [])];
+        const data = this._getData();
+        const icons = [...(data.device_icons || [])];
         const sis = [...(icons[index].state_images || [])];
         sis.splice(siIndex, 1);
         icons[index] = { ...icons[index], state_images: sis };
-        this.config = { ...this.config, device_icons: icons };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+        this._updateData('device_icons', icons);
     }
 
     _updateDeviceIconStateImageField(index, siIndex, field, value) {
-        const icons = [...(this.config.device_icons || [])];
+        const data = this._getData();
+        const icons = [...(data.device_icons || [])];
         const sis = [...(icons[index].state_images || [])];
         sis[siIndex] = { ...sis[siIndex], [field]: value };
         icons[index] = { ...icons[index], state_images: sis };
-        this.config = { ...this.config, device_icons: icons };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+        this._updateData('device_icons', icons);
     }
 
     _addDeviceGlow() {
-        const glows = [...(this.config.device_glows || [])];
+        const data = this._getData();
+        const glows = [...(data.device_glows || [])];
         glows.push({ entity: '', color: 'rgb(33,150,243)', width: '200px', height: '200px', direction: '右下', top: '100px', left: '100px', state_colors: {} });
-        this.config = { ...this.config, device_glows: glows };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+        this._updateData('device_glows', glows);
     }
 
     _removeDeviceGlow(index) {
-        const glows = [...(this.config.device_glows || [])];
+        const data = this._getData();
+        const glows = [...(data.device_glows || [])];
         glows.splice(index, 1);
-        this.config = { ...this.config, device_glows: glows };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+        this._updateData('device_glows', glows);
     }
 
     _updateDeviceGlowField(index, field, value) {
-        const glows = [...(this.config.device_glows || [])];
+        const data = this._getData();
+        const glows = [...(data.device_glows || [])];
         glows[index] = { ...glows[index], [field]: value };
-        this.config = { ...this.config, device_glows: glows };
-        this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this.config }, bubbles: true, composed: true }));
+        this._updateData('device_glows', glows);
     }
 
     _updateDeviceGlowStateColors(index, text) {
@@ -382,6 +505,8 @@ class XiaoshiPadCardEditor extends LitElement {
         if (!this.hass || !this.config) return html``;
         const c = this.config;
         const bgColor = c.bg_color || 'rgb(150,70,70)';
+        // 多楼层模式：数据根指向当前编辑楼层；否则用顶层config
+        const data = c.enable_multi_floor ? this._getData() : c;
 
         const previewStyle = 'background: ' + bgColor;
 
@@ -432,9 +557,46 @@ class XiaoshiPadCardEditor extends LitElement {
                     <input type="text" name="weather_entity" .value="${c.weather_entity || ''}" @change="${this._valueChanged}" placeholder="weather.xxx">
                 </div>
                 ` : ''}
+                <div class="form-row">
+                    <label style="font-weight:bold;font-size:13px;white-space:nowrap;display:flex;align-items:center;gap:4px;">
+                        <input type="checkbox" name="enable_multi_floor" .checked="${c.enable_multi_floor === true}" @change="${this._multiFloorChanged}"> 启用多楼层/多家庭
+                    </label>
+                </div>
+                ${c.enable_multi_floor ? html`
+                <div class="card-section">
+                    <div class="card-section-title">楼层管理</div>
+                    ${(c.floors || []).map((floor, i) => html`
+                        <div class="glow-item">
+                            <div class="glow-item-header">
+                                <span>楼层 ${i + 1}</span>
+                                <button class="glow-remove-btn" @click="${() => this._removeFloor(i)}" ?disabled="${(c.floors || []).length <= 1}">删除</button>
+                            </div>
+                            <div class="glow-row">
+                                <label>编号</label>
+                                <input type="text" .value="${floor.id || ''}" @change="${(e) => this._updateFloorField(i, 'id', e.target.value)}" placeholder="1">
+                            </div>
+                            <div class="glow-row">
+                                <label>名称</label>
+                                <input type="text" .value="${floor.name || ''}" @change="${(e) => this._updateFloorField(i, 'name', e.target.value)}" placeholder="一楼">
+                            </div>
+                            <div class="glow-row">
+                                <label>背景图片</label>
+                                <input type="text" .value="${floor.background_image || ''}" @change="${(e) => this._updateFloorField(i, 'background_image', e.target.value)}" placeholder="/local/UI/背景/彩平图.png">
+                            </div>
+                        </div>
+                    `)}
+                    <button class="add-glow-btn" @click="${this._addFloor}">+ 添加楼层</button>
+                </div>
+                <div class="form-row">
+                    <label>当前编辑楼层</label>
+                    <select @change="${this._editFloorChanged}">
+                        ${(c.floors || []).map((f, i) => html`<option value="${i}" ?selected="${this._editFloorIdx === i}">${f.name || ('楼层'+(i+1))}</option>`)}
+                    </select>
+                </div>
+                ` : ''}
                 <div class="card-section">
                     <div class="card-section-title">灯光按钮</div>
-                    ${(c.light_buttons || []).map((btn, i) => html`
+                    ${(data.light_buttons || []).map((btn, i) => html`
                         <div class="glow-item">
                             <div class="glow-item-header">
                                 <span>灯光 ${i + 1}</span>
@@ -476,7 +638,7 @@ class XiaoshiPadCardEditor extends LitElement {
                 </div>
                 <div class="card-section">
                     <div class="card-section-title">人在图标</div>
-                    ${(c.person_icons || []).map((pi, i) => html`
+                    ${(data.person_icons || []).map((pi, i) => html`
                         <div class="glow-item">
                             <div class="glow-item-header">
                                 <span>人在 ${i + 1}</span>
@@ -526,7 +688,7 @@ class XiaoshiPadCardEditor extends LitElement {
                 </div>
                 <div class="card-section">
                     <div class="card-section-title">设备光效</div>
-                    ${(c.device_glows || []).map((glow, i) => html`
+                    ${(data.device_glows || []).map((glow, i) => html`
                         <div class="glow-item">
                             <div class="glow-item-header">
                                 <span>设备 ${i + 1}</span>
@@ -574,7 +736,7 @@ class XiaoshiPadCardEditor extends LitElement {
                 </div>
                 <div class="card-section">
                     <div class="card-section-title">设备图标</div>
-                    ${(c.device_icons || []).map((di, i) => html`
+                    ${(data.device_icons || []).map((di, i) => html`
                         <div class="glow-item">
                             <div class="glow-item-header">
                                 <span>设备图标 ${i + 1}</span>
@@ -857,6 +1019,7 @@ class XiaoshiPadCard extends LitElement {
     this._lightPopupHassUnsubscribe = null;
     this._lightPopupUpdatePending = false;
     this._lightPopupHass = null;
+    this._currentFloorIdx = 0;
   }
 
   connectedCallback() {
@@ -870,6 +1033,31 @@ class XiaoshiPadCard extends LitElement {
     this._stopWeatherAnimation();
     this._closeLightPopup();
     this._applyKioskMode(false);
+  }
+
+  // ========== 多楼层 ==========
+  _getCurrentFloorData() {
+    if (this.config && this.config.enable_multi_floor && this.config.floors && this.config.floors.length > 0) {
+      const idx = Math.min(this._currentFloorIdx, this.config.floors.length - 1);
+      return this.config.floors[idx] || {};
+    }
+    return null;
+  }
+
+  _switchFloor(idx) {
+    this._currentFloorIdx = idx;
+    const floorData = this._getCurrentFloorData();
+    window.floor = () => (floorData ? (floorData.id || '') : '');
+    window.dispatchEvent(new CustomEvent('floor-changed'));
+    this.requestUpdate();
+  }
+
+  _getFloorScopedArray(key) {
+    if (this.config && this.config.enable_multi_floor && this.config.floors && this.config.floors.length > 0) {
+      const fd = this._getCurrentFloorData();
+      return fd ? (fd[key] || []) : [];
+    }
+    return this.config ? (this.config[key] || []) : [];
   }
 
   _startAutoColorTimer() {
@@ -1118,7 +1306,23 @@ class XiaoshiPadCard extends LitElement {
       btn_area_left: config.btn_area_left || '20px',
       weather_animation: config.weather_animation === true,
       weather_entity: config.weather_entity || '',
+      enable_multi_floor: config.enable_multi_floor === true,
+      floors: (config.floors || []).map(f => ({
+        id: f.id || '',
+        name: f.name || '',
+        background_image: f.background_image || '',
+        light_buttons: f.light_buttons || [],
+        person_icons: f.person_icons || [],
+        device_glows: f.device_glows || [],
+        device_icons: (f.device_icons || []).map(di => ({
+          ...di,
+          image_mode: di.image_mode || '',
+          image_flip: di.image_flip || '',
+          state_images: di.state_images || []
+        }))
+      })),
     };
+    this._currentFloorIdx = (this.config.enable_multi_floor && this.config.floors && this.config.floors.length > 0) ? 0 : (config.active_floor_idx || 0);
   }
 
   set hass(hass) {
@@ -1143,7 +1347,7 @@ class XiaoshiPadCard extends LitElement {
 
   _renderLightButtons() {
     if (!this.hass) return '';
-    return (this.config.light_buttons || []).map(item => {
+    return this._getFloorScopedArray('light_buttons').map(item => {
       if (!item.entity) return '';
       const entity = this.hass.states[item.entity];
       if (!entity) return '';
@@ -1832,7 +2036,7 @@ class XiaoshiPadCard extends LitElement {
 
   _renderPersonIcons() {
     if (!this.hass) return '';
-    return (this.config.person_icons || []).map(item => {
+    return this._getFloorScopedArray('person_icons').map(item => {
       if (!item.entity) return '';
       const entity = this.hass.states[item.entity];
       if (!entity) return '';
@@ -1925,7 +2129,7 @@ class XiaoshiPadCard extends LitElement {
 
   _renderDeviceIcons() {
     if (!this.hass) return '';
-    return (this.config.device_icons || []).map(item => {
+    return this._getFloorScopedArray('device_icons').map(item => {
       // 无实体模式：不需要实体，直接显示图片
       if (item.image_mode === 'no_entity') {
         const width = item.width || '25px';
@@ -2463,7 +2667,20 @@ class XiaoshiPadCard extends LitElement {
     }
     // 注册全局 background() 函数，供子卡片（如 button-card）获取渐变色2
     window.background = () => this._darkenColor(bgColor, 0.75);
-    const bgImage = this.config.background_image || '';
+    
+    // 多楼层数据
+    const multiFloor = this.config.enable_multi_floor === true && this.config.floors && this.config.floors.length > 0;
+    const floorData = multiFloor ? this._getCurrentFloorData() : null;
+    const bgImage = multiFloor && floorData ? (floorData.background_image || '') : (this.config.background_image || '');
+    if (multiFloor && floorData) {
+      window.floor = () => (floorData.id || '');
+      window.dispatchEvent(new CustomEvent('floor-changed'));
+    }
+    const lightButtons = multiFloor && floorData ? (floorData.light_buttons || []) : (this.config.light_buttons || []);
+    const personIcons = multiFloor && floorData ? (floorData.person_icons || []) : (this.config.person_icons || []);
+    const deviceGlows = multiFloor && floorData ? (floorData.device_glows || []) : (this.config.device_glows || []);
+    const deviceIcons = multiFloor && floorData ? (floorData.device_icons || []) : (this.config.device_icons || []);
+    const floors = multiFloor ? this.config.floors : [];
 
     const mode = this.config ? this.config.theme : 'sun';
     // 黑主题：白透明背景；白主题：黑透明背景
@@ -2481,7 +2698,7 @@ class XiaoshiPadCard extends LitElement {
         @pointerleave="${this._onContainerPointerLeave}">
         ${bgImage ? html`<div class="bg-image" style="background-image: url('${bgImage}');"></div>` : ''}
         ${this.config.weather_animation ? html`<canvas id="weather-canvas" class="weather-canvas"></canvas>` : ''}
-        ${(this.config.device_glows || []).map(item => {
+        ${this._getFloorScopedArray('device_glows').map(item => {
           const glowStyle = this._computeDeviceGlowStyle(item);
           if (!glowStyle) return '';
           return html`<div class="device-glow" style="top: ${item.top || '100px'}; left: ${item.left || '100px'}; width: ${item.width || '200px'}; height: ${item.height || '200px'}; background: ${glowStyle};"></div>`;
@@ -2496,7 +2713,15 @@ class XiaoshiPadCard extends LitElement {
           <button class="ctrl-btn" style="color: ${themeBtnColor}; --btn-bg: ${btnBg}" @click="${this._toggleTheme}" title="切换主题">
             <ha-icon icon="${themeBtnIcon}"></ha-icon>
           </button>
+        ${multiFloor ? html`
+          ${floors.map((f, i) => html`
+            <button class="ctrl-btn" style="color: #fff; --btn-bg: ${i === this._currentFloorIdx ? 'rgba(3,169,244,0.6)' : btnBg}; font-size:12px; width:auto; padding:0 12px; min-width: 40px;" @click="${() => this._switchFloor(i)}" title="${f.name || ''}">
+              ${f.name || ('楼层'+(i+1))}
+            </button>
+          `)}
         </div>
+        ` : ''}
+
       </div> 
     `;
   }

@@ -284,6 +284,11 @@ class XiaoshiDynamicPadCardEditor extends LitElement {
                     </select>
                 </div>
 
+                <div class="form-row">
+                    <label>楼层编号</label>
+                    <input type="text" name="floor" .value="${c.floor || ''}" @change="${this._valueChanged}" placeholder="留空则不限制，例如: 1" />
+                </div>
+
                 ${c.active_animation !== 'false' ? html`
                 <div class="form-row">
                     <label>动画效果</label>
@@ -449,8 +454,17 @@ class XiaoshiDynamicPadCard extends LitElement {
         this.config = config;
     }
 
+    connectedCallback() {
+        super.connectedCallback();
+        this.__floorHandler = () => this.requestUpdate();
+        window.addEventListener('floor-changed', this.__floorHandler);
+    }
+
     disconnectedCallback() {
         super.disconnectedCallback();
+        if (this.__floorHandler) {
+            window.removeEventListener('floor-changed', this.__floorHandler);
+        }
     }
 
     getCardSize() {
@@ -625,6 +639,19 @@ class XiaoshiDynamicPadCard extends LitElement {
 
     render() {
         if (!this.hass || !this.config) return html``;
+
+        if (this.config.floor) {
+            if (typeof window.floor === 'function') {
+                try {
+                    if (String(window.floor()) !== String(this.config.floor)) {
+                        return html``;
+                    }
+                } catch(e) {
+                    console.error('楼层判断出错:', e);
+                    return html``;
+                }
+            }
+        }
 
         const areas = this.config.areas || [];
         if (areas.length === 0) return html``;

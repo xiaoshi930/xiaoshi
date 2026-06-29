@@ -146,6 +146,17 @@ class XiaoshiWeatherPadEditor extends LitElement {
         </div>
         
         <div class="form-group">
+          <label>楼层编号（留空则不限制显示）</label>
+          <input 
+            type="text"
+            @change=${this._entityChanged}
+            .value=${this.config.floor || ''}
+            name="floor"
+            placeholder="例如: 1"
+          />
+        </div>
+        
+        <div class="form-group">
           <label>弹窗宽度：支持像素(px)、百分比(%)和auto，默认auto</label>
           <input
             type="text"
@@ -419,6 +430,8 @@ class XiaoshiWeatherBase extends LitElement {
     super.connectedCallback();
     this._parseAttributeData();
     this._updateEntities();
+    this.__floorHandler = () => this.requestUpdate();
+    window.addEventListener('floor-changed', this.__floorHandler);
   }
 
   updated(changedProperties) {
@@ -1161,6 +1174,9 @@ class XiaoshiWeatherPadCard extends XiaoshiWeatherBase {
   
   disconnectedCallback() {
     super.disconnectedCallback();
+    if (this.__floorHandler) {
+      window.removeEventListener('floor-changed', this.__floorHandler);
+    }
   }
 
   _getWeekday(date) {
@@ -1712,6 +1728,19 @@ class XiaoshiWeatherPadCard extends XiaoshiWeatherBase {
   }
 
   render() {
+    if (this.config.floor) {
+      if (typeof window.floor === 'function') {
+        try {
+          if (String(window.floor()) !== String(this.config.floor)) {
+            return html``;
+          }
+        } catch(e) {
+          console.error('楼层判断出错:', e);
+          return html``;
+        }
+      }
+    }
+
     if (!this.entity || this.entity.state === 'unavailable' || this.entity.state === '无搜索城市') {
       return html`<div class="unavailable"></div>`;
     }

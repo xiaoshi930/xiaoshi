@@ -185,6 +185,10 @@ class XiaoshiAvatarPadCardEditor extends LitElement {
                     <input type="number" name="track_hours" .value="${c.track_hours || 24}" @change="${this._valueChanged}" placeholder="24" style="max-width:80px" min="1" max="144" />
                     <span style="font-size:12px;color:#888;">小时</span>
                 </div>
+                <div class="form-row">
+                    <label>楼层编号</label>
+                    <input type="text" name="floor" .value="${c.floor || ''}" @change="${this._valueChanged}" placeholder="留空则不限制，例如: 1" />
+                </div>
 
                 <div class="form-row" style="flex-direction:column;align-items:stretch;">
                     <label style="margin-bottom:4px;">附加卡片配置（YAML格式，参照balance-button的other_cards）</label>
@@ -467,8 +471,17 @@ class XiaoshiAvatarPadCard extends LitElement {
         this.config = config;
     }
 
+    connectedCallback() {
+        super.connectedCallback();
+        this.__floorHandler = () => this.requestUpdate();
+        window.addEventListener('floor-changed', this.__floorHandler);
+    }
+
     disconnectedCallback() {
         super.disconnectedCallback();
+        if (this.__floorHandler) {
+            window.removeEventListener('floor-changed', this.__floorHandler);
+        }
     }
 
     getCardSize() {
@@ -880,6 +893,19 @@ class XiaoshiAvatarPadCard extends LitElement {
 
     render() {
         if (!this.hass || !this.config) return html``;
+
+        if (this.config.floor) {
+            if (typeof window.floor === 'function') {
+                try {
+                    if (String(window.floor()) !== String(this.config.floor)) {
+                        return html``;
+                    }
+                } catch(e) {
+                    console.error('楼层判断出错:', e);
+                    return html``;
+                }
+            }
+        }
 
         const pc = this._getPersonConfig();
         if (!pc.person_entity) return html``;
