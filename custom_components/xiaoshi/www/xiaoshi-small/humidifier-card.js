@@ -136,152 +136,30 @@ class XiaoshiSmallHumidifierCardEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .card-config {
-        padding: 16px;
-      }
-      .row {
-        margin-bottom: 16px;
-      }
-      .label {
-        margin-bottom: 8px;
-        font-weight: bold;
-      }
-      .buttons-row {
-        display: flex;
-        align-items: center;
-        margin-top: 8px;
-      }
-      .add-button {
-        margin-left: 8px;
-      }
-
-      .entity-selector {
-        position: relative;
-      }
-
-      .entity-search-input {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-      }
-
-      .help-text {
-        font-size: 0.85em;
-        color: #666;
-        margin-top: 4px;
-      }
-
-      .entity-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        height: 300px;
-        overflow-y: auto;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        z-index: 1000;
-        margin-top: 2px;
-      }
-
-      .entity-option {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px 12px;
-        cursor: pointer;
-        border-bottom: 1px solid #eee;
-      }
-
-      .entity-option:hover {
-        background: #f5f5f5;
-      }
-
-      .entity-option.selected {
-        background: #e3f2fd;
-      }
-
-      .entity-info {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 1;
-      }
-
-      .entity-details {
-        flex: 1;
-      }
-
-      .entity-name {
-        font-weight: 500;
-        font-size: 14px;
-        color: #000;
-      }
-
-      .entity-id {
-        font-size: 12px;
-        color: #000;
-        font-family: monospace;
-      }
-
-      .check-icon {
-        color: #4CAF50;
-      }
-
-      .no-results {
-        padding: 12px;
-        text-align: center;
-        color: #666;
-        font-style: italic;
-      }
-
-      .entity-selector-with-remove {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        margin-bottom: 8px;
-      }
-
-      .entity-selector-with-remove .entity-selector {
-        flex: 1;
-      }
-
-      .remove-button {
-        background: #f44336;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        width: 30px;
-        height: 30px;
-        min-width: 30px;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        flex-shrink: 0;
-        margin-top: 0;
-      }
-
-      .remove-button:hover {
-        background: #d32f2f;
-      }
-
-      .remove-button ha-icon {
-        --mdc-icon-size: 20px;
-      }
-
-      .hint {
-        font-size: 0.85em;
-        color: #888;
-        margin-top: 4px;
-      }
-    `;
+    return css`      .card-config { padding: 16px; }
+      .row { margin-bottom: 16px; }
+      .label { margin-bottom: 8px; font-weight: bold; }
+      .buttons-row { display: flex; align-items: center; margin-top: 8px; }
+      .add-button { margin-left: 8px; }
+      .entity-selector { position: relative; }
+      .entity-search-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+      .help-text { font-size: 0.85em; color: #666; margin-top: 4px; }
+      .entity-dropdown { position: absolute; top: 100%; left: 0; right: 0; height: 300px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px; }
+      .entity-option { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; }
+      .entity-option:hover { background: #f5f5f5; }
+      .entity-option.selected { background: #e3f2fd; }
+      .entity-info { display: flex; align-items: center; gap: 8px; flex: 1; }
+      .entity-details { flex: 1; }
+      .entity-name { font-weight: 500; font-size: 14px; color: #000; }
+      .entity-id { font-size: 12px; color: #000; font-family: monospace; }
+      .check-icon { color: #4CAF50; }
+      .no-results { padding: 12px; text-align: center; color: #666; font-style: italic; }
+      .entity-selector-with-remove { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+      .entity-selector-with-remove .entity-selector { flex: 1; }
+      .remove-button { background: #f44336; color: white; border: none; border-radius: 4px; width: 30px; height: 30px; min-width: 30px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-top: 0; }
+      .remove-button:hover { background: #d32f2f; }
+      .remove-button ha-icon { --mdc-icon-size: 20px; }
+      .hint { font-size: 0.85em; color: #888; margin-top: 4px; }`;
   }
 
   render() {
@@ -460,241 +338,31 @@ class XiaoshiSmallHumidifierCard extends LitElement {
   }
   
   static get styles() { 
-    return css`
-      :host {
-        display: block;
-        max-width: 500px;
-        margin: 0 auto;
-      }
-      
-      .card {
-        position: relative;
-        border-radius: 12px;
-        overflow: visible;
-        box-sizing: border-box;
-      }
-      
-      .content-container {
-        position: relative;
-        z-index: 1;
-        height: 100%;
-        display: grid;
-        grid-template-areas: 
-            "icon info right";
-        grid-template-columns: 56px 1fr auto;
-        grid-template-rows: 1fr;
-        align-items: center;
-        gap: 12px;
-        padding: 8px 12px;
-      }
-
-      .active-gradient {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, var(--linear-color), transparent 50%);
-        opacity: 0.5;
-        z-index: 0;
-        border-radius: 12px;
-      }
-
-      .icon-area {
-        grid-area: icon;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        z-index: 2;
-      }
-
-      .main-icon-container {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: var(--icon-bg, transparent);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 0 8px var(--shadow-color, rgba(0,0,0,0.25));
-      }
-
-      .main-icon {
-        --mdc-icon-size: 28px;
-        transition: transform 0.3s ease;
-      }
-
-      .info-area {
-        grid-area: info;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 4px;
-        overflow: visible;
-        position: relative;
-        z-index: 2;
-      }
-
-      .name-text {
-        font-size: 15px;
-        font-weight: bold;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .status-text {
-        font-size: 12px;
-        opacity: 0.7;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .right-section {
-        grid-area: right;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        position: relative;
-        z-index: 1;
-        padding-right: 48px;
-      }
-
-      .speed-area {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: opacity 0.3s ease, max-width 0.3s ease;
-        overflow: visible;
-        max-width: 200px;
-        opacity: 1;
-      }
-
-      .speed-area.hidden {
-        max-width: 0;
-        opacity: 0;
-        overflow: hidden;
-        padding: 0;
-        gap: 0;
-      }
-
-      .speed-card {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: transparent;
-        border-radius: 20px;
-        padding: 6px 14px;
-        box-shadow: 0 0 8px var(--shadow-color, rgba(0,0,0,0.25));
-      }
-
-      .speed-adjust-button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--speed-control-color);
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        cursor: default;
-      }
-
-      .speed-display {
-        font-size: 15px;
-        font-weight: bold;
-        min-width: 30px;
-        text-align: center;
-        color: var(--speed-control-color, #333);
-      }
-
-      .power-area {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 3;
-      }
-
-      .power-button {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 0 8px var(--shadow-color, rgba(0,0,0,0.25));
-        cursor: default;
-      }
-
-      .power-icon {
-        --mdc-icon-size: 22px;
-        transition: all 0.3s ease;
-      }
-
-      .modes-area {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        transition: opacity 0.3s ease, max-width 0.3s ease;
-        overflow: visible;
-        max-width: 200px;
-        opacity: 1;
-      }
-
-      .modes-area.hidden {
-        max-width: 0;
-        opacity: 0;
-        padding: 0;
-        gap: 0;
-        overflow: hidden;
-      }
-
-      .mode-btn {
-        width: 32px;
-        height: auto;
-        border-radius: 16px;
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        gap: 2px;
-        padding: 4px 2px;
-      }
-
-      .mode-btn:hover {
-        background: rgba(255,255,255,0.1);
-      }
-
-      .mode-btn.active {
-      }
-
-      .mode-btn-text {
-        font-size: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 32px;
-        text-align: center;
-        line-height: 1;
-      }
-  `;
+    return css`      :host { display: block; max-width: 500px; margin: 0 auto; }
+      .card { position: relative; border-radius: 12px; overflow: visible; box-sizing: border-box; }
+      .content-container { position: relative; z-index: 1; height: 100%; display: grid; grid-template-areas: "icon info right"; grid-template-columns: 56px 1fr auto; grid-template-rows: 1fr; align-items: center; gap: 12px; padding: 8px 12px; }
+      .active-gradient { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, var(--linear-color), transparent 50%); opacity: 0.5; z-index: 0; border-radius: 12px; }
+      .icon-area { grid-area: icon; display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; }
+      .main-icon-container { width: 40px; height: 40px; border-radius: 50%; background: var(--icon-bg, transparent); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 8px var(--shadow-color, rgba(0,0,0,0.25)); }
+      .main-icon { --mdc-icon-size: 28px; transition: transform 0.3s ease; }
+      .info-area { grid-area: info; display: flex; flex-direction: column; justify-content: center; gap: 4px; overflow: visible; position: relative; z-index: 2; }
+      .name-text { font-size: 15px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .status-text { font-size: 12px; opacity: 0.7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .right-section { grid-area: right; display: flex; align-items: center; gap: 8px; position: relative; z-index: 1; padding-right: 48px; }
+      .speed-area { display: flex; align-items: center; justify-content: center; transition: opacity 0.3s ease, max-width 0.3s ease; overflow: visible; max-width: 200px; opacity: 1; }
+      .speed-area.hidden { max-width: 0; opacity: 0; overflow: hidden; padding: 0; gap: 0; }
+      .speed-card { display: flex; align-items: center; gap: 8px; background: transparent; border-radius: 20px; padding: 6px 14px; box-shadow: 0 0 8px var(--shadow-color, rgba(0,0,0,0.25)); }
+      .speed-adjust-button { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; color: var(--speed-control-color); width: 18px; height: 18px; border-radius: 50%; cursor: default; }
+      .speed-display { font-size: 15px; font-weight: bold; min-width: 30px; text-align: center; color: var(--speed-control-color, #333); }
+      .power-area { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; z-index: 3; }
+      .power-button { width: 40px; height: 40px; border-radius: 50%; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 8px var(--shadow-color, rgba(0,0,0,0.25)); cursor: default; }
+      .power-icon { --mdc-icon-size: 22px; transition: all 0.3s ease; }
+      .modes-area { display: flex; align-items: center; gap: 4px; transition: opacity 0.3s ease, max-width 0.3s ease; overflow: visible; max-width: 200px; opacity: 1; }
+      .modes-area.hidden { max-width: 0; opacity: 0; padding: 0; gap: 0; overflow: hidden; }
+      .mode-btn { width: 32px; height: auto; border-radius: 16px; background: transparent; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s ease; flex-shrink: 0; gap: 2px; padding: 4px 2px; }
+      .mode-btn:hover { background: rgba(255,255,255,0.1); }
+      .mode-btn.active { }
+      .mode-btn-text { font-size: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 32px; text-align: center; line-height: 1; }`;
   }
 
   constructor() {

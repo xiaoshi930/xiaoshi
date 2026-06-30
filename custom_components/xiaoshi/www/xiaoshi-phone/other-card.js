@@ -12,19 +12,13 @@ window.customCards.push({
     preview: true
 }); 
 const PRESET_ON_STATES = [
-    // 通用
     'on', 'open', 'opening','home',  'active', 'running',
     'detected', 'occupied', 'unlocked', 'power_on', '开机','resume',
-    // 媒体
     'Playing','playing', '播放中',
-    // 空调/HVAC
     'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
     'auto', 'heat_cool', 'fan_only',
-    // 人在
     '有人', 'one',
-    // 扫地机器人
     '正在拖地','正在扫地','启动','cleaning',
-    // 厨房
     '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm',"低档","中档","高档"
 ];
 
@@ -738,190 +732,39 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        min-height: 500px;
-      }
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      .form-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .form-row label {
-        flex-shrink: 0;
-        white-space: nowrap;
-        min-width: fit-content;
-      }
+    return css`      .form { display: flex; flex-direction: column; gap: 10px; min-height: 500px; }
+      .form-group { display: flex; flex-direction: column; gap: 5px; }
+      .form-row { display: flex; align-items: center; gap: 8px; }
+      .form-row label { flex-shrink: 0; white-space: nowrap; min-width: fit-content; }
       .form-row input,
       .form-row select,
       .form-row .entity-selector-with-remove,
-      .form-row .entity-selector {
-        flex: 1;
-        min-width: 0;
-      }
-      label {
-        font-weight: bold;
-      }
-      select, input, textarea {
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-      }
-      textarea {
-        min-height: 80px;
-        resize: vertical;
-      }
-      .help-text {
-        font-size: 0.85em;
-        color: #666;
-        margin-top: 4px;
-      }
-
-      .entity-selector {
-        position: relative;
-      }
-
-      .entity-search-input {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-      }
-
-      .entity-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        height: 300px;
-        overflow-y: auto;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        z-index: 1000;
-        margin-top: 2px;
-      }
-
-      .entity-option {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px 12px;
-        cursor: pointer;
-        border-bottom: 1px solid #eee;
-      }
-
-      .entity-option:hover {
-        background: #f5f5f5;
-      }
-
-      .entity-option.selected {
-        background: #e3f2fd;
-      }
-
-      .entity-info {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 1;
-      }
-
-      .entity-details {
-        flex: 1;
-      }
-
-      .entity-name {
-        font-weight: 500;
-        font-size: 12px;
-        color: #000;
-      }
-
-      .entity-id {
-        font-size: 12px;
-        color: #000;
-        font-family: monospace;
-      }
-
-      .check-icon {
-        color: #4CAF50;
-      }
-
-      .no-results {
-        padding: 12px;
-        text-align: center;
-        color: #666;
-        font-style: italic;
-      }
-
-      .entity-selector-with-remove {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        margin-bottom: 8px;
-      }
-
-      .entity-selector-with-remove .entity-selector {
-        flex: 1;
-      }
-
-      .remove-button {
-        background: #f44336;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        width: 30px;
-        height: 30px;
-        min-width: 30px;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        flex-shrink: 0;
-        margin-top: 0;
-      }
-
-      .remove-button:hover {
-        background: #d32f2f;
-      }
-
-      .remove-button ha-icon {
-        --mdc-icon-size: 20px;
-      }
-
-      .buttons-row {
-        display: flex;
-        align-items: center;
-        margin-top: 8px;
-      }
-      .add-button {
-        margin-left: 8px;
-        border: 1px solid red;
-        border-radius: 4px;
-        padding: 8px;
-        transition: all 0.2s ease;
-      }
-      .add-button:hover {
-        background-color: rgba(255, 0, 0, 0.1);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(255, 0, 0, 0.2);
-      }
-      .hint {
-        font-size: 0.85em;
-        color: #888;
-        margin-top: 4px;
-      }
-    `;
+      .form-row .entity-selector { flex: 1; min-width: 0; }
+      label { font-weight: bold; }
+      select, input, textarea { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+      textarea { min-height: 80px; resize: vertical; }
+      .help-text { font-size: 0.85em; color: #666; margin-top: 4px; }
+      .entity-selector { position: relative; }
+      .entity-search-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+      .entity-dropdown { position: absolute; top: 100%; left: 0; right: 0; height: 300px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px; }
+      .entity-option { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; }
+      .entity-option:hover { background: #f5f5f5; }
+      .entity-option.selected { background: #e3f2fd; }
+      .entity-info { display: flex; align-items: center; gap: 8px; flex: 1; }
+      .entity-details { flex: 1; }
+      .entity-name { font-weight: 500; font-size: 12px; color: #000; }
+      .entity-id { font-size: 12px; color: #000; font-family: monospace; }
+      .check-icon { color: #4CAF50; }
+      .no-results { padding: 12px; text-align: center; color: #666; font-style: italic; }
+      .entity-selector-with-remove { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+      .entity-selector-with-remove .entity-selector { flex: 1; }
+      .remove-button { background: #f44336; color: white; border: none; border-radius: 4px; width: 30px; height: 30px; min-width: 30px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-top: 0; }
+      .remove-button:hover { background: #d32f2f; }
+      .remove-button ha-icon { --mdc-icon-size: 20px; }
+      .buttons-row { display: flex; align-items: center; margin-top: 8px; }
+      .add-button { margin-left: 8px; border: 1px solid red; border-radius: 4px; padding: 8px; transition: all 0.2s ease; }
+      .add-button:hover { background-color: rgba(255, 0, 0, 0.1); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(255, 0, 0, 0.2); }
+      .hint { font-size: 0.85em; color: #888; margin-top: 4px; }`;
   }
 
   render() {
@@ -1899,512 +1742,63 @@ class XiaoshiPhoneOtherCard extends LitElement {
   }
   
   static get styles() { 
-    return css`
-      :host {
-        display: block;
-        contain: content;
-        max-width: 500px;
-        margin: 0 auto;
-      }
-      
-      .card {
-        position: relative;
-        border-radius: 12px;
-        overflow: hidden;
-        box-sizing: border-box;
-        padding-bottom: 3px;
-      }
-      
-      .content-container {
-        position: relative;
-        z-index: 1;
-        height: 100%;
-        display: grid;
-        grid-template-areas: 
-            "name status power"
-            "icon br1 br1"
-            "icon spacer1 spacer1"
-            "icon br2 br2"
-            "icon spacer2 spacer2"
-            "icon br3 br3"
-            "icon spacer3 spacer3"
-            "icon br4 br4"
-            "icon spacer4 spacer4"
-            "icon br5 br5"
-            "icon spacer5 spacer5"
-            "icon br6 br6"
-            "icon spacer6 spacer6"
-            "icon br7 br7"
-            "icon spacer7 spacer7"
-            "icon br8 br8"
-            "icon spacer8 spacer8"
-            "icon br9 br9"
-            "icon spacer9 spacer9"
-            "icon br10 br10"
-            "icon spacer10 spacer10"
-            "icon timer timer"
-            "icon extra extra"
-            "icon extra2 extra2"
-            "a a a"; 
-        grid-template-columns: 25% 60% 13%;
-      }
-
-      .active-gradient {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, var(--linear-color), transparent 50%);
-        opacity: 0.4;
-        z-index: 0;
-      }
-
-      #chart-container {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 20%;
-        overflow: hidden;
-        z-index: 0;
-        pointer-events: none;
-      }
-
-      .history-btn {
-        position: absolute;
-        bottom: 6px;
-        left: 6px;
-        z-index: 10;
-        width: 28px;
-        height: 28px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: default;
-        transition: all 0.3s ease;
-        background: rgba(180, 180, 180, 0.2);
-      }
-      .history-btn:hover {
-        opacity: 0.85;
-        transform: scale(1.05);
-      }
-
-      .name-area {
-        grid-area: name;
-        display: flex;
-        align-items: center;
-        font-size: 16px;
-        font-weight: bold;
-        overflow: hidden;
-        text-overflow: clip;
-        white-space: nowrap;
-        margin-left: 10px; 
-      }
-      
-      .status-area {
-        grid-area: status;
-        display: flex;
-        align-items: center;
-        font-size: 12px;
-        overflow: hidden;
-        text-overflow: clip;
-        white-space: nowrap;
-        margin-left: 5px; 
-        gap: 1px;
-        font-weight: bold;
-      }
-      .temp-adjust-container {
-        display: inline-flex;
-        align-items: center;
-        gap: 1px;
-      }
-      .temp-adjust-button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--button);
-        width: 24px;
-        height: 24px;
-        border-radius: 5px;
-        cursor: default;
-      }
-
-      .temp-display {
-        font-size: 12px;
-        min-width: 35px;
-        text-align: center;
-        color: var(--button);
-      }
-      .current-temp {
-        font-size: 12px;
-        margin-left: 5px;
-      }
-      .power-area {
-        grid-area: power;
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-      }
-      
-      .power-button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        width: 100%;
-        height: 35px;
-        border-radius: 5px;
-        cursor: default;
-      }
-      
-      .power-icon {
-        --mdc-icon-size: 30px;
-        transition: all 0.3s ease;
-      }
-
-      .icon-area {
-        grid-area: icon;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-      }
-
-      .main-icon-container {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-      }
-      
-      .main-icon {
-        --mdc-icon-size: 50px;
-        margin-top: -3px;
-        transition: transform 0.3s ease;
-      }
-
-      .timer-area, .extra-area, .extra2-area {
-        display: flex;
-        gap: 5px;
-        width: 100%;
-        height: 25px;
-        margin-bottom: 5px;
-      }
-      
-      .timer-area {
-        grid-area: timer;
-        display: grid;
-        grid-template-columns: repeat(8, 1fr);
-        gap: 5px;
-      }
-
-      .button-row-area {
-        display: grid;
-        gap: 5px;
-      }
-      
-      .func-button {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background-color: var(--button-bg);
-        color: var(--button-fg);
-        border: none;
-        border-radius: 8px;
-        cursor: default;
-        min-width: 0;
-        overflow: hidden;
-        padding: 2px 0;
-        height: 25px;
-        min-height: unset;
-      }
-      .func-button.has-icon {
-        height: 25px;
-        padding: 2px 0px;
-        flex-direction: row;
-        gap: 3px;
-      }
+    return css`      :host { display: block; contain: content; max-width: 500px; margin: 0 auto; }
+      .card { position: relative; border-radius: 12px; overflow: hidden; box-sizing: border-box; padding-bottom: 3px; }
+      .content-container { position: relative; z-index: 1; height: 100%; display: grid; grid-template-areas: "name status power" "icon br1 br1" "icon spacer1 spacer1" "icon br2 br2" "icon spacer2 spacer2" "icon br3 br3" "icon spacer3 spacer3" "icon br4 br4" "icon spacer4 spacer4" "icon br5 br5" "icon spacer5 spacer5" "icon br6 br6" "icon spacer6 spacer6" "icon br7 br7" "icon spacer7 spacer7" "icon br8 br8" "icon spacer8 spacer8" "icon br9 br9" "icon spacer9 spacer9" "icon br10 br10" "icon spacer10 spacer10" "icon timer timer" "icon extra extra" "icon extra2 extra2" "a a a"; grid-template-columns: 25% 60% 13%; }
+      .active-gradient { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, var(--linear-color), transparent 50%); opacity: 0.4; z-index: 0; }
+      #chart-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 20%; overflow: hidden; z-index: 0; pointer-events: none; }
+      .history-btn { position: absolute; bottom: 6px; left: 6px; z-index: 10; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background: rgba(180, 180, 180, 0.2); }
+      .history-btn:hover { opacity: 0.85; transform: scale(1.05); }
+      .name-area { grid-area: name; display: flex; align-items: center; font-size: 16px; font-weight: bold; overflow: hidden; text-overflow: clip; white-space: nowrap; margin-left: 10px; }
+      .status-area { grid-area: status; display: flex; align-items: center; font-size: 12px; overflow: hidden; text-overflow: clip; white-space: nowrap; margin-left: 5px; gap: 1px; font-weight: bold; }
+      .temp-adjust-container { display: inline-flex; align-items: center; gap: 1px; }
+      .temp-adjust-button { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; color: var(--button); width: 24px; height: 24px; border-radius: 5px; cursor: default; }
+      .temp-display { font-size: 12px; min-width: 35px; text-align: center; color: var(--button); }
+      .current-temp { font-size: 12px; margin-left: 5px; }
+      .power-area { grid-area: power; display: flex; justify-content: flex-end; align-items: center; }
+      .power-button { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: flex-end; width: 100%; height: 35px; border-radius: 5px; cursor: default; }
+      .power-icon { --mdc-icon-size: 30px; transition: all 0.3s ease; }
+      .icon-area { grid-area: icon; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+      .main-icon-container { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
+      .main-icon { --mdc-icon-size: 50px; margin-top: -3px; transition: transform 0.3s ease; }
+      .timer-area, .extra-area, .extra2-area { display: flex; gap: 5px; width: 100%; height: 25px; margin-bottom: 5px; }
+      .timer-area { grid-area: timer; display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }
+      .button-row-area { display: grid; gap: 5px; }
+      .func-button { display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--button-bg); color: var(--button-fg); border: none; border-radius: 8px; cursor: default; min-width: 0; overflow: hidden; padding: 2px 0; height: 25px; min-height: unset; }
+      .func-button.has-icon { height: 25px; padding: 2px 0px; flex-direction: row; gap: 3px; }
       .func-button.has-icon .func-button-value,
-      .func-button.has-icon .func-button-text {
-        font-size: 9px;
-      }
-
-      .func-button-icon {
-        --mdc-icon-size: 15px;
-        height: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .func-button-text {
-        font-size: 10px;
-        line-height: 1.2;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: clip;
-        max-width: 100%;
-      }
-
-      .func-button-value {
-        font-size: 11px;
-        font-weight: bold;
-        line-height: 1.2;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: clip;
-        max-width: 100%;
-      }
-
+      .func-button.has-icon .func-button-text { font-size: 9px; }
+      .func-button-icon { --mdc-icon-size: 15px; height: 16px; display: flex; align-items: center; justify-content: center; }
+      .func-button-text { font-size: 10px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: clip; max-width: 100%; }
+      .func-button-value { font-size: 11px; font-weight: bold; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: clip; max-width: 100%; }
       /* 滑动条模式（sun_slider）样式 */
-      .sun-slider-wrapper {
-        display: flex;
-        align-items: center;
-        width: 100%;
-        height: 100%;
-        box-sizing: border-box;
-        cursor: default;
-      }
-      .sun-slider-wrapper input[type="range"] {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 100%;
-        height: 14px;
-        background: transparent;
-        cursor: pointer;
-        margin: 0;
-        padding: 0;
-      }
-      .sun-slider-wrapper input[type="range"]::-webkit-slider-runnable-track {
-        height: 25px;
-        border-radius: 8px;
-        background: linear-gradient(to right, var(--slider-color, #4caf50) var(--slider-pct, 0%), var(--slider-bg, #333) var(--slider-pct, 0%));
-      }
-      .sun-slider-wrapper input[type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 12px;
-        height: 12px;
-        margin-top: 7px;
-        border-radius: 50%;
-        background: white;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-        cursor: grab;
-      }
-      .sun-slider-wrapper input[type="range"]::-moz-range-track {
-        height: 25px;
-        border-radius: 8px;
-        background: var(--slider-bg, #333);
-      }
-      .sun-slider-wrapper input[type="range"]::-moz-range-progress {
-        height: 25px;
-        border-radius: 8px;
-        background: var(--slider-color, #4caf50);
-      }
-      .sun-slider-wrapper input[type="range"]::-moz-range-thumb {
-        width: 12px;
-        height: 12px;
-        margin-top: 7px;
-        border-radius: 50%;
-        background: white;
-        border: none;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-        cursor: grab;
-      }
-
+      .sun-slider-wrapper { display: flex; align-items: center; width: 100%; height: 100%; box-sizing: border-box; cursor: default; }
+      .sun-slider-wrapper input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 14px; background: transparent; cursor: pointer; margin: 0; padding: 0; }
+      .sun-slider-wrapper input[type="range"]::-webkit-slider-runnable-track { height: 25px; border-radius: 8px; background: linear-gradient(to right, var(--slider-color, #4caf50) var(--slider-pct, 0%), var(--slider-bg, #333) var(--slider-pct, 0%)); }
+      .sun-slider-wrapper input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; margin-top: 7px; border-radius: 50%; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.4); cursor: grab; }
+      .sun-slider-wrapper input[type="range"]::-moz-range-track { height: 25px; border-radius: 8px; background: var(--slider-bg, #333); }
+      .sun-slider-wrapper input[type="range"]::-moz-range-progress { height: 25px; border-radius: 8px; background: var(--slider-color, #4caf50); }
+      .sun-slider-wrapper input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; margin-top: 7px; border-radius: 50%; background: white; border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); cursor: grab; }
       /* 数值模式滑块样式 */
-      .num-slider input[type="range"] {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 90%;
-        height: 4px;
-        margin: 0 0 6px 0;
-        border-radius: 2px;
-        background: linear-gradient(to right, var(--slider-color, #4caf50) var(--slider-pct, 0%), #fff var(--slider-pct, 0%));
-        outline: none;
-        cursor: pointer;
-      }
-      .num-slider input[type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: white;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-        cursor: grab;
-      }
-      .num-slider input[type="range"]::-moz-range-thumb {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: white;
-        border: none;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-        cursor: grab;
-      }
-      .num-slider input[type="range"]::-moz-range-track {
-        height: 4px;
-        border-radius: 2px;
-        background: var(--slider-bg, #555);
-      }
-      .num-slider input[type="range"]::-moz-range-progress {
-        height: 4px;
-        border-radius: 2px;
-        background: var(--slider-color, #4caf50);
-      }
-
-      .select-options-row {
-        display: flex;
-        gap: 3px;
-        width: 90%;
-      }
-
-      .select-option-btn {
-        flex: 1;
-        padding: 2px 4px;
-        border: none;
-        border-radius: 5px;
-        font-size: 9px;
-        line-height: 1.2;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: clip;
-        cursor: pointer;
-        background: rgba(255,255,255,0.1);
-        color: var(--button-fg);
-        text-align: center;
-        min-width: 0;
-      }
-
-      .select-option-btn.active-option {
-        color: var(--button-bg);
-        font-weight: bold;
-      }
-      
-      .timer-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: var(--button-bg);
-        color: var(--button-fg);
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 10px;
-        min-width: 0;
-        overflow: hidden;
-        padding: 0 2px;
-        cursor: default;
-      }
-      
-      .timer-display {
-        grid-column: span 2;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: var(--button-bg);
-        color: var(--button-fg);
-        border-radius: 8px;
-        font-size: 10px;
-        font-weight: bold;
-        font-family: monospace;
-      }
-      
-      .extra-area {
-        grid-area: extra;
-        display: grid;
-        gap: 5px;
-      }
-
-      .extra2-area {
-        grid-area: extra2;
-        display: grid;
-        gap: 5px;
-      }
-
-      .extra-button {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background-color: rgb(0,0,0,0);
-        color: var(--button);
-        border: none;
-        cursor: default;
-        min-width: 0;
-        overflow: visible;
-        height: 100%;
-        padding: 0;
-      }
-      
-      .extra-button-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        line-height: 1;
-        cursor: default;
-      } 
-        
-      .extra-button-icon {
-        --mdc-icon-size: 27px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: -4px;
-        cursor: default;
-      }
-      
-      .extra-button-value {
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: -4px;
-        font-size: 11px;
-        font-weight: bold;
-        line-height: 1.5;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: clip;
-        max-width: 100%;
-        cursor: default;
-      }
-        
-      .extra-button-text {
-        font-size: 10px;
-        line-height: 1.2;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: clip;
-        max-width: 100%;
-        height: auto;
-        cursor: default;
-      }
-
-      .active-extra {
-        color: var(--active-color) !important;
-      }
-
-      .select-active {
-        color: var(--select-active-color, rgba(255, 100, 100)) !important;
-      }
-  `;
+      .num-slider input[type="range"] { -webkit-appearance: none; appearance: none; width: 90%; height: 4px; margin: 0 0 6px 0; border-radius: 2px; background: linear-gradient(to right, var(--slider-color, #4caf50) var(--slider-pct, 0%), #fff var(--slider-pct, 0%)); outline: none; cursor: pointer; }
+      .num-slider input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; border-radius: 50%; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.4); cursor: grab; }
+      .num-slider input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: white; border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); cursor: grab; }
+      .num-slider input[type="range"]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--slider-bg, #555); }
+      .num-slider input[type="range"]::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--slider-color, #4caf50); }
+      .select-options-row { display: flex; gap: 3px; width: 90%; }
+      .select-option-btn { flex: 1; padding: 2px 4px; border: none; border-radius: 5px; font-size: 9px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: clip; cursor: pointer; background: rgba(255,255,255,0.1); color: var(--button-fg); text-align: center; min-width: 0; }
+      .select-option-btn.active-option { color: var(--button-bg); font-weight: bold; }
+      .timer-button { display: flex; align-items: center; justify-content: center; background-color: var(--button-bg); color: var(--button-fg); border: none; border-radius: 8px; cursor: pointer; font-size: 10px; min-width: 0; overflow: hidden; padding: 0 2px; cursor: default; }
+      .timer-display { grid-column: span 2; display: flex; align-items: center; justify-content: center; background-color: var(--button-bg); color: var(--button-fg); border-radius: 8px; font-size: 10px; font-weight: bold; font-family: monospace; }
+      .extra-area { grid-area: extra; display: grid; gap: 5px; }
+      .extra2-area { grid-area: extra2; display: grid; gap: 5px; }
+      .extra-button { display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: rgb(0,0,0,0); color: var(--button); border: none; cursor: default; min-width: 0; overflow: visible; height: 100%; padding: 0; }
+      .extra-button-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; line-height: 1; cursor: default; }
+      .extra-button-icon { --mdc-icon-size: 27px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: -4px; cursor: default; }
+      .extra-button-value { height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: -4px; font-size: 11px; font-weight: bold; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: clip; max-width: 100%; cursor: default; }
+      .extra-button-text { font-size: 10px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: clip; max-width: 100%; height: auto; cursor: default; }
+      .active-extra { color: var(--active-color) !important; }
+      .select-active { color: var(--select-active-color, rgba(255, 100, 100)) !important; }`;
   }
 
 
@@ -4042,9 +3436,11 @@ class XiaoshiPhoneOtherCard extends LitElement {
     const dialog = document.createElement('div'); dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
     const header = document.createElement('div'); header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
     const tit = document.createElement('span'); tit.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`; tit.textContent = `${roomName} - 历史记录`;
-    const closeBtn = document.createElement('button'); closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+    const closeBtn = document.createElement('button'); closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:default;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
     closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
     closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
     header.appendChild(tit); header.appendChild(closeBtn);
     const toolbar = document.createElement('div'); toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 5px;margin:0 20px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
     toolbar.className = 'xiaoshi-history-toolbar';
@@ -4064,6 +3460,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
 
       const allChip = this._buildFilterChip('全部', '', chipBg, chipActiveBg, chipActiveColor, isDark, 'entity');
       allChip.addEventListener('click', () => {
+        this._handleClick();
         this._historyFilterEntity = '';
         this._refreshHistoryChips(entityChips, this._historyFilterEntity, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'entity');
         this._refetchWithFilters();
@@ -4074,9 +3471,10 @@ class XiaoshiPhoneOtherCard extends LitElement {
         const so2 = this.hass.states[eId];
         const eName = so2?.attributes?.friendly_name || eId;
         const chip = this._buildFilterChip(eName, eId, chipBg, chipActiveBg, chipActiveColor, isDark, 'entity');
-        chip.addEventListener('click', () => {
-          this._historyFilterEntity = eId;
-          this._refreshHistoryChips(entityChips, this._historyFilterEntity, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'entity');
+chip.addEventListener('click', () => {
+            this._handleClick();
+            this._historyFilterEntity = eId;
+            this._refreshHistoryChips(entityChips, this._historyFilterEntity, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'entity');
           this._refetchWithFilters();
         });
         entityChips.appendChild(chip);
@@ -4089,10 +3487,10 @@ class XiaoshiPhoneOtherCard extends LitElement {
     const timeLabel = document.createElement('span'); timeLabel.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;`; timeLabel.textContent = '时段:';
     timeRow.appendChild(timeLabel);
     const timeChips = document.createElement('div'); timeChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;'; timeChips.className = 'xiaoshi-time-chips';
-    const periods = [{ label: '1小时', value: 1 },{ label: '6小时', value: 6 },{ label: '24小时', value: 24 },{ label: '3天', value: 72 },{ label: '7天', value: 168 },{ label: '15天', value: 360 }];
+    const periods = [{ label: '1小时', value: 1 },{ label: '6小时', value: 6 },{ label: '24小时', value: 24 },{ label: '3天', value: 72 },{ label: '7天', value: 168 },{ label: '10天', value: 240 }];
     for (const p of periods) {
       const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
-      chip.addEventListener('click', () => { this._historyFilterPeriod = p.value; this._refreshHistoryChips(timeChips, this._historyFilterEntity, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time'); this._refetchWithFilters(); });
+      chip.addEventListener('click', () => { this._handleClick(); this._historyFilterPeriod = p.value; this._refreshHistoryChips(timeChips, this._historyFilterEntity, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time'); this._refetchWithFilters(); });
       timeChips.appendChild(chip);
     }
     timeRow.appendChild(timeChips); toolbar.appendChild(timeRow);
@@ -4154,6 +3552,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
   }
 
   _closeHistoryOverlay() {
+    this._handleClick();
     if (this._historyOverlayEl) { this._historyOverlayEl.remove(); this._historyOverlayEl = null; this._historyBodyEl = null; }
     this._showHistory = false; this._historyData = {}; this._historyLoading = false; this._historyFilterEntity = ''; this._historyFilterPeriod = 24;
   }
@@ -4229,12 +3628,13 @@ class XiaoshiPhoneOtherCard extends LitElement {
     }else{
       isActive=(typeof value==='number'&&value===this._historyFilterPeriod);
     }
-    if(isActive)chip.style.cssText=`padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};`;
-    else chip.style.cssText=`padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
-    chip.textContent=label;return chip;
+    if(isActive)chip.style.cssText=`padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
+    else chip.style.cssText=`padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+    chip.textContent=label;chip.addEventListener('mouseenter',()=>{chip.style.opacity='0.85';chip.style.transform='scale(1.05)';});chip.addEventListener('mouseleave',()=>{chip.style.opacity='1';chip.style.transform='scale(1)';});return chip;
   }
 
   _refreshHistoryChips(container, activeEntity, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
+    this._handleClick();
     const chips=container.querySelectorAll('[data-chip]');
     chips.forEach(chip=>{const label=chip.textContent;
       if(mode==='entity'){
@@ -4243,7 +3643,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
           chip.style.background=activeBg;chip.style.color=activeColor;
         }else{chip.style.background=chipBg;chip.style.color=isDark?'#ccc':'#555';}
       }else{
-        const isActive=(label==='24小时'&&activePeriod===24)||(label==='1小时'&&activePeriod===1)||(label==='6小时'&&activePeriod===6)||(label==='3天'&&activePeriod===72)||(label==='7天'&&activePeriod===168)||(label==='15天'&&activePeriod===360);
+        const isActive=(label==='24小时'&&activePeriod===24)||(label==='1小时'&&activePeriod===1)||(label==='6小时'&&activePeriod===6)||(label==='3天'&&activePeriod===72)||(label==='7天'&&activePeriod===168)||(label === '10天' && activePeriod === 240);
         if(isActive){chip.style.background=activeBg;chip.style.color=activeColor;}else{chip.style.background=chipBg;chip.style.color=isDark?'#ccc':'#555';}
       }});
   }

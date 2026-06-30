@@ -204,146 +204,29 @@ class XiaoshiPhoneHumidifierCardEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .card-config {
-        padding: 16px;
-      }
-      .row {
-        margin-bottom: 16px;
-      }
-      .label {
-        margin-bottom: 8px;
-        font-weight: bold;
-      }
-      .buttons-row {
-        display: flex;
-        align-items: center;
-        margin-top: 8px;
-      }
-      .add-button {
-        margin-left: 8px;
-      }
-
-      .entity-selector {
-        position: relative;
-      }
-
-      .entity-search-input {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-      }
-
-      .entity-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        height: 300px;
-        overflow-y: auto;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        z-index: 1000;
-        margin-top: 2px;
-      }
-
-      .entity-option {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px 12px;
-        cursor: pointer;
-        border-bottom: 1px solid #eee;
-      }
-
-      .entity-option:hover {
-        background: #f5f5f5;
-      }
-
-      .entity-option.selected {
-        background: #e3f2fd;
-      }
-
-      .entity-info {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 1;
-      }
-
-      .entity-details {
-        flex: 1;
-      }
-
-      .entity-name {
-        font-weight: 500;
-        font-size: 14px;
-        color: #000;
-      }
-
-      .entity-id {
-        font-size: 12px;
-        color: #000;
-        font-family: monospace;
-      }
-
-      .check-icon {
-        color: #4CAF50;
-      }
-
-      .no-results {
-        padding: 12px;
-        text-align: center;
-        color: #666;
-        font-style: italic;
-      }
-
-      .entity-selector-with-remove {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        margin-bottom: 8px;
-      }
-
-      .entity-selector-with-remove .entity-selector {
-        flex: 1;
-      }
-
-      .remove-button {
-        background: #f44336;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        width: 30px;
-        height: 30px;
-        min-width: 30px;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        flex-shrink: 0;
-        margin-top: 0;
-      }
-
-      .remove-button:hover {
-        background: #d32f2f;
-      }
-
-      .remove-button ha-icon {
-        --mdc-icon-size: 20px;
-      }
-
-      .hint {
-        font-size: 0.85em;
-        color: #888;
-        margin-top: 4px;
-      }
-    `;
+    return css`      .card-config { padding: 16px; }
+      .row { margin-bottom: 16px; }
+      .label { margin-bottom: 8px; font-weight: bold; }
+      .buttons-row { display: flex; align-items: center; margin-top: 8px; }
+      .add-button { margin-left: 8px; }
+      .entity-selector { position: relative; }
+      .entity-search-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+      .entity-dropdown { position: absolute; top: 100%; left: 0; right: 0; height: 300px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px; }
+      .entity-option { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; }
+      .entity-option:hover { background: #f5f5f5; }
+      .entity-option.selected { background: #e3f2fd; }
+      .entity-info { display: flex; align-items: center; gap: 8px; flex: 1; }
+      .entity-details { flex: 1; }
+      .entity-name { font-weight: 500; font-size: 14px; color: #000; }
+      .entity-id { font-size: 12px; color: #000; font-family: monospace; }
+      .check-icon { color: #4CAF50; }
+      .no-results { padding: 12px; text-align: center; color: #666; font-style: italic; }
+      .entity-selector-with-remove { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+      .entity-selector-with-remove .entity-selector { flex: 1; }
+      .remove-button { background: #f44336; color: white; border: none; border-radius: 4px; width: 30px; height: 30px; min-width: 30px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-top: 0; }
+      .remove-button:hover { background: #d32f2f; }
+      .remove-button ha-icon { --mdc-icon-size: 20px; }
+      .hint { font-size: 0.85em; color: #888; margin-top: 4px; }`;
   }
 
   render() {
@@ -612,437 +495,57 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
   }
   
   static get styles() { 
-    return css`
-      :host {
-        display: block;
-        contain: content;
-        max-width: 500px;
-        margin: 0 auto;
-      }
-      
-      .card {
-        position: relative;
-        border-radius: 12px;
-        overflow: hidden;
-        box-sizing: border-box;
-      }
-      
-      .content-container {
-        position: relative;
-        z-index: 1;
-        height: 100%;
-        display: grid;
-        grid-template-areas: 
-            "name name status power"
-            "icon dangwei fan fan"
-            "icon dangwei timer timer"
-            "icon dangwei extra extra"
-            "a a a a"; 
-        grid-template-columns: 16% 22% 50% 10%;
-        grid-template-rows: auto auto auto auto 4px;
-      }
-
-      .content-container.has-available-modes {
-        grid-template-areas: 
-            "name status power"
-            "icon fan fan"
-            "icon timer timer"
-            "icon extra extra"
-            "a a  a"; 
-        grid-template-columns: 25% 60% 13%;
-      }
-
-      .active-gradient {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, var(--linear-color), transparent 50%);
-        opacity: 0.8;
-        z-index: 0;
-      }
-
-      .history-btn {
-        position: absolute;
-        bottom: 6px;
-        left: 6px;
-        z-index: 10;
-        width: 28px;
-        height: 28px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: default;
-        transition: all 0.3s ease;
-        background: rgba(180, 180, 180, 0.2);
-      }
-      .history-btn:hover {
-        opacity: 0.85;
-        transform: scale(1.05);
-      }
-
-      #chart-container {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 20%;
-        overflow: hidden;
-        z-index: 0;
-        pointer-events: none;
-      }
-
-      .name-area {
-        grid-area: name;
-        display: flex;
-        align-items: center;
-        font-size: 16px;
-        font-weight: bold;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        margin-left: 10px; 
-        font-weight: bold;
-      }
-      
-      .status-area {
-        grid-area: status;
-        display: flex;
-        align-items: center;
-        font-size: 12px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        margin-left: 5px; 
-        gap: 1px;
-        font-weight: bold;
-      }
-      .humidifier-adjust-container {
-        display: inline-flex;
-        align-items: center;
-        gap: 1px;
-      }
-      .humidifier-adjust-button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--button);;
-        width: 24px;
-        height: 24px;
-        border-radius: 5px;
-        cursor: default;
-      }
-
-      .humidifier-display {
-        font-size: 12px;
-        min-width: 24px;
-        text-align: center;
-        color: var(--button);;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .humidifier-fan {
-        font-size: 12px;
-        text-align: center;
-        min-width:25px;
-        color: var(--button);;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .current-humidifier {
-        font-size: 12px;
-        margin-left: 5px;
-      }
-      .power-area {
-        grid-area: power;
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-      }
-      
-      .power-button {
-          background: none;
-          border: none;
-        cursor: pointer;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        width: 100%;
-        height: 35px;
-        border-radius: 5px;
-        cursor: default;
-      }
-      
-      .power-icon {
-        --mdc-icon-size: 30px;
-        transition: all 0.3s ease;
-      }
-
-      .icon {
-        --mdc-icon-size: 16px;
-      }
-
-      .icon-area {
-        grid-area: icon;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-between;
-        height: 100%;
-      }
-
-      .main-icon-container {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-      }
-      
-      .main-icon {
-        --mdc-icon-size: 40px;
-        margin-top: -3px;
-        transition: transform 0.5s ease;
-      }
-
-      .main-icon.has-available-modes {
-        --mdc-icon-size: 50px;
-      }
-
-      .active-main-icon {
-        animation: spin var(--fan-speed, 2s) linear infinite;
-        color: var(--active-color);
-      }
-
+    return css`      :host { display: block; contain: content; max-width: 500px; margin: 0 auto; }
+      .card { position: relative; border-radius: 12px; overflow: hidden; box-sizing: border-box; }
+      .content-container { position: relative; z-index: 1; height: 100%; display: grid; grid-template-areas: "name name status power" "icon dangwei fan fan" "icon dangwei timer timer" "icon dangwei extra extra" "a a a a"; grid-template-columns: 16% 22% 50% 10%; grid-template-rows: auto auto auto auto 4px; }
+      .content-container.has-available-modes { grid-template-areas: "name status power" "icon fan fan" "icon timer timer" "icon extra extra" "a a a"; grid-template-columns: 25% 60% 13%; }
+      .active-gradient { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, var(--linear-color), transparent 50%); opacity: 0.8; z-index: 0; }
+      .history-btn { position: absolute; bottom: 6px; left: 6px; z-index: 10; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background: rgba(180, 180, 180, 0.2); }
+      .history-btn:hover { opacity: 0.85; transform: scale(1.05); }
+      #chart-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 20%; overflow: hidden; z-index: 0; pointer-events: none; }
+      .name-area { grid-area: name; display: flex; align-items: center; font-size: 16px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: 10px; font-weight: bold; }
+      .status-area { grid-area: status; display: flex; align-items: center; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: 5px; gap: 1px; font-weight: bold; }
+      .humidifier-adjust-container { display: inline-flex; align-items: center; gap: 1px; }
+      .humidifier-adjust-button { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; color: var(--button);; width: 24px; height: 24px; border-radius: 5px; cursor: default; }
+      .humidifier-display { font-size: 12px; min-width: 24px; text-align: center; color: var(--button);; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .humidifier-fan { font-size: 12px; text-align: center; min-width:25px; color: var(--button);; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .current-humidifier { font-size: 12px; margin-left: 5px; }
+      .power-area { grid-area: power; display: flex; justify-content: flex-end; align-items: center; }
+      .power-button { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: flex-end; width: 100%; height: 35px; border-radius: 5px; cursor: default; }
+      .power-icon { --mdc-icon-size: 30px; transition: all 0.3s ease; }
+      .icon { --mdc-icon-size: 16px; }
+      .icon-area { grid-area: icon; display: flex; flex-direction: column; align-items: center; justify-content: space-between; height: 100%; }
+      .main-icon-container { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
+      .main-icon { --mdc-icon-size: 40px; margin-top: -3px; transition: transform 0.5s ease; }
+      .main-icon.has-available-modes { --mdc-icon-size: 50px; }
+      .active-main-icon { animation: spin var(--fan-speed, 2s) linear infinite; color: var(--active-color); }
       @keyframes spin {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
       }
-
-       .fan-area, .timer-area, .extra-area {
-        display: flex;
-        gap: 5px;
-        width: 100%;
-        height: 25px;
-        margin-bottom: 5px;
-      }
-      
-      .fan-area {
-        grid-area: fan;
-        overflow-x: auto;
-        scrollbar-width: none;
-      }
-      
-      .fan-area::-webkit-scrollbar {
-        display: none;
-      }
-
-      .available-area {
-        grid-area: available;
-        overflow-x: auto;
-        scrollbar-width: none;
-      }
-      
-      .available-area::-webkit-scrollbar {
-        display: none;
-      }
-
-      .available-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-      }
-      
-      .available-text {
-        font-size: 10px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .timer-area {
-        grid-area: timer;
-        display: grid;
-        grid-template-columns: repeat(8, 1fr);
-        gap: 5px;
-      }
-      
-      .timer-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: var(--button-bg);
-        color: var(--button-fg);
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 10px;
-        min-width: 0;
-        overflow: hidden;
-        padding: 0 2px;
-        cursor: default;
-      }
-      
-      .timer-display {
-        grid-column: span 2;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: var(--button-bg);
-        color: var(--button-fg);
-        border-radius: 8px;
-        font-size: 10px;
-        font-weight: bold;
-        font-family: monospace;
-      }
-      
-      .extra-area {
-        grid-area: extra;
-        display: grid;
-        gap: 5px;
-      }
-      
-      .extra-button {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background-color: rgb(0,0,0,0);
-        color: var(--button);
-        border: none;
-        cursor: pointer;
-        min-width: 0;
-        overflow: visible;
-        cursor: default;
-        height: 100%;
-        padding: 0;     
-      }
-      
-      .extra-button-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        line-height: 1;
-        cursor: default;
-      } 
-        
-      .extra-button-icon {
-        --mdc-icon-size: 27px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: -4px;
-        cursor: default;
-      }
-      
-      .extra-button-value {
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: -4px;
-        font-size: 11px;
-        font-weight: bold;
-        line-height: 1.5;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-        cursor: default;
-      }
-        
-      .extra-button-text {
-        font-size: 10px;
-        line-height: 1.2;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-        height: auto;
-        cursor: default;
-      }
-      
-      .mode-button {
-        background-color: var(--button-bg);
-        color: var(--button-fg);
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        flex: 1;
-        min-width: 0;
-        position: relative;
-        cursor: default;
-      }
-
-      .fan-button {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .fan-button-icon {
-        --mdc-icon-size: 16px;
-        width: 16px;
-        height: 16px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        transform-origin: center;
-      }
-
-      .active-fan-button-icon {
-        animation: spin var(--fan-speed, 2s) linear infinite;
-        color: var(--active-color);
-      }
-
-      .fan-text {
-        position: absolute;
-        font-size: 8px;
-        font-weight: bold;
-        bottom: 0px;
-        right: 0px; 
-        border-radius: 4px;
-        height: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-        padding: 1px 2px;  
-        background-color: var(--button-bg);  
-      }
-      
-      .active-mode {
-        background-color: var(--active-color) !important;
-        color: var(--active-text-color, white) !important;
-      }
-      
-      .active-extra {
-        background-color: transparent !important;
-        color: var(--active-color) !important;
-      }
-  `;
+       .fan-area, .timer-area, .extra-area { display: flex; gap: 5px; width: 100%; height: 25px; margin-bottom: 5px; }
+      .fan-area { grid-area: fan; overflow-x: auto; scrollbar-width: none; }
+      .fan-area::-webkit-scrollbar { display: none; }
+      .available-area { grid-area: available; overflow-x: auto; scrollbar-width: none; }
+      .available-area::-webkit-scrollbar { display: none; }
+      .available-button { display: flex; align-items: center; justify-content: center; width: 100%; }
+      .available-text { font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .timer-area { grid-area: timer; display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }
+      .timer-button { display: flex; align-items: center; justify-content: center; background-color: var(--button-bg); color: var(--button-fg); border: none; border-radius: 8px; cursor: pointer; font-size: 10px; min-width: 0; overflow: hidden; padding: 0 2px; cursor: default; }
+      .timer-display { grid-column: span 2; display: flex; align-items: center; justify-content: center; background-color: var(--button-bg); color: var(--button-fg); border-radius: 8px; font-size: 10px; font-weight: bold; font-family: monospace; }
+      .extra-area { grid-area: extra; display: grid; gap: 5px; }
+      .extra-button { display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: rgb(0,0,0,0); color: var(--button); border: none; cursor: pointer; min-width: 0; overflow: visible; cursor: default; height: 100%; padding: 0; }
+      .extra-button-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; line-height: 1; cursor: default; }
+      .extra-button-icon { --mdc-icon-size: 27px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: -4px; cursor: default; }
+      .extra-button-value { height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: -4px; font-size: 11px; font-weight: bold; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; cursor: default; }
+      .extra-button-text { font-size: 10px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; height: auto; cursor: default; }
+      .mode-button { background-color: var(--button-bg); color: var(--button-fg); border: none; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; min-width: 0; position: relative; cursor: default; }
+      .fan-button { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+      .fan-button-icon { --mdc-icon-size: 16px; width: 16px; height: 16px; display: flex; justify-content: center; align-items: center; transform-origin: center; }
+      .active-fan-button-icon { animation: spin var(--fan-speed, 2s) linear infinite; color: var(--active-color); }
+      .fan-text { position: absolute; font-size: 8px; font-weight: bold; bottom: 0px; right: 0px; border-radius: 4px; height: 8px; display: flex; align-items: center; justify-content: center; line-height: 1; padding: 1px 2px; background-color: var(--button-bg); }
+      .active-mode { background-color: var(--active-color) !important; color: var(--active-text-color, white) !important; }
+      .active-extra { background-color: transparent !important; color: var(--active-color) !important; }`;
   }
 
   constructor() {
@@ -2187,19 +1690,21 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     const dialog = document.createElement('div'); dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
     const header = document.createElement('div'); header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
     const tit = document.createElement('span'); tit.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`; tit.textContent = `${roomName} - 历史记录`;
-    const closeBtn = document.createElement('button'); closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+    const closeBtn = document.createElement('button'); closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:default;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
     closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
     closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
     header.appendChild(tit); header.appendChild(closeBtn);
     const toolbar = document.createElement('div'); toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 5px;margin:0 20px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
     const timeRow = document.createElement('div'); timeRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
     const timeLabel = document.createElement('span'); timeLabel.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;`; timeLabel.textContent = '时段:';
     timeRow.appendChild(timeLabel);
     const timeChips = document.createElement('div'); timeChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;'; timeChips.className = 'xiaoshi-time-chips';
-    const periods = [{ label: '1小时', value: 1 },{ label: '6小时', value: 6 },{ label: '24小时', value: 24 },{ label: '3天', value: 72 },{ label: '7天', value: 168 },{ label: '15天', value: 360 }];
+    const periods = [{ label: '1小时', value: 1 },{ label: '6小时', value: 6 },{ label: '24小时', value: 24 },{ label: '3天', value: 72 },{ label: '7天', value: 168 },{ label: '10天', value: 240 }];
     for (const p of periods) {
       const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
-      chip.addEventListener('click', () => { this._historyFilterPeriod = p.value; this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time'); this._refetchWithFilters(); });
+      chip.addEventListener('click', () => { this._handleClick(); this._historyFilterPeriod = p.value; this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time'); this._refetchWithFilters(); });
       timeChips.appendChild(chip);
     }
     timeRow.appendChild(timeChips); toolbar.appendChild(timeRow);
@@ -2250,6 +1755,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
   }
 
   _closeHistoryOverlay() {
+    this._handleClick();
     if (this._historyOverlayEl) { this._historyOverlayEl.remove(); this._historyOverlayEl = null; this._historyBodyEl = null; }
     this._showHistory = false; this._historyData = {}; this._historyLoading = false; this._historyFilterPeriod = 24;
   }
@@ -2290,14 +1796,15 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
   _buildFilterChip(label, value, chipBg, activeBg, activeColor, isDark) {
     const chip=document.createElement('span');chip.setAttribute('data-chip','1');
     const isActive=(typeof value==='number'&&value===this._historyFilterPeriod);
-    if(isActive)chip.style.cssText=`padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};`;
-    else chip.style.cssText=`padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
-    chip.textContent=label;return chip;
+    if(isActive)chip.style.cssText=`padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
+    else chip.style.cssText=`padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+    chip.textContent=label;chip.addEventListener('mouseenter',()=>{chip.style.opacity='0.85';chip.style.transform='scale(1.05)';});chip.addEventListener('mouseleave',()=>{chip.style.opacity='1';chip.style.transform='scale(1)';});return chip;
   }
 
   _refreshHistoryChips(container, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
+    this._handleClick();
     const chips=container.querySelectorAll('[data-chip]');
-    chips.forEach(chip=>{const label=chip.textContent;if(mode==='time'){const isActive=(label==='24小时'&&activePeriod===24)||(label==='1小时'&&activePeriod===1)||(label==='6小时'&&activePeriod===6)||(label==='3天'&&activePeriod===72)||(label==='7天'&&activePeriod===168)||(label==='15天'&&activePeriod===360);if(isActive){chip.style.background=activeBg;chip.style.color=activeColor;}else{chip.style.background=chipBg;chip.style.color=isDark?'#ccc':'#555';}}});
+    chips.forEach(chip=>{const label=chip.textContent;if(mode==='time'){const isActive=(label==='24小时'&&activePeriod===24)||(label==='1小时'&&activePeriod===1)||(label==='6小时'&&activePeriod===6)||(label==='3天'&&activePeriod===72)||(label==='7天'&&activePeriod===168)||(label==='10天'&&activePeriod===240);if(isActive){chip.style.background=activeBg;chip.style.color=activeColor;}else{chip.style.background=chipBg;chip.style.color=isDark?'#ccc':'#555';}}});
   }
 
   _refetchWithFilters() {

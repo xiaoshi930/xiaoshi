@@ -21,26 +21,10 @@ class MusicPlayerEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      label {
-        font-weight: bold;
-      }
-      select, input {
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-      }
-    `;
+    return css`      .form { display: flex; flex-direction: column; gap: 10px; }
+      .form-group { display: flex; flex-direction: column; gap: 5px; }
+      label { font-weight: bold; }
+      select, input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }`;
   }
 
   render() {
@@ -210,412 +194,59 @@ class MusicPlayer extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-        border-radius: 12px;
-        padding: 0px;
-        cursor: none;
-        overflow: visible;
-        --mdc-ripple-press-opacity: 0;
-        max-width: 500px;
-        margin: 0 auto;
-        margin-top: 0;
-      }
-
-      .player-grid {
-        display: grid;
-        grid-template-columns: 17% 8.5% 8.5% 22% 8.5% 8.5% 8.5% 8.5% 8.5%;
-        width: 100%;
-        height: 100%;
-      }
-
-      .icon-area {
-        grid-area: icon;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 4px;
-      }
-
-      .player-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background-size: cover;
-        background-position: center;
-        background-color: #333;
-        animation: none;
-      }
-
-      .player-icon.playing {
-        animation: rotating 10s linear infinite;
-      }
-
-      .music-icon {
-        width: 50px;
-        height: 50px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--fg-color);
-        background-color: rgb(150,150,150,0.6);
-        border-radius: 50%;
-        animation: none;
-      }
-
-      .music-icon.playing {
-        animation: rotating 10s linear infinite;
-      }
-
+    return css`      :host { display: block; border-radius: 12px; padding: 0px; cursor: none; overflow: visible; --mdc-ripple-press-opacity: 0; max-width: 500px; margin: 0 auto; margin-top: 0; }
+      .player-grid { display: grid; grid-template-columns: 17% 8.5% 8.5% 22% 8.5% 8.5% 8.5% 8.5% 8.5%; width: 100%; height: 100%; }
+      .icon-area { grid-area: icon; display: flex; align-items: center; justify-content: center; padding: 4px; }
+      .player-icon { width: 50px; height: 50px; border-radius: 50%; background-size: cover; background-position: center; background-color: #333; animation: none; }
+      .player-icon.playing { animation: rotating 10s linear infinite; }
+      .music-icon { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; color: var(--fg-color); background-color: rgb(150,150,150,0.6); border-radius: 50%; animation: none; }
+      .music-icon.playing { animation: rotating 10s linear infinite; }
       @keyframes rotating {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
       }
-
-      .name-area {
-        grid-area: name;
-        display: flex;
-        align-items: center;
-      }
-
-      .name-label {
-        font-size: 16px;
-        color: var(--fg-color, rgb(255, 255, 255));
-        text-align: left;
-        width: 100%;
-      }
-
-      .info-area {
-        grid-area: info;
-        display: flex;
-        align-items: center;
-      }
-
-      .info-label {
-        font-size: 12px;
-        color: var(--fg-color, rgb(255, 255, 255));
-        text-align: left;
-      }
-
-      .volume-area {
-        grid-area: volume;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .volume-label {
-        font-size: 14px;
-        font-weight: bold;
-        color: var(--fg-color, rgb(255, 255, 255));
-        text-align: center;
-      }
-
-      .control-button {
-        background: rgba(0, 0, 0, 0);
-        border: none;
-        border-radius: 12px;
-        color: var(--fg-color, rgb(255, 255, 255));
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 25px;
-        transition: all 0.2s;
-        --mdc-ripple-press-opacity: 0;
-        --mdc-icon-size: 20px;
-        padding: 0;
-      }
-
-      .control-button:active {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 12px !important;
-      }
-
-      .lyrics-button {
-        grid-area: lyrics-button;
-        font-size: 12px;
-        padding: 1px;
-      }
-
-      .lyrics-area {
-        grid-area: lyrics;
-        display: flex;
-        align-items: stretch;
-        justify-content: center;
-        padding: 0;
-        overflow: hidden;
-        position: relative;
-        max-height: 300px;
-      }
-
-      .lyrics-area:empty {
-        display: none;
-      }
-
-      .lyrics-container {
-        height: 100%;
-        width: calc(100% - 50px); /* 为右侧按钮留出空间 */
-        overflow-y: auto;
-        overflow-x: hidden;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-        position: relative;
-        scroll-behavior: smooth;
-        -webkit-overflow-scrolling: touch;
-        
-        mask-image: linear-gradient(
-          to bottom,
-          transparent 0%,
-          black 15%,
-          black 85%,
-          transparent 100%
-        );
-        -webkit-mask-image: linear-gradient(
-          to bottom,
-          transparent 0%,
-          black 15%,
-          black 85%,
-          transparent 100%
-        );
-      }
-
-      .lyrics-container::-webkit-scrollbar {
-        display: none;
-      }
-
-      .lyrics-controls {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 5px;
-        position: absolute;
-        right: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        flex-shrink: 0;
-        width: 30px;
-      }
-
-      .lyrics-control-btn {
-        background: rgba(200, 200, 200, 0.1);
-        border: none;
-        border-radius: 5px;
-        width: 25px;
-        height: 25px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        color: white;
-        font-size: 16px;
-        font-weight: bold;
-        transition: all 0.2s ease;
-        --mdc-icon-size: 15px;
-      }
-
-      .lyrics-adjustment-toast {
-        position: absolute;
-        top: 50%;
-        right: calc(70% + 5px);
-        transform: translateY(-50%);
-        background: rgba(0, 0, 0, 0.95);
-        color: white;
-        padding: 10px 18px;
-        border-radius: 25px;
-        font-size: 10px;
-        font-weight: 600;
-        z-index: 1000;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.4s ease, transform 0.3s ease;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-        white-space: nowrap;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .lyrics-adjustment-toast.show {
-        opacity: 1;
-        transform: translateY(-50%) translateX(-5px);
-      }
-
-      .lyrics-top-spacer {
-        height: 16px;
-        flex-shrink: 0;
-      }
-
-      .lyrics-spacer {
-        height: 50px;
-        flex-shrink: 0;
-      }
-
-      .lyric {
-        text-align: center;
-        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        line-height: 1.5;
-        font-weight: 400;
-        letter-spacing: -0.2px;
-        transform: scale(0.95);
-        color: var(--fg-color, rgb(255, 255, 255));
-        opacity: 0.6;
-        cursor: pointer;
-      }
-
-      .lyric.active {
-        opacity: 1;
-        font-weight: 600;
-        transform: scale(1.05);
-        padding: 10px 26px;
-        letter-spacing: -0.1px;
-        color: rgb(25, 165, 225);
-        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      }
-
-      .lyric.active[style*="--progress"] {
-        background: linear-gradient(
-          90deg,
-          rgb(25, 165, 225) 0%,
-          rgb(25, 165, 225) var(--progress, 0%),
-          var(--fg-color, rgb(255, 255, 255)) var(--progress, 0%),
-          var(--fg-color, rgb(255, 255, 255)) 100%
-        );
-        background-clip: text;
-        -webkit-background-clip: text;
-        color: transparent;
-        transition: background-position 0.1s linear, background-size 0.1s linear;
-        -webkit-font-smoothing: antialiased;
-      }
-
-      .lyric.active:not([style*="--progress"]) {
-        color: rgb(25, 165, 225);
-        transition: color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      }
-
-      .lyric:hover {
-        opacity: 0.8;
-        transform: scale(1.02);
-      }
-
-      .control-button:focus {
-        outline: none;
-        background: rgba(0, 0, 0, 0);
-      }
-
-      .control-button ha-icon {
-        width: 25px;
-        height: 25px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        border-radius: 12px;
-      }
-
-      .power-button {
-        grid-area: power;
-      }
-
-      .volume-down {
-        grid-area: volume-down;
-      }
-
-      .volume-up {
-        grid-area: volume-up;
-      }
-
-      .prev-button {
-        grid-area: prev;
-      }
-
-      .play-button {
-        grid-area: play;
-      }
-
-      .pause-button {
-        grid-area: pause;
-      }
-
-      .next-button {
-        grid-area: next;
-      }
-
-      .history-btn {
-        grid-area: history;
-      }
-
-      .progress-area {
-        grid-area: progress;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 10px 0 0 0;
-      }
-
-      .progress-bar {
-        width: 95%;
-        height: 3px;
-        border-radius: 5px;
-        align-items: flex-end;
-        background: linear-gradient(to right, rgb(25, 165, 225) var(--progress-percentage), rgba(200, 200, 200, 0.5) var(--progress-percentage));
-      }
-
-      .volume-slider-container {
-        grid-area: volume-slider;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        padding: 0 0;
-      }
-
-      .volume-slider {
-        width: 100%;
-        height: 6px;
-        border-radius: 3px;
-        background: rgb(255, 165, 0);
-        outline: none;
-        -webkit-appearance: none;
-        appearance: none;
-        cursor: pointer;
-      }
-
-      .volume-slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 13px;
-        height: 13px;
-        border-radius: 50%;
-        background: rgb(255, 165, 0);
-        cursor: pointer;
-        border: 2px solid var(--fg-color, rgb(255, 255, 255));
-        box-shadow: none;
-      }
-
-      .volume-slider::-moz-range-thumb {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: rgb(255, 165, 0);
-        cursor: pointer;
-        border: 2px solid var(--fg-color, rgb(255, 255, 255));
-        box-shadow: none;
-      }
-
-      .volume-slider::-webkit-slider-thumb:hover {
-        background: rgb(255, 140, 0);
-        border-color: var(--fg-color, rgb(255, 255, 255));
-      }
-
-      .volume-slider::-moz-range-thumb:hover {
-        background: rgb(255, 140, 0);
-        border-color: var(--fg-color, rgb(255, 255, 255));
-      }
-    `;
+      .name-area { grid-area: name; display: flex; align-items: center; }
+      .name-label { font-size: 16px; color: var(--fg-color, rgb(255, 255, 255)); text-align: left; width: 100%; }
+      .info-area { grid-area: info; display: flex; align-items: center; }
+      .info-label { font-size: 12px; color: var(--fg-color, rgb(255, 255, 255)); text-align: left; }
+      .volume-area { grid-area: volume; display: flex; align-items: center; justify-content: center; }
+      .volume-label { font-size: 14px; font-weight: bold; color: var(--fg-color, rgb(255, 255, 255)); text-align: center; }
+      .control-button { background: rgba(0, 0, 0, 0); border: none; border-radius: 12px; color: var(--fg-color, rgb(255, 255, 255)); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 25px; transition: all 0.2s; --mdc-ripple-press-opacity: 0; --mdc-icon-size: 20px; padding: 0; }
+      .control-button:active { background: rgba(255, 255, 255, 0.2); border-radius: 12px !important; }
+      .lyrics-button { grid-area: lyrics-button; font-size: 12px; padding: 1px; }
+      .lyrics-area { grid-area: lyrics; display: flex; align-items: stretch; justify-content: center; padding: 0; overflow: hidden; position: relative; max-height: 300px; }
+      .lyrics-area:empty { display: none; }
+      .lyrics-container { height: 100%; width: calc(100% - 50px); /* 为右侧按钮留出空间 */ overflow-y: auto; overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; position: relative; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; mask-image: linear-gradient( to bottom, transparent 0%, black 15%, black 85%, transparent 100% ); -webkit-mask-image: linear-gradient( to bottom, transparent 0%, black 15%, black 85%, transparent 100% ); }
+      .lyrics-container::-webkit-scrollbar { display: none; }
+      .lyrics-controls { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; padding: 10px 5px; position: absolute; right: 0; top: 50%; transform: translateY(-50%); flex-shrink: 0; width: 30px; }
+      .lyrics-control-btn { background: rgba(200, 200, 200, 0.1); border: none; border-radius: 5px; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; font-size: 16px; font-weight: bold; transition: all 0.2s ease; --mdc-icon-size: 15px; }
+      .lyrics-adjustment-toast { position: absolute; top: 50%; right: calc(70% + 5px); transform: translateY(-50%); background: rgba(0, 0, 0, 0.95); color: white; padding: 10px 18px; border-radius: 25px; font-size: 10px; font-weight: 600; z-index: 1000; pointer-events: none; opacity: 0; transition: opacity 0.4s ease, transform 0.3s ease; backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); white-space: nowrap; border: 1px solid rgba(255, 255, 255, 0.1); }
+      .lyrics-adjustment-toast.show { opacity: 1; transform: translateY(-50%) translateX(-5px); }
+      .lyrics-top-spacer { height: 16px; flex-shrink: 0; }
+      .lyrics-spacer { height: 50px; flex-shrink: 0; }
+      .lyric { text-align: center; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); line-height: 1.5; font-weight: 400; letter-spacing: -0.2px; transform: scale(0.95); color: var(--fg-color, rgb(255, 255, 255)); opacity: 0.6; cursor: pointer; }
+      .lyric.active { opacity: 1; font-weight: 600; transform: scale(1.05); padding: 10px 26px; letter-spacing: -0.1px; color: rgb(25, 165, 225); transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+      .lyric.active[style*="--progress"] { background: linear-gradient( 90deg, rgb(25, 165, 225) 0%, rgb(25, 165, 225) var(--progress, 0%), var(--fg-color, rgb(255, 255, 255)) var(--progress, 0%), var(--fg-color, rgb(255, 255, 255)) 100% ); background-clip: text; -webkit-background-clip: text; color: transparent; transition: background-position 0.1s linear, background-size 0.1s linear; -webkit-font-smoothing: antialiased; }
+      .lyric.active:not([style*="--progress"]) { color: rgb(25, 165, 225); transition: color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+      .lyric:hover { opacity: 0.8; transform: scale(1.02); }
+      .control-button:focus { outline: none; background: rgba(0, 0, 0, 0); }
+      .control-button ha-icon { width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; padding: 0; border-radius: 12px; }
+      .power-button { grid-area: power; }
+      .volume-down { grid-area: volume-down; }
+      .volume-up { grid-area: volume-up; }
+      .prev-button { grid-area: prev; }
+      .play-button { grid-area: play; }
+      .pause-button { grid-area: pause; }
+      .next-button { grid-area: next; }
+      .history-btn { grid-area: history; }
+      .progress-area { grid-area: progress; display: flex; align-items: center; justify-content: center; padding: 10px 0 0 0; }
+      .progress-bar { width: 95%; height: 3px; border-radius: 5px; align-items: flex-end; background: linear-gradient(to right, rgb(25, 165, 225) var(--progress-percentage), rgba(200, 200, 200, 0.5) var(--progress-percentage)); }
+      .volume-slider-container { grid-area: volume-slider; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 0 0; }
+      .volume-slider { width: 100%; height: 6px; border-radius: 3px; background: rgb(255, 165, 0); outline: none; -webkit-appearance: none; appearance: none; cursor: pointer; }
+      .volume-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 13px; height: 13px; border-radius: 50%; background: rgb(255, 165, 0); cursor: pointer; border: 2px solid var(--fg-color, rgb(255, 255, 255)); box-shadow: none; }
+      .volume-slider::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 165, 0); cursor: pointer; border: 2px solid var(--fg-color, rgb(255, 255, 255)); box-shadow: none; }
+      .volume-slider::-webkit-slider-thumb:hover { background: rgb(255, 140, 0); border-color: var(--fg-color, rgb(255, 255, 255)); }
+      .volume-slider::-moz-range-thumb:hover { background: rgb(255, 140, 0); border-color: var(--fg-color, rgb(255, 255, 255)); }`;
   }
 
 
@@ -1785,9 +1416,11 @@ class MusicPlayer extends LitElement {
     title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
     title.textContent = `${roomName} - 播放历史`;
     const closeBtn = document.createElement('button');
-    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:default;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
     closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
     closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
     header.appendChild(title);
     header.appendChild(closeBtn);
 
@@ -1810,13 +1443,14 @@ class MusicPlayer extends LitElement {
       { label: '24小时', value: 24 },
       { label: '3天', value: 72 },
       { label: '7天', value: 168 },
-      { label: '15天', value: 360 }
+      { label: '10天', value: 240 }
     ];
     for (const p of periods) {
       const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
-      chip.addEventListener('click', () => {
-        this._historyFilterPeriod = p.value;
-        this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark);
+chip.addEventListener('click', () => {
+            this._handleClick();
+            this._historyFilterPeriod = p.value;
+            this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark);
         this._refetchWithFilters();
       });
       timeChips.appendChild(chip);
@@ -1939,6 +1573,7 @@ class MusicPlayer extends LitElement {
   }
 
   _closeHistoryOverlay() {
+    this._handleClick();
     if (this._historyOverlayEl) {
       this._historyOverlayEl.remove();
       this._historyOverlayEl = null;
@@ -2012,15 +1647,18 @@ class MusicPlayer extends LitElement {
     chip.setAttribute('data-chip', '1');
     const isActive = (typeof value === 'number' && value === this._historyFilterPeriod);
     if (isActive) {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
     } else {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
     }
     chip.textContent = label;
+    chip.addEventListener('mouseenter', () => { chip.style.opacity = '0.85'; chip.style.transform = 'scale(1.05)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; chip.style.transform = 'scale(1)'; });
     return chip;
   }
 
   _refreshHistoryChips(container, activePeriod, chipBg, activeBg, activeColor, isDark) {
+    this._handleClick();
     const chips = container.querySelectorAll('[data-chip]');
     chips.forEach(chip => {
       const label = chip.textContent;
@@ -2029,7 +1667,7 @@ class MusicPlayer extends LitElement {
                        (label === '6小时' && activePeriod === 6) ||
                        (label === '3天' && activePeriod === 72) ||
                        (label === '7天' && activePeriod === 168) ||
-                       (label === '15天' && activePeriod === 360);
+                       (label === '10天' && activePeriod === 240);
       if (isActive) {
         chip.style.background = activeBg;
         chip.style.color = activeColor;

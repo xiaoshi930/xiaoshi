@@ -66,25 +66,13 @@ class XiaoshiCoverCardEditor extends LitElement {
     }
 
     static get styles() {
-        return css`
-            .card-config { padding: 16px; }
+        return css`            .card-config { padding: 16px; }
             .row { margin-bottom: 16px; }
             .label { margin-bottom: 8px; font-weight: bold; }
             .entity-selector { position: relative; }
-            .entity-search-input {
-                width: 100%; padding: 8px;
-                border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
-            }
-            .entity-dropdown {
-                position: absolute; top: 100%; left: 0; right: 0;
-                height: 300px; overflow-y: auto; background: white;
-                border: 1px solid #ddd; border-radius: 4px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px;
-            }
-            .entity-option {
-                display: flex; align-items: center; justify-content: space-between;
-                padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee;
-            }
+            .entity-search-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+            .entity-dropdown { position: absolute; top: 100%; left: 0; right: 0; height: 300px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px; }
+            .entity-option { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; }
             .entity-option:hover { background: #f5f5f5; }
             .entity-option.selected { background: #e3f2fd; }
             .entity-info { display: flex; align-items: center; gap: 8px; flex: 1; }
@@ -94,13 +82,7 @@ class XiaoshiCoverCardEditor extends LitElement {
             .check-icon { color: #4CAF50; }
             .no-results { padding: 12px; text-align: center; color: #666; font-style: italic; }
             .hint { font-size: 0.85em; color: #888; margin-top: 4px; }
-            .row select {
-                margin-left: 8px; padding: 4px 8px; border-radius: 4px;
-                border: 1px solid var(--primary-color);
-                background: var(--secondary-background-color);
-                color: var(--primary-text-color);
-            }
-        `;
+            .row select { margin-left: 8px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--primary-color); background: var(--secondary-background-color); color: var(--primary-text-color); }`;
     }
 
     render() {
@@ -357,215 +339,39 @@ class XiaoshiCoverCard extends LitElement {
     }
 
     static get styles() {
-        return css`
-            :host {
-                display: block;
-                max-width: 500px;
-                margin: 0 auto;
-            }
-
-            .card {
-                position: relative;
-                border-radius: 12px;
-                padding: 0;
-                cursor: none;
-                box-sizing: border-box;
-                width: 100%;
-                height: 94px;
-            }
-
-            .history-btn {
-              position: absolute;
-              bottom: 6px;
-              left: 6px;
-              z-index: 10;
-              width: 28px;
-              height: 28px;
-              border-radius: 8px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              cursor: default;
-              transition: all 0.3s ease;
-              background: rgba(180, 180, 180, 0.2);
-            }
-            .history-btn:hover {
-              opacity: 0.85;
-              transform: scale(1.05);
-            }
-
+        return css`            :host { display: block; max-width: 500px; margin: 0 auto; }
+            .card { position: relative; border-radius: 12px; padding: 0; cursor: none; box-sizing: border-box; width: 100%; height: 94px; }
+            .history-btn { position: absolute; bottom: 6px; left: 6px; z-index: 10; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background: rgba(180, 180, 180, 0.2); }
+            .history-btn:hover { opacity: 0.85; transform: scale(1.05); }
             /* 圆角裁剪层 - 只裁剪背景 */
-            .bg-clip {
-                position: absolute;
-                top: 0; left: 0; right: 0; bottom: 0;
-                border-radius: 12px;
-                overflow: hidden;
-                z-index: 0;
-            }
-
-            .bg-layer {
-                position: absolute;
-                top: 0; left: 0; right: 0; bottom: 0;
-            }
-
+            .bg-clip { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 12px; overflow: hidden; z-index: 0; }
+            .bg-layer { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
             /* 内容层 */
-            .content {
-                position: relative;
-                z-index: 1;
-                width: 100%;
-                height: 100%;
-                display: grid;
-                grid-template-areas:
-                    "name  slider hanzi"
-                    "icon  sub    status";
-                grid-template-columns: 30% 50% 20%;
-                grid-template-rows: 1fr 1fr;
-            }
-
+            .content { position: relative; z-index: 1; width: 100%; height: 100%; display: grid; grid-template-areas: "name slider hanzi" "icon sub status"; grid-template-columns: 30% 50% 20%; grid-template-rows: 1fr 1fr; }
             /* ====== 名称 ====== */
-            .name-area {
-                grid-area: name;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                font-size: 14px;
-                font-weight: bold;
-                margin-top: -6px;
-            }
-
+            .name-area { grid-area: name; display: flex; align-items: center; justify-content: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; font-weight: bold; margin-top: -6px; }
             /* ====== Sun 滑块 ====== */
-            .slider-area {
-                grid-area: slider;
-                display: flex;
-                align-items: center;
-                padding: 0 8px;
-                margin-top: 16px;
-            }
-
-            .sun-slider-container {
-                position: relative;
-                width: 100%;
-                height: 25px;
-                display: flex;
-                align-items: center;
-                box-sizing: border-box;
-            }
-
-            .sun-slider-track {
-                position: absolute;
-                top: 50%;
-                left: 0;
-                transform: translateY(-50%);
-                width: 100%;
-                height: 25px;
-                border-radius: 8px;
-                overflow: hidden;
-                cursor: default;
-                touch-action: none;
-            }
-
-            .sun-slider-bar {
-                position: absolute;
-                top: 0;
-                left: 0;
-                height: 100%;
-                border-radius: 8px;
-                pointer-events: none;
-            }
-
-            .sun-slider-thumb {
-                position: absolute;
-                top: 50%;
-                transform: translate(-50%, -50%);
-                width: 16px;
-                height: 16px;
-                border-radius: 50%;
-                background: white;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                cursor: grab;
-                touch-action: none;
-                z-index: 1;
-            }
-
+            .slider-area { grid-area: slider; display: flex; align-items: center; padding: 0 8px; margin-top: 16px; }
+            .sun-slider-container { position: relative; width: 100%; height: 25px; display: flex; align-items: center; box-sizing: border-box; }
+            .sun-slider-track { position: absolute; top: 50%; left: 0; transform: translateY(-50%); width: 100%; height: 25px; border-radius: 8px; overflow: hidden; cursor: default; touch-action: none; }
+            .sun-slider-bar { position: absolute; top: 0; left: 0; height: 100%; border-radius: 8px; pointer-events: none; }
+            .sun-slider-thumb { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; border-radius: 50%; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: grab; touch-action: none; z-index: 1; }
             .sun-slider-thumb:active { cursor: grabbing; }
-
             /* ====== 汉字状态 ====== */
-            .hanzi-area {
-                grid-area: hanzi;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 14px;
-                font-weight: bold;
-                white-space: nowrap;
-                margin-top: 16px;
-            }
-
+            .hanzi-area { grid-area: hanzi; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; white-space: nowrap; margin-top: 16px; }
             /* ====== 窗帘SVG图标 ====== */
-            .icon-area {
-                grid-area: icon;
-                position: relative;
-                z-index: 3;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                overflow: visible;
-                pointer-events: none;
-                margin-top: -10px;
-                animation: icon-breathe 3s ease-in-out infinite;
-            }
-
+            .icon-area { grid-area: icon; position: relative; z-index: 3; display: flex; align-items: center; justify-content: center; overflow: visible; pointer-events: none; margin-top: -10px; animation: icon-breathe 3s ease-in-out infinite; }
             @keyframes icon-breathe {
                 0%, 100% { transform: scale(1); opacity: 1; }
                 50% { transform: scale(0.96); opacity: 0.75; }
             }
-
             /* ====== 副按钮区域 ====== */
-            .sub-area {
-                grid-area: sub;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 0 8px;
-                margin-top: -10px;
-            }
-
-            .ctrl-btn {
-                background: var(--btn-bg, rgb(230,230,230));
-                border: none;
-                border-radius: 5px;
-                width: 44px;
-                height: 22px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                padding: 0;
-                transition: opacity 0.15s;
-            }
-            .ctrl-btn:active {
-                opacity: 0.7;
-            }
-            .ctrl-btn ha-icon {
-                --mdc-icon-size: 16px;
-                color: var(--btn-fg, rgb(80,80,80));
-            }
-
+            .sub-area { grid-area: sub; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; margin-top: -10px; }
+            .ctrl-btn { background: var(--btn-bg, rgb(230,230,230)); border: none; border-radius: 5px; width: 44px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; transition: opacity 0.15s; }
+            .ctrl-btn:active { opacity: 0.7; }
+            .ctrl-btn ha-icon { --mdc-icon-size: 16px; color: var(--btn-fg, rgb(80,80,80)); }
             /* ====== 百分比状态 ====== */
-            .status-area {
-                grid-area: status;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 16px;
-                font-weight: bold;
-                white-space: nowrap;
-                margin-top: -10px;
-            }
-        `;
+            .status-area { grid-area: status; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; white-space: nowrap; margin-top: -10px; }`;
     }
 
     render() {
@@ -930,9 +736,11 @@ class XiaoshiCoverCard extends LitElement {
     title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
     title.textContent = `${roomName} - 历史记录`;
     const closeBtn = document.createElement('button');
-    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:default;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
     closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
     closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
     header.appendChild(title);
     header.appendChild(closeBtn);
 
@@ -956,13 +764,14 @@ class XiaoshiCoverCard extends LitElement {
       { label: '24小时', value: 24 },
       { label: '3天', value: 72 },
       { label: '7天', value: 168 },
-      { label: '15天', value: 360 }
+      { label: '10天', value: 240 }
     ];
     for (const p of periods) {
       const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
-      chip.addEventListener('click', () => {
-        this._historyFilterPeriod = p.value;
-        this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
+chip.addEventListener('click', () => {
+            this._handleClick();
+            this._historyFilterPeriod = p.value;
+            this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
         this._refetchWithFilters();
       });
       timeChips.appendChild(chip);
@@ -1093,6 +902,7 @@ class XiaoshiCoverCard extends LitElement {
   }
 
   _closeHistoryOverlay() {
+    this._handleClick();
     if (this._historyOverlayEl) {
       this._historyOverlayEl.remove();
       this._historyOverlayEl = null;
@@ -1187,11 +997,13 @@ class XiaoshiCoverCard extends LitElement {
     chip.setAttribute('data-chip', '1');
     const isActive = (typeof value === 'number' && value === this._historyFilterPeriod);
     if (isActive) {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
     } else {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
     }
     chip.textContent = label;
+    chip.addEventListener('mouseenter', () => { chip.style.opacity = '0.85'; chip.style.transform = 'scale(1.05)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; chip.style.transform = 'scale(1)'; });
     return chip;
   }
 
@@ -1205,7 +1017,7 @@ class XiaoshiCoverCard extends LitElement {
                          (label === '6小时' && activePeriod === 6) ||
                          (label === '3天' && activePeriod === 72) ||
                          (label === '7天' && activePeriod === 168) ||
-                         (label === '15天' && activePeriod === 360);
+                         (label === '10天' && activePeriod === 240);
         if (isActive) {
           chip.style.background = activeBg;
           chip.style.color = activeColor;

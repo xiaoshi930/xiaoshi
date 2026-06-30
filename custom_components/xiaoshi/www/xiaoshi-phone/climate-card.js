@@ -286,207 +286,39 @@ class XiaoshiPhoneClimateCardEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        min-height: 500px;
-      }
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      label {
-        font-weight: bold;
-      }
-      select, input, textarea {
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-      }
-      textarea {
-        min-height: 80px;
-        resize: vertical;
-      }
-      .help-text {
-        font-size: 0.85em;
-        color: #666;
-        margin-top: 4px;
-      }
-
-      .entity-selector {
-        position: relative;
-      }
-
-      .entity-search-input {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-      }
-
-      .entity-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        height: 300px;
-        overflow-y: auto;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        z-index: 1000;
-        margin-top: 2px;
-      }
-
-      .entity-option {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px 12px;
-        cursor: pointer;
-        border-bottom: 1px solid #eee;
-      }
-
-      .entity-option:hover {
-        background: #f5f5f5;
-      }
-
-      .entity-option.selected {
-        background: #e3f2fd;
-      }
-
-      .entity-info {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 1;
-      }
-
-      .entity-details {
-        flex: 1;
-      }
-
-      .entity-name {
-        font-weight: 500;
-        font-size: 14px;
-        color: #000;
-      }
-
-      .entity-id {
-        font-size: 12px;
-        color: #000;
-        font-family: monospace;
-      }
-
-      .check-icon {
-        color: #4CAF50;
-      }
-
-      .no-results {
-        padding: 12px;
-        text-align: center;
-        color: #666;
-        font-style: italic;
-      }
-
-      .entity-selector-with-remove {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        margin-bottom: 8px;
-      }
-
-      .entity-selector-with-remove .entity-selector {
-        flex: 1;
-      }
-
-      .remove-button {
-        background: #f44336;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        width: 30px;
-        height: 30px;
-        min-width: 30px;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        flex-shrink: 0;
-        margin-top: 0;
-      }
-
-      .remove-button:hover {
-        background: #d32f2f;
-      }
-
-      .remove-button ha-icon {
-        --mdc-icon-size: 20px;
-      }
-
-      .buttons-row {
-        display: flex;
-        align-items: center;
-        margin-top: 8px;
-      }
-      .add-button {
-        margin-left: 8px;
-        border: 1px solid red;
-        border-radius: 4px;
-        padding: 8px;
-        transition: all 0.2s ease;
-      }
-      .add-button:hover {
-        background-color: rgba(255, 0, 0, 0.1);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(255, 0, 0, 0.2);
-      }
-      .hint {
-        font-size: 0.85em;
-        color: #888;
-        margin-top: 4px;
-      }
-
-      .refresh-button {
-        transition: all 0.2s ease;
-      }
-
-      .refresh-button:hover {
-        background-color: rgba(33, 150, 243, 0.1);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
-      }
-
-      .mode-indicator {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 8px;
-      }
-
-      .mode-badge {
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 500;
-      }
-
-      .mode-badge.has-mode {
-        background-color: #e8f5e9;
-        color: #2e7d32;
-      }
-
-      .mode-badge.no-mode {
-        background-color: #ffebee;
-        color: #c62828;
-      }
-    `;
+    return css`      .form { display: flex; flex-direction: column; gap: 10px; min-height: 500px; }
+      .form-group { display: flex; flex-direction: column; gap: 5px; }
+      label { font-weight: bold; }
+      select, input, textarea { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+      textarea { min-height: 80px; resize: vertical; }
+      .help-text { font-size: 0.85em; color: #666; margin-top: 4px; }
+      .entity-selector { position: relative; }
+      .entity-search-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+      .entity-dropdown { position: absolute; top: 100%; left: 0; right: 0; height: 300px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px; }
+      .entity-option { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; }
+      .entity-option:hover { background: #f5f5f5; }
+      .entity-option.selected { background: #e3f2fd; }
+      .entity-info { display: flex; align-items: center; gap: 8px; flex: 1; }
+      .entity-details { flex: 1; }
+      .entity-name { font-weight: 500; font-size: 14px; color: #000; }
+      .entity-id { font-size: 12px; color: #000; font-family: monospace; }
+      .check-icon { color: #4CAF50; }
+      .no-results { padding: 12px; text-align: center; color: #666; font-style: italic; }
+      .entity-selector-with-remove { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+      .entity-selector-with-remove .entity-selector { flex: 1; }
+      .remove-button { background: #f44336; color: white; border: none; border-radius: 4px; width: 30px; height: 30px; min-width: 30px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-top: 0; }
+      .remove-button:hover { background: #d32f2f; }
+      .remove-button ha-icon { --mdc-icon-size: 20px; }
+      .buttons-row { display: flex; align-items: center; margin-top: 8px; }
+      .add-button { margin-left: 8px; border: 1px solid red; border-radius: 4px; padding: 8px; transition: all 0.2s ease; }
+      .add-button:hover { background-color: rgba(255, 0, 0, 0.1); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(255, 0, 0, 0.2); }
+      .hint { font-size: 0.85em; color: #888; margin-top: 4px; }
+      .refresh-button { transition: all 0.2s ease; }
+      .refresh-button:hover { background-color: rgba(33, 150, 243, 0.1); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2); }
+      .mode-indicator { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+      .mode-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+      .mode-badge.has-mode { background-color: #e8f5e9; color: #2e7d32; }
+      .mode-badge.no-mode { background-color: #ffebee; color: #c62828; }`;
   }
 
   render() {
@@ -1198,497 +1030,65 @@ class XiaoshiPhoneClimateCard extends LitElement {
   }
   
   static get styles() { 
-    return css`
-      :host {
-        display: block;
-        contain: content;
-        max-width: 500px;
-        margin: 0 auto;
-      }
-      
-      .card {
-        position: relative;
-        border-radius: 12px;
-        overflow: hidden;
-        box-sizing: border-box;
-      }
-      
-      .content-container {
-        position: relative;
-        z-index: 1;
-        height: 100%;
-        display: grid;
-        grid-template-areas: 
-            "name status power"
-            "icon modes modes"
-            "icon fan fan "
-            "icon preset preset"
-            "icon swing swing"
-            "icon water water"
-            "icon timer timer"
-            "icon extra extra"
-            "icon extra2 extra2"
-            "a a a"; 
-        grid-template-columns: 25% 60% 13%;
-        grid-template-rows: auto auto auto auto auto auto auto auto auto 4px;
-      }
-
-      .active-gradient {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, var(--linear-color), transparent 50%);
-        opacity: 0.8;
-        z-index: 0;
-      }
-
-      #chart-container {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 20%;
-        overflow: hidden;
-        z-index: 0;
-        pointer-events: none;
-      }
-
-      .history-btn {
-        position: absolute;
-        bottom: 6px;
-        left: 6px;
-        z-index: 10;
-        width: 28px;
-        height: 28px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: default;
-        transition: all 0.3s ease;
-        background: rgba(180, 180, 180, 0.2);
-      }
-      .history-btn:hover {
-        opacity: 0.85;
-        transform: scale(1.05);
-      }
-
-      .name-area {
-        grid-area: name;
-        display: flex;
-        align-items: center;
-        font-size: 16px;
-        font-weight: bold;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        margin-left: 10px; 
-        font-weight: bold;
-      }
-      
-      .status-area {
-        grid-area: status;
-        display: flex;
-        align-items: center;
-        font-size: 12px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        margin-left: 5px; 
-        gap: 1px;
-        font-weight: bold;
-      }
-      .temp-adjust-container {
-        display: inline-flex;
-        align-items: center;
-        gap: 1px;
-      }
-      .temp-adjust-button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--button);;
-        width: 24px;
-        height: 24px;
-        border-radius: 5px;
-        cursor: default;
-      }
-
-      .temp-display {
-        font-size: 12px;
-        min-width: 35px;
-        text-align: center;
-        color: var(--button);;
-      }
-      .current-temp {
-        font-size: 12px;
-        margin-left: 5px;
-      }
-      .power-area {
-        grid-area: power;
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-      }
-      
-      .power-button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        width: 100%;
-        height: 35px;
-        border-radius: 5px;
-        cursor: default;
-      }
-      
-      .power-icon {
-        --mdc-icon-size: 30px;
-        transition: all 0.3s ease;
-      }
-
-      .icon {
-        --mdc-icon-size: 16px;
-      }
-
-      .icon-area {
-        grid-area: icon;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-between;
-        height: 100%;
-      }
-
-      .main-icon-container {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-      }
-      
-      .main-icon {
-        --mdc-icon-size: 50px;
-        margin-top: -3px;
-        transition: transform 0.3s ease;
-      }
-
-      .active-main-icon {
-        animation: spin var(--fan-speed, 2s) linear infinite;
-        color: var(--active-text-color, white);
-      }
-
+    return css`      :host { display: block; contain: content; max-width: 500px; margin: 0 auto; }
+      .card { position: relative; border-radius: 12px; overflow: hidden; box-sizing: border-box; }
+      .content-container { position: relative; z-index: 1; height: 100%; display: grid; grid-template-areas: "name status power" "icon modes modes" "icon fan fan " "icon preset preset" "icon swing swing" "icon water water" "icon timer timer" "icon extra extra" "icon extra2 extra2" "a a a"; grid-template-columns: 25% 60% 13%; grid-template-rows: auto auto auto auto auto auto auto auto auto 4px; }
+      .active-gradient { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, var(--linear-color), transparent 50%); opacity: 0.8; z-index: 0; }
+      #chart-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 20%; overflow: hidden; z-index: 0; pointer-events: none; }
+      .history-btn { position: absolute; bottom: 6px; left: 6px; z-index: 10; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background: rgba(180, 180, 180, 0.2); }
+      .history-btn:hover { opacity: 0.85; transform: scale(1.05); }
+      .name-area { grid-area: name; display: flex; align-items: center; font-size: 16px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: 10px; font-weight: bold; }
+      .status-area { grid-area: status; display: flex; align-items: center; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: 5px; gap: 1px; font-weight: bold; }
+      .temp-adjust-container { display: inline-flex; align-items: center; gap: 1px; }
+      .temp-adjust-button { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; color: var(--button);; width: 24px; height: 24px; border-radius: 5px; cursor: default; }
+      .temp-display { font-size: 12px; min-width: 35px; text-align: center; color: var(--button);; }
+      .current-temp { font-size: 12px; margin-left: 5px; }
+      .power-area { grid-area: power; display: flex; justify-content: flex-end; align-items: center; }
+      .power-button { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: flex-end; width: 100%; height: 35px; border-radius: 5px; cursor: default; }
+      .power-icon { --mdc-icon-size: 30px; transition: all 0.3s ease; }
+      .icon { --mdc-icon-size: 16px; }
+      .icon-area { grid-area: icon; display: flex; flex-direction: column; align-items: center; justify-content: space-between; height: 100%; }
+      .main-icon-container { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
+      .main-icon { --mdc-icon-size: 50px; margin-top: -3px; transition: transform 0.3s ease; }
+      .active-main-icon { animation: spin var(--fan-speed, 2s) linear infinite; color: var(--active-text-color, white); }
       @keyframes spin {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
       }
-
-      .modes-area, .fan-area, .swing-area, .preset-area, .water-area,.timer-area, .extra-area ,.extra2-area{
-        display: flex;
-        gap: 5px;
-        width: 100%;
-        height: 25px;
-        margin-bottom: 5px;
-      }
-      
-      .modes-area {
-        grid-area: modes;
-      }
-      
-      .fan-area {
-        grid-area: fan;
-        overflow-x: auto;
-        scrollbar-width: none;
-      }
-      
-      .fan-area::-webkit-scrollbar {
-        display: none;
-      }
-      
-      .swing-area {
-        grid-area: swing;
-        overflow-x: auto;
-        scrollbar-width: none;
-      }
-      
-      .swing-area::-webkit-scrollbar {
-        display: none;
-      }
-
-      .preset-area {
-        grid-area: preset;
-        overflow-x: auto;
-        scrollbar-width: none;
-      }
-      
-      .preset-area::-webkit-scrollbar {
-        display: none;
-      }
-
-      .water-area {
-        grid-area: water;
-        overflow-x: auto;
-        scrollbar-width: none;
-      }
-      
-      .water-area::-webkit-scrollbar {
-        display: none;
-      }
-
-      .timer-area {
-        grid-area: timer;
-        display: grid;
-        grid-template-columns: repeat(8, 1fr);
-        gap: 5px;
-      }
-      
-      .timer-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: var(--button-bg);
-        color: var(--button-fg);
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 10px;
-        min-width: 0;
-        overflow: hidden;
-        padding: 0 2px;
-        cursor: default;
-      }
-      
-      .timer-display {
-        grid-column: span 2;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: var(--button-bg);
-        color: var(--button-fg);
-        border-radius: 8px;
-        font-size: 10px;
-        font-weight: bold;
-        font-family: monospace;
-      }
-      
-      .extra-area {
-        grid-area: extra;
-        display: grid;
-        gap: 5px;
-      }
-
-      .extra2-area {
-        grid-area: extra2;
-        display: grid;
-        gap: 5px;
-      }
-
-      .extra-button {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background-color: rgb(0,0,0,0);
-        color: var(--button);
-        border: none;
-        cursor: pointer;
-        min-width: 0;
-        overflow: visible;
-        cursor: default;
-        height: 100%;
-        padding: 0;     
-      }
-      
-      .extra-button-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        line-height: 1;
-        cursor: default;
-      } 
-        
-      .extra-button-icon {
-        --mdc-icon-size: 27px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: -4px;
-        cursor: default;
-      }
-      
-      .extra-button-value {
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: -4px;
-        font-size: 11px;
-        font-weight: bold;
-        line-height: 1.5;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-        cursor: default;
-      }
-        
-      .extra-button-text {
-        font-size: 10px;
-        line-height: 1.2;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-        height: auto;
-        cursor: default;
-      }
-      
-      .mode-button {
-        background-color: var(--button-bg);
-        color: var(--button-fg);
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex: 1;
-        min-width: 0;
-        position: relative;
-        cursor: default;
-      }
-
-      .mode-text {
-        font-size: 8px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        max-width: 100%;
-        line-height: 1;
-        margin-left: 2px;
-      }
-
-      .fan-button {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .fan-button-icon {
-        --mdc-icon-size: 16px;
-        width: 16px;
-        height: 16px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        transform-origin: center;
-      }
-
-      .active-fan-button-icon {
-        animation: spin var(--fan-speed, 2s) linear infinite;
-        color: var(--active-text-color, white);
-      }
-
-      .fan-text {
-        position: absolute;
-        font-size: 8px;
-        font-weight: bold;
-        bottom: 0px;
-        right: 0px; 
-        border-radius: 4px;
-        height: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-        padding: 1px 2px;  
-        background-color: var(--button-bg);  
-      }
-      
-      .swing-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-      }
-      
-      .swing-text {
-        font-size: 10px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .preset-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        --mdc-icon-size: 10px;
-      }
-      
-      .preset-text {
-        font-size: 8px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        max-width: 100%;
-        line-height: 1;
-        margin-left: 2px;
-      }
-      
-      .water-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        padding: 0;
-        margin: 0;
-      }
-      
-      .water-text {
-        display: block;
-        font-size: 8px;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        padding: 0;
-        margin: 0;
-        width: 100%;
-        box-sizing: border-box;
-        position: absolute;
-        left: 0;
-        right: 0;
-        text-align: center;
-        line-height: 1;
-      }
-      
-      .active-mode {
-        background-color: var(--active-color) !important;
-        color: var(--active-text-color, white) !important;
-      }
-      
-      .active-extra {
-        background-color: transparent !important;
-        color: var(--active-color) !important;
-      }
-  `;
+      .modes-area, .fan-area, .swing-area, .preset-area, .water-area,.timer-area, .extra-area ,.extra2-area { display: flex; gap: 5px; width: 100%; height: 25px; margin-bottom: 5px; }
+      .modes-area { grid-area: modes; }
+      .fan-area { grid-area: fan; overflow-x: auto; scrollbar-width: none; }
+      .fan-area::-webkit-scrollbar { display: none; }
+      .swing-area { grid-area: swing; overflow-x: auto; scrollbar-width: none; }
+      .swing-area::-webkit-scrollbar { display: none; }
+      .preset-area { grid-area: preset; overflow-x: auto; scrollbar-width: none; }
+      .preset-area::-webkit-scrollbar { display: none; }
+      .water-area { grid-area: water; overflow-x: auto; scrollbar-width: none; }
+      .water-area::-webkit-scrollbar { display: none; }
+      .timer-area { grid-area: timer; display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }
+      .timer-button { display: flex; align-items: center; justify-content: center; background-color: var(--button-bg); color: var(--button-fg); border: none; border-radius: 8px; cursor: pointer; font-size: 10px; min-width: 0; overflow: hidden; padding: 0 2px; cursor: default; }
+      .timer-display { grid-column: span 2; display: flex; align-items: center; justify-content: center; background-color: var(--button-bg); color: var(--button-fg); border-radius: 8px; font-size: 10px; font-weight: bold; font-family: monospace; }
+      .extra-area { grid-area: extra; display: grid; gap: 5px; }
+      .extra2-area { grid-area: extra2; display: grid; gap: 5px; }
+      .extra-button { display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: rgb(0,0,0,0); color: var(--button); border: none; cursor: pointer; min-width: 0; overflow: visible; cursor: default; height: 100%; padding: 0; }
+      .extra-button-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; line-height: 1; cursor: default; }
+      .extra-button-icon { --mdc-icon-size: 27px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: -4px; cursor: default; }
+      .extra-button-value { height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: -4px; font-size: 11px; font-weight: bold; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; cursor: default; }
+      .extra-button-text { font-size: 10px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; height: auto; cursor: default; }
+      .mode-button { background-color: var(--button-bg); color: var(--button-fg); border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex: 1; min-width: 0; position: relative; cursor: default; }
+      .mode-text { font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; line-height: 1; margin-left: 2px; }
+      .fan-button { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+      .fan-button-icon { --mdc-icon-size: 16px; width: 16px; height: 16px; display: flex; justify-content: center; align-items: center; transform-origin: center; }
+      .active-fan-button-icon { animation: spin var(--fan-speed, 2s) linear infinite; color: var(--active-text-color, white); }
+      .fan-text { position: absolute; font-size: 8px; font-weight: bold; bottom: 0px; right: 0px; border-radius: 4px; height: 8px; display: flex; align-items: center; justify-content: center; line-height: 1; padding: 1px 2px; background-color: var(--button-bg); }
+      .swing-button { display: flex; align-items: center; justify-content: center; width: 100%; }
+      .swing-text { font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .preset-button { display: flex; align-items: center; justify-content: center; width: 100%; --mdc-icon-size: 10px; }
+      .preset-text { font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; line-height: 1; margin-left: 2px; }
+      .water-button { display: flex; align-items: center; justify-content: center; width: 100%; padding: 0; margin: 0; }
+      .water-text { display: block; font-size: 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0; margin: 0; width: 100%; box-sizing: border-box; position: absolute; left: 0; right: 0; text-align: center; line-height: 1; }
+      .active-mode { background-color: var(--active-color) !important; color: var(--active-text-color, white) !important; }
+      .active-extra { background-color: transparent !important; color: var(--active-color) !important; }`;
   }
 
   constructor() {
@@ -3123,9 +2523,11 @@ _renderExtraButtons(buttonType = 1) {
     title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
     title.textContent = `${roomName} - 历史记录`;
     const closeBtn = document.createElement('button');
-    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:default;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
     closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
     closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
     header.appendChild(title);
     header.appendChild(closeBtn);
 
@@ -3149,12 +2551,13 @@ _renderExtraButtons(buttonType = 1) {
       { label: '24小时', value: 24 },
       { label: '3天', value: 72 },
       { label: '7天', value: 168 },
-      { label: '15天', value: 360 }
+      { label: '10天', value: 240 }
     ];
     for (const p of periods) {
       const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
-      chip.addEventListener('click', () => {
-        this._historyFilterPeriod = p.value;
+chip.addEventListener('click', () => {
+            this._handleClick();
+            this._historyFilterPeriod = p.value;
         this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
         this._refetchWithFilters();
       });
@@ -3286,6 +2689,7 @@ _renderExtraButtons(buttonType = 1) {
   }
 
   _closeHistoryOverlay() {
+    this._handleClick();
     if (this._historyOverlayEl) {
       this._historyOverlayEl.remove();
       this._historyOverlayEl = null;
@@ -3371,11 +2775,13 @@ _renderExtraButtons(buttonType = 1) {
     chip.setAttribute('data-chip', '1');
     const isActive = (typeof value === 'number' && value === this._historyFilterPeriod);
     if (isActive) {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
     } else {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
     }
     chip.textContent = label;
+    chip.addEventListener('mouseenter', () => { chip.style.opacity = '0.85'; chip.style.transform = 'scale(1.05)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; chip.style.transform = 'scale(1)'; });
     return chip;
   }
 
@@ -3389,7 +2795,7 @@ _renderExtraButtons(buttonType = 1) {
                          (label === '6小时' && activePeriod === 6) ||
                          (label === '3天' && activePeriod === 72) ||
                          (label === '7天' && activePeriod === 168) ||
-                         (label === '15天' && activePeriod === 360);
+                         (label === '10天' && activePeriod === 240);
         if (isActive) {
           chip.style.background = activeBg;
           chip.style.color = activeColor;

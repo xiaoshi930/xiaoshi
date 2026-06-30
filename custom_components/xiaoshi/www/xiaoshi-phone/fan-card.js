@@ -78,47 +78,26 @@ class XiaoshiPhoneFanCardEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form { display: flex; flex-direction: column; gap: 8px; }
+    return css`      .form { display: flex; flex-direction: column; gap: 8px; }
       .form-group { display: flex; align-items: center; gap: 8px; }
       label { font-weight: bold; font-size: 10px; white-space: nowrap; min-width: 9em; max-width: 9em; width: 9em; }
       .help-text { font-size: 10px; color: #666; margin-top: 4px; }
-
       .entity-selector { position: relative; }
-      .entity-search-input {
-        width: 100%; padding: 8px; border: 1px solid #ddd;
-        border-radius: 4px; box-sizing: border-box;font-size: 11px;
-      }
-      .entity-dropdown {
-        position: absolute; top: 100%; left: 0; right: 0;
-        height: 80px; overflow-y: auto; background: white;
-        border: 1px solid #ddd; border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px;
-      }
-      .entity-option {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #eee;
-      }
+      .entity-search-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;font-size: 11px; }
+      .entity-dropdown { position: absolute; top: 100%; left: 0; right: 0; height: 80px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px; }
+      .entity-option { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #eee; }
       .entity-option:hover { background: #f5f5f5; }
       .entity-info { display: flex; align-items: center; gap: 8px; flex: 1; }
       .entity-name { font-weight: 500; font-size: 14px; color: #000; }
       .entity-id { font-size: 10px; color: #666; font-family: monospace; }
       .no-results { padding: 10px; text-align: center; color: #666; font-style: italic; }
-
       .entity-selector-with-remove { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
       .entity-selector-with-remove .entity-selector { flex: 1; min-width: 0; }
-      .remove-button {
-        background: #f44336; color: white; border: none; border-radius: 4px;
-        width: 30px; height: 30px; min-width: 30px; padding: 0;
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer; flex-shrink: 0; margin-top: 0;
-      }
+      .remove-button { background: #f44336; color: white; border: none; border-radius: 4px; width: 30px; height: 30px; min-width: 30px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-top: 0; }
       .remove-button:hover { background: #d32f2f; }
-
       .form-group select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; flex: 1; }
       .checkbox-group { display: flex; flex-direction: column; gap: 8px; }
-      .checkbox-item { display: flex; align-items: center; gap: 8px; }
-    `;
+      .checkbox-item { display: flex; align-items: center; gap: 8px; }`;
   }
 
   render() {
@@ -584,744 +563,119 @@ class XiaoshiPhoneFanCard extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-        contain: content;
-        max-width: 500px;
-        margin: 0 auto;
-      }
-
-      .card {
-        position: relative;
-        border-radius: 12px;
-        overflow: hidden;
-        box-sizing: border-box;
-        padding: 0 12px 4px 12px;
-      }
-
-      .content-container {
-        position: relative;
-        z-index: 1;
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 6px;
-      }
-
-      .status-area {
-        grid-column: 1 / 4;
-        grid-row: 1;
-        display: grid;
-        grid-template-columns: 1fr 2fr;
-        align-items: center;
-        gap: 8px;
-        overflow: hidden;
-      }
-
-      .status-name {
-        font-size: 16px;
-        font-weight: bold;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .status-info {
-        font-size: 12px;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        white-space: nowrap;
-        grid-column: 2;
-        margin-left: -20px;
-      }
-
-      .power-area {
-        grid-column: 3;
-        grid-row: 1;
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-      }
-
-      .power-button {
-        background: none;
-        border: none;
-        cursor: default;
-        padding: 4px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .direction-area {
-        grid-column: 1;
-        grid-row: 2 / 9;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        margin-right: 30px;
-      }
-
-      .mode-area {
-        grid-column: 2 / 4;
-        grid-row: 2;
-        display: flex;
-        gap: 6px;
-        justify-content: flex-start;
-        margin-top: -6px;
-        margin-left: -20px;
-      }
-
-      .mode-area .mode-button:first-child {
-        flex: 1;
-      }
-
-      .mode-area .mode-button:not(:first-child) {
-        flex: 1;
-        min-width: 0;
-      }
-
+    return css`      :host { display: block; contain: content; max-width: 500px; margin: 0 auto; }
+      .card { position: relative; border-radius: 12px; overflow: hidden; box-sizing: border-box; padding: 0 12px 4px 12px; }
+      .content-container { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+      .status-area { grid-column: 1 / 4; grid-row: 1; display: grid; grid-template-columns: 1fr 2fr; align-items: center; gap: 8px; overflow: hidden; }
+      .status-name { font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .status-info { font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 4px; white-space: nowrap; grid-column: 2; margin-left: -20px; }
+      .power-area { grid-column: 3; grid-row: 1; display: flex; justify-content: flex-end; align-items: center; }
+      .power-button { background: none; border: none; cursor: default; padding: 4px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+      .direction-area { grid-column: 1; grid-row: 2 / 9; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-right: 30px; }
+      .mode-area { grid-column: 2 / 4; grid-row: 2; display: flex; gap: 6px; justify-content: flex-start; margin-top: -6px; margin-left: -20px; }
+      .mode-area .mode-button:first-child { flex: 1; }
+      .mode-area .mode-button:not(:first-child) { flex: 1; min-width: 0; }
       /* 风速区域 */
-      .fanspeed-area {
-        grid-column: 2 / 4;
-        grid-row: 3;
-        display: flex !important;
-        gap: 6px;
-        flex-wrap: wrap;
-        align-items: center;
-        min-height: 25px !important;
-        margin-left: -20px;
-      }
-
-      .fanspeed-area .speed-display-btn {
-        flex: 0 0 calc(25% - 4.5px);
-        height: 25px;
-        box-sizing: border-box;
-      }
-
-      .fanspeed-area .mode-button:first-child {
-        flex: 0 0 calc(25% - 4.5px);
-      }
-
-      .fanspeed-area .mode-button:not(:first-child) {
-        flex: 1;
-      }
-
-      .fanspeed-area .sun-slider-container {
-        flex: 3;
-        min-width: 0;
-        height: 25px !important;
-      }
-
+      .fanspeed-area { grid-column: 2 / 4; grid-row: 3; display: flex !important; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 25px !important; margin-left: -20px; }
+      .fanspeed-area .speed-display-btn { flex: 0 0 calc(25% - 4.5px); height: 25px; box-sizing: border-box; }
+      .fanspeed-area .mode-button:first-child { flex: 0 0 calc(25% - 4.5px); }
+      .fanspeed-area .mode-button:not(:first-child) { flex: 1; }
+      .fanspeed-area .sun-slider-container { flex: 3; min-width: 0; height: 25px !important; }
       /* 左右摆风区域 */
-      .oscillateh-area {
-        grid-column: 2 / 4;
-        grid-row: 5;
-        display: flex;
-        gap: 6px;
-        flex-wrap: nowrap;
-        margin-left: -20px;
-      }
-
-      .oscillateh-area .switch-button:first-child {
-        flex: 0 0 calc(25% - 4.5px);
-      }
-
-      .oscillateh-area .angle-button {
-        flex: 1;
-      }
-
+      .oscillateh-area { grid-column: 2 / 4; grid-row: 5; display: flex; gap: 6px; flex-wrap: nowrap; margin-left: -20px; }
+      .oscillateh-area .switch-button:first-child { flex: 0 0 calc(25% - 4.5px); }
+      .oscillateh-area .angle-button { flex: 1; }
       /* 上下摆风区域 */
-      .oscillatev-area {
-        grid-column: 2 / 4;
-        grid-row: 4;
-        display: flex;
-        gap: 6px;
-        flex-wrap: nowrap;
-        margin-left: -20px;
-      }
-
-      .oscillatev-area .switch-button:first-child {
-        flex: 0 0 calc(25% - 4.5px);
-      }
-
-      .oscillatev-area .angle-button {
-        flex: 1;
-      }
-
-      .oscillatev-area .switch-button:last-child {
-        flex: 0 0 calc(25% - 4.5px);
-      }
-
+      .oscillatev-area { grid-column: 2 / 4; grid-row: 4; display: flex; gap: 6px; flex-wrap: nowrap; margin-left: -20px; }
+      .oscillatev-area .switch-button:first-child { flex: 0 0 calc(25% - 4.5px); }
+      .oscillatev-area .angle-button { flex: 1; }
+      .oscillatev-area .switch-button:last-child { flex: 0 0 calc(25% - 4.5px); }
       /* 副按钮区域 */
-      .extras-area {
-        grid-column: 2 / 4;
-        grid-row: 7;
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-        justify-content: space-between;
-      }
-
-      .extras-area .extra-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 2px;
-        min-width: 40px;
-      }
-
-      .extras-area .extra-btn .btn-label {
-        font-size: 10px;
-        line-height: 1.2;
-        text-align: center;
-      }
-
+      .extras-area { grid-column: 2 / 4; grid-row: 7; display: flex; gap: 6px; flex-wrap: wrap; justify-content: space-between; }
+      .extras-area .extra-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 40px; }
+      .extras-area .extra-btn .btn-label { font-size: 10px; line-height: 1.2; text-align: center; }
       /* 统一按钮基础样式 */
-      .mode-button {
-        height: 25px;
-        background-color: var(--button-bg);
-        color: var(--button-fg);
-        border: none;
-        border-radius: 8px;
-        cursor: default;
-        padding: 0 2px;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        gap: 1px;
-        box-sizing: border-box;
-      }
-
-      .mode-button ha-icon {
-        --mdc-icon-size: 12px;
-      }
-
-      .mode-button .btn-text {
-        font-size: 9px;
-        font-weight: bold;
-        white-space: nowrap;
-      }
-
-      .mode-button.active {
-        background-color: var(--active-color) !important;
-        color: white !important;
-      }
-
-      .active-mode {
-        background-color: var(--active-color) !important;
-        color: white !important;
-      }
-
-      .switch-button {
-        height: 25px;
-        background-color: var(--button-bg);
-        color: var(--button-fg);
-        border: none;
-        border-radius: 8px;
-        cursor: default;
-        padding: 4px 6px;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        gap: 2px;
-        min-width: 0;
-        box-sizing: border-box;
-      }
-
-      .switch-button ha-icon {
-        --mdc-icon-size: 14px;
-      }
-
-      .switch-button .btn-text {
-        font-size: 9px;
-        font-weight: bold;
-        white-space: nowrap;
-      }
-
-      .switch-button.active {
-        background-color: var(--active-color) !important;
-        color: white !important;
-      }
-
-      .angle-button {
-        height: 25px;
-        background-color: var(--button-bg);
-        color: var(--button-fg);
-        border: none;
-        border-radius: 8px;
-        cursor: default;
-        padding: 3px 5px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-width: 0;
-        box-sizing: border-box;
-      }
-
-      .angle-button .btn-text {
-        font-size: 9px;
-        font-weight: bold;
-      }
-
-      .angle-button.active {
-        background-color: var(--active-color) !important;
-        color: white !important;
-      }
-
+      .mode-button { height: 25px; background-color: var(--button-bg); color: var(--button-fg); border: none; border-radius: 8px; cursor: default; padding: 0 2px; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 1px; box-sizing: border-box; }
+      .mode-button ha-icon { --mdc-icon-size: 12px; }
+      .mode-button .btn-text { font-size: 9px; font-weight: bold; white-space: nowrap; }
+      .mode-button.active { background-color: var(--active-color) !important; color: white !important; }
+      .active-mode { background-color: var(--active-color) !important; color: white !important; }
+      .switch-button { height: 25px; background-color: var(--button-bg); color: var(--button-fg); border: none; border-radius: 8px; cursor: default; padding: 4px 6px; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 2px; min-width: 0; box-sizing: border-box; }
+      .switch-button ha-icon { --mdc-icon-size: 14px; }
+      .switch-button .btn-text { font-size: 9px; font-weight: bold; white-space: nowrap; }
+      .switch-button.active { background-color: var(--active-color) !important; color: white !important; }
+      .angle-button { height: 25px; background-color: var(--button-bg); color: var(--button-fg); border: none; border-radius: 8px; cursor: default; padding: 3px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; box-sizing: border-box; }
+      .angle-button .btn-text { font-size: 9px; font-weight: bold; }
+      .angle-button.active { background-color: var(--active-color) !important; color: white !important; }
       /* 有图标的angle-button水平排列 */
-      .angle-button.has-icon {
-        flex-direction: row;
-        gap: 4px;
-      }
-
-      .angle-button.has-icon .btn-text {
-        font-size: 8px;
-      }
-
+      .angle-button.has-icon { flex-direction: row; gap: 4px; }
+      .angle-button.has-icon .btn-text { font-size: 8px; }
       /* 定时控制 */
-      .timer-control {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        background-color: var(--button-bg);
-        border-radius: 8px;
-        padding: 3px 5px;
-      }
-
-      .timer-btn {
-        background: none;
-        border: none;
-        cursor: default;
-        padding: 2px;
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-      }
-
-      .timer-btn:hover {
-        background: rgba(255,255,255,0.1);
-      }
-
-      .timer-value {
-        font-size: 12px;
-        font-weight: bold;
-        min-width: 40px;
-        text-align: center;
-        color: var(--button-fg);
-      }
-
-      .timer-label {
-        font-size: 10px;
-        color: var(--button-fg);
-      }
-
+      .timer-control { display: flex; align-items: center; gap: 4px; background-color: var(--button-bg); border-radius: 8px; padding: 3px 5px; }
+      .timer-btn { background: none; border: none; cursor: default; padding: 2px; border-radius: 4px; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
+      .timer-btn:hover { background: rgba(255,255,255,0.1); }
+      .timer-value { font-size: 12px; font-weight: bold; min-width: 40px; text-align: center; color: var(--button-fg); }
+      .timer-label { font-size: 10px; color: var(--button-fg); }
       /* 风速数值显示按钮 */
-      .speed-display-btn {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        background-color: var(--button-bg);
-        border: none;
-        border-radius: 8px;
-        padding: 6px 5px;
-        cursor: default;
-        min-width: 0;
-      }
-
-      .speed-percent {
-        font-size: 10px;
-        font-weight: bold;
-        color: var(--active-color);
-      }
-
+      .speed-display-btn { display: flex; align-items: center; gap: 4px; background-color: var(--button-bg); border: none; border-radius: 8px; padding: 6px 5px; cursor: default; min-width: 0; }
+      .speed-percent { font-size: 10px; font-weight: bold; color: var(--active-color); }
       /* 风速滑块区域 */
-      .fanspeed-slider-area {
-        position: relative;
-        display: flex;
-        align-items: center;
-        flex: 1;
-        height: 25px;
-        padding: 0 8px;
-      }
-
+      .fanspeed-slider-area { position: relative; display: flex; align-items: center; flex: 1; height: 25px; padding: 0 8px; }
       /* 内联滑块样式 */
-      .sun-slider-container {
-        position: relative;
-        width: 100%;
-        height: 25px;
-        display: flex;
-        align-items: center;
-        padding: 0 8px;
-        box-sizing: border-box;
-      }
-
-      .sun-slider-track {
-        position: absolute;
-        top: 50%;
-        left: 0;
-        transform: translateY(-50%);
-        width: 100%;
-        height: 25px;
-        border-radius: 8px;
-        overflow: visible;
-        cursor: default;
-        touch-action: none;
-      }
-
-      .sun-slider-bar {
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: 100%;
-        border-radius: 8px;
-        pointer-events: none;
-      }
-
-      .sun-slider-thumb {
-        position: absolute;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background: white;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        cursor: grab;
-        touch-action: none;
-      }
-
+      .sun-slider-container { position: relative; width: 100%; height: 25px; display: flex; align-items: center; padding: 0 8px; box-sizing: border-box; }
+      .sun-slider-track { position: absolute; top: 50%; left: 0; transform: translateY(-50%); width: 100%; height: 25px; border-radius: 8px; overflow: visible; cursor: default; touch-action: none; }
+      .sun-slider-bar { position: absolute; top: 0; left: 0; height: 100%; border-radius: 8px; pointer-events: none; }
+      .sun-slider-thumb { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; border-radius: 50%; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: grab; touch-action: none; }
       .sun-slider-thumb:active { cursor: grabbing; }
-
       /* 方向盘样式 - 圆形方向盘 */
-      .direction-control {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 1;
-        max-width: 90px;
-        max-height: 90px;
-      }
-
-      .dir-bg {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        background: var(--button-bg);
-        overflow: hidden;
-        transition: transform 0.15s;
-      }
-
-      .dir-bg:active {
-        transform: scale(0.95);
-      }
-      
-      .dir扇 {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        transition: background 0.15s;
-        cursor: pointer;
-        background: transparent;
-      }
-
-      .dir扇:active {
-        background: var(--active-color);
-      }
-
-      .dir扇-up {
-        clip-path: polygon(50% 50%, 0% 0%, 100% 0%);
-      }
-
-      .dir扇-down {
-        clip-path: polygon(50% 50%, 0% 100%, 100% 100%);
-      }
-
-      .dir扇-left {
-        clip-path: polygon(50% 50%, 0% 0%, 0% 100%);
-      }
-
-      .dir扇-right {
-        clip-path: polygon(50% 50%, 100% 0%, 100% 100%);
-      }
-
-      .dir-btn {
-        position: absolute;
-        border: none;
-        cursor: default;
-        padding: 0;
-        background: transparent;
-        transition: color 0.2s;
-        z-index: 10;
-        pointer-events: none;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-
-      .dir-btn ha-icon {
-        --mdc-icon-size: 22px;
-        color: var(--button-fg);
-      }
-
+      .direction-control { position: relative; width: 100%; aspect-ratio: 1; max-width: 90px; max-height: 90px; }
+      .dir-bg { position: absolute; width: 100%; height: 100%; border-radius: 50%; background: var(--button-bg); overflow: hidden; transition: transform 0.15s; }
+      .dir-bg:active { transform: scale(0.95); }
+      .dir扇 { position: absolute; width: 100%; height: 100%; transition: background 0.15s; cursor: pointer; background: transparent; }
+      .dir扇:active { background: var(--active-color); }
+      .dir扇-up { clip-path: polygon(50% 50%, 0% 0%, 100% 0%); }
+      .dir扇-down { clip-path: polygon(50% 50%, 0% 100%, 100% 100%); }
+      .dir扇-left { clip-path: polygon(50% 50%, 0% 0%, 0% 100%); }
+      .dir扇-right { clip-path: polygon(50% 50%, 100% 0%, 100% 100%); }
+      .dir-btn { position: absolute; border: none; cursor: default; padding: 0; background: transparent; transition: color 0.2s; z-index: 10; pointer-events: none; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+      .dir-btn ha-icon { --mdc-icon-size: 22px; color: var(--button-fg); }
       /* 方向按钮位置：放在各扇形的中心位置 */
       .dir-btn.up { top: 12%; left: 50%; transform: translate(-50%, -50%); }
       .dir-btn.down { bottom: 12%; left: 50%; transform: translate(-50%, 50%); }
       .dir-btn.left { left: 12%; top: 50%; transform: translate(-50%, -50%); }
       .dir-btn.right { right: 12%; top: 50%; transform: translate(50%, -50%); }
-
-      .dir-btn.center {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 27px;
-        height: 27px;
-        border-radius: 50%;
-        background: var(--secondary-bg);
-        z-index: 20;
-        pointer-events: auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .dir-btn.center:active {
-        background: var(--theme-bg-active, rgba(16, 202, 248, 0.9));
-        transform: translate(-50%, -50%) scale(0.95);
-      }
-
-      .dir-btn.center ha-icon {
-        --mdc-icon-size: 16px;
-      }
-
+      .dir-btn.center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 27px; height: 27px; border-radius: 50%; background: var(--secondary-bg); z-index: 20; pointer-events: auto; display: flex; align-items: center; justify-content: center; }
+      .dir-btn.center:active { background: var(--theme-bg-active, rgba(16, 202, 248, 0.9)); transform: translate(-50%, -50%) scale(0.95); }
+      .dir-btn.center ha-icon { --mdc-icon-size: 16px; }
       /* 副按钮样式 */
-      .extra-btn {
-        background: none;
-        border: none;
-        cursor: default;
-        padding: 4px;
-        border-radius: 8px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-width: 40px;
-        min-height: 40px;
-      }
-
-      .extra-btn ha-icon {
-        --mdc-icon-size: 16px;
-      }
-
-      .extra-btn.active ha-icon {
-        color: var(--active-color);
-      }
-
-      .extra-btn:not(.active) ha-icon {
-        color: var(--button-fg);
-      }
-
+      .extra-btn { background: none; border: none; cursor: default; padding: 4px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; }
+      .extra-btn ha-icon { --mdc-icon-size: 16px; }
+      .extra-btn.active ha-icon { color: var(--active-color); }
+      .extra-btn:not(.active) ha-icon { color: var(--button-fg); }
       /* 手机自适应 */
-
-      .active-gradient {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, var(--linear-color), transparent 50%);
-        opacity: 0.8;
-        z-index: 0;
-      }
-
-      .history-btn {
-        position: absolute;
-        bottom: 6px;
-        left: 6px;
-        z-index: 10;
-        width: 28px;
-        height: 28px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: default;
-        transition: all 0.3s ease;
-        background: rgba(180, 180, 180, 0.2);
-      }
-      .history-btn:hover {
-        opacity: 0.85;
-        transform: scale(1.05);
-      }
-
-      #chart-container {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 20%;
-        overflow: hidden;
-        z-index: 0;
-        pointer-events: none;
-      }
-
-      .timer-area {
-        grid-column: 2 / 4;
-        grid-row: 6;
-        display: grid;
-        grid-template-columns: repeat(8, 1fr);
-        gap: 4px;
-        margin-left: -20px;
-        margin-top: -3px;
-      }
-
-      .timer-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: var(--button-bg);
-        color: var(--button-fg);
-        border: none;
-        border-radius: 8px;
-        cursor: default;
-        font-size: 10px;
-        min-width: 0;
-        overflow: hidden;
-        padding: 0 2px;
-        height: 25px;
-      }
-
-      .timer-display {
-        grid-column: span 2;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: var(--button-bg);
-        color: var(--button-fg);
-        border-radius: 8px;
-        font-size: 10px;
-        font-weight: bold;
-        font-family: monospace;
-        height: 25px;
-      }
-
-      .extra-area {
-        grid-column: 2 / 4;
-        grid-row: 7;
-        display: grid;
-        gap: 5px;
-        margin-left: -20px;
-        margin-top: -3px;
-      }
-
-      .extra2-area {
-        grid-column: 2 / 4;
-        grid-row: 8;
-        display: grid;
-        gap: 5px;
-        margin-left: -20px;
-        margin-top: -3px;
-      }
-
-      .extra-button {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background-color: rgb(0,0,0,0);
-        color: var(--button-fg);
-        border: none;
-        cursor: default;
-        min-width: 0;
-        overflow: visible;
-        height: 100%;
-        padding: -3px 0 0 0;
-      }
-
-      .extra-button-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        line-height: 1;
-        cursor: default;
-      }
-
-      .extra-button-icon {
-        --mdc-icon-size: 27px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: -4px;
-        cursor: default;
-      }
-
-      .extra-button-value {
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: -4px;
-        font-size: 11px;
-        font-weight: bold;
-        line-height: 1.5;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-        cursor: default;
-      }
-
-      .extra-button-text {
-        font-size: 10px;
-        line-height: 1.2;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-        height: auto;
-        cursor: default;
-      }
-
-      .active-extra {
-        background-color: transparent !important;
-        color: var(--active-color) !important;
-      }
-
+      .active-gradient { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, var(--linear-color), transparent 50%); opacity: 0.8; z-index: 0; }
+      .history-btn { position: absolute; bottom: 6px; left: 6px; z-index: 10; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background: rgba(180, 180, 180, 0.2); }
+      .history-btn:hover { opacity: 0.85; transform: scale(1.05); }
+      #chart-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 20%; overflow: hidden; z-index: 0; pointer-events: none; }
+      .timer-area { grid-column: 2 / 4; grid-row: 6; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-left: -20px; margin-top: -3px; }
+      .timer-button { display: flex; align-items: center; justify-content: center; background-color: var(--button-bg); color: var(--button-fg); border: none; border-radius: 8px; cursor: default; font-size: 10px; min-width: 0; overflow: hidden; padding: 0 2px; height: 25px; }
+      .timer-display { grid-column: span 2; display: flex; align-items: center; justify-content: center; background-color: var(--button-bg); color: var(--button-fg); border-radius: 8px; font-size: 10px; font-weight: bold; font-family: monospace; height: 25px; }
+      .extra-area { grid-column: 2 / 4; grid-row: 7; display: grid; gap: 5px; margin-left: -20px; margin-top: -3px; }
+      .extra2-area { grid-column: 2 / 4; grid-row: 8; display: grid; gap: 5px; margin-left: -20px; margin-top: -3px; }
+      .extra-button { display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: rgb(0,0,0,0); color: var(--button-fg); border: none; cursor: default; min-width: 0; overflow: visible; height: 100%; padding: -3px 0 0 0; }
+      .extra-button-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; line-height: 1; cursor: default; }
+      .extra-button-icon { --mdc-icon-size: 27px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: -4px; cursor: default; }
+      .extra-button-value { height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: -4px; font-size: 11px; font-weight: bold; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; cursor: default; }
+      .extra-button-text { font-size: 10px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; height: auto; cursor: default; }
+      .active-extra { background-color: transparent !important; color: var(--active-color) !important; }
       /* 普通风扇图标容器 */
-      .normal-fan-icon-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
+      .normal-fan-icon-container { display: flex; align-items: center; justify-content: center; }
       /* 风扇旋转动画 */
       @keyframes fan-spin {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
       }
-
-      .fan-spinning {
-        animation: fan-spin 1.5s linear infinite;
-      }
-
-    `;
+      .fan-spinning { animation: fan-spin 1.5s linear infinite; }`;
   }
 
   constructor() {
@@ -2694,9 +2048,11 @@ class XiaoshiPhoneFanCard extends LitElement {
     title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
     title.textContent = `${roomName} - 历史记录`;
     const closeBtn = document.createElement('button');
-    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:default;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
     closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
     closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
     header.appendChild(title);
     header.appendChild(closeBtn);
 
@@ -2720,13 +2076,14 @@ class XiaoshiPhoneFanCard extends LitElement {
       { label: '24小时', value: 24 },
       { label: '3天', value: 72 },
       { label: '7天', value: 168 },
-      { label: '15天', value: 360 }
+      { label: '10天', value: 240 }
     ];
     for (const p of periods) {
       const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
-      chip.addEventListener('click', () => {
-        this._historyFilterPeriod = p.value;
-        this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
+chip.addEventListener('click', () => {
+            this._handleClick();
+            this._historyFilterPeriod = p.value;
+            this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
         this._refetchWithFilters();
       });
       timeChips.appendChild(chip);
@@ -2844,6 +2201,7 @@ class XiaoshiPhoneFanCard extends LitElement {
   }
 
   _closeHistoryOverlay() {
+    this._handleClick();
     if (this._historyOverlayEl) { this._historyOverlayEl.remove(); this._historyOverlayEl = null; this._historyBodyEl = null; }
     this._showHistory = false;
     this._historyData = {};
@@ -2930,15 +2288,18 @@ class XiaoshiPhoneFanCard extends LitElement {
     chip.setAttribute('data-chip', '1');
     const isActive = (typeof value === 'number' && value === this._historyFilterPeriod);
     if (isActive) {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
     } else {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
     }
     chip.textContent = label;
+    chip.addEventListener('mouseenter', () => { chip.style.opacity = '0.85'; chip.style.transform = 'scale(1.05)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; chip.style.transform = 'scale(1)'; });
     return chip;
   }
 
   _refreshHistoryChips(container, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
+    this._handleClick();
     const chips = container.querySelectorAll('[data-chip]');
     chips.forEach(chip => {
       const label = chip.textContent;
@@ -2948,7 +2309,7 @@ class XiaoshiPhoneFanCard extends LitElement {
                          (label === '6小时' && activePeriod === 6) ||
                          (label === '3天' && activePeriod === 72) ||
                          (label === '7天' && activePeriod === 168) ||
-                         (label === '15天' && activePeriod === 360);
+                         (label === '10天' && activePeriod === 240);
         if (isActive) { chip.style.background = activeBg; chip.style.color = activeColor; }
         else { chip.style.background = chipBg; chip.style.color = isDark ? '#ccc' : '#555'; }
       }

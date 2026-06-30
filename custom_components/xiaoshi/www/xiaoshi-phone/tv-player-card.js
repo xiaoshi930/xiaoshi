@@ -31,134 +31,25 @@ class TvPlayerEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      label {
-        font-weight: bold;
-      }
-      select, input {
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-      }
-      .entity-search-wrapper {
-        position: relative;
-      }
-      .entity-search-input {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 8px;
-        border: 1px solid var(--divider-color, #ddd);
-        border-radius: 4px;
-        font-size: 14px;
-        background: var(--primary-background-color, #fff);
-        color: var(--primary-text-color, #333);
-      }
-      .entity-search-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        max-height: 200px;
-        overflow-y: auto;
-        background: var(--primary-background-color, #fff);
-        border: 1px solid var(--divider-color, #ddd);
-        border-top: none;
-        border-radius: 0 0 4px 4px;
-        z-index: 1000;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      }
-      .entity-search-item {
-        padding: 8px 12px;
-        cursor: pointer;
-        font-size: 13px;
-        color: var(--primary-text-color, #333);
-        border-bottom: 1px solid var(--divider-color, #f0f0f0);
-      }
-      .entity-search-item:hover {
-        background: var(--secondary-background-color, #f5f5f5);
-      }
-      .entity-search-item.selected {
-        background: var(--primary-color, #e3f2fd);
-        color: var(--text-primary-color, #333);
-        font-weight: bold;
-      }
-      .entity-search-item .entity-id {
-        color: var(--secondary-text-color, #888);
-        font-size: 11px;
-        margin-left: 6px;
-      }
-      .entity-search-selected {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px;
-        border: 1px solid var(--divider-color, #ddd);
-        border-radius: 4px;
-        background: var(--secondary-background-color, #f9f9f9);
-        color: var(--primary-text-color, #333);
-        cursor: pointer;
-        font-size: 14px;
-      }
-      .entity-search-selected .clear-btn {
-        color: var(--secondary-text-color, #999);
-        cursor: pointer;
-        font-size: 18px;
-        line-height: 1;
-        padding: 0 4px;
-      }
-      .entity-search-selected .clear-btn:hover {
-        color: var(--primary-text-color, #333);
-      }
-      .app-options-list {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        margin-top: 6px;
-        padding: 8px;
-        border: 1px solid var(--divider-color, #ddd);
-        border-radius: 4px;
-        background: var(--primary-background-color, #fff);
-        max-height: 250px;
-        overflow-y: auto;
-      }
-      .app-option-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .app-option-row input[type="checkbox"] {
-        width: 16px;
-        height: 16px;
-        flex-shrink: 0;
-      }
-      .app-option-row .app-option-label {
-        font-size: 13px;
-        min-width: 60px;
-        color: var(--primary-text-color, #333);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .app-option-row input[type="text"] {
-        flex: 1;
-        padding: 4px 6px;
-        font-size: 12px;
-        border: 1px solid var(--divider-color, #ddd);
-        border-radius: 3px;
-        background: var(--primary-background-color, #fff);
-        color: var(--primary-text-color, #333);
-      }
-    `;
+    return css`      .form { display: flex; flex-direction: column; gap: 10px; }
+      .form-group { display: flex; flex-direction: column; gap: 5px; }
+      label { font-weight: bold; }
+      select, input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+      .entity-search-wrapper { position: relative; }
+      .entity-search-input { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid var(--divider-color, #ddd); border-radius: 4px; font-size: 14px; background: var(--primary-background-color, #fff); color: var(--primary-text-color, #333); }
+      .entity-search-dropdown { position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; background: var(--primary-background-color, #fff); border: 1px solid var(--divider-color, #ddd); border-top: none; border-radius: 0 0 4px 4px; z-index: 1000; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+      .entity-search-item { padding: 8px 12px; cursor: pointer; font-size: 13px; color: var(--primary-text-color, #333); border-bottom: 1px solid var(--divider-color, #f0f0f0); }
+      .entity-search-item:hover { background: var(--secondary-background-color, #f5f5f5); }
+      .entity-search-item.selected { background: var(--primary-color, #e3f2fd); color: var(--text-primary-color, #333); font-weight: bold; }
+      .entity-search-item .entity-id { color: var(--secondary-text-color, #888); font-size: 11px; margin-left: 6px; }
+      .entity-search-selected { display: flex; align-items: center; justify-content: space-between; padding: 8px; border: 1px solid var(--divider-color, #ddd); border-radius: 4px; background: var(--secondary-background-color, #f9f9f9); color: var(--primary-text-color, #333); cursor: pointer; font-size: 14px; }
+      .entity-search-selected .clear-btn { color: var(--secondary-text-color, #999); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px; }
+      .entity-search-selected .clear-btn:hover { color: var(--primary-text-color, #333); }
+      .app-options-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; padding: 8px; border: 1px solid var(--divider-color, #ddd); border-radius: 4px; background: var(--primary-background-color, #fff); max-height: 250px; overflow-y: auto; }
+      .app-option-row { display: flex; align-items: center; gap: 6px; }
+      .app-option-row input[type="checkbox"] { width: 16px; height: 16px; flex-shrink: 0; }
+      .app-option-row .app-option-label { font-size: 13px; min-width: 60px; color: var(--primary-text-color, #333); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .app-option-row input[type="text"] { flex: 1; padding: 4px 6px; font-size: 12px; border: 1px solid var(--divider-color, #ddd); border-radius: 3px; background: var(--primary-background-color, #fff); color: var(--primary-text-color, #333); }`;
   }
 
   render() {
@@ -1604,516 +1495,79 @@ class TvPlayer extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-        border-radius: 12px;
-        padding: 0px;
-        cursor: none;
-        overflow: visible;
-        --mdc-ripple-press-opacity: 0;
-        max-width: 500px;
-        margin: 0 auto;
-        margin-top: 0;
-      }
-
-      .player-grid {
-        display: grid;
-        width: 100%;
-        height: 270px;
-        overflow: visible;
-      }
-
-      .icon-area {
-        grid-area: icon;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 4px;
-      }
-
-      .player-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background-size: cover;
-        background-position: center;
-        background-color: #333;
-        animation: none;
-      }
-
-      .player-icon.playing {
-        animation: rotating 10s linear infinite;
-      }
-
-      .music-icon {
-        width: 50px;
-        height: 50px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--fg-color);
-        background-color: rgb(150,150,150,0.6);
-        border-radius: 50%;
-        animation: none;
-      }
-
-      .music-icon.playing {
-        animation: rotating 10s linear infinite;
-      }
-
+    return css`      :host { display: block; border-radius: 12px; padding: 0px; cursor: none; overflow: visible; --mdc-ripple-press-opacity: 0; max-width: 500px; margin: 0 auto; margin-top: 0; }
+      .player-grid { display: grid; width: 100%; height: 270px; overflow: visible; }
+      .icon-area { grid-area: icon; display: flex; align-items: center; justify-content: center; padding: 4px; }
+      .player-icon { width: 50px; height: 50px; border-radius: 50%; background-size: cover; background-position: center; background-color: #333; animation: none; }
+      .player-icon.playing { animation: rotating 10s linear infinite; }
+      .music-icon { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; color: var(--fg-color); background-color: rgb(150,150,150,0.6); border-radius: 50%; animation: none; }
+      .music-icon.playing { animation: rotating 10s linear infinite; }
       @keyframes rotating {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
       }
-
-      .name-area {
-        grid-area: name;
-        display: flex;
-        align-items: center;
-      }
-
-      .name-label {
-        font-size: 16px;
-        color: var(--fg-color, rgb(255, 255, 255));
-        text-align: left;
-        width: 100%;
-      }
-
-      .info-area {
-        grid-area: info;
-        display: flex;
-        align-items: center;
-      }
-
-      .info-label {
-        font-size: 12px;
-        color: var(--fg-color, rgb(255, 255, 255));
-        text-align: left;
-      }
-
-      .volume-area {
-        grid-area: volume;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .volume-label {
-        font-size: 14px;
-        font-weight: bold;
-        color: var(--fg-color, rgb(255, 255, 255));
-        text-align: center;
-      }
-
-      .control-button {
-        background: rgba(0, 0, 0, 0);
-        border: none;
-        border-radius: 12px;
-        color: var(--fg-color, rgb(255, 255, 255));
-        cursor: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 25px;
-        transition: all 0.2s;
-        --mdc-ripple-press-opacity: 0;
-        --mdc-icon-size: 20px;
-        padding: 0;
-      }
-
-      .control-button:active {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 12px !important;
-      }
-
-      .control-button:focus {
-        outline: none;
-        background: rgba(0, 0, 0, 0);
-      }
-
-      .control-button ha-icon {
-        width: 25px;
-        height: 25px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        border-radius: 12px;
-      }
-
-      .power-button {
-        grid-area: power;
-      }
-
-      .power-on-button {
-        grid-area: power_on;
-      }
-
-      .power-off-button {
-        grid-area: power_off;
-      }
-
-      .volume-down {
-        grid-area: volume-down;
-      }
-
-      .volume-up {
-        grid-area: volume-up;
-      }
-
-      .volume-mute {
-        grid-area: volume-mute;
-      }
-
-      .prev-button {
-        grid-area: prev;
-      }
-
-      .play-button {
-        grid-area: play;
-      }
-
-      .pause-button {
-        grid-area: pause;
-      }
-
-      .next-button {
-        grid-area: next;
-      }
-
-      .history-btn {
-        grid-area: history;
-      }
-
-      .xinhaoyuan-area {
-        grid-area: xinhaoyuan;
-        display: flex;
-        align-items: flex-start;
-        padding-top: 8px;
-      }
-
-      .xinhaoyuan-button {
-        position: relative;
-        background: var(--theme-bg, rgba(80, 80, 80, 0.7));
-        border: 1px solid var(--divider-color, rgba(255,255,255,0.2));
-        border-radius: 6px;
-        color: var(--theme-fg, rgb(255, 255, 255));
-        cursor: pointer;
-        font-size: 12px;
-        padding: 5px 8px 5px 8px;
-        margin-right: 12px;
-        white-space: nowrap;
-        transition: all 0.2s;
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 4px;
-        --mdc-ripple-press-opacity: 0;
-      }
-
-      .xinhaoyuan-button .arrow {
-        font-size: 10px;
-        transition: transform 0.2s;
-      }
-
-      .xinhaoyuan-button .arrow.open {
-        transform: rotate(180deg);
-      }
-
-      .xinhaoyuan-button:active {
-        background: var(--theme-bg-active, rgba(120, 120, 120, 0.9));
-      }
-
-      .xinhaoyuan-popup {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        margin-top: 2px;
-        background: var(--theme-bg, rgba(80, 80, 80, 0.7));
-        border: 1px solid var(--divider-color, #555);
-        border-radius: 0 0 6px 6px;
-        border-top: none;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        z-index: 1000;
-        max-height: 200px;
-        overflow-y: auto;
-        padding: 0;
-      }
-
-      .xinhaoyuan-popup-item {
-        padding: 8px 14px;
-        font-size: 13px;
-        color: var(--popup-fg, #fff);
-        cursor: pointer;
-        white-space: nowrap;
-        transition: background 0.15s;
-      }
-
-      .xinhaoyuan-popup-item:hover {
-        background: var(--secondary-background-color, #555);
-      }
-
-      .xinhaoyuan-popup-item.active {
-        color: rgb(25, 165, 225);
-        font-weight: bold;
-      }
-
-      .home-button {
-        grid-area: home;
-      }
-
-      .back-button {
-        grid-area: back;
-      }
-
-      .menu-button {
-        grid-area: menu;
-      }
-
-      .setting-button {
-        grid-area: setting;
-      }
-
-      .directional-area {
-        grid-area: fangxiang;
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 160px;
-      }
-
-      .directional-pad {
-        position: relative;
-        width: 100%;
-        height: 160px;
-        --r: 70px;
-        --d: 49.5px;
-      }
-
-      .directional-button {
-        position: absolute;
-        background: var(--theme-bg, rgba(80, 80, 80, 0.7));
-        border: none;
-        border-radius: 50%;
-        cursor: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-        color: var(--theme-fg, rgb(255, 255, 255));
-        font-size: 20px;
-        width: 150px;
-        height: 150px;
-        --mdc-ripple-press-opacity: 0;
-        transform: translate(-50%, -50%);
-        top: 50%;
-        left: 50%;
-      }
-
-      .directional-button:active {
-        background: var(--theme-bg-active, rgba(120, 120, 120, 0.9));
-        transform: translate(-50%, -50%) scale(0.95);
-      }
-
-      .directional-button ha-icon {
-        width: 24px;
-        height: 24px;
-        position: absolute;
-      }
-
-      .directional-button.up {
-        clip-path: path('M 80,80  L 136.57,23.43  A 80,80  90 0, 0  23.43,23.43 Z');
-      }
-
-      .directional-button.up ha-icon {
-        top: 15%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 24px;
-        height: 24px;
-      }
-
-      .directional-button.down {
-        clip-path: path('M 80,80  L 23.43,136.57  A 80,80  90 0, 0  136.57,136.57 Z');
-      }
-
-      .directional-button.down ha-icon {
-        top: 85%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 24px;
-        height: 24px;
-      }
-
-      .directional-button.left {
-        clip-path: path('M 80,80  L 23.43,23.43  A 80,80  90 0, 0  23.43,136.57 Z');
-      }
-
-      .directional-button.left ha-icon {
-        top: 50%;
-        left: 15%;
-        transform: translate(-50%, -50%);
-        width: 24px;
-        height: 24px;
-      }
-
-      .directional-button.right {
-        clip-path: path('M 80,80  L 136.57,136.57  A 80,80  90 0, 0  136.57,23.43 Z');
-      }
-
-      .directional-button.right ha-icon {
-        top: 50%;
-        left: 85%;
-        transform: translate(-50%, -50%);
-        width: 24px;
-        height: 24px;
-      }
-
-      .directional-button.center {
-        margin: 0;
-        width: 60px;
-        height: 60px;
-        background: var(--theme-bg, rgba(80, 80, 80, 0.9));
-        border-radius: 50%;
-        font-size: 14px;
-        font-weight: bold;
-        clip-path: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--theme-fg, rgb(255, 255, 255));
-        transform: translate(-50%, -50%);
-      }
-
-      .directional-button.center:active {
-        background: var(--theme-bg-active, rgba(120, 120, 120, 0.9));
-        transform: translate(-50%, -50%) scale(0.95);
-      }
-
-      .progress-area {
-        grid-area: progress;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 5px 0 0 0;
-      }
-
-      .progress-bar {
-        width: 95%;
-        height: 3px;
-        border-radius: 5px;
-        align-items: flex-end;
-        background: linear-gradient(to right, rgb(25, 165, 225) var(--progress-percentage), rgba(200, 200, 200, 0.5) var(--progress-percentage));
-      }
-
-      .volume-slider-container {
-        grid-area: volume-slider;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        padding: 0 0;
-      }
-
-      .volume-slider {
-        width: 100%;
-        height: 6px;
-        border-radius: 3px;
-        background: rgb(255, 165, 0);
-        outline: none;
-        -webkit-appearance: none;
-        appearance: none;
-        cursor: none;
-      }
-
-      .volume-slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 13px;
-        height: 13px;
-        border-radius: 50%;
-        background: rgb(255, 165, 0);
-        cursor: none;
-        border: 2px solid var(--fg-color, rgb(255, 255, 255));
-        box-shadow: none;
-      }
-
-      .volume-slider::-moz-range-thumb {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: rgb(255, 165, 0);
-        cursor: none;
-        border: 2px solid var(--fg-color, rgb(255, 255, 255));
-        box-shadow: none;
-      }
-
-      .volume-slider::-webkit-slider-thumb:hover {
-        background: rgb(255, 140, 0);
-        border-color: var(--fg-color, rgb(255, 255, 255));
-      }
-
-      .volume-slider::-moz-range-thumb:hover {
-        background: rgb(255, 140, 0);
-        border-color: var(--fg-color, rgb(255, 255, 255));
-      }
-
-      .app-buttons-area {
-        grid-area: appbtn;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        padding: 2px 8px;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-        margin-top: -24px;
-
-      }
-
-      .app-buttons-area::-webkit-scrollbar {
-        display: none;
-      }
-
-      .app-button {
-        flex: 0 0 auto;
-        height: 24px;
-        border-radius: 12px;
-        font-size: 10px;
-        padding: 2px 6px;
-        border: none;
-        background: var(--theme-bg, rgba(80, 80, 80));
-        color: var(--button-fg, rgb(255, 255, 255));
-        cursor: none;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        min-width: 0;
-        width: 55px;
-        transition: all 0.2s;
-        --mdc-ripple-press-opacity: 0;
-      }
-
-      .app-button:active {
-        background: var(--theme-bg-active, rgba(120, 120, 120, 0.9));
-        transform: scale(0.95);
-      }
-
-      .app-button.active {
-        border-color: rgb(25, 165, 225);
-        background: rgba(25, 165, 225, 0.7);
-        color: var(--theme-fg, rgb(255, 255, 255));
-      }
-
-    `;
+      .name-area { grid-area: name; display: flex; align-items: center; }
+      .name-label { font-size: 16px; color: var(--fg-color, rgb(255, 255, 255)); text-align: left; width: 100%; }
+      .info-area { grid-area: info; display: flex; align-items: center; }
+      .info-label { font-size: 12px; color: var(--fg-color, rgb(255, 255, 255)); text-align: left; }
+      .volume-area { grid-area: volume; display: flex; align-items: center; justify-content: center; }
+      .volume-label { font-size: 14px; font-weight: bold; color: var(--fg-color, rgb(255, 255, 255)); text-align: center; }
+      .control-button { background: rgba(0, 0, 0, 0); border: none; border-radius: 12px; color: var(--fg-color, rgb(255, 255, 255)); cursor: none; display: flex; align-items: center; justify-content: center; font-size: 25px; transition: all 0.2s; --mdc-ripple-press-opacity: 0; --mdc-icon-size: 20px; padding: 0; }
+      .control-button:active { background: rgba(255, 255, 255, 0.2); border-radius: 12px !important; }
+      .control-button:focus { outline: none; background: rgba(0, 0, 0, 0); }
+      .control-button ha-icon { width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; padding: 0; border-radius: 12px; }
+      .power-button { grid-area: power; }
+      .power-on-button { grid-area: power_on; }
+      .power-off-button { grid-area: power_off; }
+      .volume-down { grid-area: volume-down; }
+      .volume-up { grid-area: volume-up; }
+      .volume-mute { grid-area: volume-mute; }
+      .prev-button { grid-area: prev; }
+      .play-button { grid-area: play; }
+      .pause-button { grid-area: pause; }
+      .next-button { grid-area: next; }
+      .history-btn { grid-area: history; }
+      .xinhaoyuan-area { grid-area: xinhaoyuan; display: flex; align-items: flex-start; padding-top: 8px; }
+      .xinhaoyuan-button { position: relative; background: var(--theme-bg, rgba(80, 80, 80, 0.7)); border: 1px solid var(--divider-color, rgba(255,255,255,0.2)); border-radius: 6px; color: var(--theme-fg, rgb(255, 255, 255)); cursor: pointer; font-size: 12px; padding: 5px 8px 5px 8px; margin-right: 12px; white-space: nowrap; transition: all 0.2s; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 4px; --mdc-ripple-press-opacity: 0; }
+      .xinhaoyuan-button .arrow { font-size: 10px; transition: transform 0.2s; }
+      .xinhaoyuan-button .arrow.open { transform: rotate(180deg); }
+      .xinhaoyuan-button:active { background: var(--theme-bg-active, rgba(120, 120, 120, 0.9)); }
+      .xinhaoyuan-popup { position: absolute; top: 100%; left: 0; right: 0; margin-top: 2px; background: var(--theme-bg, rgba(80, 80, 80, 0.7)); border: 1px solid var(--divider-color, #555); border-radius: 0 0 6px 6px; border-top: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; max-height: 200px; overflow-y: auto; padding: 0; }
+      .xinhaoyuan-popup-item { padding: 8px 14px; font-size: 13px; color: var(--popup-fg, #fff); cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+      .xinhaoyuan-popup-item:hover { background: var(--secondary-background-color, #555); }
+      .xinhaoyuan-popup-item.active { color: rgb(25, 165, 225); font-weight: bold; }
+      .home-button { grid-area: home; }
+      .back-button { grid-area: back; }
+      .menu-button { grid-area: menu; }
+      .setting-button { grid-area: setting; }
+      .directional-area { grid-area: fangxiang; position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 160px; }
+      .directional-pad { position: relative; width: 100%; height: 160px; --r: 70px; --d: 49.5px; }
+      .directional-button { position: absolute; background: var(--theme-bg, rgba(80, 80, 80, 0.7)); border: none; border-radius: 50%; cursor: none; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: var(--theme-fg, rgb(255, 255, 255)); font-size: 20px; width: 150px; height: 150px; --mdc-ripple-press-opacity: 0; transform: translate(-50%, -50%); top: 50%; left: 50%; }
+      .directional-button:active { background: var(--theme-bg-active, rgba(120, 120, 120, 0.9)); transform: translate(-50%, -50%) scale(0.95); }
+      .directional-button ha-icon { width: 24px; height: 24px; position: absolute; }
+      .directional-button.up { clip-path: path('M 80,80 L 136.57,23.43 A 80,80 90 0, 0 23.43,23.43 Z'); }
+      .directional-button.up ha-icon { top: 15%; left: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; }
+      .directional-button.down { clip-path: path('M 80,80 L 23.43,136.57 A 80,80 90 0, 0 136.57,136.57 Z'); }
+      .directional-button.down ha-icon { top: 85%; left: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; }
+      .directional-button.left { clip-path: path('M 80,80 L 23.43,23.43 A 80,80 90 0, 0 23.43,136.57 Z'); }
+      .directional-button.left ha-icon { top: 50%; left: 15%; transform: translate(-50%, -50%); width: 24px; height: 24px; }
+      .directional-button.right { clip-path: path('M 80,80 L 136.57,136.57 A 80,80 90 0, 0 136.57,23.43 Z'); }
+      .directional-button.right ha-icon { top: 50%; left: 85%; transform: translate(-50%, -50%); width: 24px; height: 24px; }
+      .directional-button.center { margin: 0; width: 60px; height: 60px; background: var(--theme-bg, rgba(80, 80, 80, 0.9)); border-radius: 50%; font-size: 14px; font-weight: bold; clip-path: none; display: flex; align-items: center; justify-content: center; color: var(--theme-fg, rgb(255, 255, 255)); transform: translate(-50%, -50%); }
+      .directional-button.center:active { background: var(--theme-bg-active, rgba(120, 120, 120, 0.9)); transform: translate(-50%, -50%) scale(0.95); }
+      .progress-area { grid-area: progress; display: flex; align-items: center; justify-content: center; padding: 5px 0 0 0; }
+      .progress-bar { width: 95%; height: 3px; border-radius: 5px; align-items: flex-end; background: linear-gradient(to right, rgb(25, 165, 225) var(--progress-percentage), rgba(200, 200, 200, 0.5) var(--progress-percentage)); }
+      .volume-slider-container { grid-area: volume-slider; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 0 0; }
+      .volume-slider { width: 100%; height: 6px; border-radius: 3px; background: rgb(255, 165, 0); outline: none; -webkit-appearance: none; appearance: none; cursor: none; }
+      .volume-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 13px; height: 13px; border-radius: 50%; background: rgb(255, 165, 0); cursor: none; border: 2px solid var(--fg-color, rgb(255, 255, 255)); box-shadow: none; }
+      .volume-slider::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: rgb(255, 165, 0); cursor: none; border: 2px solid var(--fg-color, rgb(255, 255, 255)); box-shadow: none; }
+      .volume-slider::-webkit-slider-thumb:hover { background: rgb(255, 140, 0); border-color: var(--fg-color, rgb(255, 255, 255)); }
+      .volume-slider::-moz-range-thumb:hover { background: rgb(255, 140, 0); border-color: var(--fg-color, rgb(255, 255, 255)); }
+      .app-buttons-area { grid-area: appbtn; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 2px 8px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; margin-top: -24px; }
+      .app-buttons-area::-webkit-scrollbar { display: none; }
+      .app-button { flex: 0 0 auto; height: 24px; border-radius: 12px; font-size: 10px; padding: 2px 6px; border: none; background: var(--theme-bg, rgba(80, 80, 80)); color: var(--button-fg, rgb(255, 255, 255)); cursor: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; width: 55px; transition: all 0.2s; --mdc-ripple-press-opacity: 0; }
+      .app-button:active { background: var(--theme-bg-active, rgba(120, 120, 120, 0.9)); transform: scale(0.95); }
+      .app-button.active { border-color: rgb(25, 165, 225); background: rgba(25, 165, 225, 0.7); color: var(--theme-fg, rgb(255, 255, 255)); }`;
   }
   
   constructor() {
@@ -2528,7 +1982,7 @@ class TvPlayer extends LitElement {
   }
 
   handleAppClick(option) {
-    this.handleClick();
+    this._handleClick();
     if (this.appCurrentEntity) {
       this.callService('select.select_option', {
         entity_id: this.appCurrentEntity,
@@ -2554,13 +2008,13 @@ class TvPlayer extends LitElement {
   }
 
   handleXinhaoyuan() {
-    this.handleClick();
+    this._handleClick();
     this._showSourcePopup = !this._showSourcePopup;
     this.requestUpdate();
   }
 
   handleSourceSelect(source) {
-    this.handleClick();
+    this._handleClick();
     this._showSourcePopup = false;
     const targetEntity = this.xiaomiHomeEntity;
     if (targetEntity) {
@@ -2602,7 +2056,7 @@ class TvPlayer extends LitElement {
   }
 
   handleAppButtonClick(appConfig) {
-    this.handleClick();
+    this._handleClick();
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', { entity_id: this.adbEntity, command: appConfig.command });
     } else if (this.tvConnectionMode === 'infrared' && this.infraredEntity) {
@@ -2626,7 +2080,7 @@ class TvPlayer extends LitElement {
   }
 
   handlePower() {
-    this.handleClick();
+    this._handleClick();
     const targetEntity = this.xiaomiHomeEntity;
     const state = this._hass?.states[targetEntity];
     const isOff = !state || state.state === 'off' || state.state === 'unavailable';
@@ -2680,7 +2134,7 @@ class TvPlayer extends LitElement {
   }
 
   handlePowerOn() {
-    this.handleClick();
+    this._handleClick();
     // 最高优先级：打开电视按钮（适用于所有模式）
     if (this.turnOnButtonEntity) {
       const domain = this.turnOnButtonEntity.split('.')[0];
@@ -2719,7 +2173,7 @@ class TvPlayer extends LitElement {
   }
 
   handlePowerOff() {
-    this.handleClick();
+    this._handleClick();
     // 最高优先级：关闭电视按钮（适用于所有模式）
     if (this.turnOffButtonEntity) {
       const domain = this.turnOffButtonEntity.split('.')[0];
@@ -2758,7 +2212,7 @@ class TvPlayer extends LitElement {
   }
 
   handleVolumeDown() {
-    this.handleClick();
+    this._handleClick();
     // 最高优先级：音量Number实体
     if (this.volumeNumberEntity) {
       const currentVal = this._getVolumeNumberValue();
@@ -2794,7 +2248,7 @@ class TvPlayer extends LitElement {
   }
 
   handleVolumeMute() {
-    this.handleClick();
+    this._handleClick();
     const targetVolume = this.volumeState === 0 ? 5 : 0;
     // 最高优先级：音量Number实体
     if (this.volumeNumberEntity) {
@@ -2843,7 +2297,7 @@ class TvPlayer extends LitElement {
   }
 
   handleVolumeUp() {
-    this.handleClick();
+    this._handleClick();
     // 最高优先级：音量Number实体
     if (this.volumeNumberEntity) {
       const currentVal = this._getVolumeNumberValue();
@@ -2891,7 +2345,7 @@ class TvPlayer extends LitElement {
     
     // 防抖动：停止拖动后300ms才调用服务
     this.volumeDebounceTimer = setTimeout(() => {
-    this.handleClick();
+    this._handleClick();
       // 最高优先级：音量Number实体
       if (this.volumeNumberEntity) {
         this.callService('number.set_value', {
@@ -2920,7 +2374,7 @@ class TvPlayer extends LitElement {
         clearTimeout(this.volumeDebounceTimer);
         this.volumeDebounceTimer = null;
       }
-      this.handleClick();
+      this._handleClick();
       // 最高优先级：音量Number实体
       if (this.volumeNumberEntity) {
         this.callService('number.set_value', {
@@ -2937,7 +2391,7 @@ class TvPlayer extends LitElement {
   }
 
   handlePrevious() {
-    this.handleClick();
+    this._handleClick();
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
@@ -2958,7 +2412,7 @@ class TvPlayer extends LitElement {
   }
 
   handlePlayPause() {
-    this.handleClick();
+    this._handleClick();
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
@@ -2979,7 +2433,7 @@ class TvPlayer extends LitElement {
   }
 
   handlePause() {
-    this.handleClick();
+    this._handleClick();
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
@@ -3000,7 +2454,7 @@ class TvPlayer extends LitElement {
   }
 
   handleNext() {
-    this.handleClick();
+    this._handleClick();
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
@@ -3023,7 +2477,7 @@ class TvPlayer extends LitElement {
   // ========== 历史记录功能 ==========
 
   _toggleHistory() {
-    this.handleClick();
+    this._handleClick();
     if (this._showHistory) {
       this._closeHistoryOverlay();
       return;
@@ -3118,9 +2572,11 @@ class TvPlayer extends LitElement {
     title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
     title.textContent = `${roomName} - 播放历史`;
     const closeBtn = document.createElement('button');
-    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:default;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
     closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
     closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
     header.appendChild(title);
     header.appendChild(closeBtn);
 
@@ -3142,11 +2598,12 @@ class TvPlayer extends LitElement {
       { label: '24小时', value: 24 },
       { label: '3天', value: 72 },
       { label: '7天', value: 168 },
-      { label: '15天', value: 360 }
+      { label: '10天', value: 240 }
     ];
     for (const p of periods) {
       const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
       chip.addEventListener('click', () => {
+        this._handleClick();
         this._historyFilterPeriod = p.value;
         this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark);
         this._refetchWithFilters();
@@ -3268,7 +2725,18 @@ class TvPlayer extends LitElement {
     this._historyBodyEl.innerHTML = html;
   }
 
+  _handleClick() {
+      const hapticEvent = new Event('haptic', {
+          bubbles: true,
+          cancelable: false,
+          composed: true
+      });
+      hapticEvent.detail = 'light';
+      this.dispatchEvent(hapticEvent);
+  }
+
   _closeHistoryOverlay() {
+    this._handleClick();
     if (this._historyOverlayEl) {
       this._historyOverlayEl.remove();
       this._historyOverlayEl = null;
@@ -3383,11 +2851,13 @@ class TvPlayer extends LitElement {
     chip.setAttribute('data-chip', '1');
     const isActive = (typeof value === 'number' && value === this._historyFilterPeriod);
     if (isActive) {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
     } else {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
     }
     chip.textContent = label;
+    chip.addEventListener('mouseenter', () => { chip.style.opacity = '0.85'; chip.style.transform = 'scale(1.05)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; chip.style.transform = 'scale(1)'; });
     return chip;
   }
 
@@ -3400,7 +2870,7 @@ class TvPlayer extends LitElement {
                        (label === '6小时' && activePeriod === 6) ||
                        (label === '3天' && activePeriod === 72) ||
                        (label === '7天' && activePeriod === 168) ||
-                       (label === '15天' && activePeriod === 360);
+                       (label === '10天' && activePeriod === 240);
       if (isActive) {
         chip.style.background = activeBg;
         chip.style.color = activeColor;
@@ -3413,7 +2883,7 @@ class TvPlayer extends LitElement {
 
   // 遥控方向按键处理方法
   handleDirectionUp() {
-    this.handleClick();
+    this._handleClick();
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
@@ -3434,7 +2904,7 @@ class TvPlayer extends LitElement {
   }
 
   handleDirectionDown() {
-    this.handleClick();
+    this._handleClick();
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
@@ -3455,7 +2925,7 @@ class TvPlayer extends LitElement {
   }
 
   handleDirectionLeft() {
-    this.handleClick();
+    this._handleClick();
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
@@ -3476,7 +2946,7 @@ class TvPlayer extends LitElement {
   }
 
   handleDirectionRight() {
-    this.handleClick();
+    this._handleClick();
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
@@ -3497,7 +2967,7 @@ class TvPlayer extends LitElement {
   }
 
   handleDirectionCenter() {
-    this.handleClick();
+    this._handleClick();
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
@@ -3518,7 +2988,7 @@ class TvPlayer extends LitElement {
   }
 
   handleHome() {
-    this.handleClick();
+    this._handleClick();
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
@@ -3539,7 +3009,7 @@ class TvPlayer extends LitElement {
   }
 
   handleBack() {
-    this.handleClick();
+    this._handleClick();
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
@@ -3560,7 +3030,7 @@ class TvPlayer extends LitElement {
   }
 
   handleMenu() {
-    this.handleClick();
+    this._handleClick();
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
@@ -3581,7 +3051,7 @@ class TvPlayer extends LitElement {
   }
 
   handleSetting() {
-    this.handleClick();
+    this._handleClick();
     if (this.tvConnectionMode === 'adb' && this.adbEntity) {
       this.callService('androidtv.adb_command', {
         entity_id: this.adbEntity,
