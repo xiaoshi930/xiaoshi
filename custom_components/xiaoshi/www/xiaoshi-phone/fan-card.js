@@ -654,7 +654,7 @@ class XiaoshiPhoneFanCard extends LitElement {
       .extra-btn:not(.active) ha-icon { color: var(--button-fg); }
       /* 手机自适应 */
       .active-gradient { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, var(--linear-color), transparent 50%); opacity: 0.8; z-index: 0; }
-      .history-btn { position: absolute; bottom: 6px; left: 6px; z-index: 10; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background: rgba(180, 180, 180, 0.2); }
+      .history-btn { position: absolute; bottom: 4px; left: 4px; z-index: 10; width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background:transparent; }
       .history-btn:hover { opacity: 0.85; transform: scale(1.05); }
       #chart-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 20%; overflow: hidden; z-index: 0; pointer-events: none; }
       .timer-area { grid-column: 2 / 4; grid-row: 6; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-left: -20px; margin-top: -3px; }
@@ -1139,8 +1139,8 @@ class XiaoshiPhoneFanCard extends LitElement {
       ">
         ${isOn ? html`<div class="active-gradient"></div>` : ''}
         <div id="chart-container"></div>
-        <div class="history-btn" style="background: ${buttonBg};" @click=${this._toggleHistory} title="查看历史记录">
-          <ha-icon icon="mdi:history" style="--mdc-icon-size: 16px; color: ${fgColor};"></ha-icon>
+        <div class="history-btn" @click=${this._toggleHistory} title="查看历史记录">
+          <ha-icon icon="mdi:chart-box-outline" style="--mdc-icon-size: 20px; color: ${fgColor};"></ha-icon>
         </div>
         <div class="content-container" style="${isNormalFan ? 'grid-template-columns: 1fr 3fr;' : ''}">
           <!-- 状态行 -->

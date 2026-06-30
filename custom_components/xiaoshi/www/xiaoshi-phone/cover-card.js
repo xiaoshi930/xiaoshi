@@ -341,7 +341,7 @@ class XiaoshiCoverCard extends LitElement {
     static get styles() {
         return css`            :host { display: block; max-width: 500px; margin: 0 auto; }
             .card { position: relative; border-radius: 12px; padding: 0; cursor: none; box-sizing: border-box; width: 100%; height: 94px; }
-            .history-btn { position: absolute; bottom: 6px; left: 6px; z-index: 10; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background: rgba(180, 180, 180, 0.2); }
+            .history-btn { position: absolute; bottom: 4px; left: 4px; z-index: 10; width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background: transparent; }
             .history-btn:hover { opacity: 0.85; transform: scale(1.05); }
             /* 圆角裁剪层 - 只裁剪背景 */
             .bg-clip { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 12px; overflow: hidden; z-index: 0; }
@@ -420,8 +420,8 @@ class XiaoshiCoverCard extends LitElement {
                     <div class="bg-layer" style="background:${bgs};"></div>
                 </div>
 
-                <div class="history-btn" style="background: ${bbg};" @click=${this._toggleHistory} title="查看历史记录">
-                  <ha-icon icon="mdi:history" style="--mdc-icon-size: 16px; color: ${fg};"></ha-icon>
+                <div class="history-btn" @click=${this._toggleHistory} title="查看历史记录">
+                  <ha-icon icon="mdi:chart-box-outline" style="--mdc-icon-size: 20px; color: ${fg};"></ha-icon>
                 </div>
 
                 <div class="content">

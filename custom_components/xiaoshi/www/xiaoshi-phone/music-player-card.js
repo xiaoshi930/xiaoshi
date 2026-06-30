@@ -1999,7 +1999,7 @@ chip.addEventListener('click', () => {
         </button>
 
         <button class="control-button history-btn" @click=${this._toggleHistory}>
-          <ha-icon icon="mdi:history"></ha-icon>
+          <ha-icon icon="mdi:chart-box-outline" style="--mdc-icon-size: 20px;"></ha-icon>
         </button>
 
         <button class="control-button volume-down" @click=${this.handleVolumeDown}>
