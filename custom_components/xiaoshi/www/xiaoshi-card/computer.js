@@ -7,8 +7,8 @@ const css = LitElement.prototype.css;
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-computer-card',
-    name: '消逝卡(B移动端)-电脑卡(IOTLink/LibreHW)',
-    description: '移动端电脑卡(支持IOTLink和Libre Hardware Monitor)'
+    name: '消逝电脑卡(IOTLink/LibreHW)',
+    description: '消逝电脑卡(支持IOTLink和Libre Hardware Monitor)'
 });
 
 // ==================== 编辑器 ====================
@@ -435,7 +435,7 @@ class XiaoshiComputerCard extends LitElement {
   static get styles() {
     return css`      :host { display: block; max-width: 500px; margin: 0 auto;}
       .card { position: relative; border-radius: 12px; overflow: hidden; box-sizing: border-box; padding: 8px; }
-      .history-btn { position: absolute; padding: 2px 8px; right: 0px; z-index: 10; width: 28px; height: 20px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background: rgba(180, 180, 180, 0.2); }
+      .history-btn { position: absolute; padding: 2px 0px; right: 0px; z-index: 10; width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease;}
       .history-btn:hover { opacity: 0.85; transform: scale(1.05); }
       .card-body { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 8px; }
       /* ---- 卡片两列布局 ---- */
@@ -1699,8 +1699,8 @@ class XiaoshiComputerCard extends LitElement {
           <div class="title-row">
             <span>${pcName}${hasEntity ? (isOn ? '：开机' : '：关机') : ''}</span>
             ${hasEntity ? html`
-            <div class="history-btn" style="background: ${theme === 'light' ? 'rgba(180, 180, 180, 0.2)' : 'rgba(80, 80, 80, 0.35)'};" @click=${this._toggleHistory} title="查看历史记录">
-              <ha-icon icon="mdi:history" style="--mdc-icon-size: 16px; color: ${fgColor};"></ha-icon>
+            <div class="history-btn" style="background: transparent;" @click=${this._toggleHistory}>
+              <ha-icon icon="mdi:chart-box-outline" style="--mdc-icon-size: 20px; color: ${fgColor};"></ha-icon>
             </div>
             ` : ''}
           </div>

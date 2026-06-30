@@ -7,7 +7,7 @@ const css = LitElement.prototype.css;
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-pve-card',
-    name: '消逝卡-PVE卡片',
+    name: '消逝PVE卡片',
     description: '消逝卡PVE卡片',
     preview: true
 });

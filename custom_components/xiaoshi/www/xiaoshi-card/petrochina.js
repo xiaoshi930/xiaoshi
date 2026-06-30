@@ -9,14 +9,14 @@ import { yamlToJson } from '../function/function.js';
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: 'xiaoshi-petrochina-card',
-  name: '中国油价信息卡片',
-  description: '中国油价信息卡片',
+  name: '消逝油价信息卡片',
+  description: '消逝油价信息卡片',
   preview: true
 });
 window.customCards.push({
   type: 'xiaoshi-petrochina-button',
-  name: '中国油价信息按钮',
-  description: '中国油价信息按钮',
+  name: '消逝油价信息按钮',
+  description: '消逝油价信息按钮',
   preview: true
 });
 

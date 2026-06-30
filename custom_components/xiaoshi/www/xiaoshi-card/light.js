@@ -7,7 +7,7 @@ const css = LitElement.prototype.css;
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-light-card',
-    name: '消逝卡(移动端)-房间灯光卡',
+    name: '消逝灯光卡',
     description: '移动端房间灯光卡'
 });
 
@@ -375,7 +375,7 @@ class XiaoshiLghtCard extends LitElement {
     .power-button.active { background: #fe6f21; }
     ha-icon { --mdc-icon-size: 22px; color: var(--icon-color, #666666); }
     .power-button.active ha-icon { color: white; }
-    .history-icon-btn { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background: rgba(180, 180, 180, 0.2); flex-shrink: 0; }
+    .history-icon-btn { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background:transparent; flex-shrink: 0; }
     .history-icon-btn:hover { opacity: 0.85; transform: scale(1.05); }`;
 
   constructor() {
@@ -489,7 +489,7 @@ class XiaoshiLghtCard extends LitElement {
             @click=${this._toggleHistory}
             title="查看灯光历史记录"
           >
-            <ha-icon icon="mdi:history" style="--mdc-icon-size: 18px; color: ${textColor};"></ha-icon>
+            <ha-icon icon="mdi:chart-box-outline" style="--mdc-icon-size: 20px; color: ${textColor};"></ha-icon>
           </div>
           <div 
             class="header-btn"

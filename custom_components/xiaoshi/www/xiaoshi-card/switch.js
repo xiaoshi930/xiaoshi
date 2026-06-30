@@ -7,7 +7,7 @@ const css = LitElement.prototype.css;
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-switch-card',
-    name: '消逝卡(移动端)-插座卡',
+    name: '消逝插座卡',
     description: '移动端插座卡'
 });
 
@@ -463,7 +463,7 @@ class XiaoshiSwitchCard extends LitElement {
       to { width: 0 }
     }
     .unlock-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: #4CAF50; animation: unlock-progress 5000ms linear; }
-    .history-icon-btn { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background: rgba(180, 180, 180, 0.2); flex-shrink: 0; }
+    .history-icon-btn { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background:transparent; flex-shrink: 0; }
     .history-icon-btn:hover { opacity: 0.85; transform: scale(1.05); }`;
 
   constructor() {
@@ -596,7 +596,7 @@ class XiaoshiSwitchCard extends LitElement {
             @click=${this._toggleHistory}
             title="查看插座历史记录"
           >
-            <ha-icon icon="mdi:history" style="--mdc-icon-size: 18px; color: ${textColor};"></ha-icon>
+            <ha-icon icon="mdi:chart-box-outline" style="--mdc-icon-size: 20px; color: ${textColor};"></ha-icon>
           </div>
           <div 
             class="header-btn"
