@@ -14,19 +14,13 @@ window.customCards.push({
 });
 
 const PRESET_ON_STATES = [
-    // 通用
     'on', 'open', 'opening','home',  'active', 'running',
     'detected', 'occupied', 'unlocked', 'power_on', '开机','resume',
-    // 媒体
     'Playing','playing', '播放中',
-    // 空调/HVAC
     'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
     'auto', 'heat_cool', 'fan_only',
-    // 人在
     '有人', 'one',
-    // 扫地机器人
     '正在拖地','正在扫地','启动','cleaning',
-    // 厨房
     '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm',"低档","中档","高档"
 ];
 
@@ -39,95 +33,21 @@ class XiaoshiDynamicPadCardEditor extends LitElement {
     }
 
     static get styles() {
-        return css`
-            .form {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-            .form-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .form-row label {
-                font-weight: bold;
-                white-space: nowrap;
-                min-width: 80px;
-            }
-            .form-row input, .form-row select {
-                flex: 1;
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-            }
-            .form-row input[type="color"] {
-                width: 34px;
-                height: 30px;
-                padding: 1px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                flex: none;
-                box-sizing: border-box;
-            }
-            .section-title {
-                font-weight: bold;
-                font-size: 13px;
-                color: #00bcd4;
-                border-bottom: 1px solid #ddd;
-                padding-bottom: 4px;
-                margin-top: 4px;
-            }
-            .area-section {
-                border: 1px solid #444;
-                border-radius: 6px;
-                padding: 8px;
-                position: relative;
-                margin-bottom: 12px;
-            }
-            .area-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 6px;
-            }
-            .area-header span {
-                font-weight: bold;
-                font-size: 13px;
-                color: #f57c00;
-            }
-            .btn-add, .btn-remove {
-                border: none;
-                border-radius: 4px;
-                padding: 4px 10px;
-                cursor: pointer;
-                font-size: 12px;
-            }
-            .btn-add {
-                background: #4caf50;
-                color: #fff;
-            }
-            .btn-add:hover {
-                background: #388e3c;
-            }
-            .btn-remove {
-                background: #f44336;
-                color: #fff;
-            }
-            .btn-remove:hover {
-                background: #c62828;
-            }
-            textarea {
-                min-height: 60px;
-                resize: vertical;
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-family: monospace;
-                width: 100%;
-                box-sizing: border-box;
-            }
-        `;
+        return css`            .form { display: flex; flex-direction: column; gap: 10px; }
+            .form-row { display: flex; align-items: center; gap: 8px; }
+            .form-row label { font-weight: bold; white-space: nowrap; min-width: 80px; }
+            .form-row input, .form-row select { flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; }
+            .form-row input[type="color"] { width: 34px; height: 30px; padding: 1px; border: 1px solid #ddd; border-radius: 4px; flex: none; box-sizing: border-box; }
+            .section-title { font-weight: bold; font-size: 13px; color: #00bcd4; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 4px; }
+            .area-section { border: 1px solid #444; border-radius: 6px; padding: 8px; position: relative; margin-bottom: 12px; }
+            .area-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+            .area-header span { font-weight: bold; font-size: 13px; color: #f57c00; }
+            .btn-add, .btn-remove { border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+            .btn-add { background: #4caf50; color: #fff; }
+            .btn-add:hover { background: #388e3c; }
+            .btn-remove { background: #f44336; color: #fff; }
+            .btn-remove:hover { background: #c62828; }
+            textarea { min-height: 60px; resize: vertical; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; width: 100%; box-sizing: border-box; }`;
     }
 
     setConfig(config) {
@@ -322,74 +242,15 @@ class XiaoshiDynamicPadCard extends LitElement {
     }
 
     static get styles() {
-        return css`
-            :host {
-                display: block;
-            }
-            .areas-grid {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                box-sizing: border-box;
-                align-items: center;
-            }
-            .areas-grid.horizontal {
-                flex-direction: row;
-            }
-            .area-tile {
-                position: relative;
-                border-radius: 8px;
-                flex-shrink: 0;
-                width: 80%;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                cursor: none;
-                transition: background-color 0.35s ease, transform 0.2s ease, box-shadow 0.2s ease;
-                overflow: visible;
-            }
-            .area-tile:active {
-                transform: scale(0.95);
-            }
-            .area-icon {
-                --mdc-icon-size: 70%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 70%;
-                height: 70%;
-                color: rgba(255,255,255);
-            }
-            .area-name {
-                font-size: 0.8em;
-                font-weight: 500;
-                color: rgba(255,255,255);
-                margin-bottom: 3px;
-                text-align: center;
-                max-width: 90%;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            .area-badge {
-                position: absolute;
-                top: -15%;
-                right: -15%;
-                background: #f57c00;
-                color: #fff;
-                font-size: 0.8em;
-                font-weight: bold;
-                width: 34%;
-                height: 34%;
-                border-radius: 50%;
-                align-items: center;
-                justify-content: center;
-                display: none;
-            }
-            .area-badge.show {
-                display: flex;
-            }
+        return css`            :host { display: block; }
+            .areas-grid { display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; align-items: center; }
+            .areas-grid.horizontal { flex-direction: row; }
+            .area-tile { position: relative; border-radius: 8px; flex-shrink: 0; width: 80%; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: none; transition: background-color 0.35s ease, transform 0.2s ease, box-shadow 0.2s ease; overflow: visible; }
+            .area-tile:active { transform: scale(0.95); }
+            .area-icon { --mdc-icon-size: 70%; display: flex; align-items: center; justify-content: center; width: 70%; height: 70%; color: rgba(255,255,255); }
+            .area-name { font-size: 0.8em; font-weight: 500; color: rgba(255,255,255); margin-bottom: 3px; text-align: center; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .area-badge { position: absolute; top: -15%; right: -15%; background: #f57c00; color: #fff; font-size: 0.8em; font-weight: bold; width: 34%; height: 34%; border-radius: 50%; align-items: center; justify-content: center; display: none; }
+            .area-badge.show { display: flex; }
             @keyframes swingBottom {
                 0% { transform: rotate(0deg); }
                 15% { transform: rotate(15deg); }
@@ -422,21 +283,10 @@ class XiaoshiDynamicPadCard extends LitElement {
                 60% { transform: translateY(-4px); }
                 80% { transform: translateY(4px); }
             }
-            .area-icon.anim-swing-bottom {
-                animation: swingBottom 2s ease-in-out infinite;
-                transform-origin: bottom center;
-            }
-            .area-icon.anim-swing-top {
-                animation: swingTop 2s ease-in-out infinite;
-                transform-origin: top center;
-            }
-            .area-icon.anim-shake-x {
-                animation: shakeX 1.5s ease-in-out infinite;
-            }
-            .area-icon.anim-shake-y {
-                animation: shakeY 1.5s ease-in-out infinite;
-            }
-        `;
+            .area-icon.anim-swing-bottom { animation: swingBottom 2s ease-in-out infinite; transform-origin: bottom center; }
+            .area-icon.anim-swing-top { animation: swingTop 2s ease-in-out infinite; transform-origin: top center; }
+            .area-icon.anim-shake-x { animation: shakeX 1.5s ease-in-out infinite; }
+            .area-icon.anim-shake-y { animation: shakeY 1.5s ease-in-out infinite; }`;
     }
 
     static getConfigElement() {

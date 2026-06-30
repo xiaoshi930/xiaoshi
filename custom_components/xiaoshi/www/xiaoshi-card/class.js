@@ -315,187 +315,40 @@ class XiaoshiClassCardEditor extends LitElement {
     }
 
     static get styles() {
-        return css`
-            .form {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                min-height: 200px;
-                padding: 4px;
-            }
-            .form-group {
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-            .form-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .form-row label {
-                white-space: nowrap;
-                min-width: 80px;
-            }
-            .form-row input {
-                flex: 1;
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-            }
-            label {
-                font-weight: bold;
-                font-size: 13px;
-                color: var(--primary-text-color, #212121);
-            }
-            input, select {
-                padding: 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-size: 13px;
-                width: 100%;
-                box-sizing: border-box;
-                background: var(--card-background-color, #fff);
-                color: var(--primary-text-color, #212121);
-            }
-            .entity-picker-row {
-                display: flex;
-                gap: 6px;
-            }
-            .entity-picker-row input {
-                flex: 1;
-            }
-            .btn-search {
-                background: var(--primary-color, #1976D2);
-                border: none;
-                border-radius: 4px;
-                padding: 4px 10px;
-                cursor: pointer;
-                font-size: 16px;
-                color: #fff;
-                white-space: nowrap;
-            }
-            .btn-search:hover {
-                opacity: 0.85;
-            }
-            .btn-remove {
-                background: #ef5350;
-                border: none;
-                border-radius: 4px;
-                padding: 6px 10px;
-                cursor: pointer;
-                font-size: 14px;
-                color: #fff;
-                white-space: nowrap;
-                flex-shrink: 0;
-            }
-            .btn-remove:hover {
-                background: #c62828;
-            }
-            .btn-add-entity {
-                background: none;
-                border: 1px dashed var(--primary-color, #1976D2);
-                border-radius: 4px;
-                padding: 6px;
-                cursor: pointer;
-                font-size: 12px;
-                color: var(--primary-color, #1976D2);
-                width: 100%;
-            }
-            .btn-add-entity:hover {
-                background: rgba(25, 118, 210, 0.06);
-            }
-            .entity-meta {
-                display: flex;
-                gap: 6px;
-                flex-wrap: wrap;
-            }
-            .meta-tag {
-                display: inline-block;
-                background: var(--primary-color, #1976D2);
-                color: #fff;
-                font-size: 11px;
-                padding: 2px 8px;
-                border-radius: 10px;
-            }
-            .meta-tag.gray {
-                background: #9E9E9E;
-            }
-            .entity-search-box {
-                border: 1px solid #ddd;
-                border-radius: 6px;
-                overflow: hidden;
-                background: var(--card-background-color, #fff);
-            }
-            .entity-search-box input {
-                border: none;
-                border-bottom: 1px solid #eee;
-                border-radius: 0;
-                padding: 8px 10px;
-            }
-            .entity-list {
-                max-height: 180px;
-                overflow-y: auto;
-            }
-            .entity-item {
-                padding: 8px 10px;
-                cursor: pointer;
-                border-bottom: 1px solid #f0f0f0;
-                transition: background 0.15s;
-            }
-            .entity-item:hover {
-                background: var(--primary-color, #1976D2);
-                color: #fff;
-            }
-            .entity-item.selected {
-                background: #E3F2FD;
-                font-weight: bold;
-            }
-            .entity-item.selected:hover {
-                background: var(--primary-color, #1976D2);
-            }
-            .entity-id {
-                font-size: 12px;
-                font-family: monospace;
-                color: var(--secondary-text-color, #757575);
-            }
-            .entity-item:hover .entity-id {
-                color: rgba(255,255,255,0.8);
-            }
-            .entity-info {
-                font-size: 12px;
-                display: flex;
-                gap: 8px;
-                flex-wrap: wrap;
-                margin-top: 2px;
-            }
-            .entity-info .sub {
-                color: var(--secondary-text-color, #9E9E9E);
-            }
-            .entity-item:hover .entity-info .sub {
-                color: rgba(255,255,255,0.7);
-            }
-            .entity-empty {
-                padding: 16px;
-                text-align: center;
-                color: var(--secondary-text-color, #9E9E9E);
-                font-size: 13px;
-            }
-            .toggle-label {
-                cursor: pointer;
-                user-select: none;
-                color: var(--secondary-text-color, #757575);
-                font-weight: normal;
-            }
-            .toggle-label:hover {
-                color: var(--primary-color, #1976D2);
-            }
-            .advanced-settings {
-                padding: 10px;
-                background: var(--divider-color, #F5F5F5);
-                border-radius: 6px;
-            }
-        `;
+        return css`            .form { display: flex; flex-direction: column; gap: 12px; min-height: 200px; padding: 4px; }
+            .form-group { display: flex; flex-direction: column; gap: 6px; }
+            .form-row { display: flex; align-items: center; gap: 8px; }
+            .form-row label { white-space: nowrap; min-width: 80px; }
+            .form-row input { flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; }
+            label { font-weight: bold; font-size: 13px; color: var(--primary-text-color, #212121); }
+            input, select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; width: 100%; box-sizing: border-box; background: var(--card-background-color, #fff); color: var(--primary-text-color, #212121); }
+            .entity-picker-row { display: flex; gap: 6px; }
+            .entity-picker-row input { flex: 1; }
+            .btn-search { background: var(--primary-color, #1976D2); border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 16px; color: #fff; white-space: nowrap; }
+            .btn-search:hover { opacity: 0.85; }
+            .btn-remove { background: #ef5350; border: none; border-radius: 4px; padding: 6px 10px; cursor: pointer; font-size: 14px; color: #fff; white-space: nowrap; flex-shrink: 0; }
+            .btn-remove:hover { background: #c62828; }
+            .btn-add-entity { background: none; border: 1px dashed var(--primary-color, #1976D2); border-radius: 4px; padding: 6px; cursor: pointer; font-size: 12px; color: var(--primary-color, #1976D2); width: 100%; }
+            .btn-add-entity:hover { background: rgba(25, 118, 210, 0.06); }
+            .entity-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+            .meta-tag { display: inline-block; background: var(--primary-color, #1976D2); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+            .meta-tag.gray { background: #9E9E9E; }
+            .entity-search-box { border: 1px solid #ddd; border-radius: 6px; overflow: hidden; background: var(--card-background-color, #fff); }
+            .entity-search-box input { border: none; border-bottom: 1px solid #eee; border-radius: 0; padding: 8px 10px; }
+            .entity-list { max-height: 180px; overflow-y: auto; }
+            .entity-item { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; transition: background 0.15s; }
+            .entity-item:hover { background: var(--primary-color, #1976D2); color: #fff; }
+            .entity-item.selected { background: #E3F2FD; font-weight: bold; }
+            .entity-item.selected:hover { background: var(--primary-color, #1976D2); }
+            .entity-id { font-size: 12px; font-family: monospace; color: var(--secondary-text-color, #757575); }
+            .entity-item:hover .entity-id { color: rgba(255,255,255,0.8); }
+            .entity-info { font-size: 12px; display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+            .entity-info .sub { color: var(--secondary-text-color, #9E9E9E); }
+            .entity-item:hover .entity-info .sub { color: rgba(255,255,255,0.7); }
+            .entity-empty { padding: 16px; text-align: center; color: var(--secondary-text-color, #9E9E9E); font-size: 13px; }
+            .toggle-label { cursor: pointer; user-select: none; color: var(--secondary-text-color, #757575); font-weight: normal; }
+            .toggle-label:hover { color: var(--primary-color, #1976D2); }
+            .advanced-settings { padding: 10px; background: var(--divider-color, #F5F5F5); border-radius: 6px; }`;
     }
 }
 customElements.define('xiaoshi-class-card-editor', XiaoshiClassCardEditor);
@@ -990,311 +843,76 @@ class XiaoshiClassCard extends LitElement {
     }
 
     static get styles() {
-        return css`
-            :host {
-                display: block;
-                max-width: 500px;
-                margin: 0 auto;
-            }
-            ha-card {
-                background: var(--bg-color, var(--card-background-color, #fff));
-                border-radius: 14px;
-                box-shadow: 0 1px 6px rgba(0,0,0,0.06);
-                overflow: hidden;
-            }
-
+        return css`            :host { display: block; max-width: 500px; margin: 0 auto; }
+            ha-card { background: var(--bg-color, var(--card-background-color, #fff)); border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); overflow: hidden; }
             /* ---- 顶部 ---- */
-            .card-top {
-                display: flex;
-                align-items: flex-start;
-                justify-content: space-between;
-                padding: 14px 8px 4px;
-            }
-            .top-left {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
-            .title-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .card-title {
-                font-size: 15px;
-                font-weight: 700;
-                color: var(--fg-color, var(--primary-text-color, #212121));
-            }
-            .info-row {
-                display: flex;
-                gap: 6px;
-                flex-wrap: wrap;
-            }
-            .info-tag {
-                font-size: 11px;
-                padding: 2px 8px;
-                border-radius: 8px;
-                font-weight: 500;
-            }
-            .grade-tag {
-                background: #E3F2FD;
-                color: #1565C0;
-            }
-            .student-tag {
-                background: #F3E5F5;
-                color: #7B1FA2;
-            }
-            .entity-switch-tag {
-                background: var(--divider-color, #EEEEEE);
-                color: var(--secondary-text-color, #757575);
-                cursor: pointer;
-                transition: all 0.2s;
-            }
-            .entity-switch-tag:hover {
-                background: var(--primary-color, #1976D2);
-                color: #fff;
-            }
-            .entity-switch-tag.active {
-                background: var(--primary-color, #1976D2);
-                color: #fff;
-            }
+            .card-top { display: flex; align-items: flex-start; justify-content: space-between; padding: 14px 8px 4px; }
+            .top-left { display: flex; flex-direction: column; gap: 4px; }
+            .title-row { display: flex; align-items: center; gap: 8px; }
+            .card-title { font-size: 15px; font-weight: 700; color: var(--fg-color, var(--primary-text-color, #212121)); }
+            .info-row { display: flex; gap: 6px; flex-wrap: wrap; }
+            .info-tag { font-size: 11px; padding: 2px 8px; border-radius: 8px; font-weight: 500; }
+            .grade-tag { background: #E3F2FD; color: #1565C0; }
+            .student-tag { background: #F3E5F5; color: #7B1FA2; }
+            .entity-switch-tag { background: var(--divider-color, #EEEEEE); color: var(--secondary-text-color, #757575); cursor: pointer; transition: all 0.2s; }
+            .entity-switch-tag:hover { background: var(--primary-color, #1976D2); color: #fff; }
+            .entity-switch-tag.active { background: var(--primary-color, #1976D2); color: #fff; }
             /* ---- 状态条 ---- */
-            .status-bar {
-                margin: 2px 8px 4px;
-                padding: 6px 10px;
-                border-radius: 8px;
-                font-size: 12px;
-                font-weight: 500;
-                background: #F5F5F5;
-                color: #757575;
-            }
-            .status-bar.status-class {
-                background: #E8F5E9;
-                color: #2E7D32;
-            }
-            .status-bar.status-break {
-                background: #FFF8E1;
-                color: #F57F17;
-            }
-            .status-bar.status-after {
-                background: #ECEFF1;
-                color: #78909C;
-            }
-
+            .status-bar { margin: 2px 8px 4px; padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 500; background: #F5F5F5; color: #757575; }
+            .status-bar.status-class { background: #E8F5E9; color: #2E7D32; }
+            .status-bar.status-break { background: #FFF8E1; color: #F57F17; }
+            .status-bar.status-after { background: #ECEFF1; color: #78909C; }
             /* ---- 表格容器 ---- */
-            .schedule-wrapper {
-                overflow-x: auto;
-                padding: 0 8px 6px;
-                -webkit-overflow-scrolling: touch;
-            }
-            .schedule-table {
-                width: 100%;
-                border-collapse: separate;
-                border-spacing: 3px;
-                table-layout: fixed;
-            }
-            .schedule-table .cell-tod {
-                width: 26px;
-            }
-            .schedule-table .cell-period {
-                width: 58px;
-            }
-            .col-period {
-                font-size: 13px;
-                color: var(--label-color, var(--secondary-text-color, #9E9E9E));
-                font-weight: 600;
-                padding: 2px;
-                background: var(--side-bg, var(--divider-color, rgba(0,0,0,0.04)));
-                border-radius: 6px;
-            }
-            .col-day {
-                font-size: 13px;
-                font-weight: 600;
-                color: var(--label-color, var(--primary-text-color, #212121));
-                padding: 4px 2px 2px;
-                background: var(--side-bg, var(--divider-color, rgba(0,0,0,0.04)));
-                border-radius: 6px;
-            }
-            .col-day.col-today {
-                color: var(--primary-color, #1976D2);
-                position: relative;
-            }
+            .schedule-wrapper { overflow-x: auto; padding: 0 8px 6px; -webkit-overflow-scrolling: touch; }
+            .schedule-table { width: 100%; border-collapse: separate; border-spacing: 3px; table-layout: fixed; }
+            .schedule-table .cell-tod { width: 26px; }
+            .schedule-table .cell-period { width: 58px; }
+            .col-period { font-size: 13px; color: var(--label-color, var(--secondary-text-color, #9E9E9E)); font-weight: 600; padding: 2px; background: var(--side-bg, var(--divider-color, rgba(0,0,0,0.04))); border-radius: 6px; }
+            .col-day { font-size: 13px; font-weight: 600; color: var(--label-color, var(--primary-text-color, #212121)); padding: 4px 2px 2px; background: var(--side-bg, var(--divider-color, rgba(0,0,0,0.04))); border-radius: 6px; }
+            .col-day.col-today { color: var(--primary-color, #1976D2); position: relative; }
             /* ---- 行样式 ---- */
-            .row-active {
-                position: relative;
-            }
-
+            .row-active { position: relative; }
             /* ---- 节次列 ---- */
-            .cell-period {
-                text-align: center;
-                vertical-align: middle;
-                padding: 4px 2px;
-                background: var(--side-bg, var(--divider-color, rgba(0,0,0,0.04)));
-                border-radius: 8px;
-            }
-            .period-num {
-                display: inline-block;
-                padding: 2px 6px;
-                border-radius: 10px;
-                font-size: 11px;
-                font-weight: 600;
-                color: var(--label-color, var(--secondary-text-color, #9E9E9E));
-                background: var(--divider-color, #EEEEEE);
-                white-space: nowrap;
-            }
-            .period-now {
-                background: var(--primary-color, #1976D2);
-                color: #fff;
-                animation: pulse-period 1.5s ease-in-out infinite;
-            }
-            .period-time {
-                font-size: 9px;
-                color: var(--label-color, var(--secondary-text-color, #9E9E9E));
-                line-height: 1.35;
-                margin-top: 1px;
-                white-space: nowrap;
-            }
-            .spacer-row td {
-                height: 6px;
-                padding: 0;
-            }
-            .header-spacer td {
-                height: 4px;
-                padding: 0;
-            }
+            .cell-period { text-align: center; vertical-align: middle; padding: 4px 2px; background: var(--side-bg, var(--divider-color, rgba(0,0,0,0.04))); border-radius: 8px; }
+            .period-num { display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 11px; font-weight: 600; color: var(--label-color, var(--secondary-text-color, #9E9E9E)); background: var(--divider-color, #EEEEEE); white-space: nowrap; }
+            .period-now { background: var(--primary-color, #1976D2); color: #fff; animation: pulse-period 1.5s ease-in-out infinite; }
+            .period-time { font-size: 9px; color: var(--label-color, var(--secondary-text-color, #9E9E9E)); line-height: 1.35; margin-top: 1px; white-space: nowrap; }
+            .spacer-row td { height: 6px; padding: 0; }
+            .header-spacer td { height: 4px; padding: 0; }
             /* ---- 时段列 ---- */
-            .cell-tod {
-                text-align: center;
-                vertical-align: middle;
-                padding: 0;
-                background: var(--side-bg, var(--divider-color, rgba(0,0,0,0.04)));
-                border-radius: 6px;
-            }
-            .tod-text {
-                font-size: 11px;
-                font-weight: 600;
-                color: var(--label-color, var(--secondary-text-color, #9E9E9E));
-                -webkit-writing-mode: vertical-rl;
-                writing-mode: vertical-rl;
-                text-orientation: upright;
-                letter-spacing: 2px;
-                white-space: nowrap;
-                word-break: keep-all;
-                overflow: visible;
-                display: inline-block;
-            }
+            .cell-tod { text-align: center; vertical-align: middle; padding: 0; background: var(--side-bg, var(--divider-color, rgba(0,0,0,0.04))); border-radius: 6px; }
+            .tod-text { font-size: 11px; font-weight: 600; color: var(--label-color, var(--secondary-text-color, #9E9E9E)); -webkit-writing-mode: vertical-rl; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 2px; white-space: nowrap; word-break: keep-all; overflow: visible; display: inline-block; }
             @keyframes pulse-period {
                 0%, 100% { transform: scale(1); }
                 50% { transform: scale(1.15); }
             }
-
             /* ---- 科目单元格 ---- */
-            .cell-subject {
-                border-radius: 8px;
-                background: var(--subj-bg, #F5F5F5);
-                color: var(--subj-text, #616161);
-                padding: 6px 4px;
-                text-align: center;
-                vertical-align: middle;
-                transition: all 0.3s ease;
-                position: relative;
-                min-width: 64px;
-                border: 1.5px solid transparent;
-            }
-            .cell-subject.cell-blank {
-                background: #F5F5F5;
-                color: inherit;
-            }
-            .cell-subject:hover {
-                transform: scale(1.03);
-                z-index: 1;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            }
-            .cell-current {
-                border-color: var(--subj-ring, #1976D2);
-                box-shadow: 0 0 0 1.5px var(--subj-ring, #1976D2), 0 2px 6px rgba(0,0,0,0.08);
-                transform: scale(1.03);
-                animation: highlight-in 0.4s ease-out;
-            }
+            .cell-subject { border-radius: 8px; background: var(--subj-bg, #F5F5F5); color: var(--subj-text, #616161); padding: 6px 4px; text-align: center; vertical-align: middle; transition: all 0.3s ease; position: relative; min-width: 64px; border: 1.5px solid transparent; }
+            .cell-subject.cell-blank { background: #F5F5F5; color: inherit; }
+            .cell-subject:hover { transform: scale(1.03); z-index: 1; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+            .cell-current { border-color: var(--subj-ring, #1976D2); box-shadow: 0 0 0 1.5px var(--subj-ring, #1976D2), 0 2px 6px rgba(0,0,0,0.08); transform: scale(1.03); animation: highlight-in 0.4s ease-out; }
             @keyframes highlight-in {
                 from { transform: scale(0.95); opacity: 0.7; }
                 to   { transform: scale(1.03); opacity: 1; }
             }
-            .cell-break-after {
-                opacity: 0.8;
-            }
-            .subj-name {
-                font-size: 12px;
-                font-weight: 600;
-                line-height: 1.35;
-                white-space: normal;
-                overflow-wrap: break-word;
-                word-break: keep-all;
-            }
-            .live-dot {
-                position: absolute;
-                top: 4px;
-                right: 4px;
-                width: 7px;
-                height: 7px;
-                border-radius: 50%;
-                background: #4CAF50;
-                animation: blink-dot 1.2s ease-in-out infinite;
-            }
+            .cell-break-after { opacity: 0.8; }
+            .subj-name { font-size: 12px; font-weight: 600; line-height: 1.35; white-space: normal; overflow-wrap: break-word; word-break: keep-all; }
+            .live-dot { position: absolute; top: 4px; right: 4px; width: 7px; height: 7px; border-radius: 50%; background: #4CAF50; animation: blink-dot 1.2s ease-in-out infinite; }
             @keyframes blink-dot {
                 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.6); }
                 50%      { opacity: 0.5; box-shadow: 0 0 0 4px rgba(76, 175, 80, 0); }
             }
-            .cell-empty {
-                border-radius: 8px;
-                background: transparent;
-            }
-
+            .cell-empty { border-radius: 8px; background: transparent; }
             /* ---- 空状态 ---- */
-            .empty-state {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                padding: 28px 16px;
-                color: var(--secondary-text-color, #9E9E9E);
-                gap: 6px;
-            }
-            .empty-state ha-icon {
-                --mdc-icon-size: 36px;
-                opacity: 0.45;
-            }
-            .empty-state .sub-hint {
-                font-size: 11px;
-                opacity: 0.6;
-            }
-
+            .empty-state { display: flex; flex-direction: column; align-items: center; padding: 28px 16px; color: var(--secondary-text-color, #9E9E9E); gap: 6px; }
+            .empty-state ha-icon { --mdc-icon-size: 36px; opacity: 0.45; }
+            .empty-state .sub-hint { font-size: 11px; opacity: 0.6; }
             /* ---- 底部 ---- */
-            .card-footer {
-                display: flex;
-                gap: 16px;
-                padding: 6px 14px 12px;
-                font-size: 10px;
-                color: var(--label-color, var(--secondary-text-color, #9E9E9E));
-            }
-            .footer-legend {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-            }
-            .legend-dot {
-                display: inline-block;
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-            }
-            .live-dot-static {
-                background: #4CAF50;
-                animation: blink-dot 1.2s ease-in-out infinite;
-            }
-            .today-dot {
-                background: var(--primary-color, #1976D2);
-            }
-        `;
+            .card-footer { display: flex; gap: 16px; padding: 6px 14px 12px; font-size: 10px; color: var(--label-color, var(--secondary-text-color, #9E9E9E)); }
+            .footer-legend { display: flex; align-items: center; gap: 4px; }
+            .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+            .live-dot-static { background: #4CAF50; animation: blink-dot 1.2s ease-in-out infinite; }
+            .today-dot { background: var(--primary-color, #1976D2); }`;
     }
 }
 customElements.define('xiaoshi-class-card', XiaoshiClassCard);

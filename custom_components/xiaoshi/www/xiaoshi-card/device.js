@@ -16,19 +16,13 @@ window.customCards.push({
 
 // ==================== 预置开/关状态 ====================
 const PRESET_ON_STATES = [
-    // 通用
     'on', 'open', 'opening','home',  'active', 'running',
     'detected', 'occupied', 'unlocked', 'power_on', '开机','resume',
-    // 媒体
     'Playing','playing', '播放中',
-    // 空调/HVAC
     'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
     'auto', 'heat_cool', 'fan_only',
-    // 人在
     '有人', 'one',
-    // 扫地机器人
     '正在拖地','正在扫地','启动','cleaning',
-    // 厨房
     '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm',"低档","中档","高档"
 ];
 
@@ -52,89 +46,22 @@ class XiaoshiDeviceButtonEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        min-height: 500px;
-      }
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      label {
-        font-weight: bold;
-      }
-      select, input, textarea {
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-      }
-      textarea {
-        min-height: 80px;
-        resize: vertical;
-        font-family: monospace;
-      }
-      .help-text {
-        font-size: 0.85em;
-        color: #666;
-        margin-top: 4px;
-      }
-      .form-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .form-row label {
-        font-weight: bold;
-        white-space: nowrap;
-        min-width: 80px;
-      }
-      .form-row input, .form-row select {
-        flex: 1;
-        padding: 6px 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-      }
-      .form-row input[type="color"] {
-        width: 34px;
-        height: 30px;
-        padding: 1px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        flex: none;
-        box-sizing: border-box;
-      }
-      .dual-row {
-        display: flex;
-        gap: 8px;
-      }
-      .dual-row .form-row {
-        flex: 1;
-      }
-      .section-title {
-        font-weight: bold;
-        font-size: 13px;
-        color: #00bcd4;
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 4px;
-        margin-top: 4px;
-      }
-      .checkbox-group {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .checkbox-input {
-        margin: 0;
-      }
-      .checkbox-label {
-        font-weight: normal !important;
-        cursor: pointer;
-      }
-    `;
+    return css`      .form { display: flex; flex-direction: column; gap: 10px; min-height: 500px; }
+      .form-group { display: flex; flex-direction: column; gap: 5px; }
+      label { font-weight: bold; }
+      select, input, textarea { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+      textarea { min-height: 80px; resize: vertical; font-family: monospace; }
+      .help-text { font-size: 0.85em; color: #666; margin-top: 4px; }
+      .form-row { display: flex; align-items: center; gap: 8px; }
+      .form-row label { font-weight: bold; white-space: nowrap; min-width: 80px; }
+      .form-row input, .form-row select { flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; }
+      .form-row input[type="color"] { width: 34px; height: 30px; padding: 1px; border: 1px solid #ddd; border-radius: 4px; flex: none; box-sizing: border-box; }
+      .dual-row { display: flex; gap: 8px; }
+      .dual-row .form-row { flex: 1; }
+      .section-title { font-weight: bold; font-size: 13px; color: #00bcd4; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 4px; }
+      .checkbox-group { display: flex; align-items: center; gap: 6px; }
+      .checkbox-input { margin: 0; }
+      .checkbox-label { font-weight: normal !important; cursor: pointer; }`;
   }
 
   setConfig(config) {
@@ -330,42 +257,10 @@ class XiaoshiDeviceButton extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .device-status {
-        width: var(--button-width, 65px);
-        max-width: var(--button-max-width, 90px);
-        height: var(--button-height, 24px);
-        padding: 0;
-        margin: 0;
-        background: var(--bg-color, #fff);
-        color: var(--fg-color, #000);
-        border-radius: 10px;
-        font-size: var(--button-font-size, 11px);
-        font-weight: 500;
-        text-align: center;
-        box-sizing: border-box;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0;
-        cursor: none;
-        transition: background-color 0.2s, transform 0.1s;
-        position: relative;
-      }
-      .device-status:active {
-        transform: scale(0.95);
-        box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
-      }
-      .status-icon {
-        font-size: var(--button-icon-size, 13px);
-        line-height: 1;
-        color: var(--fg-color, #000);
-        margin-right: 3px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .device-status { width: var(--button-width, 65px); max-width: var(--button-max-width, 90px); height: var(--button-height, 24px); padding: 0; margin: 0; background: var(--bg-color, #fff); color: var(--fg-color, #000); border-radius: 10px; font-size: var(--button-font-size, 11px); font-weight: 500; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 0; cursor: none; transition: background-color 0.2s, transform 0.1s; position: relative; }
+      .device-status:active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
+      .status-icon { font-size: var(--button-icon-size, 13px); line-height: 1; color: var(--fg-color, #000); margin-right: 3px; }`;
   }
 
   constructor() {

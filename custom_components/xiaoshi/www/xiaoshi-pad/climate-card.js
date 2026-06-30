@@ -389,415 +389,70 @@ class XiaoshiPadClimateCardEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        min-height: 500px;
-      }
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      label {
-        font-weight: bold;
-      }
-      select, input, textarea {
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-      }
-      textarea {
-        min-height: 80px;
-        resize: vertical;
-      }
-      .help-text {
-        font-size: 0.85em;
-        color: #666;
-        margin-top: 4px;
-      }
-
-      .entity-selector {
-        position: relative;
-      }
-
-      .entity-search-input {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-      }
-
-      .entity-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        height: 300px;
-        overflow-y: auto;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        z-index: 1000;
-        margin-top: 2px;
-      }
-
-      .entity-option {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px 12px;
-        cursor: pointer;
-        border-bottom: 1px solid #eee;
-      }
-
-      .entity-option:hover {
-        background: #f5f5f5;
-      }
-
-      .entity-option.selected {
-        background: #e3f2fd;
-      }
-
-      .entity-info {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 1;
-      }
-
-      .entity-details {
-        flex: 1;
-      }
-
-      .entity-name {
-        font-weight: 500;
-        font-size: 14px;
-        color: #000;
-      }
-
-      .entity-id {
-        font-size: 12px;
-        color: #000;
-        font-family: monospace;
-      }
-
-      .check-icon {
-        color: #4CAF50;
-      }
-
-      .no-results {
-        padding: 12px;
-        text-align: center;
-        color: #666;
-        font-style: italic;
-      }
-
-      .entity-selector-with-remove {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        margin-bottom: 8px;
-      }
-
-      .entity-selector-with-remove .entity-selector {
-        flex: 1;
-      }
-
-      .remove-button {
-        background: #f44336;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        width: 30px;
-        height: 30px;
-        min-width: 30px;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        flex-shrink: 0;
-        margin-top: 0;
-      }
-
-      .remove-button:hover {
-        background: #d32f2f;
-      }
-
-      .remove-button ha-icon {
-        --mdc-icon-size: 20px;
-      }
-
-      .buttons-row {
-        display: flex;
-        align-items: center;
-        margin-top: 8px;
-      }
-      .add-button {
-        margin-left: 8px;
-        border: 1px solid red;
-        border-radius: 4px;
-        padding: 8px;
-        transition: all 0.2s ease;
-      }
-      .add-button:hover {
-        background-color: rgba(255, 0, 0, 0.1);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(255, 0, 0, 0.2);
-      }
-      .hint {
-        font-size: 0.85em;
-        color: #888;
-        margin-top: 4px;
-      }
-
-      .refresh-button {
-        transition: all 0.2s ease;
-      }
-
-      .refresh-button:hover {
-        background-color: rgba(33, 150, 243, 0.1);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
-      }
-
-      .mode-indicator {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 8px;
-      }
-
-      .mode-badge {
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 500;
-      }
-
-      .mode-badge.has-mode {
-        background-color: #e8f5e9;
-        color: #2e7d32;
-      }
-
-      .mode-badge.no-mode {
-        background-color: #ffebee;
-        color: #c62828;
-      }
-
-      .mode-filter-section {
-        border: 1px solid #e0e0e0;
-        border-radius: 6px;
-        padding: 8px;
-        margin-top: 8px;
-        background: rgb(0,0,0);
-      }
-
-      .mode-filter-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        cursor: pointer;
-        padding: 4px 0;
-      }
-
-      .mode-filter-header:hover {
-        background: rgb(0,0,0);
-        border-radius: 4px;
-      }
-
-      .mode-filter-title {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        font-weight: 500;
-        color: rgb(250, 250, 250);
-      }
-
-      .mode-filter-icon {
-        transition: transform 0.2s ease;
-        color: rgb(250, 250, 250);
-      }
-
-      .mode-filter-icon.expanded {
-        transform: rotate(90deg);
-      }
-
-      .mode-filter-items {
-        margin-top: 8px;
-        padding-left: 12px;
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        gap: 6px;
-      }
-
-      .mode-filter-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 6px;
-        border-radius: 4px;
-        background: transparent;
-        font-size: 11px;
-        color: rgb(250, 250, 250);
-      }
-
-      .mode-filter-item:hover {
-        background: rgba(0, 0, 0, 0.05);
-      }
-
-      .mode-filter-item input[type="checkbox"] {
-        cursor: pointer;
-      }
-
-      .mode-filter-item label {
-        cursor: pointer;
-        font-weight: normal;
-        margin: 0;
-        color: rgb(250, 250, 250);
-      }
-
-      .mode-filter-item-expanded {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        padding: 4px 6px;
-        border-radius: 4px;
-        background: transparent;
-        font-size: 11px;
-        color: rgb(250, 250, 250);
-      }
-
-      .mode-filter-item-expanded:hover {
-        background: rgba(0, 0, 0, 0.05);
-      }
-
-      .mode-filter-header-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .mode-filter-left {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .mode-filter-config {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        padding-left: 24px;
-        margin-top: 4px;
-      }
-
-      .mode-config-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 10px;
-      }
-
-      .mode-config-row input[type="checkbox"] {
-        cursor: pointer;
-      }
-
-      .mode-config-row label {
-        cursor: pointer;
-        font-weight: normal;
-        margin: 0;
-        font-size: 10px;
-        color: rgb(250, 250, 250);
-      }
-
-      .mode-config-input {
-        width: 100%;
-        padding: 4px 6px;
-        border: 1px solid #555;
-        border-radius: 3px;
-        background: rgba(0, 0, 0, 0.2);
-        color: rgb(250, 250, 250);
-        font-size: 10px;
-        box-sizing: border-box;
-      }
-
-      .mode-config-input::placeholder {
-        color: rgba(250, 250, 250, 0.5);
-      }
-
-      .mode-config-input:focus {
-        outline: none;
-        border-color: #4CAF50;
-      }
-
-      .button-custom-config {
-        background: transparent;
-        border-radius: 6px;
-        padding: 0px;
-        margin-bottom: 10px;
-      }
-
-      .config-toggle-icon {
-        transition: transform 0.2s ease;
-        color: rgb(250, 250, 250);
-        font-size: 16px;
-      }
-
-      .config-toggle-icon.expanded {
-        transform: rotate(90deg);
-      }
-
-      .button-config-items {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        padding-left: 24px;
-        margin-top: 4px;
-      }
-
-      .button-config-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 11px;
-      }
-
-      .button-config-row label {
-        font-weight: normal;
-        margin: 0;
-        color: rgb(250, 250, 250);
-        font-size: 10px;
-        white-space: nowrap;
-        min-width: 80px;
-      }
-
-      .button-config-input {
-        flex: 1;
-        padding: 4px 6px;
-        border: 1px solid #555;
-        border-radius: 3px;
-        background: rgba(0, 0, 0, 0.2);
-        color: rgb(250, 250, 250);
-        font-size: 10px;
-        box-sizing: border-box;
-      }
-
-      .button-config-input::placeholder {
-        color: rgba(250, 250, 250, 0.5);
-      }
-
-      .button-config-input:focus {
-        outline: none;
-        border-color: #4CAF50;
-      }
-    `;
+    return css`      .form { display: flex; flex-direction: column; gap: 10px; min-height: 500px; }
+      .form-group { display: flex; flex-direction: column; gap: 5px; }
+      label { font-weight: bold; }
+      select, input, textarea { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+      textarea { min-height: 80px; resize: vertical; }
+      .help-text { font-size: 0.85em; color: #666; margin-top: 4px; }
+      .entity-selector { position: relative; }
+      .entity-search-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+      .entity-dropdown { position: absolute; top: 100%; left: 0; right: 0; height: 300px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px; }
+      .entity-option { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; }
+      .entity-option:hover { background: #f5f5f5; }
+      .entity-option.selected { background: #e3f2fd; }
+      .entity-info { display: flex; align-items: center; gap: 8px; flex: 1; }
+      .entity-details { flex: 1; }
+      .entity-name { font-weight: 500; font-size: 14px; color: #000; }
+      .entity-id { font-size: 12px; color: #000; font-family: monospace; }
+      .check-icon { color: #4CAF50; }
+      .no-results { padding: 12px; text-align: center; color: #666; font-style: italic; }
+      .entity-selector-with-remove { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+      .entity-selector-with-remove .entity-selector { flex: 1; }
+      .remove-button { background: #f44336; color: white; border: none; border-radius: 4px; width: 30px; height: 30px; min-width: 30px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-top: 0; }
+      .remove-button:hover { background: #d32f2f; }
+      .remove-button ha-icon { --mdc-icon-size: 20px; }
+      .buttons-row { display: flex; align-items: center; margin-top: 8px; }
+      .add-button { margin-left: 8px; border: 1px solid red; border-radius: 4px; padding: 8px; transition: all 0.2s ease; }
+      .add-button:hover { background-color: rgba(255, 0, 0, 0.1); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(255, 0, 0, 0.2); }
+      .hint { font-size: 0.85em; color: #888; margin-top: 4px; }
+      .refresh-button { transition: all 0.2s ease; }
+      .refresh-button:hover { background-color: rgba(33, 150, 243, 0.1); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2); }
+      .mode-indicator { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+      .mode-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+      .mode-badge.has-mode { background-color: #e8f5e9; color: #2e7d32; }
+      .mode-badge.no-mode { background-color: #ffebee; color: #c62828; }
+      .mode-filter-section { border: 1px solid #e0e0e0; border-radius: 6px; padding: 8px; margin-top: 8px; background: rgb(0,0,0); }
+      .mode-filter-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 4px 0; }
+      .mode-filter-header:hover { background: rgb(0,0,0); border-radius: 4px; }
+      .mode-filter-title { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: rgb(250, 250, 250); }
+      .mode-filter-icon { transition: transform 0.2s ease; color: rgb(250, 250, 250); }
+      .mode-filter-icon.expanded { transform: rotate(90deg); }
+      .mode-filter-items { margin-top: 8px; padding-left: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; }
+      .mode-filter-item { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 4px; background: transparent; font-size: 11px; color: rgb(250, 250, 250); }
+      .mode-filter-item:hover { background: rgba(0, 0, 0, 0.05); }
+      .mode-filter-item input[type="checkbox"] { cursor: pointer; }
+      .mode-filter-item label { cursor: pointer; font-weight: normal; margin: 0; color: rgb(250, 250, 250); }
+      .mode-filter-item-expanded { display: flex; flex-direction: column; gap: 4px; padding: 4px 6px; border-radius: 4px; background: transparent; font-size: 11px; color: rgb(250, 250, 250); }
+      .mode-filter-item-expanded:hover { background: rgba(0, 0, 0, 0.05); }
+      .mode-filter-header-row { display: flex; align-items: center; justify-content: space-between; }
+      .mode-filter-left { display: flex; align-items: center; gap: 6px; }
+      .mode-filter-config { display: flex; flex-direction: column; gap: 4px; padding-left: 24px; margin-top: 4px; }
+      .mode-config-row { display: flex; align-items: center; gap: 6px; font-size: 10px; }
+      .mode-config-row input[type="checkbox"] { cursor: pointer; }
+      .mode-config-row label { cursor: pointer; font-weight: normal; margin: 0; font-size: 10px; color: rgb(250, 250, 250); }
+      .mode-config-input { width: 100%; padding: 4px 6px; border: 1px solid #555; border-radius: 3px; background: rgba(0, 0, 0, 0.2); color: rgb(250, 250, 250); font-size: 10px; box-sizing: border-box; }
+      .mode-config-input::placeholder { color: rgba(250, 250, 250, 0.5); }
+      .mode-config-input:focus { outline: none; border-color: #4CAF50; }
+      .button-custom-config { background: transparent; border-radius: 6px; padding: 0px; margin-bottom: 10px; }
+      .config-toggle-icon { transition: transform 0.2s ease; color: rgb(250, 250, 250); font-size: 16px; }
+      .config-toggle-icon.expanded { transform: rotate(90deg); }
+      .button-config-items { display: flex; flex-direction: column; gap: 4px; padding-left: 24px; margin-top: 4px; }
+      .button-config-row { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+      .button-config-row label { font-weight: normal; margin: 0; color: rgb(250, 250, 250); font-size: 10px; white-space: nowrap; min-width: 80px; }
+      .button-config-input { flex: 1; padding: 4px 6px; border: 1px solid #555; border-radius: 3px; background: rgba(0, 0, 0, 0.2); color: rgb(250, 250, 250); font-size: 10px; box-sizing: border-box; }
+      .button-config-input::placeholder { color: rgba(250, 250, 250, 0.5); }
+      .button-config-input:focus { outline: none; border-color: #4CAF50; }`;
   }
 
   render() {
@@ -2212,212 +1867,32 @@ class XiaoshiPadClimateCard extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: flex;
-        align-items: stretch;
-        gap: 8px;
-      }
-
-      .main-card {
-        display: block;
-        position: relative;
-        background-color: var(--bg-color);
-        border-radius: 15px;
-        width: var(--card-width, 300px);
-      }
-
-      .side-button-wrapper {
-        display: flex;
-      }
-
-      .side-button-bar {
-        width: 60px;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        border-radius: 15px;
-      }
-
-      .thermostat-card {
-        position: relative;
-        width: var(--card-width, 300px);
-        height: 265px;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .thermostat-container {
-        flex: 1;
-        width: var(--card-width, 300px);
-        height: 265px;
-        position: relative;
-      }
-
-      .error {
-        padding: 16px;
-        color: #dc2626;
-        text-align: center;
-      }
-
-      .theme-light {
-        --ha-card-background: rgb(255,255,255,0);          /*背景色*/
-        --primary-text-color:rgb(0,0,0);                 /*文字颜色*/
-        --disabled-color: rgb(150,150,150);              /*圆环背景色*/
-        --_icon-color: rgb(0,0,0);                       /*图标颜色*/
-        --secondary-text-color: rgb(0,0,0);              /*图标边框颜色*/
-        --area-bg: rgb(230,230,230);                     /*按钮区域背景色*/
-      }
-      .theme-dark {
-        --ha-card-background: rgb(50,50,50,0);
-        --primary-text-color:rgb(255,255,255);
-        --disabled-color: rgb(220,220,220);
-        --_icon-color: rgb(255,255,255);
-        --secondary-text-color: rgb(255,255,255);
-        --area-bg: rgb(80,80,80);                        /*按钮区域背景色*/
-      }
-
-      .modes-area, .fan-area, .preset-area, .swing-area, .water-area, .humidifier-area {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 2px;
-      }
-
-      .mode-button {
-        flex: 1;
-        min-width: auto;
-        height: 40px;
-        border: none;
-        border-radius: 10px;
-        background: rgb(0,0,0,0);
-        cursor: pointer;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        gap: 2px;
-        --mdc-icon-size: 20px;
-      }
-
-      .mode-button .icon {
-        width: 20px;
-        height: 20px;
-        color: var(--fg-color);
-      }
-
-      .mode-button .mode-text {
-        font-size: 10px;
-        color: var(--fg-color);
-      }
-
-      .mode-button.active-mode {
-        background: var(--active-color);
-      }
-
-      .fan-button, .swing-button, .preset-button, .water-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        width: 100%;
-        height: 100%;
-        color: var(--fg-color);
-        position: relative;
-        --mdc-icon-size: 18px;
-      }
-
-      .swing-text, .preset-text, .water-text {
-        font-size: 10px; 
-        color: var(--fg-color);
-      }
-
-      .fan-text {
-        font-size: 10px; 
-        color: var(--fg-color);
-        position: absolute;
-        bottom: 6px;
-        right: 6px;
-        transform: translate(25%, 25%);
-      }
-
-      .area-bg-wrapper {
-        background: var(--area-bg);
-        border-radius: 10px;
-        width: calc(100% - 20px);
-        margin: 0px 10px;
-        margin-bottom: 8px;
-        box-sizing: border-box;
-      }
-
-      .side-extra-button {
-        width: 40px;
-        height: 40px;
-        border: none;
-        border-radius: 8px;
-        background: var(--bg-color);
-        cursor: pointer;
-        padding: 0px;
-        margin: 0px 10px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 8px;
-      }
-
-      .side-extra-button.active-extra {
-      }
-
-      .side-extra-button .side-icon {
-        width: 16px;
-        height: 16px;
-        --mdc-icon-size: 16px;
-      }
-
-      .side-extra-button .side-text {
-        font-size: 10px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .timer-horizontal-area {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        padding: 0px 4px;
-      }
-
-      .timer-h-btn {
-        height: 40px;
-        min-width: 24px;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        padding: 0 6px;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        gap: 2px;
-      }
-
-      .timer-h-icon {
-        width: 16px;
-        height: 16px;
-        --mdc-icon-size: 16px;
-      }
-
-      .timer-h-text {
-        font-size: 11px;
-        white-space: nowrap;
-      }
-
-    `;
+    return css`      :host { display: flex; align-items: stretch; gap: 8px; }
+      .main-card { display: block; position: relative; background-color: var(--bg-color); border-radius: 15px; width: var(--card-width, 300px); }
+      .side-button-wrapper { display: flex; }
+      .side-button-bar { width: 60px; display: flex; flex-direction: column; justify-content: flex-end; border-radius: 15px; }
+      .thermostat-card { position: relative; width: var(--card-width, 300px); height: 265px; display: flex; flex-direction: column; }
+      .thermostat-container { flex: 1; width: var(--card-width, 300px); height: 265px; position: relative; }
+      .error { padding: 16px; color: #dc2626; text-align: center; }
+      .theme-light { --ha-card-background: rgb(255,255,255,0); /*背景色*/ --primary-text-color:rgb(0,0,0); /*文字颜色*/ --disabled-color: rgb(150,150,150); /*圆环背景色*/ --_icon-color: rgb(0,0,0); /*图标颜色*/ --secondary-text-color: rgb(0,0,0); /*图标边框颜色*/ --area-bg: rgb(230,230,230); /*按钮区域背景色*/ }
+      .theme-dark { --ha-card-background: rgb(50,50,50,0); --primary-text-color:rgb(255,255,255); --disabled-color: rgb(220,220,220); --_icon-color: rgb(255,255,255); --secondary-text-color: rgb(255,255,255); --area-bg: rgb(80,80,80); /*按钮区域背景色*/ }
+      .modes-area, .fan-area, .preset-area, .swing-area, .water-area, .humidifier-area { display: flex; flex-wrap: nowrap; gap: 2px; }
+      .mode-button { flex: 1; min-width: auto; height: 40px; border: none; border-radius: 10px; background: rgb(0,0,0,0); cursor: pointer; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 2px; --mdc-icon-size: 20px; }
+      .mode-button .icon { width: 20px; height: 20px; color: var(--fg-color); }
+      .mode-button .mode-text { font-size: 10px; color: var(--fg-color); }
+      .mode-button.active-mode { background: var(--active-color); }
+      .fan-button, .swing-button, .preset-button, .water-button { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; height: 100%; color: var(--fg-color); position: relative; --mdc-icon-size: 18px; }
+      .swing-text, .preset-text, .water-text { font-size: 10px; color: var(--fg-color); }
+      .fan-text { font-size: 10px; color: var(--fg-color); position: absolute; bottom: 6px; right: 6px; transform: translate(25%, 25%); }
+      .area-bg-wrapper { background: var(--area-bg); border-radius: 10px; width: calc(100% - 20px); margin: 0px 10px; margin-bottom: 8px; box-sizing: border-box; }
+      .side-extra-button { width: 40px; height: 40px; border: none; border-radius: 8px; background: var(--bg-color); cursor: pointer; padding: 0px; margin: 0px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 8px; }
+      .side-extra-button.active-extra { }
+      .side-extra-button .side-icon { width: 16px; height: 16px; --mdc-icon-size: 16px; }
+      .side-extra-button .side-text { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .timer-horizontal-area { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px; padding: 0px 4px; }
+      .timer-h-btn { height: 40px; min-width: 24px; border: none; border-radius: 8px; cursor: pointer; padding: 0 6px; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 2px; }
+      .timer-h-icon { width: 16px; height: 16px; --mdc-icon-size: 16px; }
+      .timer-h-text { font-size: 11px; white-space: nowrap; }`;
   }
 
   constructor() {

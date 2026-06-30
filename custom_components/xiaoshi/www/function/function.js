@@ -47,7 +47,6 @@ function getTemplateOrValue(value, context = {}) {
   }
 }
 
-
 function objectEvalTemplate(obj, context = {}) {
   const clone = JSON.parse(JSON.stringify(obj));
   return getTemplateOrValue(clone, context);

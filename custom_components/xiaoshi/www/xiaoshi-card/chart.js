@@ -28,28 +28,6 @@ const CHART_COLORS = [
 ];
 
 // ==================== 公共工具函数（无this依赖） ====================
-
-function evaluateTheme(config) {
-  try {
-    const mode = config ? config.theme : 'system';
-    if (mode === 'light') return 'light';
-    if (mode === 'dark') return 'dark';
-    if (mode === 'system' || !mode) {
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-      return 'light';
-    }
-    if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
-      if (typeof window.theme === 'function') {
-        return window.theme() || 'light';
-      }
-      return 'light';
-    }
-    return mode;
-  } catch (e) {
-    return 'light';
-  }
-}
-
 function hexToRgb(hex) {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -64,200 +42,54 @@ function fmtValue(v) {
 
 // ==================== 公共CSS样式 ====================
 
-const editorCommonStyles = css`
-  .editor-root { padding: 6px 0; }
+const editorCommonStyles = css`  .editor-root { padding: 6px 0; }
   .field { margin-bottom: 16px; }
   .label { display:block; font-weight:600; margin-bottom:6px; color:var(--primary-text-color); }
-  .select {
-    width:100%; padding:8px; border-radius:6px;
-    border:1px solid var(--divider-color, #ccc);
-    background:var(--card-background-color, #fff);
-    color:var(--primary-text-color); font-size:14px;
-  }
-  .filter-input {
-    width:100%; padding:8px 10px; border-radius:6px;
-    border:1px solid var(--divider-color, #ccc);
-    background:var(--card-background-color, #fff);
-    color:var(--primary-text-color); font-size:13px;
-    box-sizing:border-box;
-  }
-  .chip-list {
-    display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;
-  }
-  .chip {
-    display:inline-flex; align-items:center; gap:3px;
-    padding:3px 8px; border-radius:12px; font-size:0.75em;
-    background:var(--secondary-background-color, #e0e0e0);
-    color:var(--primary-text-color); cursor:pointer;
-    max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  }
+  .select { width:100%; padding:8px; border-radius:6px; border:1px solid var(--divider-color, #ccc); background:var(--card-background-color, #fff); color:var(--primary-text-color); font-size:14px; }
+  .filter-input { width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--divider-color, #ccc); background:var(--card-background-color, #fff); color:var(--primary-text-color); font-size:13px; box-sizing:border-box; }
+  .chip-list { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .chip { display:inline-flex; align-items:center; gap:3px; padding:3px 8px; border-radius:12px; font-size:0.75em; background:var(--secondary-background-color, #e0e0e0); color:var(--primary-text-color); cursor:pointer; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .chip:hover { background:var(--divider-color, #ccc); }
   .chip-x { font-size:1.1em; font-weight:bold; opacity:0.5; }
-  .list-box {
-    max-height:300px; overflow-y:auto; border-radius:6px;
-    border:1px solid var(--divider-color, #ccc);
-    background:var(--card-background-color, #fff);
-  }
-  .row {
-    display:flex; align-items:center; gap:8px; padding:6px 10px;
-    cursor:pointer; border-bottom:1px solid var(--divider-color, #eee);
-  }
+  .list-box { max-height:300px; overflow-y:auto; border-radius:6px; border:1px solid var(--divider-color, #ccc); background:var(--card-background-color, #fff); }
+  .row { display:flex; align-items:center; gap:8px; padding:6px 10px; cursor:pointer; border-bottom:1px solid var(--divider-color, #eee); }
   .row:last-child { border-bottom:none; }
   .row:hover { background:var(--secondary-background-color, #f5f5f5); }
   .row-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .row-id { font-size:0.75em; color:var(--secondary-text-color); flex-shrink:0; }
   .row-added { font-size:0.7em; color:var(--secondary-text-color); flex-shrink:0; }
   .hint { padding:20px; text-align:center; color:var(--secondary-text-color); }
-  .custom-row {
-    display:flex; align-items:center; gap:8px; padding:8px 0;
-    border-bottom:1px solid var(--divider-color, #eee);
-  }
+  .custom-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--divider-color, #eee); }
   .custom-row:last-child { border-bottom:none; }
-  .custom-entity-id {
-    font-size:0.75em; color:var(--secondary-text-color);
-    min-width:120px; max-width:140px; overflow:hidden;
-    text-overflow:ellipsis; white-space:nowrap;
-  }
-  .custom-input {
-    flex:1; padding:6px 8px; border-radius:4px;
-    border:1px solid var(--divider-color, #ccc);
-    background:var(--card-background-color, #fff);
-    color:var(--primary-text-color); font-size:13px;
-    min-width:0;
-  }
-  .custom-color {
-    width:32px; height:28px; padding:2px; border-radius:4px;
-    border:1px solid var(--divider-color, #ccc);
-    cursor:pointer; flex-shrink:0;
-  }
-  .custom-reset {
-    background:none; border:none; color:var(--secondary-text-color);
-    cursor:pointer; font-size:14px; padding:2px 4px;
-  }
-  .merge-config {
-    padding:8px; border-radius:6px;
-    background:var(--secondary-background-color, #f5f5f5);
-  }
-`;
+  .custom-entity-id { font-size:0.75em; color:var(--secondary-text-color); min-width:120px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .custom-input { flex:1; padding:6px 8px; border-radius:4px; border:1px solid var(--divider-color, #ccc); background:var(--card-background-color, #fff); color:var(--primary-text-color); font-size:13px; min-width:0; }
+  .custom-color { width:32px; height:28px; padding:2px; border-radius:4px; border:1px solid var(--divider-color, #ccc); cursor:pointer; flex-shrink:0; }
+  .custom-reset { background:none; border:none; color:var(--secondary-text-color); cursor:pointer; font-size:14px; padding:2px 4px; }
+  .merge-config { padding:8px; border-radius:6px; background:var(--secondary-background-color, #f5f5f5); }`;
 
-const cardCommonStyles = css`
-  :host { display: block; max-width: 500px;margin: 0 auto;}
+const cardCommonStyles = css`  :host { display: block; max-width: 500px;margin: 0 auto;}
   ha-card { padding: 8px; transition: background 0.3s, color 0.3s; }
   .card-inner { display: flex; flex-direction: column; gap: 5px; }
-  .header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
-  }
+  .header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
   .cell { flex: 1; min-width: 0; }
   .left  { text-align: left;  }
   .right { text-align: right; }
-  .big {
-    font-size: 2.2em;
-    font-weight: 700;
-    line-height: 1.2;
-  }
-  .unit {
-    font-size: 0.45em;
-    font-weight: 400;
-    opacity: 0.55;
-  }
-  .sub {
-    font-size: 0.78em;
-    opacity: 0.5;
-    margin-top: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .empty {
-    opacity: 0.22;
-    font-size: 0.85em;
-    padding: 6px 0;
-  }
-  .chart-wrap {
-    width: 100%;
-    height: 144px;
-    position: relative;
-    overflow: visible;
-  }
-  .chart-canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
-  .chart-empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    opacity: 0.3;
-    font-size: 0.9em;
-  }
-  .legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    justify-content: center;
-  }
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.78em;
-    opacity: 0.7;
-  }
-  .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 3px;
-    flex-shrink: 0;
-  }
-  .chart-crosshair {
-    position: absolute;
-    top: 0;
-    height: 100%;
-    width: 1px;
-    pointer-events: none;
-    display: none;
-    z-index: 5;
-  }
-  .chart-tooltip {
-    position: absolute;
-    top: 4px;
-    pointer-events: none;
-    z-index: 10;
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 12px;
-    line-height: 1.6;
-    white-space: nowrap;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
-    display: none;
-  }
-  .chart-tooltip-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .chart-tooltip-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 2px;
-    flex-shrink: 0;
-  }
-  .chart-tooltip-time {
-    font-weight: 600;
-    margin-bottom: 4px;
-    opacity: 0.7;
-    font-size: 11px;
-  }
-  .chart-tooltip-sep {
-    height: 1px;
-    margin: 4px 0;
-  }
-`;
+  .big { font-size: 2.2em; font-weight: 700; line-height: 1.2; }
+  .unit { font-size: 0.45em; font-weight: 400; opacity: 0.55; }
+  .sub { font-size: 0.78em; opacity: 0.5; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .empty { opacity: 0.22; font-size: 0.85em; padding: 6px 0; }
+  .chart-wrap { width: 100%; height: 144px; position: relative; overflow: visible; }
+  .chart-canvas { width: 100%; height: 100%; display: block; }
+  .chart-empty { display: flex; align-items: center; justify-content: center; height: 100%; opacity: 0.3; font-size: 0.9em; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.78em; opacity: 0.7; }
+  .dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .chart-crosshair { position: absolute; top: 0; height: 100%; width: 1px; pointer-events: none; display: none; z-index: 5; }
+  .chart-tooltip { position: absolute; top: 4px; pointer-events: none; z-index: 10; border-radius: 8px; padding: 8px 12px; font-size: 12px; line-height: 1.6; white-space: nowrap; box-shadow: 0 2px 12px rgba(0,0,0,0.2); display: none; }
+  .chart-tooltip-item { display: flex; align-items: center; gap: 6px; }
+  .chart-tooltip-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .chart-tooltip-time { font-weight: 600; margin-bottom: 4px; opacity: 0.7; font-size: 11px; }
+  .chart-tooltip-sep { height: 1px; margin: 4px 0; }`;
 
 // ==================== 编辑器混入（Mixin） ====================
 
@@ -1166,27 +998,18 @@ class XiaoshChartButtonEditor extends ChartEditorMixin(LitElement) {
   static get styles() {
     return [
       editorCommonStyles,
-      css`
-        .checkbox-group {
-          display: flex; align-items: center; gap: 0; margin: 0; padding: 0;
-        }
+      css`        .checkbox-group { display: flex; align-items: center; gap: 0; margin: 0; padding: 0; }
         .checkbox-input { margin: 0; }
         .checkbox-label { font-weight: normal; margin: 0; }
-        .form-group {
-          display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;
-        }
+        .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         label { font-weight: bold; }
-        select, input, textarea {
-          padding: 8px; border: 1px solid #ddd; border-radius: 4px;
-        }
-        textarea { min-height: 80px; resize: vertical; }
-      `
-    ];
+        select, input, textarea { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        textarea { min-height: 80px; resize: vertical; }`];
   }
-
+  
   render() {
     if (!this.hass) return html``;
-    const { candidates, selectedEids } = this._getCandidatesAndSelected();
+        const { candidates, selectedEids } = this._getCandidatesAndSelected();
 
     return html`
       <div class="form-group">
@@ -1506,59 +1329,14 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
   static get styles() {
     return [
       cardCommonStyles,
-      css`
-        :host {
-          display: block;
-        }
-        .chart-status {
-          width: var(--button-width, 16.8vw);
-          max-width: var(--button-max-width, 90px);
-          height: var(--button-height, 24px);
-          padding: 0;
-          margin: 0;
-          background: var(--bg-color, #fff);
-          color: var(--fg-color, #000);
-          border-radius: 10px;
-          font-size: var(--button-font-size, 11px);
-          font-weight: 500;
-          text-align: center;
-          box-sizing: border-box;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0;
-          cursor: none;
-          transition: background-color 0.2s, transform 0.1s;
-          position: relative;
-        }
-        .chart-status:active {
-          transform: scale(0.95);
-          box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
-        }
-        .status-icon {
-          --mdc-icon-size: var(--button-icon-size, 13px);
-          color: var(--fg-color, #000);
-          margin-right: 3px;
-        }
-        .status-emoji {
-          font-size: var(--button-icon-size, 13px);
-          line-height: 1;
-          margin-right: 3px;
-        }
-        ha-card {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          background: var(--bg-color, #fff);
-          border-radius: 12px;
-          padding: 8px;
-          transition: background 0.3s, color 0.3s;
-        }
+      css`        :host { display: block; }
+        .chart-status { width: var(--button-width, 16.8vw); max-width: var(--button-max-width, 90px); height: var(--button-height, 24px); padding: 0; margin: 0; background: var(--bg-color, #fff); color: var(--fg-color, #000); border-radius: 10px; font-size: var(--button-font-size, 11px); font-weight: 500; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 0; cursor: none; transition: background-color 0.2s, transform 0.1s; position: relative; }
+        .chart-status:active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
+        .status-icon { --mdc-icon-size: var(--button-icon-size, 13px); color: var(--fg-color, #000); margin-right: 3px; }
+        .status-emoji { font-size: var(--button-icon-size, 13px); line-height: 1; margin-right: 3px; }
+        ha-card { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--bg-color, #fff); border-radius: 12px; padding: 8px; transition: background 0.3s, color 0.3s; }
         .loading { text-align: center; padding: 10px 0px; }
-        .form-group { margin-bottom: 10px; }
-      `
-    ];
+        .form-group { margin-bottom: 10px; }`];
   }
 }
 customElements.define("xiaoshi-chart-button", XiaoshChartButton);

@@ -13,19 +13,13 @@ window.customCards.push({
 });
 
 const PRESET_ON_STATES = [
-    // 通用
     'on', 'open', 'opening','home',  'active', 'running',
-    'detected', 'occupied', 'unlocked', 'power_on','开机',
-    // 媒体
+    'detected', 'occupied', 'unlocked', 'power_on', '开机','resume',
     'Playing','playing', '播放中',
-    // 空调/HVAC
     'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
     'auto', 'heat_cool', 'fan_only',
-    // 人在
     '有人', 'one',
-    // 扫地机器人
     '正在拖地','正在扫地','启动','cleaning',
-    // 厨房
     '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm',"低档","中档","高档"
 ];
 
@@ -39,152 +33,31 @@ class XiaoshiPadCardEditor extends LitElement {
     }
 
     static get styles() {
-        return css`
-            .form {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                min-height: 400px;
-            }
-            .form-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .form-row label {
-                font-weight: bold;
-                white-space: nowrap;
-                min-width: 50px;
-            }
-            .form-row input, .form-row select {
-                flex: 1;
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-            }
-            .size-row {
-                display: flex;
-                gap: 8px;
-                align-items: center;
-            }
+        return css`            .form { display: flex; flex-direction: column; gap: 12px; min-height: 400px; }
+            .form-row { display: flex; align-items: center; gap: 8px; }
+            .form-row label { font-weight: bold; white-space: nowrap; min-width: 50px; }
+            .form-row input, .form-row select { flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; }
+            .size-row { display: flex; gap: 8px; align-items: center; }
             .size-row .form-row,
-            .size-row .glow-row {
-                flex: 1 1 0;
-            }
-            .size-row .form-row:first-child {
-                flex: 0 0 auto;
-            }
-            .size-row input[type="text"] {
-                width: 55px;
-                flex: none;
-            }
-            .size-row .glow-row label {
-                min-width: auto;
-            }
-            .card-section {
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                padding: 10px;
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-            .card-section-title {
-                font-weight: bold;
-                font-size: 14px;
-                color: var(--primary-text-color);
-                margin-bottom: 4px;
-            }
-            .color-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .color-row label {
-                font-weight: bold;
-                white-space: nowrap;
-                min-width: 50px;
-                font-size: 13px;
-            }
-            .color-row input[type="color"] {
-                width: 40px;
-                height: 30px;
-                padding: 0;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                cursor: pointer;
-            }
-            .color-preview {
-                flex: 1;
-                height: 30px;
-                border-radius: 4px;
-                border: 1px solid #ddd;
-            }
-            .glow-item {
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                padding: 10px;
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-                background: var(--card-background-color, #fff);
-            }
-            .glow-item-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            .glow-item-header span {
-                font-weight: bold;
-                font-size: 13px;
-            }
-            .glow-remove-btn {
-                background: none;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                cursor: pointer;
-                padding: 2px 8px;
-                font-size: 12px;
-                color: var(--error-color, #db4437);
-            }
-            .glow-row {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-            .glow-row label {
-                font-weight: bold;
-                white-space: nowrap;
-                min-width: 50px;
-                font-size: 12px;
-            }
-            .glow-row input, .glow-row select {
-                flex: 1;
-                padding: 4px 6px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-size: 12px;
-            }
-            .state-colors-textarea {
-                width: 100%;
-                min-height: 40px;
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-size: 12px;
-                font-family: monospace;
-                resize: vertical;
-            }
-            .add-glow-btn {
-                background: var(--primary-color, #03a9f4);
-                color: #fff;
-                border: none;
-                border-radius: 4px;
-                padding: 6px 12px;
-                cursor: pointer;
-                font-size: 13px;
-            }
-        `;
+            .size-row .glow-row { flex: 1 1 0; }
+            .size-row .form-row:first-child { flex: 0 0 auto; }
+            .size-row input[type="text"] { width: 55px; flex: none; }
+            .size-row .glow-row label { min-width: auto; }
+            .card-section { border: 1px solid #ddd; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+            .card-section-title { font-weight: bold; font-size: 14px; color: var(--primary-text-color); margin-bottom: 4px; }
+            .color-row { display: flex; align-items: center; gap: 8px; }
+            .color-row label { font-weight: bold; white-space: nowrap; min-width: 50px; font-size: 13px; }
+            .color-row input[type="color"] { width: 40px; height: 30px; padding: 0; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; }
+            .color-preview { flex: 1; height: 30px; border-radius: 4px; border: 1px solid #ddd; }
+            .glow-item { border: 1px solid #ddd; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; background: var(--card-background-color, #fff); }
+            .glow-item-header { display: flex; justify-content: space-between; align-items: center; }
+            .glow-item-header span { font-weight: bold; font-size: 13px; }
+            .glow-remove-btn { background: none; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; padding: 2px 8px; font-size: 12px; color: var(--error-color, #db4437); }
+            .glow-row { display: flex; align-items: center; gap: 6px; }
+            .glow-row label { font-weight: bold; white-space: nowrap; min-width: 50px; font-size: 12px; }
+            .glow-row input, .glow-row select { flex: 1; padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
+            .state-colors-textarea { width: 100%; min-height: 40px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; font-family: monospace; resize: vertical; }
+            .add-glow-btn { background: var(--primary-color, #03a9f4); color: #fff; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 13px; }`;
     }
 
     constructor() {
@@ -855,143 +728,29 @@ class XiaoshiPadCard extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .container {
-        position: relative;
-        display: block;
-        overflow: hidden;
-      }
-      .bg-image {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        pointer-events: none;
-        z-index: 2;
-      }
-      .device-glow {
-        position: absolute;
-        pointer-events: none;
-        z-index: 4;
-      }
-      .light-btn {
-        position: absolute;
-        z-index: 7;
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        transition: opacity 0.3s, box-shadow 0.3s;
-        transform: translate(-50%, -50%);
-      }
-      .light-btn:active {
-        transform: translate(-50%, -50%) scale(0.92);
-      }
-      .btn-area {
-        position: absolute;
-        top: 8px;
-        display: flex;
-        gap: 6px;
-        z-index: 20;
-      }
-      .ctrl-btn {
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: none;
-        border: none;
-        background: var(--btn-bg, rgba(0,0,0,0.3));
-        backdrop-filter: blur(6px);
-        -webkit-backdrop-filter: blur(6px);
-        border-radius: 8px;
-        font-size: 18px;
-        padding: 0;
-        transition: opacity 0.2s;
-      }
-      .ctrl-btn:active {
-        box-shadow: 0 2px 12px rgba(255,255,255,0.4), 0 2px 8px rgba(0,0,0,0.4);
-        transform: scale(0.95);
-      }
-      .ctrl-btn ha-icon {
-        --mdi-icon-size: 18px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 18px;
-        height: 18px;
-        line-height: 1;
-      }
-      .ctrl-btn ha-icon svg {
-        width: 18px;
-        height: 18px;
-        display: block;
-      }
-      .weather-canvas {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 3;
-      }
-      .person-icon-item {
-        position: absolute;
-        z-index: 5;
-        pointer-events: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transform: translate(-50%, -50%);
-      }
-      .person-icon-item ha-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      }
+    return css`      :host { display: block; }
+      .container { position: relative; display: block; overflow: hidden; }
+      .bg-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; background-repeat: no-repeat; pointer-events: none; z-index: 2; }
+      .device-glow { position: absolute; pointer-events: none; z-index: 4; }
+      .light-btn { position: absolute; z-index: 7; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: opacity 0.3s, box-shadow 0.3s; transform: translate(-50%, -50%); }
+      .light-btn:active { transform: translate(-50%, -50%) scale(0.92); }
+      .btn-area { position: absolute; top: 8px; display: flex; gap: 6px; z-index: 20; }
+      .ctrl-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: none; border: none; background: var(--btn-bg, rgba(0,0,0,0.3)); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border-radius: 8px; font-size: 18px; padding: 0; transition: opacity 0.2s; }
+      .ctrl-btn:active { box-shadow: 0 2px 12px rgba(255,255,255,0.4), 0 2px 8px rgba(0,0,0,0.4); transform: scale(0.95); }
+      .ctrl-btn ha-icon { --mdi-icon-size: 18px; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; line-height: 1; }
+      .ctrl-btn ha-icon svg { width: 18px; height: 18px; display: block; }
+      .weather-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+      .person-icon-item { position: absolute; z-index: 5; pointer-events: none; display: flex; align-items: center; justify-content: center; transform: translate(-50%, -50%); }
+      .person-icon-item ha-icon { display: inline-flex; align-items: center; justify-content: center; }
       @keyframes person-blink {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.3; }
       }
-      .person-home {
-        animation: person-blink 0.6s ease-in-out infinite;
-      }
-      .person-hidden {
-        display: none;
-      }
-      .device-icon-item {
-        position: absolute;
-        z-index: 6;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transform: translate(-50%, -50%);
-        padding: 0;
-        border: none;
-        background: transparent;
-      }
-      .device-icon-item:active {
-        transform: translate(-50%, -50%) scale(0.92);
-      }
-      .device-icon-item img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        pointer-events: none;
-      }
-    `;
+      .person-home { animation: person-blink 0.6s ease-in-out infinite; }
+      .person-hidden { display: none; }
+      .device-icon-item { position: absolute; z-index: 6; cursor: pointer; display: flex; align-items: center; justify-content: center; transform: translate(-50%, -50%); padding: 0; border: none; background: transparent; }
+      .device-icon-item:active { transform: translate(-50%, -50%) scale(0.92); }
+      .device-icon-item img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }`;
   }
 
   static getConfigElement() {

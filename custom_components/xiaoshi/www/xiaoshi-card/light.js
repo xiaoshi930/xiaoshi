@@ -138,140 +138,30 @@ class XiaoshiLghtCardEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        min-height: 300px;
-      }
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      label {
-        font-weight: bold;
-      }
-      select, input, textarea {
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-      }
-      .help-text {
-        font-size: 0.85em;
-        color: #000;
-        margin-top: 4px;
-      }
-      .entity-selector {
-        position: relative;
-      }
-      .entity-search-input {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-      }
-      .entity-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        height: 200px;
-        overflow-y: auto;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        z-index: 1000;
-        margin-top: 2px;
-      }
-      .entity-option {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px 12px;
-        cursor: pointer;
-        border-bottom: 1px solid #eee;
-      }
-      .entity-option:hover {
-      }
-      .entity-option.selected {
-      }
-      .entity-info {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 1;
-      }
-      .entity-details {
-        flex: 1;
-      }
-      .entity-name {
-        font-weight: 500;
-        font-size: 14px;
-        color: #000;
-      }
-      .entity-id {
-        font-size: 12px;
-        color: #000;
-        font-family: monospace;
-      }
-      .check-icon {
-        color: #4CAF50;
-      }
-      .no-results {
-        padding: 12px;
-        text-align: center;
-        color: #000;
-        font-style: italic;
-      }
-      .entity-item {
-        background: #f5f5f5;
-        border-radius: 8px;
-        padding: 10px;
-        margin-bottom: 8px;
-      }
-      .entity-row {
-        color: #000;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .entity-row .entity-selector {
-        flex: 1;
-      }
-      .remove-button {
-        background: #f44336;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        width: 30px;
-        height: 30px;
-        min-width: 30px;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        flex-shrink: 0;
-      }
-      .remove-button:hover {
-        background: #d32f2f;
-      }
-      .add-button {
-        border: 1px solid red;
-        border-radius: 4px;
-        padding: 8px;
-        transition: all 0.2s ease;
-      }
-      .add-button:hover {
-        background-color: rgba(255, 0, 0, 0.1);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(255, 0, 0, 0.2);
-      }
-    `;
+    return css`      .form { display: flex; flex-direction: column; gap: 10px; min-height: 300px; }
+      .form-group { display: flex; flex-direction: column; gap: 5px; }
+      label { font-weight: bold; }
+      select, input, textarea { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+      .help-text { font-size: 0.85em; color: #000; margin-top: 4px; }
+      .entity-selector { position: relative; }
+      .entity-search-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+      .entity-dropdown { position: absolute; top: 100%; left: 0; right: 0; height: 200px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px; }
+      .entity-option { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; }
+      .entity-option:hover { }
+      .entity-option.selected { }
+      .entity-info { display: flex; align-items: center; gap: 8px; flex: 1; }
+      .entity-details { flex: 1; }
+      .entity-name { font-weight: 500; font-size: 14px; color: #000; }
+      .entity-id { font-size: 12px; color: #000; font-family: monospace; }
+      .check-icon { color: #4CAF50; }
+      .no-results { padding: 12px; text-align: center; color: #000; font-style: italic; }
+      .entity-item { background: #f5f5f5; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+      .entity-row { color: #000; display: flex; align-items: center; gap: 8px; }
+      .entity-row .entity-selector { flex: 1; }
+      .remove-button { background: #f44336; color: white; border: none; border-radius: 4px; width: 30px; height: 30px; min-width: 30px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+      .remove-button:hover { background: #d32f2f; }
+      .add-button { border: 1px solid red; border-radius: 4px; padding: 8px; transition: all 0.2s ease; }
+      .add-button:hover { background-color: rgba(255, 0, 0, 0.1); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(255, 0, 0, 0.2); }`;
   }
 
   render() {
@@ -449,276 +339,44 @@ class XiaoshiLghtCard extends LitElement {
     };
   }
 
-  static styles = css`
-    .scenes-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 3px;
-      padding: 0px;
-      z-index: 1;
-      align-items: center;
-    }
-    .scene-button {
-      padding: 2px 6px;
-      border-radius: 6px;
-      background: rgba(180, 180, 180, 0.2);
-      font-size: 0.7rem;
-      cursor: default;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: start;
-      height: 20px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      gap: 4px;
-    }
-    .card-container {
-      border-radius: 16px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      padding-bottom: 10px;
-      max-width: 500px;
-      margin: auto;
-    }
-    .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px;
-      margin: 0;
-      position: relative;
-    }
-    .card-header::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 16px;
-      right: 16px;
-      height: 1px;
-      background: rgb(150,150,150,0.5);
-    }
-    .card-header-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex: 1;
-    }
-    .status-dot {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      margin-right: 8px;
-      flex-shrink: 0;
-    }
-    .room-name {
-      font-size: 20px;
-      font-weight: 500;
-      height: 30px;
-      line-height: 30px;
-      display: flex;
-      align-items: center;
-    }
-    .light-count {
-      font-size: 13px;
-      border-radius: 8px;
-      width: 30px;
-      height: 30px;
-      text-align: center;
-      line-height: 30px;
-      font-weight: bold;
-    }
-    .card-header-buttons {
-      display: flex;
-      gap: 6px;
-    }
-    .header-btn {
-      padding: 4px 12px;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      cursor: default;
-      transition: all 0.2s ease;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      line-height: 1;
-    }
-    .header-btn:hover {
-      opacity: 0.85;
-      transform: scale(1.05);
-    }
-    .light-list {
-      display: flex;
-      flex-direction: column;
-    }
-    .light-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-height: 50px;
-      position: relative;
-      transition: background 0.3s ease;
-      border-bottom: 1px solid rgb(150,150,150,0.5);
-      margin: 0 24px;
-      padding: 0px 6px;
-    }
-    .light-name-group {
-      position: relative;
-      flex-shrink: 0;
-      z-index: 1;
-      width: 25%;
-    }
-    .light-name {
-      font-size: 14px;
-      font-weight: 500;
-      width: 25%;
-      flex-shrink: 0;
-      z-index: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .scene-mode-button {
-      position: absolute;
-      margin-bottom: 6px;
-      left: 0;
-      padding: 1px 4px;
-      font-size: 0.7rem;
-      border-radius: 6px;
-      background: rgba(180, 180, 180, 0.2);
-      color: #FE6F21;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      width: fit-content;
-    }
-    .light-controls {
-      flex: 0 0 55%;
-      max-width: 55%;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      z-index: 1;
-      padding: 6px 0;
-    }
-    .slider-group {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .slider-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .slider-label {
-      font-size: 0.7rem;
-      background: rgb(0,0,0,0);
-      line-height: 1.1;
-    }
-    .slider-value {
-      font-size: 0.7rem;
-      background: rgb(0,0,0,0);
-      line-height: 1.1;
-    }
-    .slider-track {
-      width: 100%;
-      height: 10px;
-      border-radius: 7px;
-      position: relative;
-      cursor: default;
-    }    
-    .slider-track.brightness-track {
-      background: rgba(254, 111, 33, 0.3);
-    }    
-    .slider-track.color_temp-track {
-      background: linear-gradient(to right, #f6a503, #ADD8E6) !important;
-    }    
-    .slider-track.inactive {
-      background: rgb(180,180,180,0.5) !important;
-    }    
-    .slider-progress {
-      position: absolute;
-      left: 0;
-      height: 100%;
-      background: #fe6f21;
-      border-radius: 7px;
-      transition: width 0.2s ease;
-      cursor: default;
-    }    
-    .slider-progress.color_temp-track {
-      background: rgb(0,0,0,0) !important;
-    }    
-    .slider-input {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      top: 50%;
-      transform: translateY(-50%);
-      opacity: 0;
-      z-index: 2;
-      cursor: default;
-      -webkit-appearance: none;
-    }
-    .slider-thumb {
-      position: absolute;
-      width: 14px;
-      height: 14px;
-      background: #fff;
-      border-radius: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
-      z-index: 3;
-    }    
-    .slider-thumb.inactive {
-      opacity: 0;
-    }
-    .slider-progress.inactive {
-      width: 0 !important;
-    }
-    .power-button {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: default;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      flex-shrink: 0;
-      margin-left: auto;
-    }
-    .power-button.active {
-      background: #fe6f21;
-    }
-    ha-icon {
-      --mdc-icon-size: 22px;
-      color: var(--icon-color, #666666);
-    }
-    .power-button.active ha-icon {
-      color: white;
-    }
-    .history-icon-btn {
-      width: 30px;
-      height: 30px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: default;
-      transition: all 0.3s ease;
-      background: rgba(180, 180, 180, 0.2);
-      flex-shrink: 0;
-    }
-
-    .history-icon-btn:hover {
-      opacity: 0.85;
-      transform: scale(1.05);
-    }
-  `;
+  static styles = css`    .scenes-container { display: flex; flex-wrap: wrap; gap: 3px; padding: 0px; z-index: 1; align-items: center; }
+    .scene-button { padding: 2px 6px; border-radius: 6px; background: rgba(180, 180, 180, 0.2); font-size: 0.7rem; cursor: default; transition: all 0.3s ease; display: flex; align-items: center; justify-content: start; height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; gap: 4px; }
+    .card-container { border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; padding-bottom: 10px; max-width: 500px; margin: auto; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; padding: 16px; margin: 0; position: relative; }
+    .card-header::after { content: ''; position: absolute; bottom: 0; left: 16px; right: 16px; height: 1px; background: rgb(150,150,150,0.5); }
+    .card-header-left { display: flex; align-items: center; gap: 8px; flex: 1; }
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; flex-shrink: 0; }
+    .room-name { font-size: 20px; font-weight: 500; height: 30px; line-height: 30px; display: flex; align-items: center; }
+    .light-count { font-size: 13px; border-radius: 8px; width: 30px; height: 30px; text-align: center; line-height: 30px; font-weight: bold; }
+    .card-header-buttons { display: flex; gap: 6px; }
+    .header-btn { padding: 4px 12px; border-radius: 8px; font-size: 0.8rem; cursor: default; transition: all 0.2s ease; font-weight: 500; display: flex; align-items: center; line-height: 1; }
+    .header-btn:hover { opacity: 0.85; transform: scale(1.05); }
+    .light-list { display: flex; flex-direction: column; }
+    .light-row { display: flex; align-items: center; gap: 12px; min-height: 50px; position: relative; transition: background 0.3s ease; border-bottom: 1px solid rgb(150,150,150,0.5); margin: 0 24px; padding: 0px 6px; }
+    .light-name-group { position: relative; flex-shrink: 0; z-index: 1; width: 25%; }
+    .light-name { font-size: 14px; font-weight: 500; width: 25%; flex-shrink: 0; z-index: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .scene-mode-button { position: absolute; margin-bottom: 6px; left: 0; padding: 1px 4px; font-size: 0.7rem; border-radius: 6px; background: rgba(180, 180, 180, 0.2); color: #FE6F21; cursor: pointer; transition: all 0.3s ease; width: fit-content; }
+    .light-controls { flex: 0 0 55%; max-width: 55%; display: flex; flex-direction: column; gap: 6px; z-index: 1; padding: 6px 0; }
+    .slider-group { display: flex; flex-direction: column; gap: 2px; }
+    .slider-header { display: flex; justify-content: space-between; align-items: center; }
+    .slider-label { font-size: 0.7rem; background: rgb(0,0,0,0); line-height: 1.1; }
+    .slider-value { font-size: 0.7rem; background: rgb(0,0,0,0); line-height: 1.1; }
+    .slider-track { width: 100%; height: 10px; border-radius: 7px; position: relative; cursor: default; }
+    .slider-track.brightness-track { background: rgba(254, 111, 33, 0.3); }
+    .slider-track.color_temp-track { background: linear-gradient(to right, #f6a503, #ADD8E6) !important; }
+    .slider-track.inactive { background: rgb(180,180,180,0.5) !important; }
+    .slider-progress { position: absolute; left: 0; height: 100%; background: #fe6f21; border-radius: 7px; transition: width 0.2s ease; cursor: default; }
+    .slider-progress.color_temp-track { background: rgb(0,0,0,0) !important; }
+    .slider-input { position: absolute; width: 100%; height: 100%; top: 50%; transform: translateY(-50%); opacity: 0; z-index: 2; cursor: default; -webkit-appearance: none; }
+    .slider-thumb { position: absolute; width: 14px; height: 14px; background: #fff; border-radius: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 3; }
+    .slider-thumb.inactive { opacity: 0; }
+    .slider-progress.inactive { width: 0 !important; }
+    .power-button { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); flex-shrink: 0; margin-left: auto; }
+    .power-button.active { background: #fe6f21; }
+    ha-icon { --mdc-icon-size: 22px; color: var(--icon-color, #666666); }
+    .power-button.active ha-icon { color: white; }
+    .history-icon-btn { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background: rgba(180, 180, 180, 0.2); flex-shrink: 0; }
+    .history-icon-btn:hover { opacity: 0.85; transform: scale(1.05); }`;
 
   constructor() {
     super();
@@ -1194,9 +852,11 @@ class XiaoshiLghtCard extends LitElement {
     title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
     title.textContent = `${roomName} - 历史记录`;
     const closeBtn = document.createElement('button');
-    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:default;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
     closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
     closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
     header.appendChild(title);
     header.appendChild(closeBtn);
 
@@ -1223,6 +883,7 @@ class XiaoshiLghtCard extends LitElement {
 
       const allChip = this._buildFilterChip('全部', '', chipBg, chipActiveBg, chipActiveColor, isDark);
       allChip.addEventListener('click', () => {
+        this._handleClick();
         this._historyFilterEntity = '';
         this._refreshHistoryChips(entityChips, this._historyFilterEntity, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark);
         this._refetchWithFilters();
@@ -1234,6 +895,7 @@ class XiaoshiLghtCard extends LitElement {
         const name = stateObj?.attributes?.friendly_name || entity;
         const chip = this._buildFilterChip(name, entity, chipBg, chipActiveBg, chipActiveColor, isDark);
         chip.addEventListener('click', () => {
+          this._handleClick();
           this._historyFilterEntity = entity;
           this._refreshHistoryChips(entityChips, this._historyFilterEntity, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark);
           this._refetchWithFilters();
@@ -1262,11 +924,12 @@ class XiaoshiLghtCard extends LitElement {
       { label: '24小时', value: 24 },
       { label: '3天', value: 72 },
       { label: '7天', value: 168 },
-      { label: '15天', value: 360 }
+      { label: '10天', value: 240 }
     ];
     for (const p of periods) {
       const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
       chip.addEventListener('click', () => {
+        this._handleClick();
         this._historyFilterPeriod = p.value;
         this._refreshHistoryChips(timeChips, this._historyFilterEntity, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
         this._refetchWithFilters();
@@ -1409,6 +1072,7 @@ class XiaoshiLghtCard extends LitElement {
   }
 
   _closeHistoryOverlay() {
+    this._handleClick();
     if (this._historyOverlayEl) {
       this._historyOverlayEl.remove();
       this._historyOverlayEl = null;
@@ -1506,11 +1170,13 @@ class XiaoshiLghtCard extends LitElement {
     const isActive = (typeof value === 'number' && value === this._historyFilterPeriod) ||
                      (typeof value === 'string' && value === this._historyFilterEntity && value !== '');
     if (isActive) {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
     } else {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
     }
     chip.textContent = label;
+    chip.addEventListener('mouseenter', () => { chip.style.opacity = '0.85'; chip.style.transform = 'scale(1.05)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; chip.style.transform = 'scale(1)'; });
     return chip;
   }
 
@@ -1524,7 +1190,7 @@ class XiaoshiLghtCard extends LitElement {
                          (label === '6小时' && activePeriod === 6) ||
                          (label === '3天' && activePeriod === 72) ||
                          (label === '7天' && activePeriod === 168) ||
-                         (label === '15天' && activePeriod === 360);
+                         (label === '10天' && activePeriod === 240);
         if (isActive) {
           chip.style.background = activeBg;
           chip.style.color = activeColor;

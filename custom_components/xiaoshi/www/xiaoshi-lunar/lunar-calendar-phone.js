@@ -38,18 +38,8 @@ class LunarCalendarPhone extends LitElement {
     };
   }
   static get styles() {
-    return css`
-      :host {
-        display: block;
-        max-width:500px;
-        margin: 0 auto;
-      }
-      .card-container {
-        display: flex;
-        flex-direction: column;
-        gap: 0.8vh;
-      }
-    `;
+    return css`      :host { display: block; max-width:500px; margin: 0 auto; }
+      .card-container { display: flex; flex-direction: column; gap: 0.8vh; }`;
   }
 
   render() {
@@ -140,36 +130,12 @@ class LunarCalendarPhoneDateEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      label {
-        font-weight: bold;
-      }
-      select, input {
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        width: 100%;
-        box-sizing: border-box;
-      }
-      .entity-search-container {
-        position: relative;
-        width: 100%;
-      }
-      .entity-search-container input {
-        width: 100%;
-        min-width: 200px;
-      }
-    `;
+    return css`      .form { display: flex; flex-direction: column; gap: 10px; }
+      .form-group { display: flex; flex-direction: column; gap: 5px; }
+      label { font-weight: bold; }
+      select, input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%; box-sizing: border-box; }
+      .entity-search-container { position: relative; width: 100%; }
+      .entity-search-container input { width: 100%; min-width: 200px; }`;
   }
 
   render() {
@@ -304,26 +270,9 @@ class LunarCalendarPhoneDate extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-        width: 100%;
-        height: 20px;
-        max-width: 500px;
-        margin: 0 auto;
-      }
-      ha-card {
-        background: transparent !important;
-        box-shadow: none !important;
-        border: none !important; 
-      }
-      .content {
-        font-weight: bold;
-        font-size: 12px;
-        color: var(--theme-color);
-        text-align: center;
-      }
-    `;
+    return css`      :host { display: block; width: 100%; height: 20px; max-width: 500px; margin: 0 auto; }
+      ha-card { background: transparent !important; box-shadow: none !important; border: none !important; }
+      .content { font-weight: bold; font-size: 12px; color: var(--theme-color); text-align: center; }`;
   } 
 
   render() {

@@ -53,17 +53,10 @@ class SunMoonCardEditor extends LitElement {
         this.dispatchEvent(ev);
     }
     static get styles() {
-        return css`
-            .editor { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+        return css`            .editor { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
             .field { display: flex; flex-direction: column; gap: 4px; }
             .field label { font-size: 12px; color: var(--secondary-text-color); }
-            .field input {
-                padding: 8px; border: 1px solid var(--divider-color);
-                border-radius: 4px; font-size: 14px;
-                background: var(--card-background-color);
-                color: var(--primary-text-color);
-            }
-        `;
+            .field input { padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; font-size: 14px; background: var(--card-background-color); color: var(--primary-text-color); }`;
     }
 }
 customElements.define('xiaoshi-sun-moon-card-editor', SunMoonCardEditor);
@@ -636,18 +629,10 @@ class SunMoonCard extends LitElement {
 
     // ---------- 样式 ----------
     static get styles() {
-        return css`
-            :host { display: block; }
-            ha-card {
-                background: transparent !important;
-                box-shadow: none !important;
-                border: none !important;
-                padding: 0 !important;
-                border-radius: 0;
-            }
+        return css`            :host { display: block; }
+            ha-card { background: transparent !important; box-shadow: none !important; border: none !important; padding: 0 !important; border-radius: 0; }
             #cvs { display: block; }
-            .loading { text-align: center; padding: 18px; opacity: 0.5; color: #fff; }
-        `;
+            .loading { text-align: center; padding: 18px; opacity: 0.5; color: #fff; }`;
     }
 }
 customElements.define('xiaoshi-sun-moon-card', SunMoonCard);

@@ -23,51 +23,16 @@ class XiaoshiWeatherPadEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      label {
-        font-weight: bold;
-      }
-      select, input {
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        width: 100%;
-        box-sizing: border-box;
-      }
-      input[type="number"] {
-        width: 100px;
-      }
-      .conditional-field {
-        display: none;
-      }
-      .conditional-field.visible {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      .entity-search-container {
-        position: relative;
-        width: 100%;
-      }
-      .entity-search-container input {
-        width: 100%;
-        min-width: 200px;
-      }
-      datalist {
-        max-height: 200px;
-        overflow-y: auto;
-      }
-    `;
+    return css`      .form { display: flex; flex-direction: column; gap: 10px; }
+      .form-group { display: flex; flex-direction: column; gap: 5px; }
+      label { font-weight: bold; }
+      select, input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%; box-sizing: border-box; }
+      input[type="number"] { width: 100px; }
+      .conditional-field { display: none; }
+      .conditional-field.visible { display: flex; flex-direction: column; gap: 5px; }
+      .entity-search-container { position: relative; width: 100%; }
+      .entity-search-container input { width: 100%; min-width: 200px; }
+      datalist { max-height: 200px; overflow-y: auto; }`;
   }
 
   render() {
@@ -725,451 +690,89 @@ class XiaoshiWeatherPadCard extends XiaoshiWeatherBase {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-
+    return css`      :host { display: block; }
       /*主卡片样式*/
-      .weather-card {
-        position: relative;
-        border-radius: 15px;
-        padding: 8px;
-        font-family: sans-serif;
-        overflow: hidden;
-      }
-
+      .weather-card { position: relative; border-radius: 15px; padding: 8px; font-family: sans-serif; overflow: hidden; }
       /*主卡片样式*/
-      .weather-card.dark-theme {
-      }
-
-      .main-content {
-        position: relative;
-      }
-
+      .weather-card.dark-theme { }
+      .main-content { position: relative; }
       /*天气头部*/
-      .weather-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-top: 0px;
-        margin-bottom: 0px;
-      }
-
-      .weather-left {
-        display: flex;
-        align-items: center;
-      }
-
+      .weather-header { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 0px; margin-bottom: 0px; }
+      .weather-left { display: flex; align-items: center; }
       /*天气头部 图标*/
-      .weather-icon {
-        width: 45px;
-        min-width: 45px;
-        max-width: 45px;
-        height: 50px;
-        margin-right: 7px;
-        margin-bottom: 0px;
-      }
-
+      .weather-icon { width: 45px; min-width: 45px; max-width: 45px; height: 50px; margin-right: 7px; margin-bottom: 0px; }
       /*天气头部 图标*/
-      .weather-icon img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-      }
-
+      .weather-icon img { width: 100%; height: 100%; object-fit: contain; }
       /*天气头部 温度*/
-      .weather-temperature {
-        height: 30px;
-        font-size: 23px;
-        font-weight: bold;
-        margin-top: 0;
-        margin-bottom: 0;
-        white-space: nowrap;
-      }
-
+      .weather-temperature { height: 30px; font-size: 23px; font-weight: bold; margin-top: 0; margin-bottom: 0; white-space: nowrap; }
       /*天气头部 天气信息*/
-      .weather-info {
-        height: 12px;
-        font-size: 12px;
-        margin-top: 0px;
-        white-space: nowrap;
-      }
-        
+      .weather-info { height: 12px; font-size: 12px; margin-top: 0px; white-space: nowrap; }
       /*天气行*/
-      .weather-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-        margin-bottom: 0px;
-      }
-
+      .weather-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 0px; }
       /*天气右侧对齐*/
-      .weather-right-align {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-      }
-
+      .weather-right-align { display: flex; align-items: center; justify-content: flex-start; }
       /*天气右侧容器*/
-      .weather-right {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        justify-content: flex-start;
-        flex: 1;
-        width: 100%;
-      }
-
+      .weather-right { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; flex: 1; width: 100%; }
       /*天气温度样式*/
-      .weather-temperature {
-        height: 30px;
-        font-size: 23px;
-        font-weight: bold;
-        margin-top: 0;
-        margin-bottom: 0;
-      }
-
+      .weather-temperature { height: 30px; font-size: 23px; font-weight: bold; margin-top: 0; margin-bottom: 0; }
       /*天气信息样式*/
-      .weather-info {
-        height: 15px;
-        font-size: 12px;
-        margin-top: 0;
-        margin-bottom: 0;
-        white-space: nowrap;
-      }
-
-      .forecast-toggle-button {
-        margin-top: auto;
-      }
-
-      .toggle-btn {
-        padding: 2px 10px;
-        border: none;
-        border-radius: 6px;
-        font-size: 9px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        color: white;
-        font-weight: bold;
-        white-space: nowrap;
-      }
-
-      .toggle-btn-aqi {
-        background: transparent;
-        padding:0;
-        border: none;
-        font-size: 12px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-weight: bold;
-        white-space: nowrap;
-        margin-left: 5px;
-      }
-
-      .toggle-btn.daily-mode {
-        background: #03A9F4; /* 蓝色 */
-      }
-
-      .toggle-btn:hover {
-        transform: scale(1.1);
-      }
-
+      .weather-info { height: 15px; font-size: 12px; margin-top: 0; margin-bottom: 0; white-space: nowrap; }
+      .forecast-toggle-button { margin-top: auto; }
+      .toggle-btn { padding: 2px 10px; border: none; border-radius: 6px; font-size: 9px; cursor: pointer; transition: all 0.3s ease; color: white; font-weight: bold; white-space: nowrap; }
+      .toggle-btn-aqi { background: transparent; padding:0; border: none; font-size: 12px; cursor: pointer; transition: all 0.3s ease; font-weight: bold; white-space: nowrap; margin-left: 5px; }
+      .toggle-btn.daily-mode { background: #03A9F4; /* 蓝色 */ }
+      .toggle-btn:hover { transform: scale(1.1); }
       /*9日天气部分*/
-      .forecast-container {
-        display: grid;
-        gap: 4px;
-        margin-top: 4px;
-        position: relative;
-      }
-
+      .forecast-container { display: grid; gap: 4px; margin-top: 4px; position: relative; }
       /*9日天气部分*/
-      .forecast-day {
-        grid-row: 1;
-        text-align: center;
-        position: relative;
-        border-radius: 8px;
-        padding: 5px;
-        position: relative;
-      }
-
+      .forecast-day { grid-row: 1; text-align: center; position: relative; border-radius: 8px; padding: 5px; position: relative; }
       /*9日天气部分 星期*/
-      .forecast-weekday {
-        font-size: 11px;
-        height: 14px;
-        margin-top: -5px;
-        margin-bottom: 1px;
-        font-weight: 500;
-        white-space: nowrap;
-      }
-      
+      .forecast-weekday { font-size: 11px; height: 14px; margin-top: -5px; margin-bottom: 1px; font-weight: 500; white-space: nowrap; }
       /*9日天气部分 日期*/
-      .forecast-date {
-        font-size: 8px;
-        margin-bottom: 15px;
-        margin-left: 0px;
-        margin-right: 0px;
-        height: 10px;
-        white-space: nowrap;
-      }
-
+      .forecast-date { font-size: 8px; margin-bottom: 15px; margin-left: 0px; margin-right: 0px; height: 10px; white-space: nowrap; }
       /*9日天气部分 温度区域*/
-      .forecast-temp-container {
-        position: relative;
-        height: 125px;
-        margin-top: 0;
-        margin-bottom: 0;
-      }
-
+      .forecast-temp-container { position: relative; height: 125px; margin-top: 0; margin-bottom: 0; }
       /*9日天气部分 温度区域*/
-      .forecast-temp-null {
-        position: relative;
-        height: 10px;
-      }
-
+      .forecast-temp-null { position: relative; height: 10px; }
       /*9日天气部分 雨量容器*/
-      .forecast-rainfall-container {
-        text-align: center;
-        position: relative;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 12.5px;
-        margin-top: -10px;
-        margin-bottom: 0;
-      }
-
+      .forecast-rainfall-container { text-align: center; position: relative; display: flex; justify-content: center; align-items: center; height: 12.5px; margin-top: -10px; margin-bottom: 0; }
       /*9日天气部分 雨量标签*/
-      .forecast-rainfall {
-        background: rgba(80, 177, 200);
-        color: white;
-        font-size: 7px;
-        font-weight: bold;
-        height: 12.5px;
-        min-width: 80% ;
-        border-radius: 6px;
-        width: fit-content;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        padding: 0 2.5px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 2;
-      }
- 
+      .forecast-rainfall { background: rgba(80, 177, 200); color: white; font-size: 7px; font-weight: bold; height: 12.5px; min-width: 80% ; border-radius: 6px; width: fit-content; box-shadow: 0 1px 3px rgba(0,0,0,0.2); padding: 0 2.5px; display: flex; align-items: center; justify-content: center; z-index: 2; }
       /*雨量填充矩形*/
-      .rainfall-fill {
-        position: absolute;
-        left: 0;
-        right: 0;
-        background: rgba(80, 177, 200, 0.8);
-        border-radius: 6px;
-        z-index: 1;
-        margin: 0 -5px;
-        bottom: -15px;
-        transition: all 0.3s ease;
-      }
-
+      .rainfall-fill { position: absolute; left: 0; right: 0; background: rgba(80, 177, 200, 0.8); border-radius: 6px; z-index: 1; margin: 0 -5px; bottom: -15px; transition: all 0.3s ease; }
       /*9日天气部分 图标*/
-      .forecast-icon-container {
-        text-align: center;
-        position: relative;
-        width: 70%;
-        height: 70%;
-        left: 15%;
-        object-fit: contain;
-        margin: -5px 0 -10px 0;
-      }
-
+      .forecast-icon-container { text-align: center; position: relative; width: 70%; height: 70%; left: 15%; object-fit: contain; margin: -5px 0 -10px 0; }
       /*9日天气部分 图标*/
-      .forecast-icon {
-        margin: 0px auto;
-      }
-
+      .forecast-icon { margin: 0px auto; }
       /*9日天气部分 图标*/
-      .forecast-icon img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-      }
-
+      .forecast-icon img { width: 100%; height: 100%; object-fit: contain; }
       /*9日天气部分 风速*/
-      .forecast-wind-container {
-        grid-row: 4;
-        text-align: center;
-        position: relative;
-        height: 15px;
-        margin-top: -5px;
-      }
-
+      .forecast-wind-container { grid-row: 4; text-align: center; position: relative; height: 15px; margin-top: -5px; }
       /*9日天气部分 风速*/
-      .forecast-wind {
-        font-size: 10px;
-        margin-top: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 1.5px;
-        height: 15px;
-      }
-
+      .forecast-wind { font-size: 10px; margin-top: 0; display: flex; align-items: center; justify-content: center; gap: 1.5px; height: 15px; }
       /*9日天气部分 风速*/
-      .wind-direction {
-        font-size: 9px;
-      }
-
+      .wind-direction { font-size: 9px; }
       /*9日天气部分 温度曲线 Canvas*/
-      .temp-line-canvas {
-        position: absolute;
-        left: 0;
-        width: 100%;
-        pointer-events: none;
-        z-index: 3;
-      }
-
-      .temp-line-canvas-high {
-        top: 38.5px;
-        height: 120px; 
-      }
-
-      .temp-line-canvas-low {
-        top: 38.5px;
-        height: 120px; 
-      }
-
-      .temp-line-canvas-hourly {
-        position: absolute !important;
-        top: 38.5px !important;
-        left: 0 !important;
-        right: 0 !important;
-        height: 125px !important;
-        width: 100% !important;
-        pointer-events: none !important;
-        z-index: 3;
-      }
-
-      .temp-curve-high {
-        position: absolute;
-        left: 0;
-        right: 0;
-        height: 17.5px;
-        border-radius: 2.5px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 12px;
-        font-weight: 600;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        z-index: 5;
-      }
-
-      .temp-curve-low {
-        position: absolute;
-        left: 0;
-        right: 0;
-        height: 17.5px;
-        border-radius: 2.5px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 12px;
-        font-weight: 600;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        z-index: 4;
-        margin-top: -5px;
-      }
-
+      .temp-line-canvas { position: absolute; left: 0; width: 100%; pointer-events: none; z-index: 3; }
+      .temp-line-canvas-high { top: 38.5px; height: 120px; }
+      .temp-line-canvas-low { top: 38.5px; height: 120px; }
+      .temp-line-canvas-hourly { position: absolute !important; top: 38.5px !important; left: 0 !important; right: 0 !important; height: 125px !important; width: 100% !important; pointer-events: none !important; z-index: 3; }
+      .temp-curve-high { position: absolute; left: 0; right: 0; height: 17.5px; border-radius: 2.5px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.3); z-index: 5; }
+      .temp-curve-low { position: absolute; left: 0; right: 0; height: 17.5px; border-radius: 2.5px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.3); z-index: 4; margin-top: -5px; }
       /* 圆点模式样式 */
       .dot-mode .temp-curve-high,
-      .dot-mode .temp-curve-low {
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        left: calc(50% - 2.5px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: 600;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-      }
-      .dot-mode .temp-curve-hourly {
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        left: calc(50% - 2.5px);
-        margin-top: 5px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: 600;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-      }
-
-      .dot-mode .temp-curve-high {
-        background: rgba(255, 87, 34);
-        margin-top: -4px;
-      }
-
-      .dot-mode .temp-curve-low {
-        background: rgba(3, 169, 243);
-        margin-top: -6.5px;
-      }
-
+      .dot-mode .temp-curve-low { width: 5px; height: 5px; border-radius: 50%; left: calc(50% - 2.5px); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+      .dot-mode .temp-curve-hourly { width: 5px; height: 5px; border-radius: 50%; left: calc(50% - 2.5px); margin-top: 5px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+      .dot-mode .temp-curve-high { background: rgba(255, 87, 34); margin-top: -4px; }
+      .dot-mode .temp-curve-low { background: rgba(3, 169, 243); margin-top: -6.5px; }
       /* 圆点上方的温度文字 */
-      .dot-mode .temp-text {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 12px;
-        font-weight: 600;
-        white-space: nowrap;
-        text-shadow: 0 1px 2px rgba(123, 123, 123, 0.3);
-      }
-
-      .dot-mode .temp-curve-high .temp-text {
-        color: rgba(255, 87, 34);
-        top: -18px;
-      }
-
-      .dot-mode .temp-curve-low .temp-text {
-        color: rgba(3, 169, 243);
-        top: 6px;
-      }
-
+      .dot-mode .temp-text { position: absolute; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 600; white-space: nowrap; text-shadow: 0 1px 2px rgba(123, 123, 123, 0.3); }
+      .dot-mode .temp-curve-high .temp-text { color: rgba(255, 87, 34); top: -18px; }
+      .dot-mode .temp-curve-low .temp-text { color: rgba(3, 169, 243); top: 6px; }
       /*预警图标和文字样式*/
-      .warning-icon-text {
-        color: #FFA726;
-        height: 20px;
-        font-size: 18px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: transform 0.2s ease;
-        white-space: nowrap;
-        align-self: center;
-        margin-left: auto;
-        margin-top: -2px;
-      }
-
-      .warning-icon-text:hover {
-        transform: scale(1.1);
-      }
-
-      .unavailable {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 0;
-        min-height: 0;
-        max-height: 0;
-        margin: 0;
-        padding: 0;
-      }
-    `;
+      .warning-icon-text { color: #FFA726; height: 20px; font-size: 18px; font-weight: bold; cursor: pointer; transition: transform 0.2s ease; white-space: nowrap; align-self: center; margin-left: auto; margin-top: -2px; }
+      .warning-icon-text:hover { transform: scale(1.1); }
+      .unavailable { display: flex; align-items: center; justify-content: center; height: 0; min-height: 0; max-height: 0; margin: 0; padding: 0; }`;
   }
   
   disconnectedCallback() {
@@ -1981,456 +1584,93 @@ class XiaoshiHourlyWeatherCard extends XiaoshiWeatherBase {
   } 
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-
+    return css`      :host { display: block; }
       /*主卡片样式*/
-      .weather-card {
-        width: 80vw;
-        max-height: 80vh;
-        position: relative;
-        border-radius: 15px;
-        padding: 8px;
-        font-family: sans-serif;
-        overflow: hidden;
-      }
-
+      .weather-card { width: 80vw; max-height: 80vh; position: relative; border-radius: 15px; padding: 8px; font-family: sans-serif; overflow: hidden; }
       /*主卡片样式*/
-      .weather-card.dark-theme {
-      }
-
-      .main-content {
-        position: relative;
-      }
-
+      .weather-card.dark-theme { }
+      .main-content { position: relative; }
       /*天气头部*/
-      .weather-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-top: 0px;
-        margin-bottom: 0px;
-      }
-
-      .weather-left {
-        display: flex;
-        align-items: center;
-      }
-
+      .weather-header { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 0px; margin-bottom: 0px; }
+      .weather-left { display: flex; align-items: center; }
       /*天气头部 图标*/
-      .weather-icon {
-        width: 50px;
-        height: 50px;
-        margin-right: 16px;
-        margin-bottom: 0px;
-      }
-
+      .weather-icon { width: 50px; height: 50px; margin-right: 16px; margin-bottom: 0px; }
       /*天气头部 图标*/
-      .weather-icon img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-      }
-
+      .weather-icon img { width: 100%; height: 100%; object-fit: contain; }
       /*天气头部 温度*/
-      .weather-temperature {
-        height: 30px;
-        font-size: 23px;
-        font-weight: bold;
-        margin-top: 0;
-        margin-bottom: 0;
-      }
-
+      .weather-temperature { height: 30px; font-size: 23px; font-weight: bold; margin-top: 0; margin-bottom: 0; }
       /*天气头部 天气信息*/
-      .weather-info {
-        height: 12px;
-        font-size: 12px;
-        margin-top: 0px;
-        white-space: nowrap;
-      }
-
-
+      .weather-info { height: 12px; font-size: 12px; margin-top: 0px; white-space: nowrap; }
       /*天气右侧容器*/
-      .weather-right {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        justify-content: flex-start;
-        min-height: 50px;
-        flex: 1;
-        width: 100%;
-      }
-
+      .weather-right { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; min-height: 50px; flex: 1; width: 100%; }
       /*天气温度样式*/
-      .weather-temperature {
-        height: 30px;
-        font-size: 23px;
-        font-weight: bold;
-        margin-top: 0;
-        margin-bottom: 0;
-      }
-
+      .weather-temperature { height: 30px; font-size: 23px; font-weight: bold; margin-top: 0; margin-bottom: 0; }
       /*天气信息样式*/
-      .weather-info {
-        height: 15px;
-        font-size: 12px;
-        margin-top: 0;
-        margin-bottom: 0;
-        white-space: nowrap;
-      }
-
-      .forecast-toggle-button {
-        margin-top: auto;
-      }
-
+      .weather-info { height: 15px; font-size: 12px; margin-top: 0; margin-bottom: 0; white-space: nowrap; }
+      .forecast-toggle-button { margin-top: auto; }
       /*小时天气温度样式*/
-      .temp-curve-hourly {
-        position: absolute;
-        left: 0;
-        right: 0;
-        height: 17.5px;
-        background: linear-gradient(to bottom, 
-          rgba(156, 39, 176) 0%, 
-          rgba(103, 58, 183) 100%);
-        border-radius: 2.5px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 10px;
-        font-weight: bold;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        z-index: 4;
-      }
-
+      .temp-curve-hourly { position: absolute; left: 0; right: 0; height: 17.5px; background: linear-gradient(to bottom, rgba(156, 39, 176) 0%, rgba(103, 58, 183) 100%); border-radius: 2.5px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3); z-index: 4; }
       /*分钟天气温度样式（绿色）*/
-      .temp-curve-minutely {
-        position: absolute;
-        left: 0;
-        right: 0;
-        height: 17.5px;
-        background: linear-gradient(to bottom, 
-          rgba(76, 175, 80) 0%, 
-          rgba(56, 142, 60) 100%);
-        border-radius: 2.5px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 10px;
-        font-weight: bold;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        z-index: 4;
-      }
-
+      .temp-curve-minutely { position: absolute; left: 0; right: 0; height: 17.5px; background: linear-gradient(to bottom, rgba(76, 175, 80) 0%, rgba(56, 142, 60) 100%); border-radius: 2.5px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3); z-index: 4; }
       /*9日天气部分*/
-      .forecast-container {
-        display: grid;
-        gap: 2px;
-        margin-top: 10px;
-        height: 240px;
-        position: relative;
-      }
-
+      .forecast-container { display: grid; gap: 2px; margin-top: 10px; height: 240px; position: relative; }
       /*9日天气部分*/
-      .forecast-day {
-        grid-row: 1;
-        text-align: center;
-        position: relative;
-        border-radius: 8px;
-        padding: 5px;
-        position: relative;
-      }
-
+      .forecast-day { grid-row: 1; text-align: center; position: relative; border-radius: 8px; padding: 5px; position: relative; }
       /*9日天气部分 星期*/
-      .forecast-weekday {
-        font-size: 11px;
-        height: 14px;
-        margin-top: -5px;
-        margin-bottom: 1px;
-        font-weight: 500;
-        white-space: nowrap;
-      }
-      
+      .forecast-weekday { font-size: 11px; height: 14px; margin-top: -5px; margin-bottom: 1px; font-weight: 500; white-space: nowrap; }
       /*9日天气部分 日期*/
-      .forecast-date {
-        font-size: 8px;
-        margin-bottom: 15px;
-        margin-left: 0px;
-        margin-right: 0px;
-        height: 10px;
-        white-space: nowrap;
-      }
-
+      .forecast-date { font-size: 8px; margin-bottom: 15px; margin-left: 0px; margin-right: 0px; height: 10px; white-space: nowrap; }
       /*9日天气部分 温度区域*/
-      .forecast-temp-container {
-        position: relative;
-        height: 125px;
-        margin-top: 0;
-        margin-bottom: 0;
-      }
-
+      .forecast-temp-container { position: relative; height: 125px; margin-top: 0; margin-bottom: 0; }
       /*9日天气部分 温度区域*/
-      .forecast-temp-null {
-        position: relative;
-        height: 10px;
-      }
-
+      .forecast-temp-null { position: relative; height: 10px; }
       /*9日天气部分 雨量容器*/
-      .forecast-rainfall-container {
-        text-align: center;
-        position: relative;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 12.5px;
-        margin-top: -10px;
-        margin-bottom: 0;
-      }
-
+      .forecast-rainfall-container { text-align: center; position: relative; display: flex; justify-content: center; align-items: center; height: 12.5px; margin-top: -10px; margin-bottom: 0; }
       /*9日天气部分 雨量标签*/
-      .forecast-rainfall {
-        background: rgba(80, 177, 200);
-        color: white;
-        font-size: 7px;
-        font-weight: bold;
-        height: 12.5px;
-        min-width: 80% ;
-        border-radius: 6px;
-        width: fit-content;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        padding: 0 2.5px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 2;
-      }
- 
+      .forecast-rainfall { background: rgba(80, 177, 200); color: white; font-size: 7px; font-weight: bold; height: 12.5px; min-width: 80% ; border-radius: 6px; width: fit-content; box-shadow: 0 1px 3px rgba(0,0,0,0.2); padding: 0 2.5px; display: flex; align-items: center; justify-content: center; z-index: 2; }
       /*雨量填充矩形*/
-      .rainfall-fill {
-        position: absolute;
-        left: 0;
-        right: 0;
-        background: rgba(80, 177, 200, 0.8);
-        border-radius: 6px;
-        z-index: 1;
-        margin: 0 -5px;
-        bottom: -15px;
-        transition: all 0.3s ease;
-      }
-
+      .rainfall-fill { position: absolute; left: 0; right: 0; background: rgba(80, 177, 200, 0.8); border-radius: 6px; z-index: 1; margin: 0 -5px; bottom: -15px; transition: all 0.3s ease; }
       /*9日天气部分 图标*/
-      .forecast-icon-container {
-        text-align: center;
-        position: relative;
-      }
-
+      .forecast-icon-container { text-align: center; position: relative; }
       /*9日天气部分 图标*/
-      .forecast-icon {
-        width: 25px;
-        height: 25px;
-        margin: 0px auto;
-        margin-top: 0;
-      }
-
+      .forecast-icon { width: 25px; height: 25px; margin: 0px auto; margin-top: 0; }
       /*9日天气部分 图标*/
-      .forecast-icon img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-      }
-
+      .forecast-icon img { width: 100%; height: 100%; object-fit: contain; }
       /*9日天气部分 风速*/
-      .forecast-wind-container {
-        grid-row: 4;
-        text-align: center;
-        position: relative;
-        height: 15px;
-        margin-top: -5px;
-      }
-
+      .forecast-wind-container { grid-row: 4; text-align: center; position: relative; height: 15px; margin-top: -5px; }
       /*9日天气部分 风速*/
-      .forecast-wind {
-        font-size: 10px;
-        margin-top: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 1.5px;
-        height: 15px;
-      }
-
+      .forecast-wind { font-size: 10px; margin-top: 0; display: flex; align-items: center; justify-content: center; gap: 1.5px; height: 15px; }
       /*9日天气部分 风速*/
-      .wind-direction {
-        font-size: 9px;
-      }
-
+      .wind-direction { font-size: 9px; }
       /*9日天气部分 温度曲线 Canvas*/
-      .temp-line-canvas {
-        position: absolute;
-        left: 0;
-        width: 100%;
-        pointer-events: none;
-        z-index: 3;
-      }
-
-      .temp-line-canvas-high {
-        top: 37.5px;
-        height: 125px; 
-      }
-
-      .temp-line-canvas-low {
-        top: 37.5px;
-        height: 125px; 
-      }
-
-      .temp-line-canvas-hourly {
-        position: absolute !important;
-        top: 37.5px !important;
-        left: 0 !important;
-        right: 0 !important;
-        height: 125px !important;
-        width: 100% !important;
-        pointer-events: none !important;
-        z-index: 2;
-      }
-
+      .temp-line-canvas { position: absolute; left: 0; width: 100%; pointer-events: none; z-index: 3; }
+      .temp-line-canvas-high { top: 37.5px; height: 125px; }
+      .temp-line-canvas-low { top: 37.5px; height: 125px; }
+      .temp-line-canvas-hourly { position: absolute !important; top: 37.5px !important; left: 0 !important; right: 0 !important; height: 125px !important; width: 100% !important; pointer-events: none !important; z-index: 2; }
       /* 圆点模式样式 */
       .dot-mode .temp-curve-hourly,
-      .dot-mode .temp-curve-minutely {
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        left: calc(50% - 2.5px);
-        margin-top: 5px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: 600;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-      }
-
-      .dot-mode .temp-curve-hourly {
-        background: rgba(156, 39, 176);
-      }
-
-      .dot-mode .temp-curve-minutely {
-        background: rgba(76, 175, 80);
-      }
-
+      .dot-mode .temp-curve-minutely { width: 5px; height: 5px; border-radius: 50%; left: calc(50% - 2.5px); margin-top: 5px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+      .dot-mode .temp-curve-hourly { background: rgba(156, 39, 176); }
+      .dot-mode .temp-curve-minutely { background: rgba(76, 175, 80); }
       /* 圆点上方的温度文字 */
-      .dot-mode .temp-text {
-        position: absolute;
-        top: -18px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 12px;
-        font-weight: 600;
-        white-space: nowrap;
-        text-shadow: 0 1px 2px rgba(123, 123, 123, 0.3);
-      }
-
-      .dot-mode .temp-curve-hourly .temp-text {
-        color: rgba(193, 65, 215, 1);
-      }
-      .dot-mode .temp-curve-minutely .temp-text {
-        color: rgba(76, 175, 80, 1);
-      }
-
-      .unavailable {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 0;
-        min-height: 0;
-        max-height: 0;
-        margin: 0;
-        padding: 0;
-      }
-
-
+      .dot-mode .temp-text { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 600; white-space: nowrap; text-shadow: 0 1px 2px rgba(123, 123, 123, 0.3); }
+      .dot-mode .temp-curve-hourly .temp-text { color: rgba(193, 65, 215, 1); }
+      .dot-mode .temp-curve-minutely .temp-text { color: rgba(76, 175, 80, 1); }
+      .unavailable { display: flex; align-items: center; justify-content: center; height: 0; min-height: 0; max-height: 0; margin: 0; padding: 0; }
       /*24小时天气弹窗样式 */
-      .hourly-modal-content {
-        background-color: rgba(50, 50, 50);
-        border-radius: 12px;
-        max-width: 80vw;
-        overflow: hidden;
-        margin: 0 auto;
-        padding: 0px;
-      }
-
-      .hourly-modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-left: 25px;
-        margin-right: 0px;
-        margin-bottom: -20px;
-        height: 60px;
-        font-size: 20px;
-      }
-
-      .hourly-modal-header h3 {
-        margin: 0;
-        font-weight: bold;
-        font-size: 20px;
-        
-      }
-
-      .hourly-modal-header2 {
-        display: flex;
-        justify-content: flex-start;
-        align-items: start;
-        margin-right: 0px;
-        margin-top: -10px;
-        margin-bottom: 10px;
-        height: 20px;
-        font-size: 15px;
-      }
-      .hourly-modal-header2 h3 {
-        font-weight: bold;
-        font-size: 15px;
-      }
-
-      .hourly-modal-body {
-        padding: 5px 2px;
-        overflow: hidden;
-      }
-
+      .hourly-modal-content { background-color: rgba(50, 50, 50); border-radius: 12px; max-width: 80vw; overflow: hidden; margin: 0 auto; padding: 0px; }
+      .hourly-modal-header { display: flex; justify-content: space-between; align-items: center; margin-left: 25px; margin-right: 0px; margin-bottom: -20px; height: 60px; font-size: 20px; }
+      .hourly-modal-header h3 { margin: 0; font-weight: bold; font-size: 20px; }
+      .hourly-modal-header2 { display: flex; justify-content: flex-start; align-items: start; margin-right: 0px; margin-top: -10px; margin-bottom: 10px; height: 20px; font-size: 15px; }
+      .hourly-modal-header2 h3 { font-weight: bold; font-size: 15px; }
+      .hourly-modal-body { padding: 5px 2px; overflow: hidden; }
       /* 小时预报容器滑动支持 */
-      .hourly-modal-body .forecast-container {
-        overflow-x: auto;
-        width: 100%;
-        min-width: 0;
-        box-sizing: border-box;
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* IE and Edge */
-        user-select: none; /* 防止文本选中 */
-        -webkit-user-select: none; /* Safari */
-        -moz-user-select: none; /* Firefox */
-        -ms-user-select: none; /* IE/Edge */
-      }
-
+      .hourly-modal-body .forecast-container { overflow-x: auto; width: 100%; min-width: 0; box-sizing: border-box; scrollbar-width: none; /* Firefox */ -ms-overflow-style: none; /* IE and Edge */ user-select: none; /* 防止文本选中 */ -webkit-user-select: none; /* Safari */ -moz-user-select: none; /* Firefox */ -ms-user-select: none; /* IE/Edge */ }
       /* 小时预报容器wrapper隐藏滚动条 */
-      .hourly-modal-body .forecast-container-wrapper {
-        overflow-x: auto;
-        overflow-y: hidden;
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* IE and Edge */
-      }
-
+      .hourly-modal-body .forecast-container-wrapper { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; /* Firefox */ -ms-overflow-style: none; /* IE and Edge */ }
       /* 隐藏滚动条但保留滚动功能 */
       .hourly-modal-body .forecast-container::-webkit-scrollbar,
-      .hourly-modal-body .forecast-container-wrapper::-webkit-scrollbar {
-        display: none; /* Chrome, Safari and Opera */
-        width: 0;
-        height: 0;
-      }
-
-    `;
+      .hourly-modal-body .forecast-container-wrapper::-webkit-scrollbar { display: none; /* Chrome, Safari and Opera */ width: 0; height: 0; }`;
   }
 
   constructor() {
@@ -3285,84 +2525,17 @@ class XiaoshiWarningWeatherCard extends XiaoshiWeatherBase {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-
+    return css`      :host { display: block; }
       /*预警弹窗样式*/
-      .warning-modal-content {
-        border-radius: 12px;
-        max-height: 80vh;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        margin: 0 auto;
-        color: white;
-        width: 80vw;
-      }
-
-      .warning-modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin: 0;
-        padding: 0 25px;
-        height: 60px;
-        font-size: 20px;
-        flex-shrink: 0;
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        background: inherit;
-      }
-
-      .warning-modal-header h3 {
-        margin: 0;
-        font-weight: bold;
-        font-size: 20px;
-      }
-
-      .warning-modal-body {
-        overflow-y: auto;
-        flex: 1;
-        min-height: 0;
-      }
-
-      .warning-item {
-        background: rgba(127, 127, 127, 0.15);
-        border-radius: 8px;
-        padding: 15px;
-        margin: 12px 20px;
-        border-left: 4px solid #FFA726;
-        transition: all 0.2s ease;
-      }
-
-      .warning-item-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 8px;
-      }
-
-      .warning-title {
-        font-weight: bold;
-        font-size: 15px;
-        flex: 1;
-      }
-
-      .warning-time {
-        font-size: 12px;
-        white-space: nowrap;
-        margin-left: 10px;
-      }
-
-      .warning-text {
-        font-size: 13px;
-        line-height: 1.5;
-      }
-
-    `;
+      .warning-modal-content { border-radius: 12px; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; margin: 0 auto; color: white; width: 80vw; }
+      .warning-modal-header { display: flex; justify-content: space-between; align-items: center; margin: 0; padding: 0 25px; height: 60px; font-size: 20px; flex-shrink: 0; position: sticky; top: 0; z-index: 1; background: inherit; }
+      .warning-modal-header h3 { margin: 0; font-weight: bold; font-size: 20px; }
+      .warning-modal-body { overflow-y: auto; flex: 1; min-height: 0; }
+      .warning-item { background: rgba(127, 127, 127, 0.15); border-radius: 8px; padding: 15px; margin: 12px 20px; border-left: 4px solid #FFA726; transition: all 0.2s ease; }
+      .warning-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+      .warning-title { font-weight: bold; font-size: 15px; flex: 1; }
+      .warning-time { font-size: 12px; white-space: nowrap; margin-left: 10px; }
+      .warning-text { font-size: 13px; line-height: 1.5; }`;
   }
 
   render() {
@@ -3442,93 +2615,22 @@ class XiaoshiAqiWeatherCard extends XiaoshiWeatherBase {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-
-      .aqi-card {
-        width: 80vw;
-        max-height: 80vh;
-        border-radius: 12px;
-        overflow-y: auto;
-        margin: 0 auto;
-        color: white;
-      }
-
-      .aqi-card.dark-theme {
-        background: rgba(50, 50, 50);
-      }
-
-      .aqi-card.light-theme {
-        background: rgba(255, 255, 255);
-      }
-
-      .aqi-modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-left: 25px;
-        margin-right: 0px;
-        height: 60px;
-        font-size: 20px;
-      }
-
-      .aqi-modal-header h3 {
-        margin: 0;
-        font-weight: bold;
-        font-size: 20px;
-      }    
-
+    return css`      :host { display: block; }
+      .aqi-card { width: 80vw; max-height: 80vh; border-radius: 12px; overflow-y: auto; margin: 0 auto; color: white; }
+      .aqi-card.dark-theme { background: rgba(50, 50, 50); }
+      .aqi-card.light-theme { background: rgba(255, 255, 255); }
+      .aqi-modal-header { display: flex; justify-content: space-between; align-items: center; margin-left: 25px; margin-right: 0px; height: 60px; font-size: 20px; }
+      .aqi-modal-header h3 { margin: 0; font-weight: bold; font-size: 20px; }
       /* AQI总览 */
-      .aqi-overview {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 12px;
-        padding: 8px;
-        border-radius: 12px;
-      }
-
-      .aqi-main-value {
-        text-align: center;
-      }
-
-      .aqi-value {
-        font-size: 28px;
-        font-weight: bold;
-        margin-bottom: 4px;
-      }
-
-      .aqi-category {
-        font-size: 18px;
-        margin-top: 4px;
-      }
-
+      .aqi-overview { display: flex; align-items: center; justify-content: center; margin-bottom: 12px; padding: 8px; border-radius: 12px; }
+      .aqi-main-value { text-align: center; }
+      .aqi-value { font-size: 28px; font-weight: bold; margin-bottom: 4px; }
+      .aqi-category { font-size: 18px; margin-top: 4px; }
       /* 污染物网格 */
-      .pollutants-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-        margin-bottom: 20px;
-      }
-
-      .pollutant-item {
-        text-align: center;
-        padding: 8px;
-        border-radius: 8px;
-      }
-
-      .pollutant-name {
-        font-size: 16px;
-        font-weight: bold;
-        margin-bottom: 4px;
-      }
-
-      .pollutant-value {
-        font-size: 14px;
-      }
-    `;
+      .pollutants-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+      .pollutant-item { text-align: center; padding: 8px; border-radius: 8px; }
+      .pollutant-name { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+      .pollutant-value { font-size: 14px; }`;
   }
 
   render() {
@@ -3625,72 +2727,17 @@ class XiaoshiIndicesWeatherCard extends XiaoshiWeatherBase {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-
-      .indices-card {
-        width: 80vw;
-        max-height: 80vh;
-        padding-bottom: 16px;
-        position: relative;
-        font-family: sans-serif;
-        overflow: hidden;
-        border-radius: 12px;
-        margin: 0 auto;
-        color: white;
-      } 
-
-      .indices-modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-left: 25px;
-        margin-right: 0px;
-        height: 60px;
-        font-size: 20px;
-      }
-
-      .indices-modal-header h3 {
-        margin: 0;
-        font-weight: bold;
-        font-size: 20px;
-      }    
-
+    return css`      :host { display: block; }
+      .indices-card { width: 80vw; max-height: 80vh; padding-bottom: 16px; position: relative; font-family: sans-serif; overflow: hidden; border-radius: 12px; margin: 0 auto; color: white; }
+      .indices-modal-header { display: flex; justify-content: space-between; align-items: center; margin-left: 25px; margin-right: 0px; height: 60px; font-size: 20px; }
+      .indices-modal-header h3 { margin: 0; font-weight: bold; font-size: 20px; }
       /* 指数网格 */
-      .indices-grid {
-        padding: 0 16px;
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
-      }
-
-      .index-item {
-        padding: 12px;
-        border-radius: 8px;
-      }
-
-      .index-header {
-        margin-bottom: 4px;
-      }
-
-      .index-name {
-        font-size: 16px;
-        font-weight: bold;
-        margin-bottom: 2px;
-      }
-
-      .index-level {
-        font-size: 12px;
-      }
-
-      .index-description {
-        font-size: 10px;
-        opacity: 0.8;
-        line-height: 1.4;
-      }
-    `;
+      .indices-grid { padding: 0 16px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+      .index-item { padding: 12px; border-radius: 8px; }
+      .index-header { margin-bottom: 4px; }
+      .index-name { font-size: 16px; font-weight: bold; margin-bottom: 2px; }
+      .index-level { font-size: 12px; }
+      .index-description { font-size: 10px; opacity: 0.8; line-height: 1.4; }`;
   }
 
   render() {

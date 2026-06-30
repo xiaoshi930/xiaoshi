@@ -42,12 +42,10 @@ class XiaoshiPVECardEditor extends LitElement {
         return { hass: { type: Object }, config: { type: Object } };
     }
     static get styles() {
-        return css`
-            .form { display:flex; flex-direction:column; gap:10px; min-height:200px; }
+        return css`            .form { display:flex; flex-direction:column; gap:10px; min-height:200px; }
             .form-group { display:flex; flex-direction:column; gap:5px; }
             label { font-weight:bold; }
-            select, input { padding:8px; border:1px solid #ddd; border-radius:4px; }
-        `;
+            select, input { padding:8px; border:1px solid #ddd; border-radius:4px; }`;
     }
     setConfig(config) { this.config = config; }
     _fireConfigChanged() {
@@ -117,83 +115,36 @@ class XiaoshiPVECard extends LitElement {
     }
 
     static get styles() {
-        return css`
-            :host { display:block; width:var(--card-width, 100%); max-width:500px; margin:0 auto; }
-            ha-card {
-                width:100%; height:100%; display:flex; flex-direction:column;
-                background:var(--bg-color, #fff); border-radius:12px; border:none;
-            }
-            .card-header {
-                display:flex; justify-content:space-between; align-items:center;
-                padding:8px 16px 2px 16px; background:var(--bg-color, #fff); border-radius:12px;
-            }
+        return css`            :host { display:block; width:var(--card-width, 100%); max-width:500px; margin:0 auto; }
+            ha-card { width:100%; height:100%; display:flex; flex-direction:column; background:var(--bg-color, #fff); border-radius:12px; border:none; }
+            .card-header { display:flex; justify-content:space-between; align-items:center; padding:8px 16px 2px 16px; background:var(--bg-color, #fff); border-radius:12px; }
             .card-title { font-size:18px; font-weight:500; color:var(--fg-color, #000); }
-            .entity-count {
-                color:var(--fg-color, #000); border-radius:8px; font-size:13px;
-                padding:2px 8px; background:rgba(0,200,200,0.3);
-            }
+            .entity-count { color:var(--fg-color, #000); border-radius:8px; font-size:13px; padding:2px 8px; background:rgba(0,200,200,0.3); }
             .devices-wrap { flex:1; overflow-y:auto; padding:8px 12px; }
-
             /* --- 设备容器 --- */
-            .device-card {
-                background:var(--device-card-bg); border-radius:10px;
-                margin-bottom:10px; overflow:hidden;
-                border:1px solid var(--device-border, rgba(150,150,150,0.25));
-            }
-            .device-header {
-                display:flex; align-items:center; gap:8px;
-                padding:6px 12px; font-size:14px; font-weight:500;
-                color:var(--fg-color, #000);
-                border-bottom:1px solid rgba(150,150,150,0.2);
-            }
+            .device-card { background:var(--device-card-bg); border-radius:10px; margin-bottom:10px; overflow:hidden; border:1px solid var(--device-border, rgba(150,150,150,0.25)); }
+            .device-header { display:flex; align-items:center; gap:8px; padding:6px 12px; font-size:14px; font-weight:500; color:var(--fg-color, #000); border-bottom:1px solid rgba(150,150,150,0.2); }
             .device-title { flex:1; }
-            .device-status {
-                font-size:10px; padding:1px 8px; border-radius:10px; color:#fff;
-            }
+            .device-status { font-size:10px; padding:1px 8px; border-radius:10px; color:#fff; }
             .status-running { background:#4CAF50; }
             .status-stopped { background:#888; }
             .status-paused { background:#FF9800; }
-
             /* --- 两列网格 --- */
-            .cards-row {
-                display:flex; flex-wrap:wrap; gap:6px; padding:8px;
-            }
+            .cards-row { display:flex; flex-wrap:wrap; gap:6px; padding:8px; }
             .cards-row > .info-card { flex:1 1 calc(50% - 3px); min-width:0; }
-
             /* --- 信息卡片 --- */
-            .info-card {
-                background:var(--card-bg); border-radius:8px; padding:3px 6px;
-                box-sizing:border-box; position:relative; overflow:hidden;
-            }
-            .info-header {
-                display:flex; align-items:center; justify-content:space-between;
-                gap:3px; font-size:10px; font-weight:bold;
-            }
+            .info-card { background:var(--card-bg); border-radius:8px; padding:3px 6px; box-sizing:border-box; position:relative; overflow:hidden; }
+            .info-header { display:flex; align-items:center; justify-content:space-between; gap:3px; font-size:10px; font-weight:bold; }
             .info-header-left { display:flex; align-items:center; gap:3px; white-space:nowrap; overflow:hidden; min-width:0; }
             .info-value { font-size:12px; font-weight:bold; white-space:nowrap; flex-shrink:0; }
             .info-sub { font-size:9px; opacity:0.6; margin-top:2px; }
-            .info-chart-container {
-                width:100%; height:30px; margin-bottom:-2px; overflow:hidden; pointer-events:none;
-            }
-            .chart-toggle {
-                font-size:10px; opacity:0.5; cursor:pointer; border:none;
-                background:none; color:var(--fg-color, #000); padding:1px 4px;
-                border-radius:4px; flex-shrink:0;
-            }
+            .info-chart-container { width:100%; height:30px; margin-bottom:-2px; overflow:hidden; pointer-events:none; }
+            .chart-toggle { font-size:10px; opacity:0.5; cursor:pointer; border:none; background:none; color:var(--fg-color, #000); padding:1px 4px; border-radius:4px; flex-shrink:0; }
             .chart-toggle:hover { opacity:0.8; }
             .chart-toggle.on { opacity:1; font-weight:bold; color:#00BCD4; }
-
             /* --- 按钮 --- */
-            .power-btns {
-                display:flex; gap:6px; padding:0 8px 8px 8px;
-            }
-            .power-btn {
-                flex:1; height:28px; border:none; border-radius:8px;
-                font-size:11px; font-weight:bold; cursor:pointer;
-                display:flex; align-items:center; justify-content:center; gap:2px;
-                transition:all 0.2s ease; color:#fff;
-                white-space:nowrap; overflow:hidden;
-            }
+            .power-btns { display:flex; gap:6px; padding:0 8px 8px 8px; }
+            .power-btn { flex:1; height:28px; border:none; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:2px; transition:all 0.2s ease; color:#fff; white-space:nowrap; overflow:hidden; }
             .power-btn:active { transform:scale(0.96); opacity:0.85; }
             .power-btn ha-icon { --mdc-icon-size:14px; }
             .btn-shutdown { background:#f44336; }
@@ -202,17 +153,13 @@ class XiaoshiPVECard extends LitElement {
             .btn-suspend { background:#FF9800; }
             .btn-on { background:#4CAF50; }
             .btn-off { background:#f44336; }
-            .btn-confirm {
-                animation: confirmPulse 0.6s ease-in-out infinite alternate;
-            }
+            .btn-confirm { animation: confirmPulse 0.6s ease-in-out infinite alternate; }
             @keyframes confirmPulse {
                 from { opacity:1; transform:scale(1); }
                 to   { opacity:0.7; transform:scale(1.05); }
             }
-
             .no-data { text-align:center; padding:20px; color:var(--sub-color, #888); font-size:13px; }
-            .loading { text-align:center; padding:20px; color:var(--sub-color, #888); }
-        `;
+            .loading { text-align:center; padding:20px; color:var(--sub-color, #888); }`;
     }
 
     constructor() {

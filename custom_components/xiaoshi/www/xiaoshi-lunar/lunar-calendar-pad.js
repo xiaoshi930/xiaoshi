@@ -43,30 +43,9 @@ class LunarCalendarPad extends LitElement {
   }
  
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      } 
-      .grid-container {
-        display: grid;
-        grid-template-areas: 
-          "left1 head  right1"
-          "left1 lunar right1"            
-          "left2 lunar right2"     
-          "left3 lunar right3"    
-          "left4 lunar right4"      
-          "left5 body1 right5" 
-          "left6 body7 right6";
-        grid-template-columns: 180px 400px 180px;
-        grid-template-rows: 60px 20px 30px 120px 120px 60px 60px;
-        width: 785px;
-        height: 540px;
-        gap: 10px;
-      } 
-      .grid-item {
-        display: flex;
-        position: relative;
-      }
+    return css`      :host { display: block; }
+      .grid-container { display: grid; grid-template-areas: "left1 head right1" "left1 lunar right1" "left2 lunar right2" "left3 lunar right3" "left4 lunar right4" "left5 body1 right5" "left6 body7 right6"; grid-template-columns: 180px 400px 180px; grid-template-rows: 60px 20px 30px 120px 120px 60px 60px; width: 785px; height: 540px; gap: 10px; }
+      .grid-item { display: flex; position: relative; }
       .left1 { grid-area: left1; height: 90px; }
       .right1 { grid-area: right1; height: 90px; }
       .head { grid-area: head; height: 60px; }
@@ -82,8 +61,7 @@ class LunarCalendarPad extends LitElement {
       .body1 { grid-area: body1; height: 60px; }
       .left6 { grid-area: left6; height: 60px; }
       .right6 { grid-area: right6; height: 60px; }
-      .body7 { grid-area: body7; height: 60px; }
-    `;
+      .body7 { grid-area: body7; height: 60px; }`;
   }
 
   render() {
@@ -254,58 +232,17 @@ class LunarCalendarPadDateEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      label {
-        font-weight: bold;
-      }
-      select, input {
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        width: 100%;
-        box-sizing: border-box;
-      }
-      input[type="color"] {
-        width: 50px;
-        height: 36px;
-        padding: 2px;
-        cursor: pointer;
-      }
-      .conditional-field {
-        display: none;
-      }
-      .conditional-field.visible {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      .form-group-inline {
-        flex-direction: row !important;
-        align-items: center;
-        gap: 8px;
-      }
-      .form-group-inline label {
-        white-space: nowrap;
-      }
-      .entity-search-container {
-        position: relative;
-        width: 100%;
-      }
-      .entity-search-container input {
-        width: 100%;
-        min-width: 200px;
-      }
-    `;
+    return css`      .form { display: flex; flex-direction: column; gap: 10px; }
+      .form-group { display: flex; flex-direction: column; gap: 5px; }
+      label { font-weight: bold; }
+      select, input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%; box-sizing: border-box; }
+      input[type="color"] { width: 50px; height: 36px; padding: 2px; cursor: pointer; }
+      .conditional-field { display: none; }
+      .conditional-field.visible { display: flex; flex-direction: column; gap: 5px; }
+      .form-group-inline { flex-direction: row !important; align-items: center; gap: 8px; }
+      .form-group-inline label { white-space: nowrap; }
+      .entity-search-container { position: relative; width: 100%; }
+      .entity-search-container input { width: 100%; min-width: 200px; }`;
   }
 
   render() {
@@ -623,129 +560,21 @@ class LunarCalendarPadDate extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-        width: 240px;
-        height: 145px;
-        color: white !important;
-        --text-color: white;
-      }
-      ha-card {
-        background: transparent !important;
-        box-shadow: none !important;
-        border: none !important;
-        cursor: pointer;
-      }
-      .grid-container {
-        display: grid;
-        grid-template-areas: 
-          "time time time time"
-          "date week jieqi jieqi"
-          "year mon mon day"
-          "line line line line"
-          "shengri shengri shengri shengri"
-          "jieri jieri jieri jieri";
-        grid-template-columns: 80px 58px 16px 72px;
-        grid-template-rows: 55px 20px 20px 15px 20px 20px;
-        font-weight: bold;
-        font-size: 16px;
-      }
-      #time {
-        grid-area: time;
-        font-size: 57px;
-        font-weight: 430;
-        text-align: center;
-        white-space: nowrap;
-        overflow: hidden;
-        color: var(--text-color);
-        line-height: 0.9;
-      }
-      .colon {
-        display: flex;
-        align-items: center;
-        font-size: 50px;
-        color: var(--time-text-color, white);
-        margin: 0 -5px;
-      }
-      .flip-clock {
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-      }
-      .flip-part-container {
-        position: relative;
-        width: 80px;
-        height: 50px;
-        perspective: 200px;
-      }
-      .part-top, .part-bottom {
-        line-height: 50px;
-        font-size: 47px;
-        position: absolute;
-        width: 100%;
-        height: 50%;
-        overflow: hidden;
-        display: flex;
-        justify-content: center;
-        backface-visibility: hidden;
-        border-radius: 4px;
-        color: var(--time-text-color, white);
-      }
-      .part-top {
-        top: 0px;
-        bottom: 2px;
-        border-radius: 4px 4px 0 0;
-        align-items: flex-start;
-        z-index: 2;
-        transform: translateZ(1px);
-      }
-      .part-bottom {
-        bottom: -1px;
-        border-radius: 0 0 4px 4px;
-        align-items: flex-end;
-        z-index: 1;
-        transform: translateZ(1px);
-      }
-      .flip-animation {
-        position: absolute;
-        top: 0;
-        width: 100%;
-        height: 52%;
-        transform-style: preserve-3d;
-        transform-origin: bottom;
-        z-index: 3;
-      }
-      .flip-animation-top, .flip-animation-bottom {
-        line-height: 50px;
-        font-size: 47px;
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        justify-content: center;
-        overflow: hidden;
-        backface-visibility: hidden;
-        border-radius: 4px;
-        transform-style: preserve-3d;
-        color: var(--time-text-color, white);
-      } 
-      .flip-animation-top {
-        top: 0px;
-        bottom: 2px;
-        align-items: flex-start;
-        transform: rotateX(0deg) translateZ(1px);
-        border-radius: 4px 4px 0 0;
-      }
-      .flip-animation-bottom {
-        bottom: -1px;
-        align-items: flex-end;
-        transform: rotateX(180deg) translateZ(1px);
-        border-radius: 0 0 4px 4px;
-      }
-      .flipping {
-        animation: flip 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-      }
+    return css`      :host { display: block; width: 240px; height: 145px; color: white !important; --text-color: white; }
+      ha-card { background: transparent !important; box-shadow: none !important; border: none !important; cursor: pointer; }
+      .grid-container { display: grid; grid-template-areas: "time time time time" "date week jieqi jieqi" "year mon mon day" "line line line line" "shengri shengri shengri shengri" "jieri jieri jieri jieri"; grid-template-columns: 80px 58px 16px 72px; grid-template-rows: 55px 20px 20px 15px 20px 20px; font-weight: bold; font-size: 16px; }
+      #time { grid-area: time; font-size: 57px; font-weight: 430; text-align: center; white-space: nowrap; overflow: hidden; color: var(--text-color); line-height: 0.9; }
+      .colon { display: flex; align-items: center; font-size: 50px; color: var(--time-text-color, white); margin: 0 -5px; }
+      .flip-clock { display: flex; justify-content: center; gap: 10px; }
+      .flip-part-container { position: relative; width: 80px; height: 50px; perspective: 200px; }
+      .part-top, .part-bottom { line-height: 50px; font-size: 47px; position: absolute; width: 100%; height: 50%; overflow: hidden; display: flex; justify-content: center; backface-visibility: hidden; border-radius: 4px; color: var(--time-text-color, white); }
+      .part-top { top: 0px; bottom: 2px; border-radius: 4px 4px 0 0; align-items: flex-start; z-index: 2; transform: translateZ(1px); }
+      .part-bottom { bottom: -1px; border-radius: 0 0 4px 4px; align-items: flex-end; z-index: 1; transform: translateZ(1px); }
+      .flip-animation { position: absolute; top: 0; width: 100%; height: 52%; transform-style: preserve-3d; transform-origin: bottom; z-index: 3; }
+      .flip-animation-top, .flip-animation-bottom { line-height: 50px; font-size: 47px; position: absolute; width: 100%; height: 100%; display: flex; justify-content: center; overflow: hidden; backface-visibility: hidden; border-radius: 4px; transform-style: preserve-3d; color: var(--time-text-color, white); }
+      .flip-animation-top { top: 0px; bottom: 2px; align-items: flex-start; transform: rotateX(0deg) translateZ(1px); border-radius: 4px 4px 0 0; }
+      .flip-animation-bottom { bottom: -1px; align-items: flex-end; transform: rotateX(180deg) translateZ(1px); border-radius: 0 0 4px 4px; }
+      .flipping { animation: flip 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
       @keyframes flip {
         0% { transform: rotateX(0deg); }
         100% { transform: rotateX(-180deg); }
@@ -756,14 +585,9 @@ class LunarCalendarPadDate extends LitElement {
       #year    { grid-area: year; color: var(--text-color) }
       #mon     { grid-area: mon; color: var(--text-color) }
       #day     { grid-area: day; text-align: right; color: var(--text-color) }
-      #line    { 
-          grid-area: line; 
-          border-bottom: 2px solid rgb(255,255,255); 
-          margin: 5px 0;
-        }
+      #line { grid-area: line; border-bottom: 2px solid rgb(255,255,255); margin: 5px 0; }
       #shengri { grid-area: shengri; color: var(--text-color); font-size: 15px }
-      #jieri   { grid-area: jieri; color: var(--text-color); font-size: 15px }
-    `;
+      #jieri   { grid-area: jieri; color: var(--text-color); font-size: 15px }`;
   } 
  
   updated(changedProperties) {

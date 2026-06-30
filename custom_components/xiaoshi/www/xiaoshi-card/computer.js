@@ -85,44 +85,24 @@ class XiaoshiComputerCardEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form { display: flex; flex-direction: column; gap: 8px; }
+    return css`      .form { display: flex; flex-direction: column; gap: 8px; }
       .form-group { display: flex; align-items: center; gap: 8px; }
       label { font-weight: bold; font-size: 10px; white-space: nowrap; min-width: 9em; max-width: 9em; width: 9em; }
       .help-text { font-size: 10px; color: #666; margin-top: 4px; }
-
       .entity-selector { position: relative; }
-      .entity-search-input {
-        width: 100%; padding: 8px; border: 1px solid #ddd;
-        border-radius: 4px; box-sizing: border-box; font-size: 11px;
-      }
-      .entity-dropdown {
-        position: absolute; top: 100%; left: 0; right: 0;
-        height: 80px; overflow-y: auto; background: white;
-        border: 1px solid #ddd; border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px;
-      }
-      .entity-option {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #eee;
-      }
+      .entity-search-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 11px; }
+      .entity-dropdown { position: absolute; top: 100%; left: 0; right: 0; height: 80px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px; }
+      .entity-option { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #eee; }
       .entity-option:hover { background: #f5f5f5; }
       .entity-info { display: flex; align-items: center; gap: 8px; flex: 1; }
       .entity-name { font-weight: 500; font-size: 14px; color: #000; }
       .entity-id { font-size: 10px; color: #666; font-family: monospace; }
       .no-results { padding: 10px; text-align: center; color: #666; font-style: italic; }
-
       .entity-selector-with-remove { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
       .entity-selector-with-remove .entity-selector { flex: 1; min-width: 0; }
-      .remove-button {
-        background: #f44336; color: white; border: none; border-radius: 4px;
-        width: 30px; height: 30px; min-width: 30px; padding: 0;
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer; flex-shrink: 0; margin-top: 0;
-      }
+      .remove-button { background: #f44336; color: white; border: none; border-radius: 4px; width: 30px; height: 30px; min-width: 30px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-top: 0; }
       .remove-button:hover { background: #d32f2f; }
-      .form-group select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; flex: 1; }
-    `;
+      .form-group select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; flex: 1; }`;
   }
 
   render() {
@@ -453,208 +433,45 @@ class XiaoshiComputerCard extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host { display: block; max-width: 500px; margin: 0 auto;}
-
-      .card {
-        position: relative;
-        border-radius: 12px;
-        overflow: hidden;
-        box-sizing: border-box;
-        padding: 8px;
-      }
-
-      .history-btn {
-        position: absolute;
-        padding: 2px 8px;
-        right: 0px;
-        z-index: 10;
-        width: 28px;
-        height: 20px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: default;
-        transition: all 0.3s ease;
-        background: rgba(180, 180, 180, 0.2);
-      }
-      .history-btn:hover {
-        opacity: 0.85;
-        transform: scale(1.05);
-      }
-
-      .card-body {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
+    return css`      :host { display: block; max-width: 500px; margin: 0 auto;}
+      .card { position: relative; border-radius: 12px; overflow: hidden; box-sizing: border-box; padding: 8px; }
+      .history-btn { position: absolute; padding: 2px 8px; right: 0px; z-index: 10; width: 28px; height: 20px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background: rgba(180, 180, 180, 0.2); }
+      .history-btn:hover { opacity: 0.85; transform: scale(1.05); }
+      .card-body { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 8px; }
       /* ---- 卡片两列布局 ---- */
-      .cards-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
+      .cards-row { display: flex; flex-wrap: wrap; gap: 6px; }
       .cards-row > .info-card,
-      .cards-row > .screenshot-card {
-        flex: 0 0 calc(50% - 3px);
-        min-width: 0;
-      }
-      .disk-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      .disk-label {
-        font-size: 11px;
-        font-weight: bold;
-      }
-      .disk-format {
-        font-size: 9px;
-        opacity: 0.6;
-      }
-      .disk-bar-bg {
-        width: 100%;
-        height: 8px;
-        background: var(--bar-bg);
-        border-radius: 4px;
-        overflow: hidden;
-      }
-      .disk-bar-fill {
-        height: 100%;
-        border-radius: 4px;
-        transition: width 0.4s ease;
-      }
-      .disk-usage-pct {
-        font-size: 11px;
-        font-weight: bold;
-        text-align: right;
-      }
-      .disk-details {
-        font-size: 9px;
-        opacity: 0.7;
-        line-height: 1.6;
-      }
-
-      .info-card {
-        min-width: 0;
-        background: var(--card-bg);
-        border-radius: 10px;
-        padding: 8px 8px 8px 8px;
-        box-sizing: border-box;
-        position: relative;
-        overflow: hidden;
-      }
-      .screenshot-card {
-        flex: 1;
-        min-width: 0;
-        max-width: 50%;
-        background: var(--card-bg);
-        border-radius: 10px;
-        overflow: hidden;
-        margin-top: 4px;
-      }
-      .info-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 4px;
-        font-size: 11px;
-        font-weight: bold;
-        opacity: 0.8;
-      }
-      .info-header-left {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-      .info-value {
-        font-size: 14px;
-        font-weight: bold;
-      }
-      .info-sub {
-        font-size: 9px;
-        opacity: 0.6;
-      }
-      .info-chart-container {
-        width: 100%;
-        height: 40px;
-        margin-bottom: -8px;
-        overflow: hidden;
-        pointer-events: none;
-      }
-      .screenshot-img {
-        width: 100%;
-        border-radius: 6px;
-        cursor: pointer;
-      }
-
+      .cards-row > .screenshot-card { flex: 0 0 calc(50% - 3px); min-width: 0; }
+      .disk-header { display: flex; align-items: center; justify-content: space-between; }
+      .disk-label { font-size: 11px; font-weight: bold; }
+      .disk-format { font-size: 9px; opacity: 0.6; }
+      .disk-bar-bg { width: 100%; height: 8px; background: var(--bar-bg); border-radius: 4px; overflow: hidden; }
+      .disk-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+      .disk-usage-pct { font-size: 11px; font-weight: bold; text-align: right; }
+      .disk-details { font-size: 9px; opacity: 0.7; line-height: 1.6; }
+      .info-card { min-width: 0; background: var(--card-bg); border-radius: 10px; padding: 8px 8px 8px 8px; box-sizing: border-box; position: relative; overflow: hidden; }
+      .screenshot-card { flex: 1; min-width: 0; max-width: 50%; background: var(--card-bg); border-radius: 10px; overflow: hidden; margin-top: 4px; }
+      .info-header { display: flex; align-items: center; justify-content: space-between; gap: 4px; font-size: 11px; font-weight: bold; opacity: 0.8; }
+      .info-header-left { display: flex; align-items: center; gap: 4px; }
+      .info-value { font-size: 14px; font-weight: bold; }
+      .info-sub { font-size: 9px; opacity: 0.6; }
+      .info-chart-container { width: 100%; height: 40px; margin-bottom: -8px; overflow: hidden; pointer-events: none; }
+      .screenshot-img { width: 100%; border-radius: 6px; cursor: pointer; }
       /* ---- 电源按钮 ---- */
       /* ---- 标题栏 ---- */
-      .title-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-size: 13px;
-        font-weight: bold;
-      }
-      .title-status {
-        font-size: 10px;
-        padding: 2px 8px;
-        border-radius: 10px;
-        height: 28px;
-      }
+      .title-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: bold; }
+      .title-status { font-size: 10px; padding: 2px 8px; border-radius: 10px; height: 28px; }
       .title-status.on { background: #4CAF50; color: #fff; }
       .title-status.off { background: #888; color: #fff; }
-
-      .power-row {
-        display: flex;
-        gap: 8px;
-      }
-      .power-btn {
-        flex: 1;
-        height: 40px;
-        border: none;
-        border-radius: 10px;
-        font-size: 14px;
-        font-weight: bold;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        transition: all 0.2s ease;
-      }
-      .power-btn.on {
-        background: #4caf50;
-        color: #fff;
-      }
-      .power-btn.off {
-        background: #f44336;
-        color: #fff;
-      }
-      .power-btn.sleep {
-        background: #FF9800;
-        color: #fff;
-      }
-      .power-btn.restart {
-        background: #2196F3;
-        color: #fff;
-      }
+      .power-row { display: flex; gap: 8px; }
+      .power-btn { flex: 1; height: 40px; border: none; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease; }
+      .power-btn.on { background: #4caf50; color: #fff; }
+      .power-btn.off { background: #f44336; color: #fff; }
+      .power-btn.sleep { background: #FF9800; color: #fff; }
+      .power-btn.restart { background: #2196F3; color: #fff; }
       .power-btn:active { transform: scale(0.96); opacity: 0.85; }
-
-      .no-data {
-        text-align: center;
-        padding: 12px;
-        opacity: 0.5;
-        font-size: 12px;
-      }
-
-      ha-icon { --mdc-icon-size: 18px; }
-    `;
+      .no-data { text-align: center; padding: 12px; opacity: 0.5; font-size: 12px; }
+      ha-icon { --mdc-icon-size: 18px; }`;
   }
 
   constructor() {
@@ -2065,9 +1882,11 @@ class XiaoshiComputerCard extends LitElement {
     title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
     title.textContent = `${pcName} - 开关机历史记录`;
     const closeBtn = document.createElement('button');
-    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:default;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
     closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
     closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
     header.appendChild(title);
     header.appendChild(closeBtn);
 
@@ -2091,13 +1910,14 @@ class XiaoshiComputerCard extends LitElement {
       { label: '24小时', value: 24 },
       { label: '3天', value: 72 },
       { label: '7天', value: 168 },
-      { label: '15天', value: 360 }
+      { label: '10天', value: 240 }
     ];
     for (const p of periods) {
       const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
-      chip.addEventListener('click', () => {
-        this._historyFilterPeriod = p.value;
-        this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
+chip.addEventListener('click', () => {
+            this._handleClick();
+            this._historyFilterPeriod = p.value;
+            this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
         this._refetchWithFilters();
       });
       timeChips.appendChild(chip);
@@ -2222,6 +2042,7 @@ class XiaoshiComputerCard extends LitElement {
   }
 
   _closeHistoryOverlay() {
+    this._handleClick();
     if (this._historyOverlayEl) {
       this._historyOverlayEl.remove();
       this._historyOverlayEl = null;
@@ -2314,15 +2135,18 @@ class XiaoshiComputerCard extends LitElement {
     chip.setAttribute('data-chip', '1');
     const isActive = (typeof value === 'number' && value === this._historyFilterPeriod);
     if (isActive) {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
     } else {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
     }
     chip.textContent = label;
+    chip.addEventListener('mouseenter', () => { chip.style.opacity = '0.85'; chip.style.transform = 'scale(1.05)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; chip.style.transform = 'scale(1)'; });
     return chip;
   }
 
   _refreshHistoryChips(container, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
+    this._handleClick();
     const chips = container.querySelectorAll('[data-chip]');
     chips.forEach(chip => {
       const label = chip.textContent;
@@ -2332,7 +2156,7 @@ class XiaoshiComputerCard extends LitElement {
                          (label === '6小时' && activePeriod === 6) ||
                          (label === '3天' && activePeriod === 72) ||
                          (label === '7天' && activePeriod === 168) ||
-                         (label === '15天' && activePeriod === 360);
+                         (label === '10天' && activePeriod === 240);
         if (isActive) {
           chip.style.background = activeBg;
           chip.style.color = activeColor;

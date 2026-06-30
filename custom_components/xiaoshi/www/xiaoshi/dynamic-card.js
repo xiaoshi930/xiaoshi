@@ -14,19 +14,13 @@ window.customCards.push({
 });
 
 const PRESET_ON_STATES = [
-    // 通用
     'on', 'open', 'opening','home',  'active', 'running',
     'detected', 'occupied', 'unlocked', 'power_on', '开机','resume',
-    // 媒体
     'Playing','playing', '播放中',
-    // 空调/HVAC
     'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
     'auto', 'heat_cool', 'fan_only',
-    // 人在
     '有人', 'one',
-    // 扫地机器人
     '正在拖地','正在扫地','启动','cleaning',
-    // 厨房
     '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm',"低档","中档","高档"
 ];
 
@@ -40,92 +34,21 @@ class XiaoshiDynamicCardEditor extends LitElement {
 
     static get styles() {
         return css`
-            .form {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-            .form-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .form-row label {
-                font-weight: bold;
-                white-space: nowrap;
-                min-width: 80px;
-            }
-            .form-row input, .form-row select {
-                flex: 1;
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-            }
-            .form-row input[type="color"] {
-                width: 34px;
-                height: 30px;
-                padding: 1px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                flex: none;
-                box-sizing: border-box;
-            }
-            .section-title {
-                font-weight: bold;
-                font-size: 13px;
-                color: #00bcd4;
-                border-bottom: 1px solid #ddd;
-                padding-bottom: 4px;
-                margin-top: 4px;
-            }
-            .area-section {
-                border: 1px solid #444;
-                border-radius: 6px;
-                padding: 8px;
-                position: relative;
-            }
-            .area-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 6px;
-            }
-            .area-header span {
-                font-weight: bold;
-                font-size: 13px;
-                color: #f57c00;
-            }
-            .btn-add, .btn-remove {
-                border: none;
-                border-radius: 4px;
-                padding: 4px 10px;
-                cursor: pointer;
-                font-size: 12px;
-            }
-            .btn-add {
-                background: #4caf50;
-                color: #fff;
-            }
-            .btn-add:hover {
-                background: #388e3c;
-            }
-            .btn-remove {
-                background: #f44336;
-                color: #fff;
-            }
-            .btn-remove:hover {
-                background: #c62828;
-            }
-            textarea {
-                min-height: 60px;
-                resize: vertical;
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-family: monospace;
-                width: 100%;
-                box-sizing: border-box;
-            }
+            .form { display: flex; flex-direction: column; gap: 10px; }
+            .form-row { display: flex; align-items: center; gap: 8px; }
+            .form-row label { font-weight: bold; white-space: nowrap; min-width: 80px; }
+            .form-row input, .form-row select { flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; }
+            .form-row input[type="color"] { width: 34px; height: 30px; padding: 1px; border: 1px solid #ddd; border-radius: 4px; flex: none; box-sizing: border-box; }
+            .section-title { font-weight: bold; font-size: 13px; color: #00bcd4; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 4px; }
+            .area-section { border: 1px solid #444; border-radius: 6px; padding: 8px; position: relative; }
+            .area-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+            .area-header span { font-weight: bold; font-size: 13px; color: #f57c00; }
+            .btn-add, .btn-remove { border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+            .btn-add { background: #4caf50; color: #fff; }
+            .btn-add:hover { background: #388e3c; }
+            .btn-remove { background: #f44336; color: #fff; }
+            .btn-remove:hover { background: #c62828; }
+            textarea { min-height: 60px; resize: vertical; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; width: 100%; box-sizing: border-box; }
         `;
     }
 
@@ -329,78 +252,14 @@ class XiaoshiDynamicCard extends LitElement {
 
     static get styles() {
         return css`
-            :host {
-                display: block;
-                height: 100%;
-                max-width: 400px;
-            }
-            .areas-grid {
-                display: flex;
-                gap: min(2.5vw, 12.5px);
-                padding: 0 min(2.5vw, 12.5px) 1vh min(2.5vw, 12.5px);
-                width: 100%;
-                height: 100%;
-                box-sizing: border-box;
-                align-items: flex-end;
-            }
-            .area-tile {
-                position: relative;
-                border-radius: 8px;
-                flex-shrink: 0;
-                height: 80%;
-                aspect-ratio: 1 / 1;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                cursor: none;
-                transition: background-color 0.35s ease, transform 0.2s ease, box-shadow 0.2s ease;
-                overflow: visible;
-            }
-            .area-tile:active {
-                transform: scale(0.95);
-                box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
-            }
-            .area-icon {
-                --mdc-icon-size: 80%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 80%;
-                height: 80%;
-                color: rgba(255,255,255,0.9);
-                filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
-            }
-            .area-name {
-                font-size: 11px;
-                color: rgba(255,255,255,0.85);
-                margin-top: 4px;
-                text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-                text-align: center;
-                max-width: 90%;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            .area-badge {
-                position: absolute;
-                top: calc(-20% + 2px);
-                right: calc(-20% + 2px);
-                background: #f57c00;
-                color: #fff;
-                font-size: 10px;
-                font-weight: bold;
-                width: 45%;
-                height: 45%;
-                border-radius: 50%;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-                display: none;
-            }
-            .area-badge.show {
-                display: flex;
-            }
+            :host { display: block; height: 100%; max-width: 400px; }
+            .areas-grid { display: flex; gap: min(2.5vw, 12.5px); padding: 0 min(2.5vw, 12.5px) 1vh min(2.5vw, 12.5px); width: 100%; height: 100%; box-sizing: border-box; align-items: flex-end; }
+            .area-tile { position: relative; border-radius: 8px; flex-shrink: 0; height: 80%; aspect-ratio: 1 / 1; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: none; transition: background-color 0.35s ease, transform 0.2s ease, box-shadow 0.2s ease; overflow: visible; }
+            .area-tile:active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
+            .area-icon { --mdc-icon-size: 80%; display: flex; align-items: center; justify-content: center; width: 80%; height: 80%; color: rgba(255,255,255,0.9); filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); }
+            .area-name { font-size: 11px; color: rgba(255,255,255,0.85); margin-top: 4px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); text-align: center; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .area-badge { position: absolute; top: calc(-20% + 2px); right: calc(-20% + 2px); background: #f57c00; color: #fff; font-size: 10px; font-weight: bold; width: 45%; height: 45%; border-radius: 50%; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.4); display: none; }
+            .area-badge.show { display: flex; }
             @keyframes swingBottom {
                 0% { transform: rotate(0deg); }
                 15% { transform: rotate(15deg); }
@@ -433,20 +292,10 @@ class XiaoshiDynamicCard extends LitElement {
                 60% { transform: translateY(-4px); }
                 80% { transform: translateY(4px); }
             }
-            .area-icon.anim-swing-bottom {
-                animation: swingBottom 2s ease-in-out infinite;
-                transform-origin: bottom center;
-            }
-            .area-icon.anim-swing-top {
-                animation: swingTop 2s ease-in-out infinite;
-                transform-origin: top center;
-            }
-            .area-icon.anim-shake-x {
-                animation: shakeX 1.5s ease-in-out infinite;
-            }
-            .area-icon.anim-shake-y {
-                animation: shakeY 1.5s ease-in-out infinite;
-            }
+            .area-icon.anim-swing-bottom { animation: swingBottom 2s ease-in-out infinite; transform-origin: bottom center; }
+            .area-icon.anim-swing-top { animation: swingTop 2s ease-in-out infinite; transform-origin: top center; }
+            .area-icon.anim-shake-x { animation: shakeX 1.5s ease-in-out infinite; }
+            .area-icon.anim-shake-y { animation: shakeY 1.5s ease-in-out infinite; }
         `;
     }
 

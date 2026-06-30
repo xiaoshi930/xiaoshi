@@ -66,224 +66,59 @@ class LunarCalendar extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar-grid {
-        border-radius: 10px;
-        display: grid;
-        grid-template-areas:
-          "yearlast year yearnext today monthlast month monthnext"
-          "week1 week2 week3 week4 week5 week6 week7" 
-          "id1 id2 id3 id4 id5 id6 id7" 
-          "id8 id9 id10 id11 id12 id13 id14" 
-          "id15 id16 id17 id18 id19 id20 id21" 
-          "id22 id23 id24 id25 id26 id27 id28" 
-          "id29 id30 id31 id32 id33 id34 id35" 
-          "id36 id37 id38 id39 id40 id41 id42";
-        grid-template-columns: repeat(7, 1fr);
-        grid-template-rows: 1fr 0.6fr 1fr 1fr 1fr 1fr 1fr 1fr;
-        gap: 1px;
-        padding: 2px;
-        --current-month-color: inherit;
-        --other-month-color: rgb(160,160,160,0.5);
-        user-select: none;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        margin-bottom: -3px;
-      }
-      .celltotal {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        cursor: default;
-        font-size: 15px;
-        font-weight: 600;
-        white-space: nowrap;
-      }
-      .cell {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        cursor: default;
-        font-size: 12px;
-        line-height: 12px;
-        font-weight: 500;
-        height: 100%;
-      }
-      .cell {
-        -webkit-tap-highlight-color: transparent;
-        tap-highlight-color: transparent;
-      }
+    return css`      :host { display: block; }
+      .calendar-grid { border-radius: 10px; display: grid; grid-template-areas: "yearlast year yearnext today monthlast month monthnext" "week1 week2 week3 week4 week5 week6 week7" "id1 id2 id3 id4 id5 id6 id7" "id8 id9 id10 id11 id12 id13 id14" "id15 id16 id17 id18 id19 id20 id21" "id22 id23 id24 id25 id26 id27 id28" "id29 id30 id31 id32 id33 id34 id35" "id36 id37 id38 id39 id40 id41 id42"; grid-template-columns: repeat(7, 1fr); grid-template-rows: 1fr 0.6fr 1fr 1fr 1fr 1fr 1fr 1fr; gap: 1px; padding: 2px; --current-month-color: inherit; --other-month-color: rgb(160,160,160,0.5); user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; margin-bottom: -3px; }
+      .celltotal { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; cursor: default; font-size: 15px; font-weight: 600; white-space: nowrap; }
+      .cell { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; cursor: default; font-size: 12px; line-height: 12px; font-weight: 500; height: 100%; }
+      .cell { -webkit-tap-highlight-color: transparent; tap-highlight-color: transparent; }
       .cell:active\n
       .selected-day:not(.selected-today),
       .cell.touched\n
-      .selected-day:not(.selected-today) {
-        border-radius: 10px;
-      }
-      .nav-button {
-        cursor: pointer;
-        user-select: none;
-        font-size: 12px;
-        transition: all 0.5s ease;
-        border-radius: 10px;
-      }
-      .nav-button:active {
-        transform: scale(0.95);
-        opacity: 0.8;
-        border-radius: 10px;
-      }
-      .active-nav {
-        border-radius: 10px;
-        transition: all 0.5s ease;
-      }
-      .today-button {
-        cursor: pointer;
-        user-select: none;
-        transition: all 0.5s ease;
-        border-radius: 10px;
-      }
-      .nav-button, .today-button {
-        -webkit-tap-highlight-color: transparent;
-        tap-highlight-color: transparent;
-      }
+      .selected-day:not(.selected-today) { border-radius: 10px; }
+      .nav-button { cursor: pointer; user-select: none; font-size: 12px; transition: all 0.5s ease; border-radius: 10px; }
+      .nav-button:active { transform: scale(0.95); opacity: 0.8; border-radius: 10px; }
+      .active-nav { border-radius: 10px; transition: all 0.5s ease; }
+      .today-button { cursor: pointer; user-select: none; transition: all 0.5s ease; border-radius: 10px; }
+      .nav-button, .today-button { -webkit-tap-highlight-color: transparent; tap-highlight-color: transparent; }
       .nav-button:active, 
       .today-button:active,
       .nav-button.active-nav, 
-      .today-button.active-nav {
-        border-radius: 10px !important;
-        background-color: rgba(0, 160, 160, 0.2) !important;
-      }
-      .weekday {
-        font-size: 13px;
-        font-weight: bold;
-      }
-      .month-day {
-        cursor: pointer;
-        color: var(--current-month-color);
-      }
+      .today-button.active-nav { border-radius: 10px !important; background-color: rgba(0, 160, 160, 0.2) !important; }
+      .weekday { font-size: 13px; font-weight: bold; }
+      .month-day { cursor: pointer; color: var(--current-month-color); }
       .month-day\n
-      .lunar-day {
-        color: var(--current-month-color);
-      }
+      .lunar-day { color: var(--current-month-color); }
       .prev-month-day, 
-      .next-month-day {
-        color: var(--other-month-color);
-      }
+      .next-month-day { color: var(--other-month-color); }
       .prev-month-day\n
       .lunar-day,
       .next-month-day\n
-      .lunar-day {
-        color: var(--other-month-color);
-      }
+      .lunar-day { color: var(--other-month-color); }
       .birthday-current,
       .festival-current,
-      .solar-term-current {
-        color: inherit !important;
-      }
-      .selected-day {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        border-radius: 10px;
-      }
-      .selected-today {
-        background-color: #00a0a0;
-        color: white;
-      }
-      .selected-other {
-        border: 2px solid #00a0a0;
-      }
-      .today-not-selected {
-        color: #00a0a0;
-        font-weight: 800;
-      }
-      .lunar-day {
-        font-size: 10px;
-        margin-top: 2px;
-        text-align: center;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 90%;
-      }
+      .solar-term-current { color: inherit !important; }
+      .selected-day { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 10px; }
+      .selected-today { background-color: #00a0a0; color: white; }
+      .selected-other { border: 2px solid #00a0a0; }
+      .today-not-selected { color: #00a0a0; font-weight: 800; }
+      .lunar-day { font-size: 10px; margin-top: 2px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90%; }
       .selected-day\n
-      .lunar-day {
-        color: inherit;
-      }
-      .birthday-current {
-        color: rgb(255, 70, 0) !important;
-      }
-      .birthday-other {
-        color: rgb(255, 140, 50, 0.6) !important;
-      }
-      .festival-current {
-        color: rgb(0, 191, 255) !important;
-      }
-      .festival-other {
-        color: rgb(0, 150, 200, 0.6) !important;
-      }
-      .solar-term-current {
-        color: rgb(50, 220, 80) !important;
-      }
-      .solar-term-other {
-        color: rgb(104, 192, 104, 0.6) !important;
-      }
-      .holiday-work {
-        background-color: rgba(10, 200, 20, 0.1);
-        border-radius: 10px;
-      }
-      .holiday-rest {
-        background-color: rgba(255, 0, 0, 0.1);
-        border-radius: 10px;
-      }
-      .holiday-label {
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        font-size: 10px;
-        font-weight: bold;
-        z-index: 1;
-        border-radius: 2px;
-        padding: 0 2px;
-        line-height: 1.2;
-      }
+      .lunar-day { color: inherit; }
+      .birthday-current { color: rgb(255, 70, 0) !important; }
+      .birthday-other { color: rgb(255, 140, 50, 0.6) !important; }
+      .festival-current { color: rgb(0, 191, 255) !important; }
+      .festival-other { color: rgb(0, 150, 200, 0.6) !important; }
+      .solar-term-current { color: rgb(50, 220, 80) !important; }
+      .solar-term-other { color: rgb(104, 192, 104, 0.6) !important; }
+      .holiday-work { background-color: rgba(10, 200, 20, 0.1); border-radius: 10px; }
+      .holiday-rest { background-color: rgba(255, 0, 0, 0.1); border-radius: 10px; }
+      .holiday-label { position: absolute; top: 2px; left: 2px; font-size: 10px; font-weight: bold; z-index: 1; border-radius: 2px; padding: 0 2px; line-height: 1.2; }
       .holiday-work\n
-      .holiday-label {
-        color: rgb(10, 200, 20);
-      }
+      .holiday-label { color: rgb(10, 200, 20); }
       .holiday-rest\n
-      .holiday-label {
-        color: rgb(255, 0, 0);
-      }
-      .info-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-        height: 100%;
-        justify-content: center;
-      }
-      .selected-day {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        border-radius: 10px;
-      }
-    `;
+      .holiday-label { color: rgb(255, 0, 0); }
+      .info-container { display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; justify-content: center; }
+      .selected-day { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 10px; }`;
   }
 
   updated(changedProperties) {
@@ -787,57 +622,17 @@ class LunarCalendarHead extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "gonglilabel gongli"
-          "nonglilabel nongli";
-        grid-template-columns: 15% 85%;
-        grid-template-rows: 50% 50%;
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "gonglilabel gongli" "nonglilabel nongli"; grid-template-columns: 15% 85%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
       .gongli-label, 
-      .nongli-label {
-        font-size: 15px;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .gongli-label {
-        grid-area: gonglilabel;
-      }
-      .nongli-label {
-        grid-area: nonglilabel;
-      }
+      .nongli-label { font-size: 15px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+      .gongli-label { grid-area: gonglilabel; }
+      .nongli-label { grid-area: nonglilabel; }
       .gongli-data, 
-      .nongli-data {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-      }
-      .gongli-data {
-        grid-area: gongli;
-      }
-      .nongli-data {
-        grid-area: nongli;
-      }
-      .date-diff {
-        font-size: 10px;
-        color: rgb(150,150,150);
-        display: inline-flex;
-        align-items: flex-end;
-        padding-top: 2px;
-      }
-    `;
+      .nongli-data { display: flex; align-items: center; justify-content: center; text-align: center; }
+      .gongli-data { grid-area: gongli; }
+      .nongli-data { grid-area: nongli; }
+      .date-diff { font-size: 10px; color: rgb(150,150,150); display: inline-flex; align-items: flex-end; padding-top: 2px; }`;
   }
 
   _evaluateTheme() {
@@ -971,44 +766,10 @@ class LunarCalendarBody1 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12"
-          "b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12";
-        grid-template-columns: repeat(13, minmax(0, 1fr));
-        grid-template-rows: 65% 35%;
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
-      .time-cell {
-        writing-mode: vertical-rl;
-        text-orientation: mixed;
-        text-align: center;
-        font-size: 13px;
-        white-space: nowrap;
-        overflow: visible;
-        display: flex;
-        width: 100%;
-        height: 100%;
-        justify-content: center;
-        align-items: center;
-      }
-      .luck-cell {
-        text-align: center;
-        font-size: 13px;
-        width: 100%;
-        height: 100%;
-        justify-content: center;
-        align-items: center;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12" "b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12"; grid-template-columns: repeat(13, minmax(0, 1fr)); grid-template-rows: 65% 35%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .time-cell { writing-mode: vertical-rl; text-orientation: mixed; text-align: center; font-size: 13px; white-space: nowrap; overflow: visible; display: flex; width: 100%; height: 100%; justify-content: center; align-items: center; }
+      .luck-cell { text-align: center; font-size: 13px; width: 100%; height: 100%; justify-content: center; align-items: center; }`;
   }
 
   _evaluateTheme() {
@@ -1135,45 +896,11 @@ class LunarCalendarBody2 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1 b1"
-          "a2 b2";
-        grid-template-columns: 10% 90%;
-        grid-template-rows: 50% 50%;
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
-      .label1 {
-        color: rgb(0,220,0);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 15px;
-      }
-      .label2 {
-        color: rgb(255,0,0);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 15px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        line-height: 12px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1 b1" "a2 b2"; grid-template-columns: 10% 90%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .label1 { color: rgb(0,220,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+      .label2 { color: rgb(255,0,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; line-height: 12px; }`;
   }
 
   _evaluateTheme() {
@@ -1270,45 +997,11 @@ class LunarCalendarBody3 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1 b1"
-          "a2 b2";
-        grid-template-columns: 10% 90%;
-        grid-template-rows: 50% 50%;
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
-      .label1 {
-        color: rgb(0,220,0);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-      }
-      .label2 {
-        color: rgb(255,0,0);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        line-height: 13px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1 b1" "a2 b2"; grid-template-columns: 10% 90%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .label1 { color: rgb(0,220,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+      .label2 { color: rgb(255,0,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; line-height: 13px; }`;
   }
 
   _evaluateTheme() {
@@ -1409,38 +1102,10 @@ class LunarCalendarBody4 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1 b1 a3 b3"
-          "a2 b2 a4 b4";
-        grid-template-columns: 10% 40% 10% 40%;
-        grid-template-rows: 50% 50%;
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
-      .label{
-        color: rgb(255,0,0);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        font-size: 13px;
-        line-height: 13px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1 b1 a3 b3" "a2 b2 a4 b4"; grid-template-columns: 10% 40% 10% 40%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .label { color: rgb(255,0,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; font-size: 13px; line-height: 13px; }`;
   }
 
   _evaluateTheme() {
@@ -1534,38 +1199,10 @@ class LunarCalendarBody5 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1 b1 a3 b3"
-          "a2 b2 a4 b4";
-        grid-template-columns: 10% 40% 10% 40%;
-        grid-template-rows: 50% 50%;
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
-      .label{
-        color: rgb(0,220,0);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        font-size: 13px;
-        line-height: 13px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1 b1 a3 b3" "a2 b2 a4 b4"; grid-template-columns: 10% 40% 10% 40%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .label { color: rgb(0,220,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; font-size: 13px; line-height: 13px; }`;
   }
 
   _evaluateTheme() {
@@ -1659,38 +1296,10 @@ class LunarCalendarBody6 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1 b1 a2 b2 b2 b2"
-          "a3 b3 a4 b4 a5 b5";
-        grid-template-columns: 10% 40% 10% 10% 20% 10%;
-        grid-template-rows: 50% 50%;
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
-      .label{
-        color: rgb(0,220,0);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        font-size: 13px;
-        line-height: 13px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1 b1 a2 b2 b2 b2" "a3 b3 a4 b4 a5 b5"; grid-template-columns: 10% 40% 10% 10% 20% 10%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .label { color: rgb(0,220,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; font-size: 13px; line-height: 13px; }`;
   }
 
   _evaluateTheme() {
@@ -1787,48 +1396,12 @@ class LunarCalendarBody7 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1 a2 a3 a4 a5"
-          "b1 b2 b3 b4 b5";
-        grid-template-columns: 20% 20% 20% 20% 20%;
-        grid-template-rows: 50% 50%;
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
-      .label{
-        color: rgb(0,220,0);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-        line-height: 13px;
-      }
-      .direction-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        --mdc-icon-size: 15px;
-      }
-      .direction-icon {
-        transition: transform 0.3s ease;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1 a2 a3 a4 a5" "b1 b2 b3 b4 b5"; grid-template-columns: 20% 20% 20% 20% 20%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .label { color: rgb(0,220,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 13px; }
+      .direction-container { display: flex; align-items: center; justify-content: center; --mdc-icon-size: 15px; }
+      .direction-icon { transition: transform 0.3s ease; }`;
   }
 
   _evaluateTheme() {
@@ -1948,40 +1521,10 @@ class LunarCalendarLeft1 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1 a2 a3"
-          "b1 b2 b3"
-          "c1 c2 c3";
-        grid-template-columns: 33% 17% 50%;
-        grid-template-rows: repeat(3, 1fr);
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
-      .label{
-        color: rgb(250,50,10);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-        line-height: 13px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1 a2 a3" "b1 b2 b3" "c1 c2 c3"; grid-template-columns: 33% 17% 50%; grid-template-rows: repeat(3, 1fr); gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .label { color: rgb(250,50,10); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 13px; }`;
   }
 
   _evaluateTheme() {
@@ -2077,40 +1620,10 @@ class LunarCalendarRight1 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1 a2"
-          "b1 b2"
-          "c1 c2";
-        grid-template-columns: 27% 73%;
-        grid-template-rows: repeat(3, 1fr);
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
-      .label{
-        color: rgb(250,50,10);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-        line-height: 13px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1 a2" "b1 b2" "c1 c2"; grid-template-columns: 27% 73%; grid-template-rows: repeat(3, 1fr); gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .label { color: rgb(250,50,10); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 13px; }`;
   }
 
   _evaluateTheme() {
@@ -2201,30 +1714,9 @@ class LunarCalendarLeft2 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1";
-        grid-template-columns: 100%;
-        grid-template-rows: 100%;
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-        line-height: 13px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1"; grid-template-columns: 100%; grid-template-rows: 100%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 13px; }`;
   }
 
   _evaluateTheme() {
@@ -2308,30 +1800,9 @@ class LunarCalendarRight2 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1";
-        grid-template-columns: 100%;
-        grid-template-rows: 100%;
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-        line-height: 13px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1"; grid-template-columns: 100%; grid-template-rows: 100%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 13px; }`;
   }
 
   _evaluateTheme() {
@@ -2415,45 +1886,10 @@ class LunarCalendarLeft3 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1"
-          "b1";
-        grid-template-columns: 100%;
-        grid-template-rows: 15% 85%;
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-        place-items: center; 
-      }
-      .label{
-        background: rgb(0,220,0);
-        border-radius: 100%;
-        color: rgb(255,255,255);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        width: 25px;
-        height: 25px;
-        margin-top: 15px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 16px;
-        padding: 0 5px 0 5px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1" "b1"; grid-template-columns: 100%; grid-template-rows: 15% 85%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; place-items: center; }
+      .label { background: rgb(0,220,0); border-radius: 100%; color: rgb(255,255,255); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 16px; width: 25px; height: 25px; margin-top: 15px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; justify-content: center; line-height: 16px; padding: 0 5px 0 5px; }`;
   }
 
   _evaluateTheme() {
@@ -2551,45 +1987,10 @@ class LunarCalendarRight3 extends LitElement {
   }
 
   static get styles() { 
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1"
-          "b1";
-        grid-template-columns: 100%;
-        grid-template-rows: 15% 85%;
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-        place-items: center; 
-      }
-      .label{
-        background: rgb(200,20,0);
-        border-radius: 100%;
-        color: rgb(255,255,255);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        width: 25px;
-        height: 25px;
-        margin-top: 15px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 16px;
-        padding: 0 5px 0 5px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1" "b1"; grid-template-columns: 100%; grid-template-rows: 15% 85%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; place-items: center; }
+      .label { background: rgb(200,20,0); border-radius: 100%; color: rgb(255,255,255); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 16px; width: 25px; height: 25px; margin-top: 15px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; justify-content: center; line-height: 16px; padding: 0 5px 0 5px; }`;
   }
 
   _evaluateTheme() {
@@ -2687,41 +2088,10 @@ class LunarCalendarLeft4 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1"
-          "b1";
-        grid-template-columns: 100%;
-        grid-template-rows: 15% 85%;
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-        place-items: center; 
-      }
-      .label{
-        color: rgb(0,220,0); 
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        margin-top: 10px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 16px;
-        padding: 0 5px 0 5px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1" "b1"; grid-template-columns: 100%; grid-template-rows: 15% 85%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; place-items: center; }
+      .label { color: rgb(0,220,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-top: 10px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; justify-content: center; line-height: 16px; padding: 0 5px 0 5px; }`;
   }
 
   _evaluateTheme() {
@@ -2819,41 +2189,10 @@ class LunarCalendarRight4 extends LitElement {
   }
 
   static get styles() { 
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1"
-          "b1";
-        grid-template-columns: 100%;
-        grid-template-rows: 15% 85%; 
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px; 
-        place-items: center; 
-      }
-      .label{
-        color: rgb(200,20,0);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        margin-top: 10px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 16px;
-        padding: 0 5px 0 5px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1" "b1"; grid-template-columns: 100%; grid-template-rows: 15% 85%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; place-items: center; }
+      .label { color: rgb(200,20,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-top: 10px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; justify-content: center; line-height: 16px; padding: 0 5px 0 5px; }`;
   }
 
   _evaluateTheme() {
@@ -2951,39 +2290,10 @@ class LunarCalendarLeft5 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1 a2"
-          "b1 b2";
-        grid-template-columns: 27% 73%;
-        grid-template-rows: repeat(2, 1fr);
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
-      .label{
-        color: rgb(250,50,10);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-        line-height: 13px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1 a2" "b1 b2"; grid-template-columns: 27% 73%; grid-template-rows: repeat(2, 1fr); gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .label { color: rgb(250,50,10); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 13px; }`;
   }
 
   _evaluateTheme() {
@@ -3071,39 +2381,10 @@ class LunarCalendarRight5 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1 a2"
-          "b1 b2";
-        grid-template-columns: 38% 62%;
-        grid-template-rows: repeat(2, 1fr);
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
-      .label{
-        color: rgb(250,50,10);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-        line-height: 13px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1 a2" "b1 b2"; grid-template-columns: 38% 62%; grid-template-rows: repeat(2, 1fr); gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .label { color: rgb(250,50,10); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 13px; }`;
   }
 
   _evaluateTheme() {
@@ -3191,41 +2472,10 @@ class LunarCalendarLeft6 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1 a2"
-          "b1 b2";
-        grid-template-columns: 27% 73%;
-        grid-template-rows: repeat(2, 1fr);
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
-      .label{
-        color: rgb(250,50,10);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-        line-height: 13px;
-        white-space: nowrap;
-        overflow: visible;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1 a2" "b1 b2"; grid-template-columns: 27% 73%; grid-template-rows: repeat(2, 1fr); gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .label { color: rgb(250,50,10); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 13px; white-space: nowrap; overflow: visible; }`;
   }
 
   _evaluateTheme() {
@@ -3313,39 +2563,10 @@ class LunarCalendarRight6 extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .calendar {
-        display: grid;
-        grid-template-areas: 
-          "a1 a2"
-          "b1 b2";
-        grid-template-columns: 27% 73%;
-        grid-template-rows: repeat(2, 1fr);
-        gap: 1px;
-        padding: 2px;
-        border-radius: 10px;
-        margin-bottom: -3px;
-      }
-      .label{
-        color: rgb(250,50,10);
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-      }
-      .state {
-        word-wrap: break-word;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-        line-height: 13px;
-      }
-    `;
+    return css`      :host { display: block; }
+      .calendar { display: grid; grid-template-areas: "a1 a2" "b1 b2"; grid-template-columns: 27% 73%; grid-template-rows: repeat(2, 1fr); gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .label { color: rgb(250,50,10); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+      .state { word-wrap: break-word; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 13px; }`;
   }
 
   _evaluateTheme() {

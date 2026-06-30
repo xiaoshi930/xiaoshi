@@ -14,19 +14,13 @@ window.customCards.push({
 });
 
 const PRESET_ON_STATES = [
-    // 通用
     'on', 'open', 'opening','home',  'active', 'running',
     'detected', 'occupied', 'unlocked', 'power_on', '开机','resume',
-    // 媒体
     'Playing','playing', '播放中',
-    // 空调/HVAC
     'heat', 'cool', 'heating', 'cooling', 'dry', 'fan',
     'auto', 'heat_cool', 'fan_only',
-    // 人在
     '有人', 'one',
-    // 扫地机器人
     '正在拖地','正在扫地','启动','cleaning',
-    // 厨房
     '烹饪中', '保温中', '预约中', 'Busy', 'Keep Warm',"低档","中档","高档"
 ];
 
@@ -42,188 +36,34 @@ class XiaoshiRoomCardEditor extends LitElement {
     }
 
     static get styles() {
-        return css`
-            .form {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-                min-height: 400px;
-            }
-            .form-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .form-row label {
-                font-weight: bold;
-                white-space: nowrap;
-                min-width: 80px;
-            }
-            .form-row input {
-                flex: 1;
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-            }
-            .entity-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                position: relative;
-            }
-            .entity-row label {
-                font-weight: bold;
-                white-space: nowrap;
-                min-width: 80px;
-            }
-            .entity-search {
-                flex: 1;
-                position: relative;
-            }
-            .entity-search input {
-                width: 100%;
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                box-sizing: border-box;
-            }
-            .entity-row input[type="text"] {
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                box-sizing: border-box;
-            }
-            .entity-row input[type="color"] {
-                width: 34px;
-                height: 30px;
-                padding: 1px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                flex: none;
-                box-sizing: border-box;
-            }
-            .entity-dropdown {
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                max-height: 200px;
-                overflow-y: auto;
-                background: var(--card-background-color, #fff);
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-                z-index: 1000;
-                margin-top: 2px;
-            }
-            .entity-option {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 6px 10px;
-                cursor: pointer;
-                border-bottom: 1px solid #eee;
-            }
-            .entity-option.selected {
-                background: #e3f2fd;
-            }
-            .entity-info {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                flex: 1;
-                min-width: 0;
-            }
-            .entity-info ha-icon {
-                flex: none;
-            }
-            .entity-details {
-                flex: 1;
-                min-width: 0;
-            }
-            .entity-name {
-                font-weight: 500;
-                font-size: 13px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            .entity-id {
-                font-size: 11px;
-                color: #888;
-                font-family: monospace;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            .no-results {
-                padding: 10px;
-                text-align: center;
-                color: #888;
-                font-size: 13px;
-            }
-            .device-section {
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                padding: 8px 10px;
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-            .device-row {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-            .device-title {
-                font-weight: bold;
-                font-size: 13px;
-                color: var(--primary-text-color);
-                white-space: nowrap;
-                min-width: 50px;
-            }
-            .device-section input[type="text"] {
-                flex: 1;
-                min-width: 0;
-                padding: 5px 6px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-            }
-            .device-section input[type="color"] {
-                width: 34px;
-                height: 30px;
-                padding: 1px;
-                flex: none;
-            }
-            .device-remove {
-                background: #f44336;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                padding: 2px 8px;
-                cursor: pointer;
-                font-size: 12px;
-                white-space: nowrap;
-                flex: none;
-            }
-            .device-remove:hover {
-                background: #d32f2f;
-            }
-            .add-device-btn {
-                background: #4caf50;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                padding: 8px 16px;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: 500;
-                text-align: center;
-            }
-            .add-device-btn:hover {
-                background: #388e3c;
-            }
-        `;
+        return css`            .form { display: flex; flex-direction: column; gap: 10px; min-height: 400px; }
+            .form-row { display: flex; align-items: center; gap: 8px; }
+            .form-row label { font-weight: bold; white-space: nowrap; min-width: 80px; }
+            .form-row input { flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; }
+            .entity-row { display: flex; align-items: center; gap: 8px; position: relative; }
+            .entity-row label { font-weight: bold; white-space: nowrap; min-width: 80px; }
+            .entity-search { flex: 1; position: relative; }
+            .entity-search input { width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+            .entity-row input[type="text"] { padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+            .entity-row input[type="color"] { width: 34px; height: 30px; padding: 1px; border: 1px solid #ddd; border-radius: 4px; flex: none; box-sizing: border-box; }
+            .entity-dropdown { position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; background: var(--card-background-color, #fff); border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; margin-top: 2px; }
+            .entity-option { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; cursor: pointer; border-bottom: 1px solid #eee; }
+            .entity-option.selected { background: #e3f2fd; }
+            .entity-info { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+            .entity-info ha-icon { flex: none; }
+            .entity-details { flex: 1; min-width: 0; }
+            .entity-name { font-weight: 500; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .entity-id { font-size: 11px; color: #888; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .no-results { padding: 10px; text-align: center; color: #888; font-size: 13px; }
+            .device-section { border: 1px solid #ddd; border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+            .device-row { display: flex; align-items: center; gap: 6px; }
+            .device-title { font-weight: bold; font-size: 13px; color: var(--primary-text-color); white-space: nowrap; min-width: 50px; }
+            .device-section input[type="text"] { flex: 1; min-width: 0; padding: 5px 6px; border: 1px solid #ddd; border-radius: 4px; }
+            .device-section input[type="color"] { width: 34px; height: 30px; padding: 1px; flex: none; }
+            .device-remove { background: #f44336; color: white; border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 12px; white-space: nowrap; flex: none; }
+            .device-remove:hover { background: #d32f2f; }
+            .add-device-btn { background: #4caf50; color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 14px; font-weight: 500; text-align: center; }
+            .add-device-btn:hover { background: #388e3c; }`;
     }
 
     constructor() {
@@ -776,160 +616,38 @@ class XiaoshiRoomCard extends LitElement {
     }
 
     static get styles() {
-        return css`
-            :host {
-                display: block;
-                height: 100%;
-                min-height: 0;
-                max-width: 240px;
-            }
-            ha-card {
-                border: none;
-                box-shadow: none;
-                max-width: 240px;
-            }
-            .card {
-                background: transparent;
-                border-radius: min(3.5vw, 17.5px);
-                position: relative;
-                overflow: hidden;
-                display: flex;
-                height: 100%;
-                min-height: 0;
-                font-family: var(--paper-font-body1_-_font-family);
-                max-width: 240px;
-            }
+        return css`            
+            :host { display: block; height: 100%; min-height: 0; max-width: 240px; }
+            ha-card { border: none; box-shadow: none; max-width: 240px; }
+            .card { background: transparent; border-radius: min(3.5vw, 17.5px); position: relative; overflow: hidden; display: flex; height: 100%; min-height: 0; font-family: var(--paper-font-body1_-_font-family); max-width: 240px; }
             /* ===== 左侧区域 ===== */
-            .left {
-                width: 45%;
-                padding: 1.2vh min(1.2vw, 6px) 1.2vh min(2vw, 10px);
-                display: flex;
-                flex-direction: column;
-                position: relative;
-                z-index: 1;
-                box-sizing: border-box;
-            }
-            .corner-label {
-                position: absolute;
-                top: -1px;
-                left: -1px;
-                width: 0;
-                height: 0;
-                border-style: solid;
-                border-width: var(--corner-size, 7.5vh) var(--corner-size, 7.5vh) 0 0;
-                border-color: #00bcd4 transparent transparent transparent;
-            }
-            .corner-text {
-                position: absolute;
-                top: calc(var(--corner-size, 7.5vh) * 0.16);
-                left: calc(var(--corner-size, 7.5vh) * 0.11);
-                color: white;
-                font-size: min(3vw, 15px);
-                font-weight: bold;
-                transform-origin: center center;
-                white-space: nowrap;
-            }
+            .left { width: 45%; padding: 1.2vh min(1.2vw, 6px) 1.2vh min(2vw, 10px); display: flex; flex-direction: column; position: relative; z-index: 1; box-sizing: border-box; }
+            .corner-label { position: absolute; top: -1px; left: -1px; width: 0; height: 0; border-style: solid; border-width: var(--corner-size, 7.5vh) var(--corner-size, 7.5vh) 0 0; border-color: #00bcd4 transparent transparent transparent; }
+            .corner-text { position: absolute; top: calc(var(--corner-size, 7.5vh) * 0.16); left: calc(var(--corner-size, 7.5vh) * 0.11); color: white; font-size: min(3vw, 15px); font-weight: bold; transform-origin: center center; white-space: nowrap; }
             /* 人在图标 */
-            .person-icon {
-                margin-top: var(--chip-h, 2.6vh);
-                margin-left: min(7vw, 35px);
-                color: #ff5722;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: var(--chip-h, 2.6vh);
-                height: var(--chip-h, 2.6vh);
-                cursor: pointer;
-            }
-            .person-icon:active {
-                transform: scale(0.9);
-            }
-            .person-icon ha-icon {
-                --mdc-icon-size: calc(var(--chip-h, 2.6vh) * 0.85);
-            }
+            .person-icon { margin-top: var(--chip-h, 2.6vh); margin-left: min(7vw, 35px); color: #ff5722; display: flex; align-items: center; justify-content: center; width: var(--chip-h, 2.6vh); height: var(--chip-h, 2.6vh); cursor: pointer; }
+            .person-icon:active { transform: scale(0.9); }
+            .person-icon ha-icon { --mdc-icon-size: calc(var(--chip-h, 2.6vh) * 0.85); }
             @keyframes person-blink {
                 0%, 100% { opacity: 1; }
                 50% { opacity: 0.3; }
             }
-            .person-home {
-                animation: person-blink 0.6s ease-in-out infinite;
-            }
-            .person-hidden {
-                display: none;
-            }
+            .person-home { animation: person-blink 0.6s ease-in-out infinite; }
+            .person-hidden { display: none; }
             /* 传感器条 */
-            .sensor-list {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5vh;
-                margin-top: auto;
-                margin-bottom: 0;
-            }
-            .sensor-chip {
-                border-radius: min(4vw, 20px);
-                padding: 0 min(2vw, 10px);
-                height: calc(var(--chip-h, 2.6vh) * 1.1);
-                color: white;
-                font-size: calc(var(--chip-h, 2.6vh) * 0.5);
-                font-weight: 500;
-                display: flex;
-                align-items: center;
-                position: relative;
-                box-sizing: border-box;
-                cursor: none;
-            }
-            .sensor-chip:active {
-                transform: scale(0.95);
-                box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
-            }
-            .sensor-icon {
-                display: flex;
-                align-items: center;
-                z-index: 1;
-            }
-            .sensor-icon ha-icon {
-                --mdc-icon-size: calc(var(--chip-h, 2.6vh) * 0.6);
-            }
-            .sensor-value {
-                flex: 1;
-                text-align: center;
-            }
+            .sensor-list { display: flex; flex-direction: column; gap: 0.5vh; margin-top: auto; margin-bottom: 0; }
+            .sensor-chip { border-radius: min(4vw, 20px); padding: 0 min(2vw, 10px); height: calc(var(--chip-h, 2.6vh) * 1.1); color: white; font-size: calc(var(--chip-h, 2.6vh) * 0.5); font-weight: 500; display: flex; align-items: center; position: relative; box-sizing: border-box; cursor: none; }
+            .sensor-chip:active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
+            .sensor-icon { display: flex; align-items: center; z-index: 1; }
+            .sensor-icon ha-icon { --mdc-icon-size: calc(var(--chip-h, 2.6vh) * 0.6); }
+            .sensor-value { flex: 1; text-align: center; }
             /* ===== 设备区域 (中间+右侧两列) ===== */
-            .devices-area {
-                flex: 1;
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                grid-template-rows: repeat(3, 1fr);
-                gap: 1.4vh;
-                padding: 1.2vh min(2.5vw, 12.5px) 1.2vh min(1.2vw, 6px);
-                align-content: center;
-            }
+            .devices-area { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 1.4vh; padding: 1.2vh min(2.5vw, 12.5px) 1.2vh min(1.2vw, 6px); align-content: center; }
             /* 单个设备按钮 */
-            .device-btn {
-                position: relative;
-                background: #333;
-                border-radius: min(2vw, 10px);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #888;
-                cursor: none;
-                transition: background 0.25s, color 0.25s;
-                border: none;
-                outline: none;
-                padding: 0;
-            }
-            .device-btn ha-icon {
-                --mdc-icon-size: 2.8vh;
-            }
-            .device-btn:not(.empty):active {
-                transform: scale(0.95);
-                box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
-            }
-            .device-btn.empty {
-                background: transparent;
-                cursor: default;
-            }
+            .device-btn { position: relative; background: #333; border-radius: min(2vw, 10px); display: flex; align-items: center; justify-content: center; color: #888; cursor: none; transition: background 0.25s, color 0.25s; border: none; outline: none; padding: 0; }
+            .device-btn ha-icon { --mdc-icon-size: 2.8vh; }
+            .device-btn:not(.empty):active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
+            .device-btn.empty { background: transparent; cursor: default; }
             @keyframes swingBottom {
                 0% { transform: rotate(0deg); }
                 15% { transform: rotate(15deg); }
@@ -962,144 +680,30 @@ class XiaoshiRoomCard extends LitElement {
                 60% { transform: translateY(-4px); }
                 80% { transform: translateY(4px); }
             }
-            .device-btn ha-icon.anim-swing-bottom {
-                animation: swingBottom 2s ease-in-out infinite;
-                transform-origin: bottom center;
-            }
-            .device-btn ha-icon.anim-swing-top {
-                animation: swingTop 2s ease-in-out infinite;
-                transform-origin: top center;
-            }
-            .device-btn ha-icon.anim-shake-x {
-                animation: shakeX 1.5s ease-in-out infinite;
-            }
-            .device-btn ha-icon.anim-shake-y {
-                animation: shakeY 1.5s ease-in-out infinite;
-            }
+            .device-btn ha-icon.anim-swing-bottom { animation: swingBottom 2s ease-in-out infinite; transform-origin: bottom center; }
+            .device-btn ha-icon.anim-swing-top { animation: swingTop 2s ease-in-out infinite; transform-origin: top center; }
+            .device-btn ha-icon.anim-shake-x { animation: shakeX 1.5s ease-in-out infinite; }
+            .device-btn ha-icon.anim-shake-y { animation: shakeY 1.5s ease-in-out infinite; }
             /* 右上角圆形角标 */
-            .badge {
-                position: absolute;
-                top: max(-1vw, -5px);
-                right: max(-1vw, -5px);
-                width: min(3.8vw, 19px);
-                height: min(3.8vw, 19px);
-                border-radius: 50%;
-                background: #f44336;
-                color: white;
-                font-size: min(2.3vw, 11.5px);
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                line-height: 1;
-            }
-            .badge.hidden {
-                display: none;
-            }
-
+            .badge { position: absolute; top: max(-1vw, -5px); right: max(-1vw, -5px); width: min(3.8vw, 19px); height: min(3.8vw, 19px); border-radius: 50%; background: #f44336; color: white; font-size: min(2.3vw, 11.5px); font-weight: 600; display: flex; align-items: center; justify-content: center; line-height: 1; }
+            .badge.hidden { display: none; }
             /* ===== 下右布局（3设备） ===== */
-            .layout-br .br-sensors {
-                position: absolute;
-                top: 1.2vh;
-                right: 0;
-                display: flex;
-                flex-direction: column;
-                gap: 0.5vh;
-                width: 45%;
-                padding: 0 min(1.2vw, 6px) 0 min(2vw, 10px);
-                box-sizing: border-box;
-                z-index: 1;
-            }
-            .layout-br .br-person {
-                position: absolute;
-                left: max(7vw, 35px);
-                top: 40%;
-                transform: translateY(-50%);
-                z-index: 1;
-            }
-            .layout-br .br-person .person-icon {
-                margin-left: 0;
-            }
-            .layout-br .br-person .person-icon ha-icon {
-                --mdc-icon-size: calc(var(--chip-h, 2.6vh) * 0.85);
-            }
-            .layout-br .br-devices {
-                display: flex;
-                justify-content: flex-end;
-                align-items: flex-end;
-                gap: 1.4vh;
-                padding: 0 min(2.5vw, 12.5px) 1.2vh min(2.5vw, 12.5px);
-                flex: 1;
-            }
-            .layout-br .br-devices .device-btn {
-                flex: 1;
-                min-height: 0;
-                height: 30%;
-            }
-
+            .layout-br .br-sensors { position: absolute; top: 1.2vh; right: 0; display: flex; flex-direction: column; gap: 0.5vh; width: 45%; padding: 0 min(1.2vw, 6px) 0 min(2vw, 10px); box-sizing: border-box; z-index: 1; }
+            .layout-br .br-person { position: absolute; left: max(7vw, 35px); top: 40%; transform: translateY(-50%); z-index: 1; }
+            .layout-br .br-person .person-icon { margin-left: 0; }
+            .layout-br .br-person .person-icon ha-icon { --mdc-icon-size: calc(var(--chip-h, 2.6vh) * 0.85); }
+            .layout-br .br-devices { display: flex; justify-content: flex-end; align-items: flex-end; gap: 1.4vh; padding: 0 min(2.5vw, 12.5px) 1.2vh min(2.5vw, 12.5px); flex: 1; }
+            .layout-br .br-devices .device-btn { flex: 1; min-height: 0; height: 30%; }
             /* ===== 下左布局（3设备） ===== */
-            .layout-bl .bl-sensors {
-                position: absolute;
-                top: 1.2vh;
-                left: 0;
-                display: flex;
-                flex-direction: column;
-                gap: 0.5vh;
-                width: 45%;
-                padding: 0 min(1.2vw, 6px) 0 min(2vw, 10px);
-                box-sizing: border-box;
-                z-index: 1;
-            }
-            .layout-bl .bl-person {
-                position: absolute;
-                right: max(7vw, 35px);
-                top: 40%;
-                transform: translateY(-50%);
-                z-index: 1;
-            }
-            .layout-bl .bl-person .person-icon {
-                margin-left: 0;
-            }
-            .layout-bl .bl-person .person-icon ha-icon {
-                --mdc-icon-size: calc(var(--chip-h, 2.6vh) * 0.85);
-            }
-            .layout-bl .bl-devices {
-                display: flex;
-                justify-content: flex-start;
-                align-items: flex-end;
-                gap: 1.4vh;
-                padding: 0 min(2.5vw, 12.5px) 1.2vh min(2.5vw, 12.5px);
-                flex: 1;
-            }
-            .layout-bl .bl-devices .device-btn {
-                flex: 1;
-                min-height: 0;
-                height: 30%;
-            }
-
+            .layout-bl .bl-sensors { position: absolute; top: 1.2vh; left: 0; display: flex; flex-direction: column; gap: 0.5vh; width: 45%; padding: 0 min(1.2vw, 6px) 0 min(2vw, 10px); box-sizing: border-box; z-index: 1; }
+            .layout-bl .bl-person { position: absolute; right: max(7vw, 35px); top: 40%; transform: translateY(-50%); z-index: 1; }
+            .layout-bl .bl-person .person-icon { margin-left: 0; }
+            .layout-bl .bl-person .person-icon ha-icon { --mdc-icon-size: calc(var(--chip-h, 2.6vh) * 0.85); }
+            .layout-bl .bl-devices { display: flex; justify-content: flex-start; align-items: flex-end; gap: 1.4vh; padding: 0 min(2.5vw, 12.5px) 1.2vh min(2.5vw, 12.5px); flex: 1; }
+            .layout-bl .bl-devices .device-btn { flex: 1; min-height: 0; height: 30%; }
             /* ===== 右上角标 ===== */
-            .corner-label-right {
-                position: absolute;
-                top: -1px;
-                right: -1px;
-                width: 0;
-                height: 0;
-                border-style: solid;
-                border-width: var(--corner-size, 7.5vh) 0 0 var(--corner-size, 7.5vh);
-                border-color: #00bcd4 transparent transparent transparent;
-            }
-            .corner-text-right {
-                position: absolute;
-                top: calc(var(--corner-size, 7.5vh) * 0.16);
-                right: calc(var(--corner-size, 7.5vh) * 0.11);
-                color: white;
-                font-size: min(3vw, 15px);
-                font-weight: bold;
-                transform: rotate(45deg);
-                transform-origin: center center;
-                white-space: nowrap;
-            }
-        `;
+            .corner-label-right { position: absolute; top: -1px; right: -1px; width: 0; height: 0; border-style: solid; border-width: var(--corner-size, 7.5vh) 0 0 var(--corner-size, 7.5vh); border-color: #00bcd4 transparent transparent transparent; }
+            .corner-text-right { position: absolute; top: calc(var(--corner-size, 7.5vh) * 0.16); right: calc(var(--corner-size, 7.5vh) * 0.11); color: white; font-size: min(3vw, 15px); font-weight: bold; transform: rotate(45deg); transform-origin: center center; white-space: nowrap; }`;
     }
 
     static getConfigElement() {
@@ -1614,9 +1218,13 @@ class XiaoshiRoomCard extends LitElement {
         title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
         title.textContent = `${personName} - 历史记录`;
         const closeBtn = document.createElement('button');
-        closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+        closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:default;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
         closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
         closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+      closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+      closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
         header.appendChild(title);
         header.appendChild(closeBtn);
 
@@ -1640,13 +1248,14 @@ class XiaoshiRoomCard extends LitElement {
             { label: '24小时', value: 24 },
             { label: '3天', value: 72 },
             { label: '7天', value: 168 },
-            { label: '15天', value: 360 }
+            { label: '10天', value: 240 }
         ];
         for (const p of periods) {
             const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
-            chip.addEventListener('click', () => {
-                this._historyFilterPeriod = p.value;
-                this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
+chip.addEventListener('click', () => {
+            this._handleClick();
+            this._historyFilterPeriod = p.value;
+            this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
                 this._refetchWithFilters();
             });
             timeChips.appendChild(chip);
@@ -1775,6 +1384,7 @@ class XiaoshiRoomCard extends LitElement {
     }
 
     _closeHistoryOverlay() {
+        this._handleClick();
         if (this._historyOverlayEl) {
             this._historyOverlayEl.remove();
             this._historyOverlayEl = null;
@@ -1901,12 +1511,14 @@ class XiaoshiRoomCard extends LitElement {
         chip.setAttribute('data-chip', '1');
         const isActive = (typeof value === 'number' && value === this._historyFilterPeriod);
         if (isActive) {
-            chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};`;
+            chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
         } else {
-            chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+            chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
         }
-        chip.textContent = label;
-        return chip;
+    chip.textContent = label;
+    chip.addEventListener('mouseenter', () => { chip.style.opacity = '0.85'; chip.style.transform = 'scale(1.05)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; chip.style.transform = 'scale(1)'; });
+    return chip;
     }
 
     _refreshHistoryChips(container, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
@@ -1919,7 +1531,7 @@ class XiaoshiRoomCard extends LitElement {
                     (label === '6小时' && activePeriod === 6) ||
                     (label === '3天' && activePeriod === 72) ||
                     (label === '7天' && activePeriod === 168) ||
-                    (label === '15天' && activePeriod === 360);
+                    (label === '10天' && activePeriod === 240);
                 if (isActive) {
                     chip.style.background = activeBg;
                     chip.style.color = activeColor;

@@ -21,39 +21,12 @@ class XiaoshiTopBarCardEditor extends LitElement {
     }
 
     static get styles() {
-        return css`
-            .editor-container {
-                padding: 16px;
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-            }
-            .field {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
-            .field label {
-                font-size: 12px;
-                color: var(--secondary-text-color);
-                font-weight: 500;
-            }
-            .field input, .field select {
-                padding: 8px;
-                border: 1px solid var(--divider-color);
-                border-radius: 4px;
-                font-size: 14px;
-                background: var(--card-background-color);
-                color: var(--primary-text-color);
-            }
-            .inline-fields {
-                display: flex;
-                gap: 12px;
-            }
-            .inline-fields .field {
-                flex: 1;
-            }
-        `;
+        return css`            .editor-container { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+            .field { display: flex; flex-direction: column; gap: 4px; }
+            .field label { font-size: 12px; color: var(--secondary-text-color); font-weight: 500; }
+            .field input, .field select { padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; font-size: 14px; background: var(--card-background-color); color: var(--primary-text-color); }
+            .inline-fields { display: flex; gap: 12px; }
+            .inline-fields .field { flex: 1; }`;
     }
 
     setConfig(config) {
@@ -150,24 +123,8 @@ class XiaoshiTopBar extends LitElement {
     }
 
     static get styles() {
-        return css`
-            .bar {
-                display: flex;
-                align-items: center;
-                justify-content: space-evenly;
-                background: var(--btn-bg, rgba(0,0,0,0.3));
-                padding: 0 10px;
-                box-sizing: border-box;
-            }
-            .bar-card {
-                flex: 1;
-                min-width: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 100%;
-            }
-        `;
+        return css`            .bar { display: flex; align-items: center; justify-content: space-evenly; background: var(--btn-bg, rgba(0,0,0,0.3)); padding: 0 10px; box-sizing: border-box; }
+            .bar-card { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; height: 100%; }`;
     }
 
     static getConfigElement() {

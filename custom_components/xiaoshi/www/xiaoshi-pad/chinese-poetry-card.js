@@ -21,23 +21,10 @@ class ChinesePoetryCardEditor extends LitElement {
     }
 
     static get styles() {
-        return css`
-            :host {
-                display: block;
-            }
-            .option {
-                padding: 4px 0;
-            }
-            .option label {
-                display: block;
-                font-weight: 500;
-                margin-bottom: 4px;
-            }
-            .option ha-entity-picker {
-                display: block;
-                width: 100%;
-            }
-        `;
+        return css`            :host { display: block; }
+            .option { padding: 4px 0; }
+            .option label { display: block; font-weight: 500; margin-bottom: 4px; }
+            .option ha-entity-picker { display: block; width: 100%; }`;
     }
 
     setConfig(config) {
@@ -130,71 +117,15 @@ class ChinesePoetryCard extends LitElement {
     }
 
     static get styles() {
-        return css`
-            :host {
-                display: block;
-            }
-            .poetry-card {
-                width: 460px;
-                height: 80px;
-                padding: 0;
-                background: rgb(0, 0, 0, 0);
-                border-radius: 0;
-                color: rgb(255, 255, 255);
-                font-size: 13px;
-                font-weight: bold;
-                text-align: left;
-                display: grid;
-                grid-template-areas:
-                    "标题"
-                    "正文1"
-                    "正文2";
-                grid-template-columns: 100%;
-                grid-template-rows: 25px 20px 20px;
-                position: relative;
-            }
-            .title {
-                grid-area: 标题;
-                line-height: 25px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            .body1 {
-                grid-area: 正文1;
-                line-height: 20px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            .body2 {
-                grid-area: 正文2;
-                line-height: 20px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            .btn-icon {
-                color: rgb(255, 255, 255);
-                cursor: pointer;
-                background: transparent;
-                border: none;
-                padding: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                position: absolute;
-            }
-            .btn-icon {
-                --mdc-icon-size: 18px;
-            }
-            .refresh-btn {
-                top: 2px;
-            }
-            .play-btn {
-                top: 47px;
-            }
-        `;
+        return css`            :host { display: block; }
+            .poetry-card { width: 460px; height: 80px; padding: 0; background: rgb(0, 0, 0, 0); border-radius: 0; color: rgb(255, 255, 255); font-size: 13px; font-weight: bold; text-align: left; display: grid; grid-template-areas: "标题" "正文1" "正文2"; grid-template-columns: 100%; grid-template-rows: 25px 20px 20px; position: relative; }
+            .title { grid-area: 标题; line-height: 25px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .body1 { grid-area: 正文1; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .body2 { grid-area: 正文2; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .btn-icon { color: rgb(255, 255, 255); cursor: pointer; background: transparent; border: none; padding: 0; display: flex; align-items: center; justify-content: center; position: absolute; }
+            .btn-icon { --mdc-icon-size: 18px; }
+            .refresh-btn { top: 2px; }
+            .play-btn { top: 47px; }`;
     }
 
     setConfig(config) {

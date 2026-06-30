@@ -235,8 +235,7 @@ class XiaoshiStateGridButtonEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form { display: flex; flex-direction: column; gap: 10px; min-height: 500px; }
+    return css`      .form { display: flex; flex-direction: column; gap: 10px; min-height: 500px; }
       .form-group { display: flex; flex-direction: column; gap: 5px; }
       label { font-weight: bold; }
       select, input, textarea { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
@@ -269,8 +268,7 @@ class XiaoshiStateGridButtonEditor extends LitElement {
       .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
       .color-input-wrapper { display: flex; gap: 3px; align-items: center; }
       .color-input { width: 70px; height: 36px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; }
-      .color-text { flex: 1; height: 22px; }
-    `;
+      .color-text { flex: 1; height: 22px; }`;
   }
 
   render() {
@@ -616,30 +614,14 @@ class XiaoshiStateGridButton extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host { display: block; }
-      .balance-status {
-        width: var(--button-width, 16.8vw); max-width: var(--button-max-width, 90px);height: var(--button-height, 24px);
-        padding: 0; margin: 0; background: var(--bg-color, #fff); color: var(--fg-color, #000);
-        border-radius: 10px; font-size: var(--button-font-size, 11px); font-weight: 500;
-        text-align: center; box-sizing: border-box; display: flex; align-items: center;
-        justify-content: center; gap: 0; cursor: none;
-        transition: background-color 0.2s, transform 0.1s; position: relative;
-      }
-      .balance-status:active {
-        transform: scale(0.95);
-        box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
-      }
-      .balance-status.tablet-mode {
-        width: var(--button-width, 16.8vw);
-        padding: 0 10px; white-space: nowrap;
-        justify-content: flex-start;
-      }
+    return css`      :host { display: block; }
+      .balance-status { width: var(--button-width, 16.8vw); max-width: var(--button-max-width, 90px);height: var(--button-height, 24px); padding: 0; margin: 0; background: var(--bg-color, #fff); color: var(--fg-color, #000); border-radius: 10px; font-size: var(--button-font-size, 11px); font-weight: 500; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 0; cursor: none; transition: background-color 0.2s, transform 0.1s; position: relative; }
+      .balance-status:active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
+      .balance-status.tablet-mode { width: var(--button-width, 16.8vw); padding: 0 10px; white-space: nowrap; justify-content: flex-start; }
       .tablet-balance { display: inline-flex; align-items: center; width: 66.66%; }
       .tablet-days { display: inline-flex; align-items: center; width: 33.33%; justify-content: flex-start; }
       .status-emoji { font-size: var(--button-icon-size, 13px); margin-right: 3px; line-height: 1; }
-      .loading { text-align: center; padding: 10px 0; color: var(--fg-color, #000); }
-    `;
+      .loading { text-align: center; padding: 10px 0; color: var(--fg-color, #000); }`;
   }
 
   constructor() {
@@ -961,249 +943,42 @@ class XiaoshiStateGridEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        padding: 16px;
-        width: var(--editor-width, 100%);
-        max-width: 100%;
-      }
-
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-
-      label {
-        font-weight: bold;
-        font-size: 14px;
-        color: var(--primary-text-color);
-      }
-
-      select, input {
-        padding: 6px 12px;
-        border: 1px solid var(--primary-color);
-        border-radius: 4px;
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-        font-size: 14px;
-      }
-
-      .help-text {
-        font-size: 12px;
-        color: var(--secondary-text-color);
-        margin-top: 4px;
-      }
-
-      .color-input-wrapper {
-        display: flex;
-        gap: 3px;
-        align-items: center;
-      }
-
-      .input-wrapper {
-        display: flex;
-        gap: 3px;
-        align-items: center;
-      }
-
-      .color-input {
-        width: 70px;
-        height: 36px;
-        border: 1px solid var(--primary-color);
-        border-radius: 4px;
-        cursor: pointer;
-      }
-      .color-text {
-        flex: 1;
-        height: 22px;
-      }
-
-      .checkbox-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-        cursor: pointer;
-        color: var(--primary-text-color);
-        margin: 0 24px;
-      }
-      .checkbox-icon {
-        margin: 0;
-      }
-
-      .checkbox-label input[type="checkbox"] {
-        width: auto;
-        padding: 0;
-      }
-
+    return css`      .form { display: flex; flex-direction: column; gap: 6px; padding: 16px; width: var(--editor-width, 100%); max-width: 100%; }
+      .form-group { display: flex; flex-direction: column; gap: 6px; }
+      label { font-weight: bold; font-size: 14px; color: var(--primary-text-color); }
+      select, input { padding: 6px 12px; border: 1px solid var(--primary-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 14px; }
+      .help-text { font-size: 12px; color: var(--secondary-text-color); margin-top: 4px; }
+      .color-input-wrapper { display: flex; gap: 3px; align-items: center; }
+      .input-wrapper { display: flex; gap: 3px; align-items: center; }
+      .color-input { width: 70px; height: 36px; border: 1px solid var(--primary-color); border-radius: 4px; cursor: pointer; }
+      .color-text { flex: 1; height: 22px; }
+      .checkbox-group { display: flex; flex-direction: column; gap: 8px; }
+      .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; color: var(--primary-text-color); margin: 0 24px; }
+      .checkbox-icon { margin: 0; }
+      .checkbox-label input[type="checkbox"] { width: auto; padding: 0; }
       /* 余额实体选择器样式 */
-      .balance-entity-section {
-        border-top: 1px solid var(--divider-color);
-        padding-top: 6px;
-        margin-top: 6px;
-      }
-
-      .balance-entity-search {
-        width: 100%;
-        padding: 6px 12px;
-        border: 1px solid var(--primary-color);
-        border-radius: 4px;
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-        box-sizing: border-box;
-        margin-bottom: 8px;
-      }
-
-      .selected-balance-entities {
-        margin-top: 12px;
-      }
-
-      .selected-balance-label {
-        font-size: 14px;
-        font-weight: bold;
-        margin-bottom: 8px;
-        color: var(--primary-text-color);
-      }
-
-      .layout-select {
-        width: 100%;
-        padding: 6px 12px;
-        border: 1px solid var(--primary-color);
-        border-radius: 4px;
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-        font-size: 14px;
-        box-sizing: border-box;
-      }
-
-      .entities-per-row-input {
-        width: 100%;
-        padding: 6px 12px;
-        border: 1px solid var(--primary-color);
-        border-radius: 4px;
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-        font-size: 14px;
-        box-sizing: border-box;
-      }
-
-      .selected-balance-entity {
-        margin-bottom: 12px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        padding: 8px;
-        background: var(--card-background-color);
-      }
-
-      .balance-entity-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 8px;
-        font-size: 12px;
-        color: var(--primary-text-color);
-      }
-
-      .balance-entity-info {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex: 1;
-      }
-
-      .balance-entity-name {
-        font-weight: 500;
-      }
-
-      .balance-entity-id {
-        opacity: 0.7;
-        font-family: monospace;
-      }
-
-      .remove-balance-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 2px;
-        color: var(--secondary-text-color);
-      }
-
-      .remove-balance-btn:hover {
-        color: var(--error-color);
-      }
-
-      .balance-entity-overrides {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        margin-top: 8px;
-      }
-
-      .override-config {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        margin-top: 2px;
-      }
-
-      .override-checkbox {
-        margin-right: 4px;
-      }
-
-      .override-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .override-row label {
-        font-size: 12px;
-        font-weight: normal;
-        min-width: 60px;
-        margin: 0;
-      }
-
-      .override-row input {
-        flex: 1;
-        padding: 4px 8px;
-        font-size: 12px;
-      }
-
-      .override-label {
-        font-size: 11px;
-        color: #666;
-        white-space: nowrap;
-      }
-
-      .override-input {
-        flex: 1;
-        padding: 2px 6px;
-        border: 1px solid #ddd;
-        border-radius: 3px;
-        font-size: 11px;
-        box-sizing: border-box;
-      }
-
-      .balance-name-input {
-        width: 100%;
-        padding: 6px 12px;
-        border: 1px solid var(--primary-color);
-        border-radius: 4px;
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-        box-sizing: border-box;
-        margin-bottom: 8px;
-      }
-    `;
+      .balance-entity-section { border-top: 1px solid var(--divider-color); padding-top: 6px; margin-top: 6px; }
+      .balance-entity-search { width: 100%; padding: 6px 12px; border: 1px solid var(--primary-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); box-sizing: border-box; margin-bottom: 8px; }
+      .selected-balance-entities { margin-top: 12px; }
+      .selected-balance-label { font-size: 14px; font-weight: bold; margin-bottom: 8px; color: var(--primary-text-color); }
+      .layout-select { width: 100%; padding: 6px 12px; border: 1px solid var(--primary-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 14px; box-sizing: border-box; }
+      .entities-per-row-input { width: 100%; padding: 6px 12px; border: 1px solid var(--primary-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); font-size: 14px; box-sizing: border-box; }
+      .selected-balance-entity { margin-bottom: 12px; border: 1px solid var(--divider-color); border-radius: 4px; padding: 8px; background: var(--card-background-color); }
+      .balance-entity-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 12px; color: var(--primary-text-color); }
+      .balance-entity-info { display: flex; align-items: center; gap: 6px; flex: 1; }
+      .balance-entity-name { font-weight: 500; }
+      .balance-entity-id { opacity: 0.7; font-family: monospace; }
+      .remove-balance-btn { background: none; border: none; cursor: pointer; padding: 2px; color: var(--secondary-text-color); }
+      .remove-balance-btn:hover { color: var(--error-color); }
+      .balance-entity-overrides { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+      .override-config { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+      .override-checkbox { margin-right: 4px; }
+      .override-row { display: flex; align-items: center; gap: 6px; }
+      .override-row label { font-size: 12px; font-weight: normal; min-width: 60px; margin: 0; }
+      .override-row input { flex: 1; padding: 4px 8px; font-size: 12px; }
+      .override-label { font-size: 11px; color: #666; white-space: nowrap; }
+      .override-input { flex: 1; padding: 2px 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 11px; box-sizing: border-box; }
+      .balance-name-input { width: 100%; padding: 6px 12px; border: 1px solid var(--primary-color); border-radius: 4px; background: var(--card-background-color); color: var(--primary-text-color); box-sizing: border-box; margin-bottom: 8px; }`;
   }
 
   render() {
@@ -1966,181 +1741,31 @@ class  XiaoshiStateGridInfo extends LitElement {
   }  
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-        max-width: 500px;
-        margin: 0 auto;
-      }
-      
-      .card-header{
-        border-radius: 10px;
-        padding: 10px;
-      }
-
-      .card-main{
-        border-radius: 10px;
-        padding: 8px;
-        padding-bottom: 0px;
-        margin-top: 5px;
-        margin-bottom: 0px;
-      }
-
-      .card-container {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-      }
-      
-      .top-section {
-        display: grid;
-        grid-template-columns: 32.8% 65.8%;
-        gap: 1.4%;
-        margin-bottom: 8px;
-        height: 100%;
-        align-items: end;
-      }
-      
-      .balance-section {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        height: 100%;
-        justify-content: space-between;
-      }
-      
-      .top-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-        flex-shrink: 0;
-      }
-      
-      .spacer {
-        flex: 1;
-        width: 100%;
-        min-height: 0px;
-        height: auto;
-      }
-
-      .balance-icon {
-        width: 80px;
-        height: 80px;
-        margin-bottom: 12px;
-        margin-top: 10px;
-        border-radius: 6px;
-      }
-      
-      .balance-time {
-        font-size: 10px;
-        opacity: 0.8;
-        margin-top: -7px;
-        margin-bottom: 4px;
-        text-align: center;
-      }
-      
-      .balance-controls-container {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        width: 100%;
-      }
-
-      .balance-info {
-        border-radius: 6px;
-        text-align: center;
-        flex: 0 0 auto;
-        width: 100%;
-        height: 40px;
-        line-height: 20px;
-      }
-      
-      .balance-amount {
-        font-size: 15px;
-        font-weight: bold;
-        margin-top: 1px;
-        white-space: nowrap;
-      }
-      
-      .balance-amount .currency {
-        font-size: 10px;
-      }
-      
-      .balance-label {
-        font-size: 10px;
-        margin-top: -1px;
-        opacity: 0.9;
-      }
-      
-      .days-info {
-        border-radius: 6px;
-        text-align: center;
-        flex: 0 0 auto;
-        width: 100%;
-        height: 40px;
-        line-height: 20px;
-      }
-      
-      .days-amount {
-        font-size: 15px;
-        font-weight: bold;
-        white-space: nowrap;
-        margin-top: 1px;
-      }
-
-      .days-amount .currency {
-        font-size: 10px;
-      }
-      
-      .days-label {
-        font-size: 10px;
-        margin-top: -1px;
-        opacity: 0.9;
-      }
-      
-      .action-buttons {
-        display: flex;
-        gap: 7px;
-        padding: 0;
-        width: 100%;
-        justify-content: center;
-      }
-      
-      .action-button {
-        border-radius: 6px;
-        font-size: 10px;
-        color: white;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-align: center;
-        font-weight: 500;
-        flex: 1;
-        max-width: 33.33%;
-        height: 39px;
-        line-height: 39px;
-        white-space: nowrap;
-      }
-      
-      .action-button.active {
-        background: rgba(0, 160, 160, 0.8) !important;
-        color: #00ffff;
-        font-weight: bold;
-      }
-      
-      .action-button:hover {
-        background: rgba(160, 160, 160, 0.6) !important;
-      }
-      
-      .action-button.active:hover {
-        background: rgba(0, 160, 160, 0.6) !important;
-      }
-      
-      .panel-section {
-        animation: slideIn 0.3s ease-out;
-        margin-top: 0px;
-      }
-      
+    return css`      :host { display: block; max-width: 500px; margin: 0 auto; }
+      .card-header { border-radius: 10px; padding: 10px; }
+      .card-main { border-radius: 10px; padding: 8px; padding-bottom: 0px; margin-top: 5px; margin-bottom: 0px; }
+      .card-container { height: 100%; display: flex; flex-direction: column; }
+      .top-section { display: grid; grid-template-columns: 32.8% 65.8%; gap: 1.4%; margin-bottom: 8px; height: 100%; align-items: end; }
+      .balance-section { display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: space-between; }
+      .top-content { display: flex; flex-direction: column; align-items: center; width: 100%; flex-shrink: 0; }
+      .spacer { flex: 1; width: 100%; min-height: 0px; height: auto; }
+      .balance-icon { width: 80px; height: 80px; margin-bottom: 12px; margin-top: 10px; border-radius: 6px; }
+      .balance-time { font-size: 10px; opacity: 0.8; margin-top: -7px; margin-bottom: 4px; text-align: center; }
+      .balance-controls-container { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+      .balance-info { border-radius: 6px; text-align: center; flex: 0 0 auto; width: 100%; height: 40px; line-height: 20px; }
+      .balance-amount { font-size: 15px; font-weight: bold; margin-top: 1px; white-space: nowrap; }
+      .balance-amount .currency { font-size: 10px; }
+      .balance-label { font-size: 10px; margin-top: -1px; opacity: 0.9; }
+      .days-info { border-radius: 6px; text-align: center; flex: 0 0 auto; width: 100%; height: 40px; line-height: 20px; }
+      .days-amount { font-size: 15px; font-weight: bold; white-space: nowrap; margin-top: 1px; }
+      .days-amount .currency { font-size: 10px; }
+      .days-label { font-size: 10px; margin-top: -1px; opacity: 0.9; }
+      .action-buttons { display: flex; gap: 7px; padding: 0; width: 100%; justify-content: center; }
+      .action-button { border-radius: 6px; font-size: 10px; color: white; cursor: pointer; transition: all 0.2s ease; text-align: center; font-weight: 500; flex: 1; max-width: 33.33%; height: 39px; line-height: 39px; white-space: nowrap; }
+      .action-button.active { background: rgba(0, 160, 160, 0.8) !important; color: #00ffff; font-weight: bold; }
+      .action-button:hover { background: rgba(160, 160, 160, 0.6) !important; }
+      .action-button.active:hover { background: rgba(0, 160, 160, 0.6) !important; }
+      .panel-section { animation: slideIn 0.3s ease-out; margin-top: 0px; }
       @keyframes slideIn {
         from {
           opacity: 0;
@@ -2151,710 +1776,123 @@ class  XiaoshiStateGridInfo extends LitElement {
           transform: translateY(0);
         }
       }
-      
-      .right-section {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        height: 100%;
-      }
-      
-      .price-area {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-      }
-      
-      .price-section {
-        border-radius: 8px;
-        padding: 12px;
-        text-align: center;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-      }
-      
-      .price-title {
-        font-size: 14px;
-        font-weight: bold;
-        margin-bottom: 8px;
-        color: white;
-      }
-      
-      .price-value {
-        font-size: 18px;
-        font-weight: bold;
-        color: #00ffff;
-      }
-      
-      .price-details {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-      
-      .price-item {
-        font-size: 12px;
-        color: white;
-        opacity: 0.9;
-      }
-      
-      .ladder-area {
-        flex: 1;
-        overflow: hidden;
-      }
-      
-      .usage-grid {
-        flex: 2;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: 1fr 1fr;
-        gap: 6px;
-      }
-      
-      .middle-section {
-        height: 40%;
-        margin-bottom: 8px;
-      }
-      
-      .bottom-section {
-        padding-top: 7px;
-        height: 35%;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      
-      .ladder-section {
-        border-radius: 8px;
-        padding: 9px 5px;
-        margin: 0px 0px;
-        min-height: 95px;
-      }
-      
-      .ladder-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 4px;
-        opacity: 0.8;
-        font-weight: bold;
-        text-align: start;
-        font-size: 10px;
-      }
-      
-      .ladder-progress {
-        position: relative;
-        height: 16px;
-        border-radius: 6px;
-        margin: 25px 0 4px 0;
-        overflow: visible;
-      }
-      
-      .progress-segment {
-        position: absolute;
-        height: 100%;
-        transition: width 0.3s ease;
-      }
-      
-      .progress-segment.level1 {
-        background: #4CAF50;
-        left: 0;
-        width: calc(33.33% + 6px) !important;
-        border-radius: 3px 0 0 3px;
-        clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);
-        z-index: 3;
-      }
-      
-      .progress-segment.level2 {
-        background: #FFC107;
-        left: 33.33%;
-        width: calc(33.33% + 6px) !important;
-        clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);
-        z-index: 2;
-      }
-      
-      .progress-segment.level3 {
-        background: #FF5722;
-        left: 66.66%;
-        width: 33.34% !important;
-        border-radius: 0 3px 3px 0;
-        z-index: 1;
-      }
-      
-      .progress-bubble {
-        position: absolute;
-        top: -25px;
-        transform: translateX(-50%);
-        color: white;
-        padding: 4px 6px;
-        border-radius: 10px;
-        font-size: 9px;
-        font-weight: bold;
-        white-space: nowrap;
-        text-align: center;
-        line-height: 1.2;
-      }
-      
-      .progress-bubble-arrow {
-        position: absolute;
-        bottom: 20px;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 4px solid transparent;
-        border-right: 4px solid transparent;
-        border-top: 4px solid;
-        border-top-color: inherit;
-        z-index: 6;
-      }
-      
-      .progress-indicator {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 3px;
-        border-radius: 3px;
-        transform: translateX(-50%);
-        z-index: 14;
-      }
-      
-      .progress-labels {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        display: flex;
-        align-items: center;
-        justify-content: space-around;
-        pointer-events: none;
-        z-index: 5;
-      }
-      
-      .progress-label {
-        font-size: 8px;
-        color: white;
-        font-weight: bold;
-        text-align: center;
-      }
-
-      .ladder-price-section {
-        display: flex;
-        justify-content: space-between;
-        gap: 2px;
-        margin-top: 0px;
-      }
-      
-      .price-block {
-        flex: 1;
-        padding: 2px 4px;
-        border-radius: 4px;
-        font-size: 8px;
-        text-align: center;
-      }
-      
-      .level1-price {
-        background: rgba(76, 175, 80, 0.15);
-      }
-      
-      .level2-price {
-        background: rgba(255, 193, 7, 0.15);
-      }
-      
-      .level3-price {
-        background: rgba(255, 87, 34, 0.15);
-      }
-      
-      .price-range {
-        font-weight: bold;
-        margin-bottom: 2px;
-        font-size: 9px;
-      }
-      
-      .price-item-block {
-        margin: 2px 0;
-        font-size: 8px;
-        line-height: 1.2;
-        white-space: nowrap;
-      }
-      
-      .usage-section {
-        text-align: center;
-        padding: 4px;
-        border-radius: 6px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-      }
-      
-      .usage-title {
-        font-size: 10px;
-        margin-bottom: 6px;
-        opacity: 0.8;
-        font-weight: bold;
-        text-align: start;
-      }
-      
-      .usage-amount {
-        font-size: 10px;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        position: relative;
-        margin-bottom: 8px;
-      }
-      
-      .usage-electricity {
-        position: absolute;
-        left: 0;
-        text-align: left;
-      }
-      
-      .usage-cost {
-        position: absolute;
-        right: 0;
-        text-align: right;
-      }
-      
-      .usage-bar {
-        height: 14px;
-        border-radius: 2px;
-        margin-bottom: 2px;
-        overflow: hidden;
-      }
-      
-      .usage-bar-fill {
-        height: 100%;
-        display: flex;
-        position: relative;
-      }
-      
-      .usage-bar-text {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 9px;
-        color: white;
-        font-weight: bold;
-        white-space: nowrap;
-        z-index: 1;
-      }
-      
-      .usage-bar-text.tip {
-        left: 0;
-        width: var(--tip-width, 0);
-        text-align: center;
-      }
-      
-      .usage-bar-text.peak {
-        left: var(--tip-width, 0);
-        width: var(--peak-width, 0);
-        text-align: center;
-      }
-      
-      .usage-bar-text.normal {
-        left: calc(var(--tip-width, 0) + var(--peak-width, 0));
-        width: var(--normal-width, 0);
-        text-align: center;
-      }
-      
-      .usage-bar-text.valley {
-        left: calc(var(--tip-width, 0) + var(--peak-width, 0) + var(--normal-width, 0));
-        width: var(--valley-width, 0);
-        text-align: center;
-      }
-      
-      .usage-bar-segment {
-        height: 100%;
-      }
-      
-      .usage-labels {
-        position: relative;
-        height: 8px;
-        font-size: 8px;
-        line-height: 8px;
-        background: transparent;
-      }
-      
-      .usage-label {
-        position: absolute;
-        top: 0;
-        font-weight: bold;
-        color: white;
-        background: transparent;
-      }
-      
-      .usage-label.tip {
-        left: 0;
-        width: var(--tip-width, 0);
-        text-align: center;
-      }
-      
-      .usage-label.peak {
-        left: var(--tip-width, 0);
-        width: var(--peak-width, 0);
-        text-align: center;
-      }
-      
-      .usage-label.normal {
-        left: calc(var(--tip-width, 0) + var(--peak-width, 0));
-        width: var(--normal-width, 0);
-        text-align: center;
-      }
-      
-      .usage-label.valley {
-        left: calc(var(--tip-width, 0) + var(--peak-width, 0) + var(--normal-width, 0));
-        width: var(--valley-width, 0);
-        text-align: center;
-      }
-      
+      .right-section { display: flex; flex-direction: column; gap: 6px; height: 100%; }
+      .price-area { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+      .price-section { border-radius: 8px; padding: 12px; text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+      .price-title { font-size: 14px; font-weight: bold; margin-bottom: 8px; color: white; }
+      .price-value { font-size: 18px; font-weight: bold; color: #00ffff; }
+      .price-details { display: flex; flex-direction: column; gap: 4px; }
+      .price-item { font-size: 12px; color: white; opacity: 0.9; }
+      .ladder-area { flex: 1; overflow: hidden; }
+      .usage-grid { flex: 2; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px; }
+      .middle-section { height: 40%; margin-bottom: 8px; }
+      .bottom-section { padding-top: 7px; height: 35%; display: flex; justify-content: space-between; align-items: center; }
+      .ladder-section { border-radius: 8px; padding: 9px 5px; margin: 0px 0px; min-height: 95px; }
+      .ladder-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; opacity: 0.8; font-weight: bold; text-align: start; font-size: 10px; }
+      .ladder-progress { position: relative; height: 16px; border-radius: 6px; margin: 25px 0 4px 0; overflow: visible; }
+      .progress-segment { position: absolute; height: 100%; transition: width 0.3s ease; }
+      .progress-segment.level1 { background: #4CAF50; left: 0; width: calc(33.33% + 6px) !important; border-radius: 3px 0 0 3px; clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%); z-index: 3; }
+      .progress-segment.level2 { background: #FFC107; left: 33.33%; width: calc(33.33% + 6px) !important; clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%); z-index: 2; }
+      .progress-segment.level3 { background: #FF5722; left: 66.66%; width: 33.34% !important; border-radius: 0 3px 3px 0; z-index: 1; }
+      .progress-bubble { position: absolute; top: -25px; transform: translateX(-50%); color: white; padding: 4px 6px; border-radius: 10px; font-size: 9px; font-weight: bold; white-space: nowrap; text-align: center; line-height: 1.2; }
+      .progress-bubble-arrow { position: absolute; bottom: 20px; transform: translateX(-50%); width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 4px solid; border-top-color: inherit; z-index: 6; }
+      .progress-indicator { position: absolute; top: 0; bottom: 0; width: 3px; border-radius: 3px; transform: translateX(-50%); z-index: 14; }
+      .progress-labels { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-around; pointer-events: none; z-index: 5; }
+      .progress-label { font-size: 8px; color: white; font-weight: bold; text-align: center; }
+      .ladder-price-section { display: flex; justify-content: space-between; gap: 2px; margin-top: 0px; }
+      .price-block { flex: 1; padding: 2px 4px; border-radius: 4px; font-size: 8px; text-align: center; }
+      .level1-price { background: rgba(76, 175, 80, 0.15); }
+      .level2-price { background: rgba(255, 193, 7, 0.15); }
+      .level3-price { background: rgba(255, 87, 34, 0.15); }
+      .price-range { font-weight: bold; margin-bottom: 2px; font-size: 9px; }
+      .price-item-block { margin: 2px 0; font-size: 8px; line-height: 1.2; white-space: nowrap; }
+      .usage-section { text-align: center; padding: 4px; border-radius: 6px; display: flex; flex-direction: column; justify-content: center; }
+      .usage-title { font-size: 10px; margin-bottom: 6px; opacity: 0.8; font-weight: bold; text-align: start; }
+      .usage-amount { font-size: 10px; font-weight: bold; display: flex; align-items: center; position: relative; margin-bottom: 8px; }
+      .usage-electricity { position: absolute; left: 0; text-align: left; }
+      .usage-cost { position: absolute; right: 0; text-align: right; }
+      .usage-bar { height: 14px; border-radius: 2px; margin-bottom: 2px; overflow: hidden; }
+      .usage-bar-fill { height: 100%; display: flex; position: relative; }
+      .usage-bar-text { position: absolute; top: 50%; transform: translateY(-50%); font-size: 9px; color: white; font-weight: bold; white-space: nowrap; z-index: 1; }
+      .usage-bar-text.tip { left: 0; width: var(--tip-width, 0); text-align: center; }
+      .usage-bar-text.peak { left: var(--tip-width, 0); width: var(--peak-width, 0); text-align: center; }
+      .usage-bar-text.normal { left: calc(var(--tip-width, 0) + var(--peak-width, 0)); width: var(--normal-width, 0); text-align: center; }
+      .usage-bar-text.valley { left: calc(var(--tip-width, 0) + var(--peak-width, 0) + var(--normal-width, 0)); width: var(--valley-width, 0); text-align: center; }
+      .usage-bar-segment { height: 100%; }
+      .usage-labels { position: relative; height: 8px; font-size: 8px; line-height: 8px; background: transparent; }
+      .usage-label { position: absolute; top: 0; font-weight: bold; color: white; background: transparent; }
+      .usage-label.tip { left: 0; width: var(--tip-width, 0); text-align: center; }
+      .usage-label.peak { left: var(--tip-width, 0); width: var(--peak-width, 0); text-align: center; }
+      .usage-label.normal { left: calc(var(--tip-width, 0) + var(--peak-width, 0)); width: var(--normal-width, 0); text-align: center; }
+      .usage-label.valley { left: calc(var(--tip-width, 0) + var(--peak-width, 0) + var(--normal-width, 0)); width: var(--valley-width, 0); text-align: center; }
       .usage-bar-segment.tip { background: #E91E63; }
       .usage-bar-segment.peak { background: #FF9800; }
       .usage-bar-segment.normal { background: #8BC34A; }
       .usage-bar-segment.valley { background: #00BCD4; }
-    
     /*
      * 日历部分  *
      *          */
-
-      .calendar-grid {
-        border: 0;
-        border-radius: 10px;
-        display: grid;
-        grid-template-areas:
-          "yearlast year yearnext today monthlast month monthnext"
-          "week1 week2 week3 week4 week5 week6 week7" 
-          "id1 id2 id3 id4 id5 id6 id7" 
-          "id8 id9 id10 id11 id12 id13 id14" 
-          "id15 id16 id17 id18 id19 id20 id21" 
-          "id22 id23 id24 id25 id26 id27 id28" 
-          "id29 id30 id31 id32 id33 id34 id35" 
-          "id36 id37 id98 id98 id99 id99 id99";
-        grid-template-columns: repeat(7, 1fr);
-        grid-template-rows: 1fr 0.6fr 1fr 1fr 1fr 1fr 1fr 1fr;
-        gap: 0px;
-        padding: 10px 4px;
-        margin-top: 5px;
-      }
-      .celltotal {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        cursor: default;
-        font-size: 15px;
-        font-weight: 600;
-        white-space: nowrap;
-      }
-      .cell {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        cursor: default;
-        font-size: 12px;
-        line-height: 12px;
-        font-weight: 500;
-      }
-      .month-cell {
-        border-bottom: 0.5px solid rgb(150,150,150,0.8);
-        border-right: 0.5px solid  rgb(150,150,150,0.8);
-      }
-      .month-cell-left {
-        border-left: 0.5px solid  rgb(150,150,150,0.8);
-      }
-      .month-cell-top {
-        border-top: 0.5px solid  rgb(150,150,150,0.8);
-      }
-      .month-cell-right {
-        border-right: 0.5px solid  rgb(150,150,150,0.8);
-      }
-      .month-cell-bottom {
-        border-bottom: 0.5px solid rgb(150,150,150,0.8);
-      }
-      .nav-button {
-        cursor: pointer;
-        user-select: none;
-        font-size: 12px;
-        transition: all 0.2s ease;
-        border-radius: 10px;
-      }
-      .nav-button:active {
-        transform: scale(0.95);
-        opacity: 0.8;
-      }
-      .active-nav {
-        background-color: rgba(0, 160, 160, 0.2);
-        border-radius: 4px;
-      }
-      .today-button {
-        cursor: pointer;
-        user-select: none;
-      }
-      .weekday {
-      }
-      .month-day {
-        cursor: pointer;
-      }
-      .electricity-num {
-        font-size: 12px;
-        line-height: 12px;
-      }
-      .electricity-cost {
-        font-size: 12px;
-        line-height: 12px;
-      }
-      .min-usage {
-        background-color: rgba(0, 255, 0, 0.2);
-      }
-      .max-usage {
-        background-color: rgba(255, 0, 0, 0.2);
-      }
-      .summary-info {
-        display: flex;
-        flex-direction: column;
-        align-items:  flex-start;
-        justify-content: center;
-        font-size: 13px;
-        line-height: 16px;
-        font-weight: 500;
-        padding: 0 0 0 30px;
-        white-space: nowrap;
-      }    
-      
+      .calendar-grid { border: 0; border-radius: 10px; display: grid; grid-template-areas: "yearlast year yearnext today monthlast month monthnext" "week1 week2 week3 week4 week5 week6 week7" "id1 id2 id3 id4 id5 id6 id7" "id8 id9 id10 id11 id12 id13 id14" "id15 id16 id17 id18 id19 id20 id21" "id22 id23 id24 id25 id26 id27 id28" "id29 id30 id31 id32 id33 id34 id35" "id36 id37 id98 id98 id99 id99 id99"; grid-template-columns: repeat(7, 1fr); grid-template-rows: 1fr 0.6fr 1fr 1fr 1fr 1fr 1fr 1fr; gap: 0px; padding: 10px 4px; margin-top: 5px; }
+      .celltotal { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; cursor: default; font-size: 15px; font-weight: 600; white-space: nowrap; }
+      .cell { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; cursor: default; font-size: 12px; line-height: 12px; font-weight: 500; }
+      .month-cell { border-bottom: 0.5px solid rgb(150,150,150,0.8); border-right: 0.5px solid rgb(150,150,150,0.8); }
+      .month-cell-left { border-left: 0.5px solid rgb(150,150,150,0.8); }
+      .month-cell-top { border-top: 0.5px solid rgb(150,150,150,0.8); }
+      .month-cell-right { border-right: 0.5px solid rgb(150,150,150,0.8); }
+      .month-cell-bottom { border-bottom: 0.5px solid rgb(150,150,150,0.8); }
+      .nav-button { cursor: pointer; user-select: none; font-size: 12px; transition: all 0.2s ease; border-radius: 10px; }
+      .nav-button:active { transform: scale(0.95); opacity: 0.8; }
+      .active-nav { background-color: rgba(0, 160, 160, 0.2); border-radius: 4px; }
+      .today-button { cursor: pointer; user-select: none; }
+      .weekday { }
+      .month-day { cursor: pointer; }
+      .electricity-num { font-size: 12px; line-height: 12px; }
+      .electricity-cost { font-size: 12px; line-height: 12px; }
+      .min-usage { background-color: rgba(0, 255, 0, 0.2); }
+      .max-usage { background-color: rgba(255, 0, 0, 0.2); }
+      .summary-info { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; font-size: 13px; line-height: 16px; font-weight: 500; padding: 0 0 0 30px; white-space: nowrap; }
       /* 表头信息 */
-
-      .card-container {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      
-      .balance-card {
-        width: 100%;
-        background: var(--bg-color, #fff);
-        border-radius: 12px;
-      }
-
-      .balance-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px;
-        background: var(--bg-color, #fff);
-        border-radius: 12px;
-      }
-
-      .balance-indicator {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        margin-right: 8px;
-      }
-
+      .card-container { display: flex; flex-direction: column; gap: 5px; }
+      .balance-card { width: 100%; background: var(--bg-color, #fff); border-radius: 12px; }
+      .balance-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--bg-color, #fff); border-radius: 12px; }
+      .balance-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
       @keyframes pulse {
         0% { opacity: 1; }
         50% { opacity: 0.5; }
         100% { opacity: 1; }
       }
-
-      .balance-title {
-        font-size: 20px;
-        font-weight: 500;
-        color: var(--fg-color, #000);
-        height: 30px;
-        line-height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
+      .balance-title { font-size: 20px; font-weight: 500; color: var(--fg-color, #000); height: 30px; line-height: 30px; display: flex; align-items: center; justify-content: center; }
       /*标题统计数字*/
-      .balance-count {
-        color: var(--fg-color, #000);
-        border-radius: 8px;
-        font-size: 20px;
-        height: 30px;
-        line-height: 30px;
-        text-align: center;
-        line-height: 30px;
-        font-weight: bold;
-        padding: 0px;
-      }
-
-      .balance-count.warning {
-        color: #F44336;
-      }
-
-      .balance-count.warning {
-        color: #F44336;
-      }
-
-      .balance-devices-list {
-        flex: 1;
-        overflow-y: auto;
-        min-height: 0;
-        padding: 0 0 8px 0;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
+      .balance-count { color: var(--fg-color, #000); border-radius: 8px; font-size: 20px; height: 30px; line-height: 30px; text-align: center; line-height: 30px; font-weight: bold; padding: 0px; }
+      .balance-count.warning { color: #F44336; }
+      .balance-count.warning { color: #F44336; }
+      .balance-devices-list { flex: 1; overflow-y: auto; min-height: 0; padding: 0 0 8px 0; display: flex; flex-direction: column; gap: 8px; }
       /* 横向布局样式 */
-      .balance-devices-list.horizontal {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 8px;
-        padding: 8px;
-      }
-
-      .balance-devices-list.horizontal .balance-device-item {
-        flex: 0 0 calc((100% - var(--gap-count, 2) * 12px) / var(--items-per-row, 3));
-        border: 1px solid rgb(150,150,150,0.5);
-        border-radius: 8px;
-        margin: 0;
-        padding: 12px 0;
-      }
-
-      .balance-devices-list.horizontal .balance-device-item:first-child {
-        border: 1px solid rgb(150,150,150,0.5);
-      }
-
-      .balance-device-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin: 0px 8px;
-        padding: 8px 0;
-        border-bottom: 1px solid rgb(150,150,150,0.5);
-        cursor: pointer;
-        transition: background-color 0.2s;
-      }
-
-      .balance-device-item:first-child {
-        border-top: 1px solid rgb(150,150,150,0.5);
-      }
-
-      .balance-device-item:hover {
-        background-color: rgba(150,150,150,0.1);
-      }
-
-      .balance-device-item.selected {
-        background-color: rgba(33, 150, 243, 0.2);
-        border-left: 3px solid rgb(33, 150, 243);
-      }
-
-      .balance-device-left {
-        display: flex;
-        align-items: center;
-        flex: 1;
-      }
-
-      .balance-device-icon {
-        margin-right: 8px;
-        color: var(--fg-color, #000);
-        flex-shrink: 0;
-      }
-
-      .balance-device-name {
-        color: var(--fg-color, #000);
-        font-size: 12px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .balance-device-value {
-        color: var(--fg-color, #000);
-        font-size: 12px;
-        margin-left: auto;
-        flex-shrink: 0;
-        font-weight: bold;
-      }
-
-      .balance-device-value.warning {
-        color: #F44336;
-      }
-
-      .balance-device-unit {
-        font-size: 12px;
-        color: var(--fg-color, #000);
-        margin-left: 4px;
-        margin-right: 4px;
-        font-weight: bold;
-      }
-
-      .balance-device-unit.warning {
-        color: #F44336;
-      }
-
-      .balance-no-devices {
-        text-align: center;
-        padding: 10px 0;
-        color: var(--fg-color, #000);
-      }
-
-      .balance-loading {
-        text-align: center;
-        padding: 10px 0;
-        color: var(--fg-color, #000);
-      }
-
+      .balance-devices-list.horizontal { display: flex; flex-direction: row; flex-wrap: wrap; gap: 8px; padding: 8px; }
+      .balance-devices-list.horizontal .balance-device-item { flex: 0 0 calc((100% - var(--gap-count, 2) * 12px) / var(--items-per-row, 3)); border: 1px solid rgb(150,150,150,0.5); border-radius: 8px; margin: 0; padding: 12px 0; }
+      .balance-devices-list.horizontal .balance-device-item:first-child { border: 1px solid rgb(150,150,150,0.5); }
+      .balance-device-item { display: flex; align-items: center; justify-content: space-between; margin: 0px 8px; padding: 8px 0; border-bottom: 1px solid rgb(150,150,150,0.5); cursor: pointer; transition: background-color 0.2s; }
+      .balance-device-item:first-child { border-top: 1px solid rgb(150,150,150,0.5); }
+      .balance-device-item:hover { background-color: rgba(150,150,150,0.1); }
+      .balance-device-item.selected { background-color: rgba(33, 150, 243, 0.2); border-left: 3px solid rgb(33, 150, 243); }
+      .balance-device-left { display: flex; align-items: center; flex: 1; }
+      .balance-device-icon { margin-right: 8px; color: var(--fg-color, #000); flex-shrink: 0; }
+      .balance-device-name { color: var(--fg-color, #000); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .balance-device-value { color: var(--fg-color, #000); font-size: 12px; margin-left: auto; flex-shrink: 0; font-weight: bold; }
+      .balance-device-value.warning { color: #F44336; }
+      .balance-device-unit { font-size: 12px; color: var(--fg-color, #000); margin-left: 4px; margin-right: 4px; font-weight: bold; }
+      .balance-device-unit.warning { color: #F44336; }
+      .balance-no-devices { text-align: center; padding: 10px 0; color: var(--fg-color, #000); }
+      .balance-loading { text-align: center; padding: 10px 0; color: var(--fg-color, #000); }
       /*每日条形图*/
-      .card-chart {
-        border: 0;
-        border-radius: 10px;
-        display: grid;
-        grid-template-rows: 20% 80%;
-        grid-template-columns: 1fr 1fr;
-        grid-template-areas: 
-          "label1 label2"
-          "chart chart";
-        gap: 0px;
-        padding: 0px;
-        margin-top: 5px;
-        height: 310px;
-      }
-      .label {
-        padding: 5px;
-      }
-      .label1 {
-        grid-area: label1;
-        text-align: left;
-      }
-      .label2 {
-        grid-area: label2;
-        text-align: right;
-      } 
-      .value {
-        font-size: 25px;
-        font-weight: bold;
-        line-height: 1.2;
-        padding: 5px 5px 0 5px;
-      }
-      .unit {
-        font-size: 15px;
-      }
-      .title {
-        font-size: 13px;
-        padding: 0 5px 0 5px;
-      }
-      #chart-container {
-        grid-area: chart;
-        width: 100%;
-        height: 100%;
-        will-change: transform;
-        transform: translateZ(0);
-      }
-
-     `;
+      .card-chart { border: 0; border-radius: 10px; display: grid; grid-template-rows: 20% 80%; grid-template-columns: 1fr 1fr; grid-template-areas: "label1 label2" "chart chart"; gap: 0px; padding: 0px; margin-top: 5px; height: 310px; }
+      .label { padding: 5px; }
+      .label1 { grid-area: label1; text-align: left; }
+      .label2 { grid-area: label2; text-align: right; }
+      .value { font-size: 25px; font-weight: bold; line-height: 1.2; padding: 5px 5px 0 5px; }
+      .unit { font-size: 15px; }
+      .title { font-size: 13px; padding: 0 5px 0 5px; }
+      #chart-container { grid-area: chart; width: 100%; height: 100%; will-change: transform; transform: translateZ(0); }`;
   }
 
   async _loadApexCharts() {

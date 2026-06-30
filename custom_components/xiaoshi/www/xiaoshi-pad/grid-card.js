@@ -21,96 +21,22 @@ class XiaoshiPadGridCardEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .editor-container {
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      .field {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-      .field label {
-        font-size: 12px;
-        color: var(--secondary-text-color);
-        font-weight: 500;
-      }
-      .field input, .field select {
-        padding: 8px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        font-size: 14px;
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-      }
-      .entities-section {
-        border: 1px solid var(--divider-color);
-        border-radius: 8px;
-        padding: 12px;
-      }
-      .entities-section h4 {
-        margin: 0 0 12px 0;
-        font-size: 14px;
-        color: var(--primary-text-color);
-      }
-      .inline-fields {
-        display: flex;
-        gap: 12px;
-      }
-      .inline-fields .field {
-        flex: 1;
-      }
-      .entity-item {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        padding: 8px 0;
-        border-bottom: 1px solid var(--divider-color);
-      }
-      .entity-item:last-child {
-        border-bottom: none;
-      }
-      .entity-row {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      .entity-row input, .entity-row select {
-        padding: 6px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        font-size: 13px;
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-        flex: 1;
-        min-width: 0;
-      }
-      .entity-row input[type="checkbox"] {
-        flex: 0;
-        width: 16px;
-      }
-      .add-btn, .remove-btn {
-        padding: 6px 12px;
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 13px;
-        background: var(--card-background-color);
-        color: var(--primary-text-color);
-      }
-      .add-btn:hover {
-        background: var(--primary-color);
-        color: white;
-      }
-      .remove-btn {
-        color: var(--error-color);
-        flex: 0;
-        white-space: nowrap;
-      }
-    `;
+    return css`      .editor-container { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+      .field { display: flex; flex-direction: column; gap: 4px; }
+      .field label { font-size: 12px; color: var(--secondary-text-color); font-weight: 500; }
+      .field input, .field select { padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; font-size: 14px; background: var(--card-background-color); color: var(--primary-text-color); }
+      .entities-section { border: 1px solid var(--divider-color); border-radius: 8px; padding: 12px; }
+      .entities-section h4 { margin: 0 0 12px 0; font-size: 14px; color: var(--primary-text-color); }
+      .inline-fields { display: flex; gap: 12px; }
+      .inline-fields .field { flex: 1; }
+      .entity-item { display: flex; flex-direction: column; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--divider-color); }
+      .entity-item:last-child { border-bottom: none; }
+      .entity-row { display: flex; gap: 8px; align-items: center; }
+      .entity-row input, .entity-row select { padding: 6px; border: 1px solid var(--divider-color); border-radius: 4px; font-size: 13px; background: var(--card-background-color); color: var(--primary-text-color); flex: 1; min-width: 0; }
+      .entity-row input[type="checkbox"] { flex: 0; width: 16px; }
+      .add-btn, .remove-btn { padding: 6px 12px; border: 1px solid var(--divider-color); border-radius: 4px; cursor: pointer; font-size: 13px; background: var(--card-background-color); color: var(--primary-text-color); }
+      .add-btn:hover { background: var(--primary-color); color: white; }
+      .remove-btn { color: var(--error-color); flex: 0; white-space: nowrap; }`;
   }
 
   setConfig(config) {
@@ -269,23 +195,8 @@ class XiaoshiPadGridCard extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .container {
-        position: relative;
-        display: block;
-        overflow: hidden;
-      }
-      .grid-item {
-        position: absolute;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        box-sizing: border-box;
-        border: 0;
-        cursor: pointer;
-      }
-    `;
+    return css`      .container { position: relative; display: block; overflow: hidden; }
+      .grid-item { position: absolute; display: flex; align-items: center; justify-content: center; color: white; box-sizing: border-box; border: 0; cursor: pointer; }`;
   }
 
   setConfig(config) {

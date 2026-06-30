@@ -21,28 +21,6 @@ window.customCards.push({
 });
 
 // ==================== 公共工具函数（无this依赖） ====================
-
-function evaluateTheme(config) {
-  try {
-    const mode = config ? config.theme : 'system';
-    if (mode === 'light') return 'light';
-    if (mode === 'dark') return 'dark';
-    if (mode === 'system' || !mode) {
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-      return 'light';
-    }
-    if (mode === 'function' || (typeof mode === 'string' && mode.includes('theme'))) {
-      if (typeof window.theme === 'function') {
-        return window.theme() || 'light';
-      }
-      return 'light';
-    }
-    return mode;
-  } catch (e) {
-    return 'light';
-  }
-}
-
 function getPriceColor(text) {
   if (!text) return 'var(--fg-color, #000)';
   const lowerText = text.toLowerCase();
@@ -56,389 +34,76 @@ function getPriceColor(text) {
 
 // ==================== 公共CSS样式 ====================
 
-const editorCommonStyles = css`
-  .form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-height: 300px;
-  }
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-  label {
-    font-weight: bold;
-  }
-  select, input, textarea {
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-  }
-  textarea {
-    min-height: 80px;
-    resize: vertical;
-  }
-  .help-text {
-    font-size: 0.85em;
-    color: #666;
-    margin-top: 4px;
-  }
-  .entity-selector {
-    position: relative;
-  }
-  .entity-search-input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box;
-  }
-  .entity-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    height: 300px;
-    overflow-y: auto;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    z-index: 1000;
-    margin-top: 2px;
-  }
-  .entity-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    cursor: pointer;
-    border-bottom: 1px solid #eee;
-  }
-  .entity-option:hover {
-    background: #f5f5f5;
-  }
-  .entity-option.selected {
-    background: #e3f2fd;
-  }
-  .entity-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1;
-  }
-  .entity-details {
-    flex: 1;
-  }
-  .entity-name {
-    font-weight: 500;
-    font-size: 14px;
-    color: #000;
-  }
-  .entity-id {
-    font-size: 12px;
-    color: #000;
-    font-family: monospace;
-  }
-  .check-icon {
-    color: #4CAF50;
-  }
-  .no-results {
-    padding: 12px;
-    text-align: center;
-    color: #666;
-    font-style: italic;
-  }
-  .checkbox-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    margin-top: 5px;
-  }
-  .checkbox-group2 {
-  }
-  .checkbox-label {
-    display: flex;
-    align-items: center;
-    font-weight: normal;
-    cursor: pointer;
-    font-size: 14px;
-    color: #fff;
-  }
-  .checkbox-input {
-    margin-right: 6px;
-    cursor: pointer;
-  }
-  .selected-entities {
-    margin-top: 8px;
-  }
-  .selected-label {
-    font-size: 12px;
-    font-weight: bold;
-    margin-bottom: 4px;
-    color: #333;
-  }
-  .selected-entity {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: #f0f0f0;
-    padding: 4px 8px;
-    border-radius: 16px;
-    margin: 2px 4px 2px 0;
-    font-size: 12px;
-    color: #000;
-  }
-  .remove-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    color: #666;
-  }
-  .remove-btn:hover {
-    color: #f44336;
-  }
-`;
+const editorCommonStyles = css`  .form { display: flex; flex-direction: column; gap: 10px; min-height: 300px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  label { font-weight: bold; }
+  select, input, textarea { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+  textarea { min-height: 80px; resize: vertical; }
+  .help-text { font-size: 0.85em; color: #666; margin-top: 4px; }
+  .entity-selector { position: relative; }
+  .entity-search-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+  .entity-dropdown { position: absolute; top: 100%; left: 0; right: 0; height: 300px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px; }
+  .entity-option { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; }
+  .entity-option:hover { background: #f5f5f5; }
+  .entity-option.selected { background: #e3f2fd; }
+  .entity-info { display: flex; align-items: center; gap: 8px; flex: 1; }
+  .entity-details { flex: 1; }
+  .entity-name { font-weight: 500; font-size: 14px; color: #000; }
+  .entity-id { font-size: 12px; color: #000; font-family: monospace; }
+  .check-icon { color: #4CAF50; }
+  .no-results { padding: 12px; text-align: center; color: #666; font-style: italic; }
+  .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 5px; }
+  .checkbox-group2 { }
+  .checkbox-label { display: flex; align-items: center; font-weight: normal; cursor: pointer; font-size: 14px; color: #fff; }
+  .checkbox-input { margin-right: 6px; cursor: pointer; }
+  .selected-entities { margin-top: 8px; }
+  .selected-label { font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #333; }
+  .selected-entity { display: inline-flex; align-items: center; gap: 4px; background: #f0f0f0; padding: 4px 8px; border-radius: 16px; margin: 2px 4px 2px 0; font-size: 12px; color: #000; }
+  .remove-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; color: #666; }
+  .remove-btn:hover { color: #f44336; }`;
 
-const cardCommonStyles = css`
-  :host {
-    display: block;
-    max-width: 500px; 
-    margin: 0 auto;
-  }
-  ha-card {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background: var(--bg-color, #fff);
-    border-radius: 12px;
-  }
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px;
-    background: var(--bg-color, #fff);
-    border-radius: 12px;
-  }
-  .offline-indicator {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-right: 8px;
-  }
+const cardCommonStyles = css`  :host { display: block; max-width: 500px; margin: 0 auto; }
+  ha-card { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--bg-color, #fff); border-radius: 12px; }
+  .card-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--bg-color, #fff); border-radius: 12px; }
+  .offline-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
   @keyframes pulse {
     0% { opacity: 1; }
     50% { opacity: 0.5; }
     100% { opacity: 1; }
   }
-  .card-title {
-    font-size: 20px;
-    font-weight: 500;
-    color: var(--fg-color, #000);
-    height: 30px;
-    line-height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .device-count {
-    color: var(--fg-color, #000);
-    border-radius: 8px;
-    font-size: 13px;
-    width: 30px;
-    height: 30px;
-    text-align: center;
-    line-height: 30px;
-    font-weight: bold;
-    padding: 0px;
-  }
-  .device-count.non-zero {
-    background: rgb(255, 0, 0, 0.5);
-  }
-  .device-count.zero {
-    background: rgb(0, 205, 0);
-  }
-  .refresh-btn {
-    color: var(--fg-color, #fff);
-    border: none;
-    border-radius: 8px;
-    padding: 5px;
-    cursor: pointer;
-    font-size: 13px;
-    width: 50px;
-    height: 30px;
-    line-height: 30px;
-    text-align: center;
-    font-weight: bold;
-    padding: 0px;
-  }
-  .section-divider {
-    margin: 0 0 8px 0;
-    padding: 8px 8px;
-    background: var(--bg-color, #fff);
-    font-weight: 500;
-    color: var(--fg-color, #000);
-    border-top: 1px solid rgb(150,150,150,0.5);
-    border-bottom: 1px solid rgb(150,150,150,0.5);
-    margin: 0 16px 0 16px;
-  }
-  .section-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    color: var(--fg-color, #000);
-    font-size: 13px;
-  }
-  .section-count {
-    background: rgb(255,0,0,0.5);
-    color: var(--fg-color, #000);
-    border-radius: 12px;
-    width: 15px;
-    height: 15px;
-    text-align: center;
-    line-height: 15px;
-    padding: 3px;
-    font-size: 12px;
-    font-weight: bold;
-  }
-  .device-item {
-    display: flex;
-    align-items: center;
-    padding: 0px;
-    border-bottom: 1px solid rgb(150,150,150,0.2);
-    margin: 0 32px 0px 32px;
-  }
-  .devices-list {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-    padding: 0 0 8px 0;
-  }
-  .device-icon {
-    margin-right: 12px;
-    color: var(--error-color);
-  }
-  .device-info {
-    flex-grow: 1;
-    padding: 6px 0;
-  }
-  .device-name {
-    font-weight: 500;
-    color: var(--fg-color, #000);
-    padding: 6px 0 0 0;
-  }
-  .device-entity {
-    font-size: 10px;
-    color: var(--fg-color, #000);
-    font-family: monospace;
-  }
-  .device-details {
-    font-size: 10px;
-    color: var(--fg-color, #000);
-  }
-  .device-last-seen {
-    font-size: 10px;
-    color: var(--fg-color, #000);
-    margin-left: auto;
-  }
-  .no-devices {
-    text-align: center;
-    padding: 8px 0 0 0;
-    color: var(--fg-color, #000);
-  }
-  .loading {
-    text-align: center;
-    padding: 0px;
-    color: var(--fg-color, #000);
-  }
-  .device-details ha-icon {
-    --mdc-icon-size: 12px;
-    color: var(--fg-color, #000);
-  }
-  .history-section {
-    margin: 0 16px;
-    padding: 0 8px;
-  }
-  .history-year-tabs {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-  .history-year-tab {
-    padding: 2px 10px;
-    border-radius: 12px;
-    border: 1px solid rgb(150,150,150,0.5);
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--fg-color, #000);
-    background: transparent;
-    transition: background 0.2s, color 0.2s;
-    height: 18px;
-    line-height: 18px;
-  }
-  .history-year-tab.active {
-    background: rgb(255,165,0);
-    color: #fff;
-    border-color: rgb(255,165,0);
-  }
-  .history-year-tab:hover {
-    background: rgb(255,165,0,0.15);
-  }
-  .history-year-tab.active:hover {
-    background: rgb(255,165,0);
-  }
-  .history-summary {
-    padding: 6px 8px;
-    margin-bottom: 6px;
-    font-size: 11px;
-    color: var(--fg-color, #000);
-    background: rgba(150,150,150,0.1);
-    border-radius: 6px;
-  }
-  .history-columns {
-    display: flex;
-    gap: 12px;
-  }
-  .history-col {
-    flex: 1;
-    min-width: 0;
-  }
-  .history-list {
-    display: flex;
-    flex-direction: column;
-  }
-  .history-row {
-    display: flex;
-    align-items: center;
-    padding: 3px;
-    font-size: 10px;
-    color: var(--fg-color, #000);
-  }
-  .history-date {
-    width: 50px;
-    flex-shrink: 0;
-    color: var(--fg-color, #000);
-  }
-  .history-type {
-    width: 36px;
-    flex-shrink: 0;
-    font-weight: 500;
-  }
-  .history-price {
-    flex: 1;
-    min-width: 0;
-  }
-`;
+  .card-title { font-size: 20px; font-weight: 500; color: var(--fg-color, #000); height: 30px; line-height: 30px; display: flex; align-items: center; justify-content: center; }
+  .device-count { color: var(--fg-color, #000); border-radius: 8px; font-size: 13px; width: 30px; height: 30px; text-align: center; line-height: 30px; font-weight: bold; padding: 0px; }
+  .device-count.non-zero { background: rgb(255, 0, 0, 0.5); }
+  .device-count.zero { background: rgb(0, 205, 0); }
+  .refresh-btn { color: var(--fg-color, #fff); border: none; border-radius: 8px; padding: 5px; cursor: pointer; font-size: 13px; width: 50px; height: 30px; line-height: 30px; text-align: center; font-weight: bold; padding: 0px; }
+  .section-divider { margin: 0 0 8px 0; padding: 8px 8px; background: var(--bg-color, #fff); font-weight: 500; color: var(--fg-color, #000); border-top: 1px solid rgb(150,150,150,0.5); border-bottom: 1px solid rgb(150,150,150,0.5); margin: 0 16px 0 16px; }
+  .section-title { display: flex; align-items: center; justify-content: space-between; color: var(--fg-color, #000); font-size: 13px; }
+  .section-count { background: rgb(255,0,0,0.5); color: var(--fg-color, #000); border-radius: 12px; width: 15px; height: 15px; text-align: center; line-height: 15px; padding: 3px; font-size: 12px; font-weight: bold; }
+  .device-item { display: flex; align-items: center; padding: 0px; border-bottom: 1px solid rgb(150,150,150,0.2); margin: 0 32px 0px 32px; }
+  .devices-list { flex: 1; overflow-y: auto; min-height: 0; padding: 0 0 8px 0; }
+  .device-icon { margin-right: 12px; color: var(--error-color); }
+  .device-info { flex-grow: 1; padding: 6px 0; }
+  .device-name { font-weight: 500; color: var(--fg-color, #000); padding: 6px 0 0 0; }
+  .device-entity { font-size: 10px; color: var(--fg-color, #000); font-family: monospace; }
+  .device-details { font-size: 10px; color: var(--fg-color, #000); }
+  .device-last-seen { font-size: 10px; color: var(--fg-color, #000); margin-left: auto; }
+  .no-devices { text-align: center; padding: 8px 0 0 0; color: var(--fg-color, #000); }
+  .loading { text-align: center; padding: 0px; color: var(--fg-color, #000); }
+  .device-details ha-icon { --mdc-icon-size: 12px; color: var(--fg-color, #000); }
+  .history-section { margin: 0 16px; padding: 0 8px; }
+  .history-year-tabs { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .history-year-tab { padding: 2px 10px; border-radius: 12px; border: 1px solid rgb(150,150,150,0.5); cursor: pointer; font-size: 11px; font-weight: 500; color: var(--fg-color, #000); background: transparent; transition: background 0.2s, color 0.2s; height: 18px; line-height: 18px; }
+  .history-year-tab.active { background: rgb(255,165,0); color: #fff; border-color: rgb(255,165,0); }
+  .history-year-tab:hover { background: rgb(255,165,0,0.15); }
+  .history-year-tab.active:hover { background: rgb(255,165,0); }
+  .history-summary { padding: 6px 8px; margin-bottom: 6px; font-size: 11px; color: var(--fg-color, #000); background: rgba(150,150,150,0.1); border-radius: 6px; }
+  .history-columns { display: flex; gap: 12px; }
+  .history-col { flex: 1; min-width: 0; }
+  .history-list { display: flex; flex-direction: column; }
+  .history-row { display: flex; align-items: center; padding: 3px; font-size: 10px; color: var(--fg-color, #000); }
+  .history-date { width: 50px; flex-shrink: 0; color: var(--fg-color, #000); }
+  .history-type { width: 36px; flex-shrink: 0; font-weight: 500; }
+  .history-price { flex: 1; min-width: 0; }`;
 
 // ==================== 编辑器混入（Mixin） ====================
 
@@ -1392,44 +1057,11 @@ class XiaoshiPetroChinaButton extends PetroChinaBaseMixin(LitElement) {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-      .balance-status {
-        width: var(--button-width, 65px);
-        max-width: var(--button-max-width, 90px);
-        height: var(--button-height, 24px);
-        padding: 0;
-        margin: 0;
-        background: var(--bg-color, #fff);
-        color: var(--fg-color, #000);
-        border-radius: 10px;
-        font-size: var(--button-font-size, 11px);
-        font-weight: 500;
-        text-align: center;
-        box-sizing: border-box;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0;
-        cursor: none;
-        transition: background-color 0.2s, transform 0.1s;
-        position: relative;
-      }
-      .balance-status:active {
-        transform: scale(0.95);
-        box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
-      }
-      .status-icon {
-        --mdc-icon-size: var(--button-icon-size, 13px);
-        color: var(--fg-color, #000);
-        margin-right: 3px;
-        display: inline-flex;
-        align-items: center;
-      }
-      ${cardCommonStyles}
-    `;
+    return css`      :host { display: block; }
+      .balance-status { width: var(--button-width, 65px); max-width: var(--button-max-width, 90px); height: var(--button-height, 24px); padding: 0; margin: 0; background: var(--bg-color, #fff); color: var(--fg-color, #000); border-radius: 10px; font-size: var(--button-font-size, 11px); font-weight: 500; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 0; cursor: none; transition: background-color 0.2s, transform 0.1s; position: relative; }
+      .balance-status:active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
+      .status-icon { --mdc-icon-size: var(--button-icon-size, 13px); color: var(--fg-color, #000); margin-right: 3px; display: inline-flex; align-items: center; }
+      ${cardCommonStyles}`;
   }
 
   static getConfigElement() {

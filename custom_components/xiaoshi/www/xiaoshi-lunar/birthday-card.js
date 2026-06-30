@@ -24,303 +24,50 @@ class XiaoshiBirthdayCardEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        min-height: 500px;
-      }
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      label {
-        font-weight: bold;
-      }
-      select, input, textarea {
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-      }
-      textarea {
-        min-height: 80px;
-        resize: vertical;
-      }
-      .help-text {
-        font-size: 0.85em;
-        color: #666;
-        margin-top: 4px;
-      }
-
-      .entity-selector {
-        position: relative;
-      }
-
-      .entity-search-input {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-      }
-
-      .entity-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        height: 300px;
-        overflow-y: auto;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        z-index: 1000;
-        margin-top: 2px;
-      }
-
-      .entity-option {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px 12px;
-        cursor: pointer;
-        border-bottom: 1px solid #eee;
-      }
-
-      .entity-option:hover {
-        background: #f5f5f5;
-      }
-
-      .entity-option.selected {
-        background: #e3f2fd;
-      }
-
-      .entity-info {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 1;
-        justify-content: space-between;
-      }
-
-      .entity-details {
-        flex: 1;
-      }
-
-      .entity-name {
-        font-weight: 500;
-        font-size: 14px;
-        color: #000;
-      }
-
-      .entity-id {
-        font-size: 12px;
-        color: #000;
-        font-family: monospace;
-      }
-
-      .check-icon {
-        color: #4CAF50;
-      }
-
-      .no-results {
-        padding: 12px;
-        text-align: center;
-        color: #666;
-        font-style: italic;
-      }
-
-      .selected-entities {
-        margin-top: 8px;
-      }
-
-      .selected-label {
-        font-size: 12px;
-        font-weight: bold;
-        margin-bottom: 4px;
-        color: #333;
-      }
-
-      .selected-entity-config {
-        margin-bottom: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 8px;
-        background: #f9f9f9;
-      }
-
-      .selected-entity {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        margin-bottom: 8px;
-        font-size: 12px;
-        color: #000;
-        justify-content: space-between;
-      }
-
-      .attribute-config {
-        margin-top: 4px;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .attribute-input {
-        width: 100%;
-        padding: 4px 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 12px;
-        box-sizing: border-box;
-      }
-
-      .override-config {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        margin-top: 2px;
-      }
-
-      .override-checkbox {
-        margin-right: 4px;
-      }
-
-      .override-input {
-        flex: 1;
-        padding: 2px 6px;
-        border: 1px solid #ddd;
-        border-radius: 3px;
-        font-size: 11px;
-        box-sizing: border-box;
-      }
-
-      .override-label {
-        font-size: 11px;
-        color: #666;
-        white-space: nowrap;
-      }
-
-      .remove-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        color: #666;
-        margin-left: auto;
-      }
-
-      .remove-btn:hover {
-        color: #f44336;
-      }
-
-      .items-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-        font-weight: bold;
-        color: #333;
-      }
-
-      .add-item-btn {
-        background: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 4px 8px;
-        font-size: 12px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-
-      .add-item-btn:hover {
-        background: #45a049;
-      }
-
-      .items-list {
-        max-height: 400px;
-        overflow-y: auto;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-bottom: 8px;
-      }
-
-      .item-config {
-        border-bottom: 1px solid #eee;
-        padding: 8px;
-      }
-
-      .item-config:last-child {
-        border-bottom: none;
-      }
-
-      .item-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-        font-weight: bold;
-        color: #333;
-        font-size: 12px;
-      }
-
-      .remove-item-btn {
-        background: #f44336;
-        color: white;
-        border: none;
-        border-radius: 3px;
-        padding: 2px 6px;
-        font-size: 10px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-      }
-
-      .remove-item-btn:hover {
-        background: #d32f2f;
-      }
-
-      .no-items {
-        text-align: center;
-        padding: 20px;
-        color: #666;
-        font-style: italic;
-        border: 1px dashed #ddd;
-        border-radius: 4px;
-        margin-bottom: 8px;
-      }
-
-      .sort-options {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .checkbox-option {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        padding: 4px 0;
-      }
-
-      .checkbox-option input[type="checkbox"] {
-        margin: 0;
-      }
-
-      .checkbox-option span {
-        font-size: 14px;
-        color: #333;
-      }
-    `;
+    return css`      .form { display: flex; flex-direction: column; gap: 10px; min-height: 500px; }
+      .form-group { display: flex; flex-direction: column; gap: 5px; }
+      label { font-weight: bold; }
+      select, input, textarea { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+      textarea { min-height: 80px; resize: vertical; }
+      .help-text { font-size: 0.85em; color: #666; margin-top: 4px; }
+      .entity-selector { position: relative; }
+      .entity-search-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+      .entity-dropdown { position: absolute; top: 100%; left: 0; right: 0; height: 300px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px; }
+      .entity-option { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; }
+      .entity-option:hover { background: #f5f5f5; }
+      .entity-option.selected { background: #e3f2fd; }
+      .entity-info { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: space-between; }
+      .entity-details { flex: 1; }
+      .entity-name { font-weight: 500; font-size: 14px; color: #000; }
+      .entity-id { font-size: 12px; color: #000; font-family: monospace; }
+      .check-icon { color: #4CAF50; }
+      .no-results { padding: 12px; text-align: center; color: #666; font-style: italic; }
+      .selected-entities { margin-top: 8px; }
+      .selected-label { font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #333; }
+      .selected-entity-config { margin-bottom: 8px; border: 1px solid #ddd; border-radius: 4px; padding: 8px; background: #f9f9f9; }
+      .selected-entity { display: flex; align-items: center; gap: 4px; margin-bottom: 8px; font-size: 12px; color: #000; justify-content: space-between; }
+      .attribute-config { margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
+      .attribute-input { width: 100%; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; box-sizing: border-box; }
+      .override-config { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+      .override-checkbox { margin-right: 4px; }
+      .override-input { flex: 1; padding: 2px 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 11px; box-sizing: border-box; }
+      .override-label { font-size: 11px; color: #666; white-space: nowrap; }
+      .remove-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; color: #666; margin-left: auto; }
+      .remove-btn:hover { color: #f44336; }
+      .items-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; color: #333; }
+      .add-item-btn { background: #4CAF50; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+      .add-item-btn:hover { background: #45a049; }
+      .items-list { max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; }
+      .item-config { border-bottom: 1px solid #eee; padding: 8px; }
+      .item-config:last-child { border-bottom: none; }
+      .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; color: #333; font-size: 12px; }
+      .remove-item-btn { background: #f44336; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 10px; cursor: pointer; display: flex; align-items: center; }
+      .remove-item-btn:hover { background: #d32f2f; }
+      .no-items { text-align: center; padding: 20px; color: #666; font-style: italic; border: 1px dashed #ddd; border-radius: 4px; margin-bottom: 8px; }
+      .sort-options { display: flex; flex-direction: column; gap: 8px; }
+      .checkbox-option { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0; }
+      .checkbox-option input[type="checkbox"] { margin: 0; }
+      .checkbox-option span { font-size: 14px; color: #333; }`;
   }
 
   render() {
@@ -786,221 +533,47 @@ class XiaoshiBirthdayCard extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-        width: var(--card-width, 100%);
-        max-width: 500px;
-        margin: 0 auto;
-      }
-
-      ha-card {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        background: var(--bg-color, #fff);
-        border-radius: 12px;
-      }
-
+    return css`      :host { display: block; width: var(--card-width, 100%); max-width: 500px; margin: 0 auto; }
+      ha-card { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--bg-color, #fff); border-radius: 12px; }
       /*标题容器*/
-      .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px;
-        background: var(--bg-color, #fff);
-        
-        border-radius: 12px;
-      }
-
+      .card-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--bg-color, #fff); border-radius: 12px; }
       /*标题红色圆点*/
-      .offline-indicator {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        margin-right: 8px;
-      }
-
+      .offline-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
       /*标题红色圆点动画*/
       @keyframes pulse {
         0% { opacity: 1; }
         50% { opacity: 0.5; }
         100% { opacity: 1; }
       }
-
       /*标题*/
-      .card-title {
-        font-size: 20px;
-        font-weight: 500;
-        color: var(--fg-color, #000);
-        height: 30px;
-        line-height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        
-
-      }
-
+      .card-title { font-size: 20px; font-weight: 500; color: var(--fg-color, #000); height: 30px; line-height: 30px; display: flex; align-items: center; justify-content: center; }
       /*标题统计数字*/
-      .device-count {
-        color: var(--fg-color, #000);
-        border-radius: 8px;
-        font-size: 13px;
-        width: 30px;
-        height: 30px;
-        text-align: center;
-        line-height: 30px;
-        font-weight: bold;
-        padding: 0px;
-      }
-      
-      .device-count.non-zero {
-        background: rgb(2, 250, 250, 0.5);
-      }
-      
-      .device-count.zero {
-        background: rgb(0, 205, 0);
-      }
-
+      .device-count { color: var(--fg-color, #000); border-radius: 8px; font-size: 13px; width: 30px; height: 30px; text-align: center; line-height: 30px; font-weight: bold; padding: 0px; }
+      .device-count.non-zero { background: rgb(2, 250, 250, 0.5); }
+      .device-count.zero { background: rgb(0, 205, 0); }
       /*标题刷新按钮*/
-      .refresh-btn {
-        color: var(--fg-color, #fff);
-        border: none;
-        border-radius: 8px;
-        padding: 5px;
-        cursor: pointer;
-        font-size: 13px;
-        width: 50px;
-        height: 30px;
-        line-height: 30px;
-        text-align: center;
-        font-weight: bold;
-        padding: 0px;
-      }
-
+      .refresh-btn { color: var(--fg-color, #fff); border: none; border-radius: 8px; padding: 5px; cursor: pointer; font-size: 13px; width: 50px; height: 30px; line-height: 30px; text-align: center; font-weight: bold; padding: 0px; }
       /*2级标题*/
-      .section-divider {
-        margin: 0 0 8px 0;
-        padding: 8px 8px;
-        background: var(--bg-color, #fff);
-        font-weight: 500;
-        color: var(--fg-color, #000);
-        border-top: 1px solid rgb(150,150,150,0.5);
-        border-bottom: 1px solid rgb(150,150,150,0.5);
-        margin: 0 16px 0 16px;
-
-      }
-      
+      .section-divider { margin: 0 0 8px 0; padding: 8px 8px; background: var(--bg-color, #fff); font-weight: 500; color: var(--fg-color, #000); border-top: 1px solid rgb(150,150,150,0.5); border-bottom: 1px solid rgb(150,150,150,0.5); margin: 0 16px 0 16px; }
       /*2级标题字体*/
-      .section-title {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        color: var(--fg-color, #000);
-        font-size: 13px;
-      }
-
+      .section-title { display: flex; align-items: center; justify-content: space-between; color: var(--fg-color, #000); font-size: 13px; }
       /*2级标题,统计数量字体*/
-      .section-count {
-        background: rgb(255,0,0,0.5);
-        color: var(--fg-color, #000);
-        border-radius: 12px;
-        width: 15px;
-        height: 15px;
-        text-align: center;
-        line-height: 15px;
-        padding: 3px;
-        font-size: 12px;
-        font-weight: bold;
-      }
-
+      .section-count { background: rgb(255,0,0,0.5); color: var(--fg-color, #000); border-radius: 12px; width: 15px; height: 15px; text-align: center; line-height: 15px; padding: 3px; font-size: 12px; font-weight: bold; }
       /*设备、实体明细*/
-      .device-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin: 0px 16px;
-        padding: 8px 0;
-        border-bottom: 1px solid rgb(150,150,150,0.5);
-        cursor: pointer;
-        transition: background-color 0.2s;
-      }
-
-      .device-item:first-child {
-        border-top: 1px solid rgb(150,150,150,0.5);
-      }
-
-      .device-item:hover {
-        background-color: rgba(150,150,150,0.1);
-      }
-
+      .device-item { display: flex; align-items: center; justify-content: space-between; margin: 0px 16px; padding: 8px 0; border-bottom: 1px solid rgb(150,150,150,0.5); cursor: pointer; transition: background-color 0.2s; }
+      .device-item:first-child { border-top: 1px solid rgb(150,150,150,0.5); }
+      .device-item:hover { background-color: rgba(150,150,150,0.1); }
       /*设备、实体明细背景*/
-      .devices-list {
-        flex: 1;
-        overflow-y: auto;
-        min-height: 0;
-        padding: 0 0 8px 0;
-      }
-
-      .device-left {
-        display: flex;
-        align-items: center;
-        flex: 1;
-        min-width: 0;
-      }
-
-      .device-icon {
-        margin-right: 12px;
-        color: var(--fg-color, #000);
-        flex-shrink: 0;
-      }
-
-      .device-name {
-        color: var(--fg-color, #000);
-        font-size: 12px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .device-value {
-        color: var(--fg-color, #000);
-        font-size: 12px;
-        margin-left: auto;
-        flex-shrink: 0;
-        font-weight: bold;
-      }
-
-      .device-value.warning {
-        color: #F44336;
-      }
-
-      .device-unit {
-        font-size: 12px;
-        color: var(--fg-color, #000);
-        margin-left: 4px;
-        font-weight: bold;
-      }
-
-      .device-unit.warning {
-        color: #F44336;
-      }
-
-      .no-devices {
-        text-align: center;
-        padding: 10px 0;
-        color: var(--fg-color, #000);
-      }
-
-      .loading {
-        text-align: center;
-        padding: 10px 0;
-        color: var(--fg-color, #000);
-      }
-    `;
+      .devices-list { flex: 1; overflow-y: auto; min-height: 0; padding: 0 0 8px 0; }
+      .device-left { display: flex; align-items: center; flex: 1; min-width: 0; }
+      .device-icon { margin-right: 12px; color: var(--fg-color, #000); flex-shrink: 0; }
+      .device-name { color: var(--fg-color, #000); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .device-value { color: var(--fg-color, #000); font-size: 12px; margin-left: auto; flex-shrink: 0; font-weight: bold; }
+      .device-value.warning { color: #F44336; }
+      .device-unit { font-size: 12px; color: var(--fg-color, #000); margin-left: 4px; font-weight: bold; }
+      .device-unit.warning { color: #F44336; }
+      .no-devices { text-align: center; padding: 10px 0; color: var(--fg-color, #000); }
+      .loading { text-align: center; padding: 10px 0; color: var(--fg-color, #000); }`;
   }
 
   constructor() {

@@ -28,51 +28,16 @@ class XiaoshiWeatherPhoneEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      label {
-        font-weight: bold;
-      }
-      select, input {
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        width: 100%;
-        box-sizing: border-box;
-      }
-      input[type="number"] {
-        width: 100px;
-      }
-      .conditional-field {
-        display: none;
-      }
-      .conditional-field.visible {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      .entity-search-container {
-        position: relative;
-        width: 100%;
-      }
-      .entity-search-container input {
-        width: 100%;
-        min-width: 200px;
-      }
-      datalist {
-        max-height: 200px;
-        overflow-y: auto;
-      }
-    `;
+    return css`      .form { display: flex; flex-direction: column; gap: 10px; }
+      .form-group { display: flex; flex-direction: column; gap: 5px; }
+      label { font-weight: bold; }
+      select, input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%; box-sizing: border-box; }
+      input[type="number"] { width: 100px; }
+      .conditional-field { display: none; }
+      .conditional-field.visible { display: flex; flex-direction: column; gap: 5px; }
+      .entity-search-container { position: relative; width: 100%; }
+      .entity-search-container input { width: 100%; min-width: 200px; }
+      datalist { max-height: 200px; overflow-y: auto; }`;
   }
 
   render() {
@@ -406,489 +371,100 @@ class XiaoshiWeatherPhoneCard extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-        max-width: 500px;
-        margin: 0 auto;
-      }
-
+    return css`      :host { display: block; max-width: 500px; margin: 0 auto; }
       /*主卡片样式*/
-      .weather-card {
-        position: relative;
-        border-radius: min(3vw, 15px);
-        padding: min(1.6vw, 8px);
-        padding-bottom: min(0.6vw, 3px);
-        font-family: sans-serif;
-        overflow: hidden;
-      }
-
+      .weather-card { position: relative; border-radius: min(3vw, 15px); padding: min(1.6vw, 8px); padding-bottom: min(0.6vw, 3px); font-family: sans-serif; overflow: hidden; }
       /*主卡片样式*/
-      .weather-card.dark-theme {
-      }
-
-      .main-content {
-        position: relative;
-      }
-
+      .weather-card.dark-theme { }
+      .main-content { position: relative; }
       /*天气头部*/
-      .weather-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-top: 0px;
-        margin-bottom: 0px;
-      }
-
-      .weather-left {
-        display: flex;
-        align-items: center;
-      }
-
+      .weather-header { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 0px; margin-bottom: 0px; }
+      .weather-left { display: flex; align-items: center; }
       /*天气头部 图标*/
-      .weather-icon {
-        width: min(10vw, 50px);
-        height: min(10vw, 50px);
-        margin-right: 16px;
-        margin-bottom: 0px;
-      }
-
+      .weather-icon { width: min(10vw, 50px); height: min(10vw, 50px); margin-right: 16px; margin-bottom: 0px; }
       /*天气头部 图标*/
-      .weather-icon img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-      }
-
+      .weather-icon img { width: 100%; height: 100%; object-fit: contain; }
       /*天气头部 温度*/
-      .weather-temperature {
-        height: min(7vw, 35px);
-        font-size: min(5vw, 25px);
-        font-weight: bold;
-        margin-top: max(-3vw, -15px);
-        margin-bottom: 0;
-      }
-
+      .weather-temperature { height: min(7vw, 35px); font-size: min(5vw, 25px); font-weight: bold; margin-top: max(-3vw, -15px); margin-bottom: 0; }
       /*天气头部 天气信息*/
-      .weather-info {
-        height: min(3vw, 15px);
-        font-size: min(3vw, 15px);
-        margin-top: max(-1vw, -5px);
-        white-space: nowrap;
-      }
-
+      .weather-info { height: min(3vw, 15px); font-size: min(3vw, 15px); margin-top: max(-1vw, -5px); white-space: nowrap; }
       /*天气头部 城市信息*/
-      .city-info {
-        text-align: right;
-        margin-top: min(0.5vw, 2.5px);
-        font-size: min(4vw, 20px);
-        font-weight: bold;
-        white-space: nowrap;
-      }
-
+      .city-info { text-align: right; margin-top: min(0.5vw, 2.5px); font-size: min(4vw, 20px); font-weight: bold; white-space: nowrap; }
       /*天气右侧容器*/
-      .weather-right {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-      }
-
-      .toggle-btn {
-        padding: min(0.6vw, 3px) min(2vw, 10px);
-        border: none;
-        border-radius: min(1.2vw, 6px);
-        font-size: min(1.8vw, 9px);
-        cursor: pointer;
-        transition: all 0.3s ease;
-        color: white;
-        font-weight: bold;
-      }
-
-
-      .toggle-btn.daily-mode {
-        background: #03A9F4; /* 蓝色 */
-      }
-
-      .toggle-btn.hourly-mode {
-        background: #9C27B0; /* 紫色 */
-      }
-
-      .toggle-btn.minutely-mode {
-        background: #4CAF50; /* 绿色 */
-      }
-
+      .weather-right { display: flex; flex-direction: column; align-items: flex-end; }
+      .toggle-btn { padding: min(0.6vw, 3px) min(2vw, 10px); border: none; border-radius: min(1.2vw, 6px); font-size: min(1.8vw, 9px); cursor: pointer; transition: all 0.3s ease; color: white; font-weight: bold; }
+      .toggle-btn.daily-mode { background: #03A9F4; /* 蓝色 */ }
+      .toggle-btn.hourly-mode { background: #9C27B0; /* 紫色 */ }
+      .toggle-btn.minutely-mode { background: #4CAF50; /* 绿色 */ }
       /*小时天气温度样式*/
-      .temp-curve-hourly {
-        position: absolute;
-        left: 0;
-        right: 0;
-        height: min(3.5vw, 17.5px);
-        background: linear-gradient(to bottom, 
-          rgba(156, 39, 176) 0%, 
-          rgba(103, 58, 183) 100%);
-        border-radius: min(0.5vw, 2.5px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: min(2vw, 10px);
-        font-weight: bold;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        z-index: 4;
-      }
-
+      .temp-curve-hourly { position: absolute; left: 0; right: 0; height: min(3.5vw, 17.5px); background: linear-gradient(to bottom, rgba(156, 39, 176) 0%, rgba(103, 58, 183) 100%); border-radius: min(0.5vw, 2.5px); display: flex; align-items: center; justify-content: center; color: white; font-size: min(2vw, 10px); font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3); z-index: 4; }
       /*分钟天气温度样式（绿色）*/
-      .temp-curve-minutely {
-        position: absolute;
-        left: 0;
-        right: 0;
-        height: min(3.5vw, 17.5px);
-        background: linear-gradient(to bottom, 
-          rgba(76, 175, 80) 0%, 
-          rgba(56, 142, 60) 100%);
-        border-radius: min(0.5vw, 2.5px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: min(2vw, 10px);
-        font-weight: bold;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        z-index: 4;
-      }
-
+      .temp-curve-minutely { position: absolute; left: 0; right: 0; height: min(3.5vw, 17.5px); background: linear-gradient(to bottom, rgba(76, 175, 80) 0%, rgba(56, 142, 60) 100%); border-radius: min(0.5vw, 2.5px); display: flex; align-items: center; justify-content: center; color: white; font-size: min(2vw, 10px); font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3); z-index: 4; }
       /*9日天气部分*/
-      .forecast-container {
-        display: grid;
-        gap: min(0.4vw, 2px);
-        margin-top: min(2vw, 10px);
-        position: relative;
-      }
-
+      .forecast-container { display: grid; gap: min(0.4vw, 2px); margin-top: min(2vw, 10px); position: relative; }
       /*小时天气滑动容器*/
-      .hourly-forecast-scroll-container {
-        overflow-x: auto;
-        overflow-y: hidden;
-        margin-top: min(2vw, 10px);
-        position: relative;
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none;  /* IE and Edge */
-      }
-
-      .hourly-forecast-scroll-container::-webkit-scrollbar {
-        display: none; /* Chrome, Safari, Opera */
-      }
-
+      .hourly-forecast-scroll-container { overflow-x: auto; overflow-y: hidden; margin-top: min(2vw, 10px); position: relative; scrollbar-width: none; /* Firefox */ -ms-overflow-style: none; /* IE and Edge */ }
+      .hourly-forecast-scroll-container::-webkit-scrollbar { display: none; /* Chrome, Safari, Opera */ }
       /*启用触摸滑动和平滑滚动*/
-      .hourly-forecast-scroll-container {
-        scroll-behavior: smooth;
-        -webkit-overflow-scrolling: touch;
-        touch-action: pan-x;
-        cursor: grab;
-      }
-
-      .hourly-forecast-scroll-container:active {
-        cursor: grabbing;
-      }
-
+      .hourly-forecast-scroll-container { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; touch-action: pan-x; cursor: grab; }
+      .hourly-forecast-scroll-container:active { cursor: grabbing; }
       /*小时天气内容容器*/
-      .hourly-forecast-container {
-        display: grid;
-        gap: min(0.4vw, 2px);
-        position: relative;
-        min-width: max-content;
-      }
-
+      .hourly-forecast-container { display: grid; gap: min(0.4vw, 2px); position: relative; min-width: max-content; }
       /*9日天气部分*/
-      .forecast-day {
-        grid-row: 1;
-        text-align: center;
-        position: relative;
-        border-radius: 8px;
-        padding: min(1vw, 5px);
-        position: relative;
-      }
-
+      .forecast-day { grid-row: 1; text-align: center; position: relative; border-radius: 8px; padding: min(1vw, 5px); position: relative; }
       /*9日天气部分 星期*/
-      .forecast-weekday {
-        font-size: min(2.2vw, 11px);
-        height: min(2.8vw, 14px);
-        margin-top: max(-1vw, -5px);
-        margin-bottom: min(0.2vw, 1px);
-        font-weight: 500;
-        white-space: nowrap;
-      }
-      
+      .forecast-weekday { font-size: min(2.2vw, 11px); height: min(2.8vw, 14px); margin-top: max(-1vw, -5px); margin-bottom: min(0.2vw, 1px); font-weight: 500; white-space: nowrap; }
       /*9日天气部分 日期*/
-      .forecast-date {
-        font-size: min(1.6vw, 8px);
-        margin-bottom: min(3vw, 15px);
-        margin-left: 0vw;
-        margin-right: 0vw;
-        height: min(2vw, 10px);
-        white-space: nowrap;
-      }
-
+      .forecast-date { font-size: min(1.6vw, 8px); margin-bottom: min(3vw, 15px); margin-left: 0vw; margin-right: 0vw; height: min(2vw, 10px); white-space: nowrap; }
       /*9日天气部分 温度区域*/
-      .forecast-temp-container {
-        position: relative;
-        height: min(21vw, 105px);
-        margin-top: 0;
-        margin-bottom: 0;
-        white-space: nowrap;
-      }
-
+      .forecast-temp-container { position: relative; height: min(21vw, 105px); margin-top: 0; margin-bottom: 0; white-space: nowrap; }
       /*9日天气部分 温度区域*/
-      .forecast-temp-null {
-        position: relative;
-        height: min(2vw, 10px);
-      }
-
+      .forecast-temp-null { position: relative; height: min(2vw, 10px); }
       /*9日天气部分 雨量容器*/
-      .forecast-rainfall-container {
-        text-align: center;
-        position: relative;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: min(2.5vw, 12.5px);
-        margin-top: max(-2vw, -10px);
-        margin-bottom: 0;
-      }
- 
+      .forecast-rainfall-container { text-align: center; position: relative; display: flex; justify-content: center; align-items: center; height: min(2.5vw, 12.5px); margin-top: max(-2vw, -10px); margin-bottom: 0; }
       /*雨量填充矩形*/
-      .rainfall-fill {
-        position: absolute;
-        left: 0;
-        right: 0;
-        background: rgba(80, 177, 200, 0.8);
-        border-radius: min(1.2vw, 6px);
-        margin: 0 max(-1vw, -5px);
-        bottom: max(-3vw, -15px);
-        transition: all 0.3s ease;
-        z-index: 1;
-      }
-
+      .rainfall-fill { position: absolute; left: 0; right: 0; background: rgba(80, 177, 200, 0.8); border-radius: min(1.2vw, 6px); margin: 0 max(-1vw, -5px); bottom: max(-3vw, -15px); transition: all 0.3s ease; z-index: 1; }
       /*9日天气部分 雨量标签*/
-      .forecast-rainfall {
-        background: rgba(80, 177, 200);
-        color: white;
-        font-size: min(1.4vw, 7px);
-        font-weight: bold;
-        height: min(2.5vw, 12.5px);
-        min-width: 80% ;
-        border-radius: min(1.2vw, 6px);
-        width: fit-content;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        padding: 0 min(0.5vw, 2.5px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 2;
-      }
-
+      .forecast-rainfall { background: rgba(80, 177, 200); color: white; font-size: min(1.4vw, 7px); font-weight: bold; height: min(2.5vw, 12.5px); min-width: 80% ; border-radius: min(1.2vw, 6px); width: fit-content; box-shadow: 0 1px 3px rgba(0,0,0,0.2); padding: 0 min(0.5vw, 2.5px); display: flex; align-items: center; justify-content: center; z-index: 2; }
       /*9日天气部分 图标*/
-      .forecast-icon-container {
-        text-align: center;
-        position: relative;
-      }
-
+      .forecast-icon-container { text-align: center; position: relative; }
       /*9日天气部分 图标*/
-      .forecast-icon {
-        width: min(5vw, 25px);
-        height: min(5vw, 25px);
-        margin: 0px auto;
-        margin-top: 0;
-      }
-
+      .forecast-icon { width: min(5vw, 25px); height: min(5vw, 25px); margin: 0px auto; margin-top: 0; }
       /*9日天气部分 图标*/
-      .forecast-icon img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-      }
-
+      .forecast-icon img { width: 100%; height: 100%; object-fit: contain; }
       /*9日天气部分 风速*/
-      .forecast-wind-container {
-        grid-row: 4;
-        text-align: center;
-        position: relative;
-        height: min(3vw, 15px);
-        margin-top: max(-1vw, -5px);
-      }
-
+      .forecast-wind-container { grid-row: 4; text-align: center; position: relative; height: min(3vw, 15px); margin-top: max(-1vw, -5px); }
       /*9日天气部分 风速*/
-      .forecast-wind {
-        font-size: min(2vw, 10px);
-        margin-top: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 1.5px;
-        height: min(3vw, 15px);
-      }
-
+      .forecast-wind { font-size: min(2vw, 10px); margin-top: 0; display: flex; align-items: center; justify-content: center; gap: 1.5px; height: min(3vw, 15px); }
       /*9日天气部分 风速*/
-      .wind-direction {
-        font-size: min(1.8vw, 9px);
-      }
-
+      .wind-direction { font-size: min(1.8vw, 9px); }
       /*9日天气部分 温度曲线 Canvas*/
-      .temp-line-canvas {
-        position: absolute;
-        left: 0;
-        width: 100%;
-        pointer-events: none;
-        z-index: 3;
-      }
-
-      .temp-line-canvas-high {
-        top: min(7.7vw, 38.5px);
-        height: min(21vw, 105px); 
-      }
-
-      .temp-line-canvas-low {
-        top: min(7.7vw, 38.5px);
-        height: min(21vw, 105px); 
-      }
-
-      .temp-curve-high {
-        position: absolute;
-        left: 0;
-        right: 0;
-        height: min(3.5vw, 17.5px);
-        border-radius: min(0.5vw, 2.5px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: min(2.2vw, 11px);
-        font-weight: bold;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        z-index: 5;
-      }
-
-      .temp-curve-low {
-        position: absolute;
-        left: 0;
-        right: 0;
-        height: min(3.5vw, 17.5px);
-        border-radius: min(0.5vw, 2.5px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: min(2.2vw, 11px);
-        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        z-index: 4;
-      }
-
+      .temp-line-canvas { position: absolute; left: 0; width: 100%; pointer-events: none; z-index: 3; }
+      .temp-line-canvas-high { top: min(7.7vw, 38.5px); height: min(21vw, 105px); }
+      .temp-line-canvas-low { top: min(7.7vw, 38.5px); height: min(21vw, 105px); }
+      .temp-curve-high { position: absolute; left: 0; right: 0; height: min(3.5vw, 17.5px); border-radius: min(0.5vw, 2.5px); display: flex; align-items: center; justify-content: center; color: white; font-size: min(2.2vw, 11px); font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3); z-index: 5; }
+      .temp-curve-low { position: absolute; left: 0; right: 0; height: min(3.5vw, 17.5px); border-radius: min(0.5vw, 2.5px); display: flex; align-items: center; justify-content: center; color: white; font-size: min(2.2vw, 11px); text-shadow: 0 1px 2px rgba(0,0,0,0.3); z-index: 4; }
       /* 圆点模式样式 */
       .dot-mode .temp-curve-high,
       .dot-mode .temp-curve-low,
       .dot-mode .temp-curve-hourly,
-      .dot-mode .temp-curve-minutely {
-        width: min(1vw, 5px);
-        height: min(1vw, 5px);
-        border-radius: 50%;
-        left: calc(50% - min(0.5vw, 2.5px));
-        margin-top: max(-0.65vw, -3.2px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: min(2.2vw, 11px);
-        font-weight: 600;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-      }
-
-      .dot-mode .temp-curve-high {
-        background: rgba(255, 87, 34);
-        z-index: 3;
-      }
-
-      .dot-mode .temp-curve-low {
-        background: rgba(3, 169, 243);
-        z-index: 4;
-      }
-
-      .dot-mode .temp-curve-hourly {
-        background: rgba(156, 39, 176);
-      }
-
-      .dot-mode .temp-curve-minutely {
-        background: rgba(76, 175, 80);
-      }
-
+      .dot-mode .temp-curve-minutely { width: min(1vw, 5px); height: min(1vw, 5px); border-radius: 50%; left: calc(50% - min(0.5vw, 2.5px)); margin-top: max(-0.65vw, -3.2px); display: flex; align-items: center; justify-content: center; font-size: min(2.2vw, 11px); font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+      .dot-mode .temp-curve-high { background: rgba(255, 87, 34); z-index: 3; }
+      .dot-mode .temp-curve-low { background: rgba(3, 169, 243); z-index: 4; }
+      .dot-mode .temp-curve-hourly { background: rgba(156, 39, 176); }
+      .dot-mode .temp-curve-minutely { background: rgba(76, 175, 80); }
       /* 圆点上方的温度文字 */
-      .dot-mode .temp-text {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: min(2.2vw, 11px);
-        font-weight: 600;
-        white-space: nowrap;
-        text-shadow: 0 1px 2px rgba(123, 123, 123, 0.3);
-        margin-left: min(0.4vw, 2px);
-      }
-
-      .dot-mode .temp-curve-high .temp-text {
-        color: rgba(255, 87, 34);
-        top: max(-3.8vw, -19px);
-      }
-
-      .dot-mode .temp-curve-low .temp-text {
-        color: rgba(3, 169, 243);
-        top: min(1vw, 5px);
-      }
-      .dot-mode .temp-curve-hourly .temp-text {
-        color: rgba(193, 65, 215, 1);
-        top: max(-3.8vw, -19px);
-      }
-
-      .dot-mode .temp-curve-minutely .temp-text {
-        color: rgba(76, 175, 80, 1);
-        top: max(-3.8vw, -19px);
-      }
-
-      .unavailable {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 0;
-        min-height: 0;
-        max-height: 0;
-        margin: 0;
-        padding: 0;
-      }
-
+      .dot-mode .temp-text { position: absolute; left: 50%; transform: translateX(-50%); font-size: min(2.2vw, 11px); font-weight: 600; white-space: nowrap; text-shadow: 0 1px 2px rgba(123, 123, 123, 0.3); margin-left: min(0.4vw, 2px); }
+      .dot-mode .temp-curve-high .temp-text { color: rgba(255, 87, 34); top: max(-3.8vw, -19px); }
+      .dot-mode .temp-curve-low .temp-text { color: rgba(3, 169, 243); top: min(1vw, 5px); }
+      .dot-mode .temp-curve-hourly .temp-text { color: rgba(193, 65, 215, 1); top: max(-3.8vw, -19px); }
+      .dot-mode .temp-curve-minutely .temp-text { color: rgba(76, 175, 80, 1); top: max(-3.8vw, -19px); }
+      .unavailable { display: flex; align-items: center; justify-content: center; height: 0; min-height: 0; max-height: 0; margin: 0; padding: 0; }
       /*预警图标和文字样式*/
-      .warning-icon-text {
-        color: #FFA726;
-        height: min(7vw, 35px);
-        font-size: min(4vw, 20px);
-        font-weight: bold;
-        margin-left: min(3vw, 15px);
-        cursor: pointer;
-        transition: transform 0.2s ease;
-      }
-
-      .warning-icon-text:hover {
-        transform: scale(1.1);
-      }
-
+      .warning-icon-text { color: #FFA726; height: min(7vw, 35px); font-size: min(4vw, 20px); font-weight: bold; margin-left: min(3vw, 15px); cursor: pointer; transition: transform 0.2s ease; }
+      .warning-icon-text:hover { transform: scale(1.1); }
       /*预警详情卡片样式*/
-      .warning-details-card {
-        position: relative;
-        border-radius: min(2vw, 10px);
-        margin-top: min(1vw, 5px);
-        padding: min(2vw, 10px);
-        color: white;
-        overflow: hidden;
-        backdrop-filter: blur(5px);
-        transition: all 0.3s ease;
-        animation: slideDown 0.3s ease-out;
-      }
-
+      .warning-details-card { position: relative; border-radius: min(2vw, 10px); margin-top: min(1vw, 5px); padding: min(2vw, 10px); color: white; overflow: hidden; backdrop-filter: blur(5px); transition: all 0.3s ease; animation: slideDown 0.3s ease-out; }
       @keyframes slideDown {
         from {
           opacity: 0;
@@ -899,215 +475,48 @@ class XiaoshiWeatherPhoneCard extends LitElement {
           transform: translateY(0);
         }
       }
-
       /*预警标题样式*/
-      .warning-title-line {
-        font-size: min(2.5vw, 12.5px);
-        font-weight: bold;
-        white-space: nowrap;
-        height: min(8vw, 40px);
-        line-height: min(3.5vw, 17.5px);
-        margin-bottom: min(0.5vw, 2.5px);
-      }
-
+      .warning-title-line { font-size: min(2.5vw, 12.5px); font-weight: bold; white-space: nowrap; height: min(8vw, 40px); line-height: min(3.5vw, 17.5px); margin-bottom: min(0.5vw, 2.5px); }
       /*预警文本滚动容器*/
-      .warning-text-container1 {
-        display: flex;
-        width: 97%;
-        font-size: min(2.2vw, 11px);
-        line-height: min(3vw, 15px);
-        align-items: center;
-        margin: min(0.5vw, 2.5px) min(2vw, 10px);
-      }
-
+      .warning-text-container1 { display: flex; width: 97%; font-size: min(2.2vw, 11px); line-height: min(3vw, 15px); align-items: center; margin: min(0.5vw, 2.5px) min(2vw, 10px); }
       /*预警文本滚动内容*/
-      .warning-text-scroll1 {
-        padding-left: 100%;
-      }
-
+      .warning-text-scroll1 { padding-left: 100%; }
       /*预警文本滚动容器*/
-      .warning-text-container {
-        display: flex;
-        overflow: hidden;
-        white-space: nowrap;
-        width: 100%;
-        height: min(3vw, 15px);
-        font-size: min(2.5vw, 12.5px);
-        align-items: center;
-        margin-bottom: min(1vw, 5px);
-      }
-
+      .warning-text-container { display: flex; overflow: hidden; white-space: nowrap; width: 100%; height: min(3vw, 15px); font-size: min(2.5vw, 12.5px); align-items: center; margin-bottom: min(1vw, 5px); }
       /*预警文本滚动内容*/
-      .warning-text-scroll {
-        display: inline-block;
-        padding-left: 100%;
-        animation: scroll linear infinite;
-      }
-
+      .warning-text-scroll { display: inline-block; padding-left: 100%; animation: scroll linear infinite; }
       @keyframes scroll {
         0% { transform: translateX(0); }
         100% { transform: translateX(-100%); }
       }
-
-      .update-time { 
-        display: flex;
-        align-items: flex-end;
-        justify-content: start;
-        margin-bottom: min(1vw, 5px);
-        margin-top: min(2vw, 10px);
-        margin-left: min(1vw, 5px);
-        font-size: min(2vw, 10px);
-        height: min(2vw, 10px);
-      }
-
+      .update-time { display: flex; align-items: flex-end; justify-content: start; margin-bottom: min(1vw, 5px); margin-top: min(2vw, 10px); margin-left: min(1vw, 5px); font-size: min(2vw, 10px); height: min(2vw, 10px); }
       /*空气质量按钮样式*/
-      .toggle-btn-api {
-        background: transparent;
-        padding: 0;
-        border: none;
-        font-size: min(3vw, 15px);
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin-left: min(1vw, 5px);
-      }
-
+      .toggle-btn-api { background: transparent; padding: 0; border: none; font-size: min(3vw, 15px); font-weight: bold; cursor: pointer; transition: all 0.3s ease; margin-left: min(1vw, 5px); }
       /*空气质量详情卡片样式*/
-      .aqi-details-card {
-        position: relative;
-        border-radius: min(2vw, 10px);
-        margin-top: min(1vw, 5px);
-        padding: min(2vw, 10px);
-        overflow: hidden;
-        backdrop-filter: blur(5px);
-        transition: all 0.3s ease;
-        animation: slideDown 0.3s ease-out;
-      }
-
+      .aqi-details-card { position: relative; border-radius: min(2vw, 10px); margin-top: min(1vw, 5px); padding: min(2vw, 10px); overflow: hidden; backdrop-filter: blur(5px); transition: all 0.3s ease; animation: slideDown 0.3s ease-out; }
       /*天气指数详情卡片样式*/
-      .indices-details-card {
-        position: relative;
-        border-radius: min(2vw, 10px);
-        margin-top: min(1vw, 5px);
-        padding: min(2vw, 10px);
-        overflow: hidden;
-        backdrop-filter: blur(5px);
-        transition: all 0.3s ease;
-        animation: slideDown 0.3s ease-out;
-      }
-
+      .indices-details-card { position: relative; border-radius: min(2vw, 10px); margin-top: min(1vw, 5px); padding: min(2vw, 10px); overflow: hidden; backdrop-filter: blur(5px); transition: all 0.3s ease; animation: slideDown 0.3s ease-out; }
       /*历史记录按钮样式*/
-      .history-btn {
-        padding: min(0.6vw, 3px) min(2vw, 10px);
-        border: none;
-        border-radius: min(1.2vw, 6px);
-        font-size: min(1.8vw, 9px);
-        cursor: pointer;
-        transition: all 0.3s ease;
-        color: white;
-        font-weight: bold;
-        margin-right: min(1vw, 5px);
-      }
-
-      .history-btn:hover {
-        opacity: 0.85;
-        transform: scale(1.05);
-      }
-      .input-container {
-        display: flex;
-        align-items: center;
-        padding: 0;
-        height: 100%;
-        transition: all 0.3s ease;
-      } 
-      .input-container.light {
-        background-color: rgb(255,255,255);
-        color: black;
-      }
-      .input-container.dark {
-        background-color: rgb(50,50,50);
-        color: white;
-      }
-      .icon {
-        margin-right: 0.5rem;
-        font-size: 1.2rem;
-        margin-left: 0.5rem;
-      }
-      .input-wrapper {
-        flex-grow: 1;
-        position: relative;
-      }
-      input {
-        width: 100%;
-        border: none;
-        background: transparent;
-        color: inherit;
-        font-size: 1rem;
-        padding: 0.5rem 0;
-        outline: none;
-      }
-      .placeholder {
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        color: gray;
-        pointer-events: none;
-        transition: all 0.2s ease;
-        font-size: 0.9rem;
-        opacity: 1;
-      }
+      .history-btn { padding: min(0.6vw, 3px) min(2vw, 10px); border: none; border-radius: min(1.2vw, 6px); font-size: min(1.8vw, 9px); cursor: pointer; transition: all 0.3s ease; color: white; font-weight: bold; margin-right: min(1vw, 5px); }
+      .history-btn:hover { opacity: 0.85; transform: scale(1.05); }
+      .input-container { display: flex; align-items: center; padding: 0; height: 100%; transition: all 0.3s ease; }
+      .input-container.light { background-color: rgb(255,255,255); color: black; }
+      .input-container.dark { background-color: rgb(50,50,50); color: white; }
+      .icon { margin-right: 0.5rem; font-size: 1.2rem; margin-left: 0.5rem; }
+      .input-wrapper { flex-grow: 1; position: relative; }
+      input { width: 100%; border: none; background: transparent; color: inherit; font-size: 1rem; padding: 0.5rem 0; outline: none; }
+      .placeholder { position: absolute; left: 0; top: 50%; transform: translateY(-50%); color: gray; pointer-events: none; transition: all 0.2s ease; font-size: 0.9rem; opacity: 1; }
       input:focus + .placeholder,
       input:not(:placeholder-shown) + .placeholder,
-      .placeholder.hidden {
-        top: 0;
-        transform: translateY(0);
-        font-size: 0.7rem;
-        opacity: 0;
-      }
-
-      .input-gap {
-        height: 8px;
-        minheight: 8px;
-      }
-
+      .placeholder.hidden { top: 0; transform: translateY(0); font-size: 0.7rem; opacity: 0; }
+      .input-gap { height: 8px; minheight: 8px; }
       /* 日出日落容器样式 */
-      .sunrise-sunset-wrapper {
-        display: flex;
-        align-items: center;
-        gap: min(1vw, 5px);
-        --icon-primary-color: transparent !important;
-      }
-
+      .sunrise-sunset-wrapper { display: flex; align-items: center; gap: min(1vw, 5px); --icon-primary-color: transparent !important; }
       .sunrise-item,
-      .sunset-item {
-        display: flex;
-        align-items: center;
-        font-size: min(2vw, 10px);
-        --icon-primary-color: transparent !important;
-      }
-
-      .sunrise-icon {
-        fill: #FFA726 !important;
-        color: #FFA726 !important;
-        margin-right: min(0.6vw, 3px);
-        --mdc-icon-size: min(2.3vw, 11.5px);
-        --icon-primary-color: #FFA726 !important;
-      }
-
-      .sunset-icon {
-        fill: #FF7043 !important;
-        color: #FF7043 !important;
-        margin-right: min(0.6vw, 3px);
-        --mdc-icon-size: min(2.3vw, 11.5px);
-        --icon-primary-color: #FF7043 !important;
-      }
-
-      .sunset-time {
-        margin-right: min(1vw, 5px);
-      }
-
-    `;
+      .sunset-item { display: flex; align-items: center; font-size: min(2vw, 10px); --icon-primary-color: transparent !important; }
+      .sunrise-icon { fill: #FFA726 !important; color: #FFA726 !important; margin-right: min(0.6vw, 3px); --mdc-icon-size: min(2.3vw, 11.5px); --icon-primary-color: #FFA726 !important; }
+      .sunset-icon { fill: #FF7043 !important; color: #FF7043 !important; margin-right: min(0.6vw, 3px); --mdc-icon-size: min(2.3vw, 11.5px); --icon-primary-color: #FF7043 !important; }
+      .sunset-time { margin-right: min(1vw, 5px); }`;
   }
 
   constructor() {
@@ -3065,9 +2474,11 @@ class XiaoshiWeatherPhoneCard extends LitElement {
     title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
     title.textContent = `${cityName} - 天气历史记录`;
     const closeBtn = document.createElement('button');
-    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:default;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
     closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
     closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
     header.appendChild(title);
     header.appendChild(closeBtn);
 
@@ -3091,11 +2502,12 @@ class XiaoshiWeatherPhoneCard extends LitElement {
       { label: '24小时', value: 24 },
       { label: '3天', value: 72 },
       { label: '7天', value: 168 },
-      { label: '15天', value: 360 }
+      { label: '10天', value: 240 }
     ];
     for (const p of periods) {
       const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
       chip.addEventListener('click', () => {
+        this._handleClick();
         this._historyFilterPeriod = p.value;
         this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
         this._refetchWithFilters();
@@ -3199,6 +2611,7 @@ class XiaoshiWeatherPhoneCard extends LitElement {
   }
 
   _closeHistoryOverlay() {
+    this._handleClick();
     if (this._historyOverlayEl) {
       this._historyOverlayEl.remove();
       this._historyOverlayEl = null;
@@ -3256,8 +2669,8 @@ class XiaoshiWeatherPhoneCard extends LitElement {
   _getWeatherStateColor(state) {
     const s = (state || '').trim();
     if (s === 'sunny' || s === 'clear-night') return 'rgb(255, 152, 0)';
-    if (s === 'partlycloudy' || s === 'fair') return 'rgb(255, 183, 77)';
-    if (s === 'cloudy' || s === 'overcast') return 'rgb(158, 158, 158)';
+    if (s === 'partlycloudy' || s === 'fair') return 'rgb(255, 152, 0)';
+    if (s === 'cloudy' || s === 'overcast') return 'rgb(255, 152, 0)';
     if (s.includes('rain') || s === 'rainy' || s === 'pouring' || s === 'thunderstorm' || s === 'lightning-rainy' || s === 'lightning') return 'rgb(33, 150, 243)';
     if (s.includes('snow') || s === 'snowy' || s === 'snowy-rainy' || s === 'rain-snow') return 'rgb(0, 188, 212)';
     if (s === 'fog' || s === 'haze') return 'rgb(96, 125, 139)';
@@ -3268,8 +2681,8 @@ class XiaoshiWeatherPhoneCard extends LitElement {
     if (s === 'exceptional') return 'rgb(156, 39, 176)';
     if (s === 'freezing-rain') return 'rgb(92, 107, 192)';
     if (s === '晴') return 'rgb(255, 152, 0)';
-    if (s === '少云' || s === '晴间多云') return 'rgb(255, 183, 77)';
-    if (s === '多云' || s === '阴') return 'rgb(158, 158, 158)';
+    if (s === '少云' || s === '晴间多云') return 'rgb(255, 152, 0)';
+    if (s === '多云' || s === '阴') return 'rgb(255, 152, 0)';
     if (s.includes('雨')) return 'rgb(33, 150, 243)';
     if (s.includes('雪')) return 'rgb(0, 188, 212)';
     if (s === '雾' || s === '霾') return 'rgb(96, 125, 139)';
@@ -3333,11 +2746,13 @@ class XiaoshiWeatherPhoneCard extends LitElement {
     chip.setAttribute('data-chip', '1');
     const isActive = (typeof value === 'number' && value === this._historyFilterPeriod);
     if (isActive) {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
     } else {
-      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
     }
     chip.textContent = label;
+    chip.addEventListener('mouseenter', () => { chip.style.opacity = '0.85'; chip.style.transform = 'scale(1.05)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; chip.style.transform = 'scale(1)'; });
     return chip;
   }
 
@@ -3351,7 +2766,7 @@ class XiaoshiWeatherPhoneCard extends LitElement {
                          (label === '6小时' && activePeriod === 6) ||
                          (label === '3天' && activePeriod === 72) ||
                          (label === '7天' && activePeriod === 168) ||
-                         (label === '15天' && activePeriod === 360);
+                         (label === '10天' && activePeriod ===240);
         if (isActive) {
           chip.style.background = activeBg;
           chip.style.color = activeColor;
@@ -3387,162 +2802,30 @@ class XiaoshiWeatherPhoneButtonEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        min-height: 500px;
-      }
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      label {
-        font-weight: bold;
-      }
-      select, input, textarea {
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-      }
-
-      .entity-selector {
-        position: relative;
-      }
-
-      .entity-search-input {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-sizing: border-box;
-      }
-
-      .entity-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        height: 300px;
-        overflow-y: auto;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        z-index: 1000;
-        margin-top: 2px;
-      }
-
-      .entity-option {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px 12px;
-        cursor: pointer;
-        border-bottom: 1px solid #eee;
-      }
-
-      .entity-option:hover {
-        background: #f5f5f5;
-      }
-
-      .entity-option.selected {
-        background: #e3f2fd;
-      }
-
-      .entity-info {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 1;
-        justify-content: space-between;
-      }
-
-      .entity-details {
-        flex: 1;
-      }
-
-      .entity-name {
-        font-weight: 500;
-        font-size: 14px;
-        color: #000;
-      }
-
-      .entity-id {
-        font-size: 12px;
-        color: #000;
-        font-family: monospace;
-      }
-
-      .check-icon {
-        color: #4CAF50;
-      }
-
-      .no-results {
-        padding: 12px;
-        text-align: center;
-        color: #666;
-        font-style: italic;
-      }
-
-      .selected-entities {
-        margin-top: 8px;
-      }
-
-      .selected-label {
-        font-size: 12px;
-        font-weight: bold;
-        margin-bottom: 4px;
-        color: #333;
-      }
-
-      .selected-entity-config {
-        margin-bottom: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 8px;
-        background: #f9f9f9;
-      }
-
-      .selected-entity {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        margin-bottom: 8px;
-        font-size: 12px;
-        color: #000;
-        justify-content: space-between;
-      }
-
-      .remove-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        color: #666;
-        margin-left: auto;
-      }
-
-      .remove-btn:hover {
-        color: rgb(255, 0, 0);
-      }
-
-      .checkbox-group {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .help-text {
-        font-size: 0.85em;
-        color: #666;
-        margin-top: 4px;
-      }
-    `;
+    return css`      .form { display: flex; flex-direction: column; gap: 10px; min-height: 500px; }
+      .form-group { display: flex; flex-direction: column; gap: 5px; }
+      label { font-weight: bold; }
+      select, input, textarea { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+      .entity-selector { position: relative; }
+      .entity-search-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+      .entity-dropdown { position: absolute; top: 100%; left: 0; right: 0; height: 300px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px; }
+      .entity-option { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; }
+      .entity-option:hover { background: #f5f5f5; }
+      .entity-option.selected { background: #e3f2fd; }
+      .entity-info { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: space-between; }
+      .entity-details { flex: 1; }
+      .entity-name { font-weight: 500; font-size: 14px; color: #000; }
+      .entity-id { font-size: 12px; color: #000; font-family: monospace; }
+      .check-icon { color: #4CAF50; }
+      .no-results { padding: 12px; text-align: center; color: #666; font-style: italic; }
+      .selected-entities { margin-top: 8px; }
+      .selected-label { font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #333; }
+      .selected-entity-config { margin-bottom: 8px; border: 1px solid #ddd; border-radius: 4px; padding: 8px; background: #f9f9f9; }
+      .selected-entity { display: flex; align-items: center; gap: 4px; margin-bottom: 8px; font-size: 12px; color: #000; justify-content: space-between; }
+      .remove-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; color: #666; margin-left: auto; }
+      .remove-btn:hover { color: rgb(255, 0, 0); }
+      .checkbox-group { display: flex; align-items: center; gap: 6px; }
+      .help-text { font-size: 0.85em; color: #666; margin-top: 4px; }`;
   }
 
   render() {
@@ -3956,58 +3239,12 @@ class XiaoshiWeatherPhoneButton extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: block;
-      }
-
-      .weather-button {
-        width: var(--button-width, min(16.8vw, 84px));
-        max-width: var(--button-max-width, 90px);
-        height: var(--button-height, 24px);
-        padding: 0;
-        margin: 0;
-        background: var(--bg-color, #fff);
-        color: var(--fg-color, #000);
-        border-radius: 10px;
-        font-size: var(--button-font-size, 11px);
-        font-weight: 500;
-        text-align: center;
-        box-sizing: border-box;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 2px;
-        cursor: none;
-        transition: background-color 0.2s, transform 0.1s;
-        position: relative;
-        overflow: hidden;
-      }
-      .weather-button:active {
-        transform: scale(0.95);
-        box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
-      }
-
-      .weather-button-icon {
-        width: var(--button-icon-size, 18px);
-        height: var(--button-icon-size, 18px);
-        flex-shrink: 0;
-        object-fit: contain;
-      }
-
-      .weather-button-text {
-        white-space: nowrap;
-        overflow: visible;
-        text-overflow: ellipsis;
-        line-height: 1.2;
-        min-width: 2.5em;
-        text-align: center;
-      }
-      .weather-button-text sup {
-        position: relative;
-        top: -0.3em;
-      }
-    `;
+    return css`      :host { display: block; }
+      .weather-button { width: var(--button-width, min(16.8vw, 84px)); max-width: var(--button-max-width, 90px); height: var(--button-height, 24px); padding: 0; margin: 0; background: var(--bg-color, #fff); color: var(--fg-color, #000); border-radius: 10px; font-size: var(--button-font-size, 11px); font-weight: 500; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 2px; cursor: none; transition: background-color 0.2s, transform 0.1s; position: relative; overflow: hidden; }
+      .weather-button:active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
+      .weather-button-icon { width: var(--button-icon-size, 18px); height: var(--button-icon-size, 18px); flex-shrink: 0; object-fit: contain; }
+      .weather-button-text { white-space: nowrap; overflow: visible; text-overflow: ellipsis; line-height: 1.2; min-width: 2.5em; text-align: center; }
+      .weather-button-text sup { position: relative; top: -0.3em; }`;
   }
 
   constructor() {

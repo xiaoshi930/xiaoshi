@@ -25,124 +25,24 @@ class XiaoshiPhoneCardEditor extends LitElement {
     }
 
     static get styles() {
-        return css`
-            .form {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                min-height: 400px;
-            }
-            .form-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .form-row label {
-                font-weight: bold;
-                white-space: nowrap;
-                min-width: 80px;
-            }
-            .form-row input, .form-row select {
-                flex: 1;
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-            }
-            .card-section {
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                padding: 10px;
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-            .card-section-title {
-                font-weight: bold;
-                font-size: 14px;
-                color: var(--primary-text-color);
-                margin-bottom: 4px;
-            }
-            .card-section textarea {
-                width: 100%;
-                min-height: 80px;
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-family: monospace;
-                font-size: 12px;
-                resize: vertical;
-                box-sizing: border-box;
-            }
-            .bg-urls textarea {
-                min-height: 40px;
-            }
-            .binding-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-bottom: 6px;
-            }
-            .binding-row select {
-                flex: 1;
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                min-width: 0;
-            }
-            .binding-remove {
-                background: none;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                cursor: pointer;
-                padding: 4px 8px;
-                color: #888;
-                font-size: 14px;
-                flex-shrink: 0;
-            }
-            .binding-remove:hover {
-                color: #e00;
-                border-color: #e00;
-            }
-            .binding-add {
-                background: none;
-                border: 1px dashed #aaa;
-                border-radius: 4px;
-                cursor: pointer;
-                padding: 6px 12px;
-                color: #666;
-                font-size: 13px;
-                width: 100%;
-            }
-            .binding-add:hover {
-                color: var(--primary-color);
-                border-color: var(--primary-color);
-            }
-            .card-section-hint {
-                font-size: 11px;
-                color: #888;
-            }
-            .bg-urls-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .bg-urls-row label {
-                font-weight: bold;
-                white-space: nowrap;
-                min-width: 80px;
-            }
-            .bg-urls-row textarea {
-                flex: 1;
-                min-height: 60px;
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-family: monospace;
-                font-size: 12px;
-                resize: vertical;
-                box-sizing: border-box;
-            }
-        `;
+        return css`            .form { display: flex; flex-direction: column; gap: 12px; min-height: 400px; }
+            .form-row { display: flex; align-items: center; gap: 8px; }
+            .form-row label { font-weight: bold; white-space: nowrap; min-width: 80px; }
+            .form-row input, .form-row select { flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; }
+            .card-section { border: 1px solid #ddd; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+            .card-section-title { font-weight: bold; font-size: 14px; color: var(--primary-text-color); margin-bottom: 4px; }
+            .card-section textarea { width: 100%; min-height: 80px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px; resize: vertical; box-sizing: border-box; }
+            .bg-urls textarea { min-height: 40px; }
+            .binding-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+            .binding-row select { flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; min-width: 0; }
+            .binding-remove { background: none; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; padding: 4px 8px; color: #888; font-size: 14px; flex-shrink: 0; }
+            .binding-remove:hover { color: #e00; border-color: #e00; }
+            .binding-add { background: none; border: 1px dashed #aaa; border-radius: 4px; cursor: pointer; padding: 6px 12px; color: #666; font-size: 13px; width: 100%; }
+            .binding-add:hover { color: var(--primary-color); border-color: var(--primary-color); }
+            .card-section-hint { font-size: 11px; color: #888; }
+            .bg-urls-row { display: flex; align-items: center; gap: 8px; }
+            .bg-urls-row label { font-weight: bold; white-space: nowrap; min-width: 80px; }
+            .bg-urls-row textarea { flex: 1; min-height: 60px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px; resize: vertical; box-sizing: border-box; }`;
     }
     constructor() {
         super();
@@ -470,192 +370,26 @@ class XiaoshiPhoneCard extends LitElement {
     }
 
     static get styles() {
-        return css`
-            :host {
-                display: block;
-                width: 100vw;
-                height: 100vh;
-                overflow: visible;
-                max-width: 500px;
-            }
-            .phone-container {
-                width: 100%;
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-                box-sizing: border-box;
-                position: relative;
-            }
-            .bg-layer {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                z-index: 0;
-                overflow: hidden;
-            }
-            .bg-layer img, .bg-layer video {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-            }
-            .content-layer {
-                position: relative;
-                z-index: 1;
-                display: flex;
-                flex-direction: column;
-                width: 100%;
-                height: 100%;
-                box-sizing: border-box;
-            }
-            .top-row {
-                display: flex;
-                width: 100%;
-                height: 14vh;
-                flex-shrink: 0;
-                overflow: visible;
-            }
-            .avatar-area {
-                padding: 1vh min(4vw, 20px) 1vh min(7.5vw, 37.5px);
-                width: 20vw;
-                max-width: 90px;
-                height: 14vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-shrink: 0;
-                box-sizing: border-box;
-                overflow: visible;
-            }
-            .header-info-area {
-                padding: 1vh min(2vw, 10px) 1vh min(2.5vw, 12.5px);
-                width: 80vw;
-                max-width: 400px;
-                height: 14vh;
-                display: grid;
-                grid-template-columns: repeat(4, 1fr);
-                grid-template-rows: repeat(3, 1fr);
-                gap: 1vh min(2vw, 10px);
-                box-sizing: border-box;
-                overflow: visible;
-                align-items: center;
-                justify-items: center;
-                flex-shrink: 1;
-                min-width: 0;
-            }
-            .dynamic-row {
-                display: flex;
-                width: 100vw;
-                max-width: 500px;
-                height: 5vh;
-                flex-shrink: 0;
-            }
-            .dynamic-area {
-                width: 80vw;
-                max-width: 400px;
-                height: 5vh;
-                display: flex;
-                align-items: center;
-                justify-content: flex-start;
-                flex-shrink: 0;
-            }
-            .btn-area {
-                width: 20vw;
-                max-width: 100px;
-                height: 5vh;
-                display: flex;
-                align-items: center;
-                justify-content: flex-end;
-                padding-right: min(2.5vw, 12.5px);
-                box-sizing: border-box;
-                flex-shrink: 0;
-                gap: min(1vw, 5px);
-            }
-            .fullscreen-btn, .media-toggle-btn {
-                width: 3.2vh;
-                height: 3.2vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-shrink: 0;
-                cursor: none;
-                border: none;
-                background: var(--btn-bg, transparent);
-                backdrop-filter: blur(6px);
-                -webkit-backdrop-filter: blur(6px);
-                border-radius: 4px;
-                font-size: 18px;
-                padding: 0;
-                opacity: 0.6;
-                transition: opacity 0.2s;
-                border-radius: 8px;
-            }
-            .media-toggle-btn ha-icon {
-                --mdi-icon-size: 1.8vh;
-                display: inline-flex;
-                width: 1.8vh;
-                height: 1.8vh;
-                margin-top: -0.7vh;
-                margin-left: 0vh;
-            }
-
-            .fullscreen-btn:active ha-icon, .media-toggle-btn:active ha-icon {
-                box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
-                transform: scale(0.95);
-            }
-            .room-area {
-                width: 100vw;
-                max-width: 500px;
-                height: 77vh;
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 1vh min(3vw, 15px);
-                padding: 0 min(2.5vw, 12.5px);
-                box-sizing: border-box;
-                align-items: start;
-                align-content: start;
-                justify-items: center;
-                overflow-y: auto;
-                flex-shrink: 0;
-            }
-            .footer-area {
-                width: 100vw;
-                max-width: 500px;
-                height: 4vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-shrink: 0;
-            }
-            .footer-area .card-slot {
-                width: auto;
-                height: 100%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            .card-slot {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 100%;
-                height: 100%;
-                min-width: 0;
-                min-height: 0;
-                overflow: visible;
-            }
-            .header-info-area .card-slot {
-                max-width: 100%;
-                max-height: 100%;
-            }
-            .header-info-area .card-slot > * {
-                max-width: 100%;
-                max-height: 100%;
-                min-width: 0;
-                box-sizing: border-box;
-            }
-        `;
+        return css`            :host { display: block; width: 100vw; height: 100vh; overflow: visible; max-width: 500px; }
+            .phone-container { width: 100%; height: 100%; display: flex; flex-direction: column; box-sizing: border-box; position: relative; }
+            .bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; }
+            .bg-layer img, .bg-layer video { width: 100%; height: 100%; object-fit: cover; }
+            .content-layer { position: relative; z-index: 1; display: flex; flex-direction: column; width: 100%; height: 100%; box-sizing: border-box; }
+            .top-row { display: flex; width: 100%; height: 14vh; flex-shrink: 0; overflow: visible; }
+            .avatar-area { padding: 1vh min(4vw, 20px) 1vh min(7.5vw, 37.5px); width: 20vw; max-width: 90px; height: 14vh; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-sizing: border-box; overflow: visible; }
+            .header-info-area { padding: 1vh min(2vw, 10px) 1vh min(2.5vw, 12.5px); width: 80vw; max-width: 400px; height: 14vh; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr); gap: 1vh min(2vw, 10px); box-sizing: border-box; overflow: visible; align-items: center; justify-items: center; flex-shrink: 1; min-width: 0; }
+            .dynamic-row { display: flex; width: 100vw; max-width: 500px; height: 5vh; flex-shrink: 0; }
+            .dynamic-area { width: 80vw; max-width: 400px; height: 5vh; display: flex; align-items: center; justify-content: flex-start; flex-shrink: 0; }
+            .btn-area { width: 20vw; max-width: 100px; height: 5vh; display: flex; align-items: center; justify-content: flex-end; padding-right: min(2.5vw, 12.5px); box-sizing: border-box; flex-shrink: 0; gap: min(1vw, 5px); }
+            .fullscreen-btn, .media-toggle-btn { width: 3.2vh; height: 3.2vh; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: none; border: none; background: var(--btn-bg, transparent); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border-radius: 4px; font-size: 18px; padding: 0; opacity: 0.6; transition: opacity 0.2s; border-radius: 8px; }
+            .media-toggle-btn ha-icon { --mdi-icon-size: 1.8vh; display: inline-flex; width: 1.8vh; height: 1.8vh; margin-top: -0.7vh; margin-left: 0vh; }
+            .fullscreen-btn:active ha-icon, .media-toggle-btn:active ha-icon { box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); transform: scale(0.95); }
+            .room-area { width: 100vw; max-width: 500px; height: 77vh; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1vh min(3vw, 15px); padding: 0 min(2.5vw, 12.5px); box-sizing: border-box; align-items: start; align-content: start; justify-items: center; overflow-y: auto; flex-shrink: 0; }
+            .footer-area { width: 100vw; max-width: 500px; height: 4vh; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+            .footer-area .card-slot { width: auto; height: 100%; display: flex; align-items: center; justify-content: center; }
+            .card-slot { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: visible; }
+            .header-info-area .card-slot { max-width: 100%; max-height: 100%; }
+            .header-info-area .card-slot > * { max-width: 100%; max-height: 100%; min-width: 0; box-sizing: border-box; }`;
     }
 
     static getConfigElement() {

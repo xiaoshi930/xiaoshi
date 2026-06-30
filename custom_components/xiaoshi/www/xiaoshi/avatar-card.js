@@ -6,20 +6,18 @@ const css = LitElement.prototype.css;
 import { yamlToJson } from '../function/function.js';
 
 window.customCards = window.customCards || [];
-window.customCards.push(
-    {
-        type: 'xiaoshi-avatar-card',
-        name: '消逝手机端头像卡片',
-        description: '消逝手机端头像卡片',
-        preview: true
+window.customCards.push({
+      type: 'xiaoshi-avatar-card',
+      name: '消逝手机端头像卡片',
+      description: '消逝手机端头像卡片',
+      preview: true
     },    
     {
-        type: 'xiaoshi-avatar-history-card',
-        name: '消逝头像弹窗-人员历史时间条',
-        description: '在弹窗中显示人员历史时间条',
-        preview: false
+      type: 'xiaoshi-avatar-history-card',
+      name: '消逝头像弹窗-人员历史时间条',
+      description: '在弹窗中显示人员历史时间条',
+      preview: false
 });
-
 
 class XiaoshiAvatarCardEditor extends LitElement {
     static get properties() {
@@ -31,82 +29,20 @@ class XiaoshiAvatarCardEditor extends LitElement {
 
     static get styles() {
         return css`
-            .form {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-            .form-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .form-row label {
-                font-weight: bold;
-                white-space: nowrap;
-                min-width: 80px;
-            }
-            .form-row input, .form-row select {
-                flex: 1;
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-            }
-            .form-row input[type="color"] {
-                width: 34px;
-                height: 30px;
-                padding: 1px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                flex: none;
-                box-sizing: border-box;
-            }
-            .section-title {
-                font-weight: bold;
-                font-size: 13px;
-                color: #00bcd4;
-                border-bottom: 1px solid #ddd;
-                padding-bottom: 4px;
-                margin-top: 4px;
-            }
-            .person-section {
-                border: 1px solid #444;
-                border-radius: 6px;
-                padding: 8px;
-                position: relative;
-            }
-            .person-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 6px;
-            }
-            .person-header span {
-                font-weight: bold;
-                font-size: 13px;
-                color: #ff9800;
-            }
-            .btn-add, .btn-remove {
-                border: none;
-                border-radius: 4px;
-                padding: 4px 10px;
-                cursor: pointer;
-                font-size: 12px;
-            }
-            .btn-add {
-                background: #4caf50;
-                color: #fff;
-            }
-            .btn-add:hover {
-                background: #388e3c;
-            }
-            .btn-remove {
-                background: #f44336;
-                color: #fff;
-            }
-            .btn-remove:hover {
-                background: #c62828;
-            }
+            .form { display: flex; flex-direction: column; gap: 10px; }
+            .form-row { display: flex; align-items: center; gap: 8px; }
+            .form-row label { font-weight: bold; white-space: nowrap; min-width: 80px; }
+            .form-row input, .form-row select { flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; }
+            .form-row input[type="color"] { width: 34px; height: 30px; padding: 1px; border: 1px solid #ddd; border-radius: 4px; flex: none; box-sizing: border-box; }
+            .section-title { font-weight: bold; font-size: 13px; color: #00bcd4; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 4px; }
+            .person-section { border: 1px solid #444; border-radius: 6px; padding: 8px; position: relative; }
+            .person-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+            .person-header span { font-weight: bold; font-size: 13px; color: #ff9800; }
+            .btn-add, .btn-remove { border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+            .btn-add { background: #4caf50; color: #fff; }
+            .btn-add:hover { background: #388e3c; }
+            .btn-remove { background: #f44336; color: #fff; }
+            .btn-remove:hover { background: #c62828; }
         `;
     }
 
@@ -339,127 +275,21 @@ class XiaoshiAvatarCard extends LitElement {
 
     static get styles() {
         return css`
-            :host {
-                display: block;
-                height: 100%;
-                max-width: 90px;
-            }
-            ha-card {
-                border-radius: min(6vw, 30px) !important;
-                overflow: visible;
-                max-width: 90px;
-            }
-            .card-wrapper {
-                max-width: 90px;
-                position: relative;
-                width: 100%;
-                height: 100%;
-                overflow: visible;
-                touch-action: pan-y;
-            }
-            .card-item {  
-                border-radius: min(6vw, 30px);
-                overflow: hidden;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                padding-top: 8%;
-                padding-bottom: 4%;
-                font-family: var(--paper-font-body1_-_font-family);
-                width: 60%;
-                height: 100%;
-                max-height: 100%;
-                box-sizing: border-box;
-                transform-origin: top center;
-                transition: left 0.35s ease, transform 0.35s ease, opacity 0.35s ease, background-color 0.35s ease;
-                cursor: none;
-            }
-            .card-item:active {
-              transform: scale(0.95);
-              box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4);
-            }
-            .avatar-container {
-                position: relative;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-shrink: 0;
-            }
-            .avatar-ring-svg {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                transform: rotate(-90deg);
-            }
-            .avatar-ring-bg {
-                fill: none;
-                stroke: rgba(255,255,255,0.2);
-            }
-            .avatar-ring-progress {
-                fill: none;
-                stroke-linecap: round;
-                transition: stroke-dashoffset 0.5s ease;
-            }
-            .avatar-img {
-                border-radius: 50%;
-                object-fit: cover;
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-            }
-            .avatar-placeholder {
-                border-radius: 50%;
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: rgba(255,255,255,0.7);
-            }
-            .status-text {
-                position: relative;
-                font-size: min(2.5vw, 12.5px);
-                font-weight: bold;
-                color: #fff;
-                text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-            }
-            .status-duration {
-                font-size: 0.7em;
-                font-weight: normal;
-                vertical-align: bottom;
-                margin-left: 0.2em;
-            }
-            .home-count-badge {
-                position: absolute;
-                top: 0;
-                right: 0.1em;
-                background: rgba(255,255,255,0.92);
-                color: #333;
-                font-size: min(2.2vw, 11px);
-                font-weight: bold;
-                width: 1.6em;
-                height: 1.6em;
-                line-height: 1.6em;
-                text-align: center;
-                border-radius: 50%;
-                box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-                z-index: 100;
-            }
-            .info-text {
-                font-size: min(2vw, 10px);
-                color: rgba(255,255,255,0.9);
-                margin-top: 1%;
-                text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 100%;
-            }
+            :host { display: block; height: 100%; max-width: 90px; }
+            ha-card { border-radius: min(6vw, 30px) !important; overflow: visible; max-width: 90px; }
+            .card-wrapper { max-width: 90px; position: relative; width: 100%; height: 100%; overflow: visible; touch-action: pan-y; }
+            .card-item { border-radius: min(6vw, 30px); overflow: hidden; display: flex; flex-direction: column; align-items: center; padding-top: 8%; padding-bottom: 4%; font-family: var(--paper-font-body1_-_font-family); width: 60%; height: 100%; max-height: 100%; box-sizing: border-box; transform-origin: top center; transition: left 0.35s ease, transform 0.35s ease, opacity 0.35s ease, background-color 0.35s ease; cursor: none; }
+            .card-item:active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
+            .avatar-container { position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+            .avatar-ring-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+            .avatar-ring-bg { fill: none; stroke: rgba(255,255,255,0.2); }
+            .avatar-ring-progress { fill: none; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+            .avatar-img { border-radius: 50%; object-fit: cover; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+            .avatar-placeholder { border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.7); }
+            .status-text { position: relative; font-size: min(2.5vw, 12.5px); font-weight: bold; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+            .status-duration { font-size: 0.7em; font-weight: normal; vertical-align: bottom; margin-left: 0.2em; }
+            .home-count-badge { position: absolute; top: 0; right: 0.1em; background: rgba(255,255,255,0.92); color: #333; font-size: min(2.2vw, 11px); font-weight: bold; width: 1.6em; height: 1.6em; line-height: 1.6em; text-align: center; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.3); z-index: 100; }
+            .info-text { font-size: min(2vw, 10px); color: rgba(255,255,255,0.9); margin-top: 1%; text-shadow: 0 1px 2px rgba(0,0,0,0.3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
         `;
     }
 
@@ -515,16 +345,12 @@ class XiaoshiAvatarCard extends LitElement {
 
     // ===== 数据获取方法 =====
 
-    /**
-     * 获取人员列表配置（兼容处理）
-     */
+    /*获取人员列表配置（兼容处理）*/
     _getPersons() {
         return this.config.persons || [];
     }
 
-    /**
-     * 获取人员信息：姓名、头像
-     */
+    /*获取人员信息：姓名、头像*/
     _getPersonData(personConfig) {
         const entityId = personConfig.person_entity;
         if (!entityId || !this.hass) return null;
@@ -537,9 +363,7 @@ class XiaoshiAvatarCard extends LitElement {
         };
     }
 
-    /**
-     * 判断人员是否在家（通过 device_tracker）
-     */
+    /*判断人员是否在家（通过 device_tracker） */
     _isHome(personConfig) {
         const entityId = personConfig.tracker_entity;
         if (!entityId || !this.hass) return null;
@@ -548,10 +372,7 @@ class XiaoshiAvatarCard extends LitElement {
         return state.state === 'home';
     }
 
-    /**
-     * 获取导航通勤数据（高德/腾讯实体）
-     * 返回 { distance: 'xx公里', time: 'xx分钟' } 或 null
-     */
+    /*获取导航通勤数据（高德/腾讯实体）返回 { distance: 'xx公里', time: 'xx分钟' } 或 null*/
     _getCommuteData(personConfig) {
         const entityId = personConfig.nav_entity;
         if (!entityId || !this.hass) return null;
@@ -1228,6 +1049,16 @@ class XiaoshiAvatarHistoryCard extends LitElement {
         this._historyData = {};
         this._detailOverlayEl = null;
     }
+    
+    _handleClick() {
+        const hapticEvent = new Event('haptic', {
+            bubbles: true,
+            cancelable: false,
+            composed: true
+        });
+        hapticEvent.detail = 'light';
+        this.dispatchEvent(hapticEvent);
+    }
 
     _evaluateTheme() {
         const mode = this.config ? this.config.theme : 'system';
@@ -1406,9 +1237,11 @@ class XiaoshiAvatarHistoryCard extends LitElement {
         title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
         title.textContent = '人员 - 历史记录';
         const closeBtn = document.createElement('button');
-        closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+        closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:default;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
         closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
         closeBtn.addEventListener('click', () => this._closeDetailOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
         header.appendChild(title);
         header.appendChild(closeBtn);
 
@@ -1428,13 +1261,13 @@ class XiaoshiAvatarHistoryCard extends LitElement {
             pcs.className = 'xiaoshi-detail-person-chips';
 
             const allC = this._makeChip('全部', '', chipBg, chipActiveBg, chipActiveColor, isDark);
-            allC.addEventListener('click', () => { this._detailFilterPerson = ''; this._refreshChips(pcs, '', this._detailFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'person'); this._refetchDetail(); });
+            allC.addEventListener('click', () => { this._handleClick(); this._detailFilterPerson = ''; this._refreshChips(pcs, '', this._detailFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'person'); this._refetchDetail(); });
             pcs.appendChild(allC);
             for (const pc of persons) {
                 if (!pc.tracker_entity) continue;
                 const nm = this._getPersonName(pc);
                 const c = this._makeChip(nm, pc.tracker_entity, chipBg, chipActiveBg, chipActiveColor, isDark);
-                c.addEventListener('click', () => { this._detailFilterPerson = pc.tracker_entity; this._refreshChips(pcs, pc.tracker_entity, this._detailFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'person'); this._refetchDetail(); });
+                c.addEventListener('click', () => { this._handleClick(); this._detailFilterPerson = pc.tracker_entity; this._refreshChips(pcs, pc.tracker_entity, this._detailFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'person'); this._refetchDetail(); });
                 pcs.appendChild(c);
             }
             pr.appendChild(pcs);
@@ -1452,11 +1285,11 @@ class XiaoshiAvatarHistoryCard extends LitElement {
         tcs.className = 'xiaoshi-detail-time-chips';
         const periods = [
             { label: '1小时', v: 1 }, { label: '6小时', v: 6 }, { label: '24小时', v: 24 },
-            { label: '3天', v: 72 }, { label: '7天', v: 168 }, { label: '15天', v: 360 }
+            { label: '3天', v: 72 }, { label: '7天', v: 168 }, { label: '10天', v: 240 }
         ];
         for (const p of periods) {
             const c = this._makeChip(p.label, p.v, chipBg, chipActiveBg, chipActiveColor, isDark);
-            c.addEventListener('click', () => { this._detailFilterPeriod = p.v; this._refreshChips(tcs, this._detailFilterPerson, p.v, chipBg, chipActiveBg, chipActiveColor, isDark, 'time'); this._refetchDetail(); });
+            c.addEventListener('click', () => { this._handleClick(); this._detailFilterPeriod = p.v; this._refreshChips(tcs, this._detailFilterPerson, p.v, chipBg, chipActiveBg, chipActiveColor, isDark, 'time'); this._refetchDetail(); });
             tcs.appendChild(c);
         }
         tr.appendChild(tcs);
@@ -1480,6 +1313,7 @@ class XiaoshiAvatarHistoryCard extends LitElement {
     }
 
     _closeDetailOverlay() {
+        this._handleClick();
         if (this._detailOverlayEl) { this._detailOverlayEl.remove(); this._detailOverlayEl = null; }
         this._detailBodyEl = null;
         this._detailData = {};
@@ -1585,7 +1419,7 @@ class XiaoshiAvatarHistoryCard extends LitElement {
             html += `<div style="flex:1;display:flex;height:8px;border-radius:3px;overflow:hidden;">${tl}</div>`;
             html += `</div>`;
 
-            for (const { entry, time, durationMs } of filtered) {
+            for (const { entry, time, durationMs } of [...filtered].reverse()) {
                 const ts = time.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
                 const raw = (entry.state || '').trim().toLowerCase();
                 const isHome = raw === 'home';
@@ -1650,9 +1484,11 @@ class XiaoshiAvatarHistoryCard extends LitElement {
         const chip = document.createElement('span');
         chip.setAttribute('data-chip', '1');
         const isActive = (typeof value === 'number' && value === this._detailFilterPeriod) || (typeof value === 'string' && value === this._detailFilterPerson && value !== '');
-        chip.style.cssText = isActive ? `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};` : `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
-        chip.textContent = label;
-        return chip;
+        chip.style.cssText = isActive ? `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};` : `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+    chip.textContent = label;
+    chip.addEventListener('mouseenter', () => { chip.style.opacity = '0.85'; chip.style.transform = 'scale(1.05)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; chip.style.transform = 'scale(1)'; });
+    return chip;
     }
 
     _refreshChips(container, activePerson, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
@@ -1660,7 +1496,7 @@ class XiaoshiAvatarHistoryCard extends LitElement {
             const label = chip.textContent;
             let isActive = false;
             if (mode === 'time') {
-                isActive = (label === '24小时' && activePeriod === 24) || (label === '1小时' && activePeriod === 1) || (label === '6小时' && activePeriod === 6) || (label === '3天' && activePeriod === 72) || (label === '7天' && activePeriod === 168) || (label === '15天' && activePeriod === 360);
+                isActive = (label === '24小时' && activePeriod === 24) || (label === '1小时' && activePeriod === 1) || (label === '6小时' && activePeriod === 6) || (label === '3天' && activePeriod === 72) || (label === '7天' && activePeriod === 168) || (label === '10天' && activePeriod === 240);
             } else {
                 isActive = (label === '全部' && activePerson === '') || (label !== '全部' && activePerson !== '');
                 if (isActive && activePerson) { isActive = chip.textContent === (this.hass?.states[activePerson]?.attributes?.friendly_name || activePerson); }

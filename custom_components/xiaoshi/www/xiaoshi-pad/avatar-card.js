@@ -22,75 +22,17 @@ class XiaoshiAvatarPadCardEditor extends LitElement {
     }
 
     static get styles() {
-        return css`
-            .form {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-            .form-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .form-row label {
-                font-weight: bold;
-                white-space: nowrap;
-                min-width: 80px;
-            }
-            .form-row input, .form-row select {
-                flex: 1;
-                padding: 6px 8px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-            }
-            .form-row input[type="color"] {
-                width: 34px;
-                height: 30px;
-                padding: 1px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                flex: none;
-                box-sizing: border-box;
-            }
-            .section-title {
-                font-weight: bold;
-                font-size: 13px;
-                color: #00bcd4;
-                border-bottom: 1px solid #ddd;
-                padding-bottom: 4px;
-                margin-top: 4px;
-            }
-            .person-section {
-                border: 1px solid #444;
-                border-radius: 6px;
-                padding: 8px;
-                position: relative;
-            }
-            .balance-row {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                margin-bottom: 4px;
-            }
-            .balance-row label {
-                font-weight: bold;
-                font-size: 11px;
-                min-width: 14px;
-            }
-            .balance-row input {
-                padding: 4px 6px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-size: 12px;
-            }
-            .balance-label {
-                font-size: 10px;
-                color: #aaa;
-                min-width: 26px;
-                text-align: right;
-            }
-        `;
+        return css`            .form { display: flex; flex-direction: column; gap: 10px; }
+            .form-row { display: flex; align-items: center; gap: 8px; }
+            .form-row label { font-weight: bold; white-space: nowrap; min-width: 80px; }
+            .form-row input, .form-row select { flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; }
+            .form-row input[type="color"] { width: 34px; height: 30px; padding: 1px; border: 1px solid #ddd; border-radius: 4px; flex: none; box-sizing: border-box; }
+            .section-title { font-weight: bold; font-size: 13px; color: #00bcd4; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 4px; }
+            .person-section { border: 1px solid #444; border-radius: 6px; padding: 8px; position: relative; }
+            .balance-row { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+            .balance-row label { font-weight: bold; font-size: 11px; min-width: 14px; }
+            .balance-row input { padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
+            .balance-label { font-size: 10px; color: #aaa; min-width: 26px; text-align: right; }`;
     }
 
     setConfig(config) {
@@ -312,149 +254,27 @@ class XiaoshiAvatarPadCard extends LitElement {
     }
 
     static get styles() {
-        return css`
-            :host {
-                display: block;
-            }
-            ha-card {
-                border-radius: 10px !important;
-                overflow: visible;
-                background: transparent !important;
-            }
-            .card-wrapper {
-                position: relative;
-                overflow: visible;
-            }
-            .card-item {
-                position: relative;
-                border-radius: 10px;
-                overflow: hidden;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                padding: 4px;
-                font-family: var(--paper-font-body1_-_font-family);
-                width: 100%;
-                height: 100%;
-                max-height: 100%;
-                box-sizing: border-box;
-                cursor: none;
-                border: none;
-            }
-            .card-item:active {
-              transform: scale(0.95);
-            }
-            .avatar-container {
-                position: relative;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-shrink: 0;
-            }
-            .avatar-ring-svg {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                transform: rotate(-90deg);
-            }
-            .avatar-ring-bg {
-                fill: none;
-                stroke: rgba(255,255,255,0.2);
-            }
-            .avatar-ring-progress {
-                fill: none;
-                stroke-linecap: round;
-                transition: stroke-dashoffset 0.5s ease;
-            }
-            .avatar-img {
-                border-radius: 50%;
-                object-fit: cover;
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-            }
-            .avatar-placeholder {
-                border-radius: 50%;
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: rgba(255,255,255,0.7);
-            }
-            .top-left-info {
-                position: absolute;
-                top: 4px;
-                left: 4px;
-                display: flex;
-                flex-direction: column;
-                gap: 1px;
-                z-index: 2;
-            }
-            .top-right-info {
-                position: absolute;
-                top: 4px;
-                right: 4px;
-                z-index: 2;
-            }
-            .overlay-text {
-                font-size: 10px;
-                color: rgba(255,255,255,0.95);
-                white-space: nowrap;
-                line-height: 1.2;
-            }
-            .status-text {
-                font-size: 12px;
-                font-weight: bold;
-                color: #fff;
-                margin-top: 2px;
-                line-height: 1.2;
-            }
-            .status-duration {
-                font-size: 0.8em;
-                font-weight: normal;
-                vertical-align: bottom;
-                margin-left: 0.2em;
-            }
-            .balance-section {
-                display: flex;
-                justify-content: space-around;
-                width: 100%;
-                margin-top: auto;
-                padding-top: 2px;
-            }
-            .balance-item {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                flex: 1;
-                min-width: 0;
-            }
-            .balance-name {
-                font-size: 10px;
-                color: rgba(255,255,255,0.9);
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 100%;
-                line-height: 1.2;
-            }
-            .balance-value {
-                font-size: 10px;
-                font-weight: bold;
-                color: #fff;
-                white-space: nowrap;
-                line-height: 1.2;
-            }
-            .balance-value-warning {
-                color: #a5271f;
-            }
-        `;
+        return css`            :host { display: block; }
+            ha-card { border-radius: 10px !important; overflow: visible; background: transparent !important; }
+            .card-wrapper { position: relative; overflow: visible; }
+            .card-item { position: relative; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: 4px; font-family: var(--paper-font-body1_-_font-family); width: 100%; height: 100%; max-height: 100%; box-sizing: border-box; cursor: none; border: none; }
+            .card-item:active { transform: scale(0.95); }
+            .avatar-container { position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+            .avatar-ring-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+            .avatar-ring-bg { fill: none; stroke: rgba(255,255,255,0.2); }
+            .avatar-ring-progress { fill: none; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+            .avatar-img { border-radius: 50%; object-fit: cover; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+            .avatar-placeholder { border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.7); }
+            .top-left-info { position: absolute; top: 4px; left: 4px; display: flex; flex-direction: column; gap: 1px; z-index: 2; }
+            .top-right-info { position: absolute; top: 4px; right: 4px; z-index: 2; }
+            .overlay-text { font-size: 10px; color: rgba(255,255,255,0.95); white-space: nowrap; line-height: 1.2; }
+            .status-text { font-size: 12px; font-weight: bold; color: #fff; margin-top: 2px; line-height: 1.2; }
+            .status-duration { font-size: 0.8em; font-weight: normal; vertical-align: bottom; margin-left: 0.2em; }
+            .balance-section { display: flex; justify-content: space-around; width: 100%; margin-top: auto; padding-top: 2px; }
+            .balance-item { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; }
+            .balance-name { font-size: 10px; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; line-height: 1.2; }
+            .balance-value { font-size: 10px; font-weight: bold; color: #fff; white-space: nowrap; line-height: 1.2; }
+            .balance-value-warning { color: #a5271f; }`;
     }
 
     static getConfigElement() {

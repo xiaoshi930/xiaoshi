@@ -641,100 +641,16 @@ window.addEventListener('error', (event) => {
 const styleSheet = document.createElement('style');
 styleSheet.textContent = `
   @keyframes popupFadeIn {
-    from {
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
-    }
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   }
-
-  /* 基础样式 */
-  .popup-card-popup {
-    animation: popupFadeIn 0.2s ease-out;
-    pointer-events: auto !important;
-    box-sizing: border-box;
-    width: 95vw;
-  }
-
-  .popup-card-popup * {
-    pointer-events: auto !important;
-    box-sizing: border-box;
-  }
-
-  .popup-card-content {
-    pointer-events: auto !important;
-    overscroll-behavior: contain;
-  }
-
-  .popup-card-overlay {
-    pointer-events: auto !important;
-  }
-
-  /* 滚动条样式 */
-  .popup-card-content::-webkit-scrollbar {
-    width: 6px;
-  }
-  .popup-card-content::-webkit-scrollbar-track {
-    background: rgba(0,0,0,0.1);
-    border-radius: 3px;
-  }
-  .popup-card-content::-webkit-scrollbar-thumb {
-    background: rgba(0,0,0,0.3);
-    border-radius: 3px;
-  }
-  .popup-card-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(0,0,0,0.5);
-  }
-
-  /* 响应式设计 - 手机端 */
-  @media (max-width: 100vw) {
-    .popup-card-popup {
-      width: 95vw !important;
-      max-width: 100vw !important;
-      left: 2.5vw !important;
-      transform: translate(0, -50%) !important;
-      top: 0%;
-    }
-
-    .popup-card-title {
-      font-size: 14px !important;
-      top: 10px !important;
-      width: auto !important;
-      max-width: 100vw !important;
-    }
-
-    .popup-card-content {
-      padding: 8px !important;
-      max-height: 95vh !important;
-    }
-  }
-
-  /* 平板端 */
-  @media (min-width: 768px) and (max-width: 100vw) {
-    .popup-card-popup {
-      width: auto !important;
-      max-width: 100vw !important;
-    }
-  }
-
-  /* 桌面端 */
-  @media (min-width: 1025px) {
-    .popup-card-popup {
-      width: auto !important;
-      max-width: 100vw !important;
-    }
-  }
-
-  /* 超小屏幕 */
-  @media (max-width: 375px) {
-    .popup-card-popup {
-      width: auto !important;
-      max-width: 100vw !important;
-      border-radius: 12px !important;
-    }
-  }
+  .popup-card-popup { animation: popupFadeIn 0.2s ease-out; pointer-events: auto !important; box-sizing: border-box; width: 95vw; }
+  .popup-card-popup * { pointer-events: auto !important; box-sizing: border-box; }
+  .popup-card-content { pointer-events: auto !important; overscroll-behavior: contain; }
+  .popup-card-overlay { pointer-events: auto !important; }
+  .popup-card-content::-webkit-scrollbar { width: 6px; }
+  .popup-card-content::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 3px; }
+  .popup-card-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border-radius: 3px; }
+  .popup-card-content::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.5); }
 `;
 document.head.appendChild(styleSheet);

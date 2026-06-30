@@ -78,47 +78,26 @@ class XiaoshiPadFanCardEditor extends LitElement {
   }
 
   static get styles() {
-    return css`
-      .form { display: flex; flex-direction: column; gap: 8px; }
+    return css`      .form { display: flex; flex-direction: column; gap: 8px; }
       .form-group { display: flex; align-items: center; gap: 8px; }
       label { font-weight: bold; font-size: 10px; white-space: nowrap; min-width: 9em; max-width: 9em; width: 9em; }
       .help-text { font-size: 10px; color: #666; margin-top: 4px; }
-
       .entity-selector { position: relative; }
-      .entity-search-input {
-        width: 100%; padding: 8px; border: 1px solid #ddd;
-        border-radius: 4px; box-sizing: border-box;font-size: 11px;
-      }
-      .entity-dropdown {
-        position: absolute; top: 100%; left: 0; right: 0;
-        height: 80px; overflow-y: auto; background: white;
-        border: 1px solid #ddd; border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px;
-      }
-      .entity-option {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #eee;
-      }
+      .entity-search-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;font-size: 11px; }
+      .entity-dropdown { position: absolute; top: 100%; left: 0; right: 0; height: 80px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-top: 2px; }
+      .entity-option { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #eee; }
       .entity-option:hover { background: #f5f5f5; }
       .entity-info { display: flex; align-items: center; gap: 8px; flex: 1; }
       .entity-name { font-weight: 500; font-size: 14px; color: #000; }
       .entity-id { font-size: 10px; color: #666; font-family: monospace; }
       .no-results { padding: 10px; text-align: center; color: #666; font-style: italic; }
-
       .entity-selector-with-remove { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
       .entity-selector-with-remove .entity-selector { flex: 1; min-width: 0; }
-      .remove-button {
-        background: #f44336; color: white; border: none; border-radius: 4px;
-        width: 30px; height: 30px; min-width: 30px; padding: 0;
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer; flex-shrink: 0; margin-top: 0;
-      }
+      .remove-button { background: #f44336; color: white; border: none; border-radius: 4px; width: 30px; height: 30px; min-width: 30px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-top: 0; }
       .remove-button:hover { background: #d32f2f; }
-
       .form-group select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; flex: 1; }
       .checkbox-group { display: flex; flex-direction: column; gap: 8px; }
-      .checkbox-item { display: flex; align-items: center; gap: 8px; }
-    `;
+      .checkbox-item { display: flex; align-items: center; gap: 8px; }`;
   }
 
   render() {
@@ -620,610 +599,88 @@ class XiaoshiPadFanCard extends LitElement {
   }
 
   static get styles() {
-    return css`
-      :host {
-        display: flex;
-        align-items: stretch;
-        gap: 8px;
-      }
-
-      .main-card {
-        display: block;
-        position: relative;
-        background-color: var(--bg-color);
-        border-radius: 15px;
-        width: var(--card-width, 300px);
-        max-width: var(--card-width, 300px);
-      }
-
-      .side-button-wrapper {
-        display: flex;
-      }
-
-      .side-button-bar {
-        width: 60px;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        border-radius: 15px;
-      }
-
-      .fan-card {
-        position: relative;
-        width: var(--card-width, 300px);
-        max-width: var(--card-width, 300px);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-
-      .direction-container {
-        flex: none;
-        width: var(--card-width, 300px);
-        padding-top: 45px;
-        min-height: 220px;
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: visible;
-      }
-
-      .direction-overlay-bg {
-        padding-top: 45px;
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 0;
-        border-radius: 15px 15px 0 0;
-      }
-
-      .theme-light {
-        --ha-card-background: rgb(255,255,255,0);
-        --primary-text-color:rgb(0,0,0);
-        --disabled-color: rgb(150,150,150);
-        --_icon-color: rgb(0,0,0);
-        --secondary-text-color: rgb(0,0,0);
-        --area-bg: rgb(230,230,230);
-      }
-      .theme-dark {
-        --ha-card-background: rgb(50,50,50,0);
-        --primary-text-color:rgb(255,255,255);
-        --disabled-color: rgb(220,220,220);
-        --_icon-color: rgb(255,255,255);
-        --secondary-text-color: rgb(255,255,255);
-        --area-bg: rgb(80,80,80);
-      }
-
-      .modes-area, .fanspeed-area, .oscillatev-area, .oscillateh-area {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 2px;
-        overflow: hidden;
-      }
-
-      .mode-button {
-        flex: 1;
-        min-width: 0;
-        height: 40px;
-        border: none;
-        border-radius: 10px;
-        background: rgb(0,0,0,0);
-        cursor: pointer;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        gap: 2px;
-        --mdc-icon-size: 20px;
-      }
-
-      .mode-button .icon {
-        width: 20px;
-        height: 20px;
-        color: var(--fg-color);
-      }
-
-      .mode-button .mode-text {
-        font-size: 10px;
-        color: var(--fg-color);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .mode-button.active-mode {
-        background: var(--active-color);
-      }
-
-      .switch-button {
-        flex: 1;
-        min-width: 0;
-        height: 40px;
-        border: none;
-        border-radius: 10px;
-        background: rgb(0,0,0,0);
-        cursor: pointer;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        gap: 2px;
-        --mdc-icon-size: 20px;
-      }
-
-      .switch-button .icon {
-        width: 20px;
-        height: 20px;
-        color: var(--fg-color);
-      }
-
-      .switch-button .mode-text {
-        font-size: 10px;
-        color: var(--fg-color);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .switch-button.active-mode {
-        background: var(--active-color);
-      }
-
-      .switch-button-row {
-        flex: none;
-        width: 25%;
-        min-width: 0;
-        height: 40px;
-        border: none;
-        border-radius: 10px;
-        background: rgb(0,0,0,0);
-        cursor: pointer;
-        padding: 0 4px;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: row;
-        gap: 2px;
-        --mdc-icon-size: 18px;
-      }
-
-      .switch-button-row .icon {
-        width: 18px;
-        height: 18px;
-        color: var(--fg-color);
-        flex-shrink: 0;
-      }
-
-      .switch-button-row .mode-text {
-        font-size: 10px;
-        color: var(--fg-color);
-        line-height: 1.2;
-        text-align: center;
-        word-break: break-all;
-        overflow: hidden;
-      }
-
-      .switch-button-row.active-mode {
-        background: var(--active-color);
-      }
-
-      .angle-button {
-        flex: none;
-        width: 14%;
-        min-width: 0;
-        height: 40px;
-        border: none;
-        border-radius: 10px;
-        background: rgb(0,0,0,0);
-        cursor: pointer;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        gap: 2px;
-      }
-
-      .angle-button .mode-text {
-        font-size: 10px;
-        color: var(--fg-color);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .angle-button.active-mode {
-        background: var(--active-color);
-      }
-
-      .area-bg-wrapper {
-        background: var(--area-bg);
-        border-radius: 10px;
-        width: calc(100% - 20px);
-        margin: 0 10px;
-        margin-bottom: 8px;
-        box-sizing: border-box;
-      }
-
-      .area-bg-wrapper:first-of-type {
-        margin-top: 4px;
-      }
-
-      .side-extra-button {
-        width: 40px;
-        height: 40px;
-        border: none;
-        border-radius: 8px;
-        background: var(--bg-color);
-        cursor: pointer;
-        padding: 0px;
-        margin: 0px 10px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 8px;
-      }
-
-      .side-extra-button.active-extra {
-      }
-
-      .side-extra-button .side-icon {
-        width: 16px;
-        height: 16px;
-        --mdc-icon-size: 16px;
-      }
-
-      .side-extra-button .side-text {
-        font-size: 10px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .timer-horizontal-area {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        padding: 0px 4px;
-      }
-
-      .timer-h-btn {
-        height: 40px;
-        min-width: 24px;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        padding: 0 6px;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        gap: 2px;
-      }
-
-      .timer-h-icon {
-        width: 16px;
-        height: 16px;
-        --mdc-icon-size: 16px;
-      }
-
-      .timer-h-text {
-        font-size: 11px;
-        white-space: nowrap;
-      }
-
+    return css`      :host { display: flex; align-items: stretch; gap: 8px; }
+      .main-card { display: block; position: relative; background-color: var(--bg-color); border-radius: 15px; width: var(--card-width, 300px); max-width: var(--card-width, 300px); }
+      .side-button-wrapper { display: flex; }
+      .side-button-bar { width: 60px; display: flex; flex-direction: column; justify-content: flex-end; border-radius: 15px; }
+      .fan-card { position: relative; width: var(--card-width, 300px); max-width: var(--card-width, 300px); display: flex; flex-direction: column; overflow: hidden; }
+      .direction-container { flex: none; width: var(--card-width, 300px); padding-top: 45px; min-height: 220px; position: relative; display: flex; align-items: center; justify-content: center; overflow: visible; }
+      .direction-overlay-bg { padding-top: 45px; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; border-radius: 15px 15px 0 0; }
+      .theme-light { --ha-card-background: rgb(255,255,255,0); --primary-text-color:rgb(0,0,0); --disabled-color: rgb(150,150,150); --_icon-color: rgb(0,0,0); --secondary-text-color: rgb(0,0,0); --area-bg: rgb(230,230,230); }
+      .theme-dark { --ha-card-background: rgb(50,50,50,0); --primary-text-color:rgb(255,255,255); --disabled-color: rgb(220,220,220); --_icon-color: rgb(255,255,255); --secondary-text-color: rgb(255,255,255); --area-bg: rgb(80,80,80); }
+      .modes-area, .fanspeed-area, .oscillatev-area, .oscillateh-area { display: flex; flex-wrap: nowrap; gap: 2px; overflow: hidden; }
+      .mode-button { flex: 1; min-width: 0; height: 40px; border: none; border-radius: 10px; background: rgb(0,0,0,0); cursor: pointer; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 2px; --mdc-icon-size: 20px; }
+      .mode-button .icon { width: 20px; height: 20px; color: var(--fg-color); }
+      .mode-button .mode-text { font-size: 10px; color: var(--fg-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .mode-button.active-mode { background: var(--active-color); }
+      .switch-button { flex: 1; min-width: 0; height: 40px; border: none; border-radius: 10px; background: rgb(0,0,0,0); cursor: pointer; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 2px; --mdc-icon-size: 20px; }
+      .switch-button .icon { width: 20px; height: 20px; color: var(--fg-color); }
+      .switch-button .mode-text { font-size: 10px; color: var(--fg-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .switch-button.active-mode { background: var(--active-color); }
+      .switch-button-row { flex: none; width: 25%; min-width: 0; height: 40px; border: none; border-radius: 10px; background: rgb(0,0,0,0); cursor: pointer; padding: 0 4px; margin: 0; display: flex; align-items: center; justify-content: center; flex-direction: row; gap: 2px; --mdc-icon-size: 18px; }
+      .switch-button-row .icon { width: 18px; height: 18px; color: var(--fg-color); flex-shrink: 0; }
+      .switch-button-row .mode-text { font-size: 10px; color: var(--fg-color); line-height: 1.2; text-align: center; word-break: break-all; overflow: hidden; }
+      .switch-button-row.active-mode { background: var(--active-color); }
+      .angle-button { flex: none; width: 14%; min-width: 0; height: 40px; border: none; border-radius: 10px; background: rgb(0,0,0,0); cursor: pointer; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 2px; }
+      .angle-button .mode-text { font-size: 10px; color: var(--fg-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .angle-button.active-mode { background: var(--active-color); }
+      .area-bg-wrapper { background: var(--area-bg); border-radius: 10px; width: calc(100% - 20px); margin: 0 10px; margin-bottom: 8px; box-sizing: border-box; }
+      .area-bg-wrapper:first-of-type { margin-top: 4px; }
+      .side-extra-button { width: 40px; height: 40px; border: none; border-radius: 8px; background: var(--bg-color); cursor: pointer; padding: 0px; margin: 0px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 8px; }
+      .side-extra-button.active-extra { }
+      .side-extra-button .side-icon { width: 16px; height: 16px; --mdc-icon-size: 16px; }
+      .side-extra-button .side-text { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .timer-horizontal-area { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px; padding: 0px 4px; }
+      .timer-h-btn { height: 40px; min-width: 24px; border: none; border-radius: 8px; cursor: pointer; padding: 0 6px; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 2px; }
+      .timer-h-icon { width: 16px; height: 16px; --mdc-icon-size: 16px; }
+      .timer-h-text { font-size: 11px; white-space: nowrap; }
       /* 风速数值显示按钮 */
-      .speed-display-btn {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        background: rgb(0,0,0,0);
-        border: none;
-        border-radius: 10px;
-        padding: 0;
-        cursor: default;
-        min-width: 0;
-        height: 40px;
-        justify-content: center;
-        flex-direction: column;
-      }
-
-      .speed-percent {
-        font-size: 10px;
-        font-weight: bold;
-        color: var(--active-color);
-      }
-
+      .speed-display-btn { display: flex; align-items: center; gap: 4px; background: rgb(0,0,0,0); border: none; border-radius: 10px; padding: 0; cursor: default; min-width: 0; height: 40px; justify-content: center; flex-direction: column; }
+      .speed-percent { font-size: 10px; font-weight: bold; color: var(--active-color); }
       /* 内联滑块样式 */
-      .sun-slider-container {
-        position: relative;
-        width: 100%;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        box-sizing: border-box;
-      }
-
-      .sun-slider-track {
-        position: absolute;
-        top: 50%;
-        left: 0;
-        width: 100%;
-        transform: translateY(-50%);
-        height: 40px;
-        border-radius: 10px;
-        overflow: visible;
-        cursor: default;
-        touch-action: none;
-      }
-
-      .sun-slider-bar {
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: 100%;
-        border-radius: 10px;
-        pointer-events: none;
-      }
-
-      .sun-slider-thumb {
-        position: absolute;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background: white;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        cursor: grab;
-        touch-action: none;
-      }
-
+      .sun-slider-container { position: relative; width: 100%; height: 40px; display: flex; align-items: center; box-sizing: border-box; }
+      .sun-slider-track { position: absolute; top: 50%; left: 0; width: 100%; transform: translateY(-50%); height: 40px; border-radius: 10px; overflow: visible; cursor: default; touch-action: none; }
+      .sun-slider-bar { position: absolute; top: 0; left: 0; height: 100%; border-radius: 10px; pointer-events: none; }
+      .sun-slider-thumb { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px; border-radius: 50%; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: grab; touch-action: none; }
       .sun-slider-thumb:active { cursor: grabbing; }
-
       /* 方向盘样式 - 圆形方向盘 */
-      .direction-control {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 1;
-        max-width: 180px;
-        max-height: 180px;
-      }
-
-      .dir-bg {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        background: var(--area-bg);
-        overflow: hidden;
-        transition: transform 0.15s;
-      }
-
-      .dir-bg:active {
-        transform: scale(0.95);
-      }
-
-      .dir扇 {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        transition: background 0.15s;
-        cursor: pointer;
-        background: transparent;
-      }
-
-      .dir扇:active {
-        background: var(--active-color);
-      }
-
-      .dir扇-up {
-        clip-path: polygon(50% 50%, 0% 0%, 100% 0%);
-      }
-
-      .dir扇-down {
-        clip-path: polygon(50% 50%, 0% 100%, 100% 100%);
-      }
-
-      .dir扇-left {
-        clip-path: polygon(50% 50%, 0% 0%, 0% 100%);
-      }
-
-      .dir扇-right {
-        clip-path: polygon(50% 50%, 100% 0%, 100% 100%);
-      }
-
-      .dir-btn {
-        position: absolute;
-        border: none;
-        cursor: default;
-        padding: 0;
-        background: transparent;
-        transition: color 0.2s;
-        z-index: 10;
-        pointer-events: none;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-
-      .dir-btn ha-icon {
-        --mdc-icon-size: 22px;
-        color: var(--fg-color);
-      }
-
+      .direction-control { position: relative; width: 100%; aspect-ratio: 1; max-width: 180px; max-height: 180px; }
+      .dir-bg { position: absolute; width: 100%; height: 100%; border-radius: 50%; background: var(--area-bg); overflow: hidden; transition: transform 0.15s; }
+      .dir-bg:active { transform: scale(0.95); }
+      .dir扇 { position: absolute; width: 100%; height: 100%; transition: background 0.15s; cursor: pointer; background: transparent; }
+      .dir扇:active { background: var(--active-color); }
+      .dir扇-up { clip-path: polygon(50% 50%, 0% 0%, 100% 0%); }
+      .dir扇-down { clip-path: polygon(50% 50%, 0% 100%, 100% 100%); }
+      .dir扇-left { clip-path: polygon(50% 50%, 0% 0%, 0% 100%); }
+      .dir扇-right { clip-path: polygon(50% 50%, 100% 0%, 100% 100%); }
+      .dir-btn { position: absolute; border: none; cursor: default; padding: 0; background: transparent; transition: color 0.2s; z-index: 10; pointer-events: none; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+      .dir-btn ha-icon { --mdc-icon-size: 22px; color: var(--fg-color); }
       /* 方向按钮位置 */
       .dir-btn.up { top: 12%; left: 50%; transform: translate(-50%, -50%); }
       .dir-btn.down { bottom: 12%; left: 50%; transform: translate(-50%, 50%); }
       .dir-btn.left { left: 12%; top: 50%; transform: translate(-50%, -50%); }
       .dir-btn.right { right: 12%; top: 50%; transform: translate(50%, -50%); }
-
-      .dir-btn.center {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
-        background: var(--secondary-bg);
-        z-index: 20;
-        pointer-events: auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-      }
-
-      .dir-btn.center:active {
-        background: var(--theme-bg-active, rgba(16, 202, 248, 0.9));
-        transform: translate(-50%, -50%) scale(0.95);
-      }
-
-      .dir-btn.center ha-icon {
-        --mdc-icon-size: 16px;
-      }
-
+      .dir-btn.center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 45px; height: 45px; border-radius: 50%; background: var(--secondary-bg); z-index: 20; pointer-events: auto; display: flex; align-items: center; justify-content: center; padding: 0; }
+      .dir-btn.center:active { background: var(--theme-bg-active, rgba(16, 202, 248, 0.9)); transform: translate(-50%, -50%) scale(0.95); }
+      .dir-btn.center ha-icon { --mdc-icon-size: 16px; }
       /* 普通风扇图标容器 */
-      .normal-fan-icon-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        overflow: visible;
-      }
-
+      .normal-fan-icon-container { display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: visible; }
       /* 风扇图标与文字覆盖层 */
-      .fan-icon-wrapper {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 200px;
-        height: 200px;
-      }
-
-      .fan-center-info {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        justify-content: flex-start;
-        padding-top: 48px;
-        pointer-events: none;
-        line-height: 1.2;
-      }
-
-      .fan-mode-label {
-        font-size: 15px;
-        text-align: center;
-        font-weight: 500;
-        opacity: 0.75;
-        margin-top: 19px;
-        margin-bottom: 15px;
-      }
-
-      .fan-main-row {
-        display: flex;
-        justify-content: center;
-        width: 100%;
-      }
-
-      .fan-main-value-wrap {
-        position: relative;
-        display: inline-flex;
-        align-items: baseline;
-      }
-
-      .fan-main-value {
-        font-size: 55px;
-        font-weight: 500;
-        line-height: 1;
-      }
-
-      .fan-main-unit {
-        position: absolute;
-        left: 100%;
-        bottom: 4px;
-        margin-left: 2px;
-        font-size: 15px;
-        font-weight: 400;
-        white-space: nowrap;
-      }
-
-      .fan-sub-info {
-        font-size: 15px;
-        margin-top: 17px;
-        text-align: center;
-      }
-
+      .fan-icon-wrapper { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 200px; height: 200px; }
+      .fan-center-info { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; padding-top: 48px; pointer-events: none; line-height: 1.2; }
+      .fan-mode-label { font-size: 15px; text-align: center; font-weight: 500; opacity: 0.75; margin-top: 19px; margin-bottom: 15px; }
+      .fan-main-row { display: flex; justify-content: center; width: 100%; }
+      .fan-main-value-wrap { position: relative; display: inline-flex; align-items: baseline; }
+      .fan-main-value { font-size: 55px; font-weight: 500; line-height: 1; }
+      .fan-main-unit { position: absolute; left: 100%; bottom: 4px; margin-left: 2px; font-size: 15px; font-weight: 400; white-space: nowrap; }
+      .fan-sub-info { font-size: 15px; margin-top: 17px; text-align: center; }
       /* 风速加减按钮 */
-      .fan-speed-buttons {
-        display: flex;
-        justify-content: center;
-        gap: 24px;
-        margin-top: -4px;
-        margin-bottom: 12px;
-      }
-
-      .fan-speed-btn {
-        width: 46px;
-        height: 46px;
-        border-radius: 50%;
-        border: 1.5px solid var(--fg-color, #666);
-        background: transparent;
-        color: var(--fg-color, #666);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-size: 20px;
-        transition: all 0.2s;
-      }
-
-      .fan-speed-btn:active {
-        background: rgba(var(--active-rgb), 0.2);
-        border-color: var(--active-color);
-        color: var(--active-color);
-      }
-
+      .fan-speed-buttons { display: flex; justify-content: center; gap: 24px; margin-top: -4px; margin-bottom: 12px; }
+      .fan-speed-btn { width: 46px; height: 46px; border-radius: 50%; border: 1.5px solid var(--fg-color, #666); background: transparent; color: var(--fg-color, #666); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; transition: all 0.2s; }
+      .fan-speed-btn:active { background: rgba(var(--active-rgb), 0.2); border-color: var(--active-color); color: var(--active-color); }
       /* 粒子发射特效 */
-      .fan-particles {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 0;
-        height: 0;
-        pointer-events: none;
-        z-index: 2;
-      }
-
-      .fan-particle {
-        position: absolute;
-        border-radius: 50%;
-        animation: particle-fly var(--pd, 2s) ease-out var(--pdl, 0s) infinite;
-      }
-
+      .fan-particles { position: absolute; top: 50%; left: 50%; width: 0; height: 0; pointer-events: none; z-index: 2; }
+      .fan-particle { position: absolute; border-radius: 50%; animation: particle-fly var(--pd, 2s) ease-out var(--pdl, 0s) infinite; }
       @keyframes particle-fly1 {
         0%   { transform: translate(0,0) scale(1); opacity: 1; }
         30%  { transform: translate(40px,-50px) scale(1.3); opacity: 0.8; }
@@ -1279,76 +736,19 @@ class XiaoshiPadFanCard extends LitElement {
         0%   { transform: translate(0,0) scale(1); opacity: 1; }
         100% { transform: translate(90px,-130px) scale(0); opacity: 0; }
       }
-
       /* 风扇旋转动画 */
       @keyframes fan-spin {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
       }
-
-      .fan-spinning {
-        animation: fan-spin 1.5s linear infinite;
-      }
-
+      .fan-spinning { animation: fan-spin 1.5s linear infinite; }
       /* 状态信息覆盖在方向盘上 */
-      .direction-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 10px;
-        z-index: 30;
-        box-sizing: border-box;
-      }
-
-      .overlay-spacer {
-        width: 30px;
-        flex-shrink: 0;
-      }
-
-      .status-bar {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        padding: 8px;
-        font-size: 11px;
-        white-space: nowrap;
-        flex-shrink: 0;
-      }
-
-      .status-item {
-        flex: 1;
-        text-align: center;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        min-width: 0;
-      }
-
-      .status-name {
-        flex: 1;
-        text-align: center;
-        font-size: 16px;
-        font-weight: bold;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .power-button {
-        background: none;
-        border: none;
-        cursor: default;
-        padding: 4px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-    `;
+      .direction-overlay { position: absolute; top: 0; left: 0; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; z-index: 30; box-sizing: border-box; }
+      .overlay-spacer { width: 30px; flex-shrink: 0; }
+      .status-bar { display: flex; justify-content: space-around; align-items: center; padding: 8px; font-size: 11px; white-space: nowrap; flex-shrink: 0; }
+      .status-item { flex: 1; text-align: center; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+      .status-name { flex: 1; text-align: center; font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .power-button { background: none; border: none; cursor: default; padding: 4px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }`;
   }
 
   constructor() {
