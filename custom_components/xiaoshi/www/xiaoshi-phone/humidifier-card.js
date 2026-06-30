@@ -2182,7 +2182,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
     const chipActiveBg = this._getHistoryAccentColor(); const chipActiveColor = '#fff';
     this._historyFilterPeriod = 24;
     const overlay = document.createElement('div'); overlay.className = 'xiaoshi-history-overlay';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;-webkit-backdrop-filter: blur(10px);backdrop-filter: blur(10px);';
     overlay.addEventListener('click', (e) => { if (e.target === overlay) this._closeHistoryOverlay(); });
     const dialog = document.createElement('div'); dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
     const header = document.createElement('div'); header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
