@@ -161,7 +161,10 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
       _showButton2Lists: { type: Boolean },
       _buttonRowSearchTerms: { type: Object },
       _filteredButtonRowEntities: { type: Object },
-      _showButtonRowLists: { type: Object }
+      _showButtonRowLists: { type: Object },
+      _historyEntitySearchTerm: { type: String },
+      _filteredHistoryEntities: { type: Array },
+      _showHistoryEntityList: { type: Boolean }
     };
   }
 
@@ -174,6 +177,7 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
       if (!e.target.closest('.entity-selector')) {
         this._showEntityList = false;
         this._showTemperatureList = false;
+        this._showHistoryEntityList = false;
 
         if (this._showButtonLists) {
           Object.keys(this._showButtonLists).forEach(key => {
@@ -985,6 +989,49 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
           </div>
         </div>
 
+        <!-- 历史记录实体 -->
+        <div class="form-row">
+          <label>历史记录实体</label>
+          <div class="entity-selector-with-remove">
+            <div class="entity-selector">
+              <input
+                type="text"
+                @input=${this._onHistoryEntitySearch}
+                @focus=${this._onHistoryEntitySearch}
+                .value=${this._historyEntitySearchTerm || this.config.history_entity || ''}
+                placeholder="搜索实体（留空使用设备实体）..."
+                class="entity-search-input"
+              />
+              ${this._showHistoryEntityList ? html`
+                <div class="entity-dropdown">
+                  ${this._filteredHistoryEntities.map(entity => html`
+                    <div
+                      class="entity-option ${this.config.history_entity === entity.entity_id ? 'selected' : ''}"
+                      @click=${() => this._selectHistoryEntity(entity.entity_id)}
+                    >
+                      <div class="entity-info">
+                        <ha-icon icon="${entity.attributes.icon || 'mdi:help-circle'}"></ha-icon>
+                        <div class="entity-details">
+                          <div class="entity-name">${entity.attributes.friendly_name || entity.entity_id}</div>
+                          <div class="entity-id">${entity.entity_id}</div>
+                        </div>
+                      </div>
+                      ${this.config.history_entity === entity.entity_id ?
+                        html`<ha-icon icon="mdi:check" class="check-icon"></ha-icon>` : ''}
+                    </div>
+                  `)}
+                  ${this._filteredHistoryEntities.length === 0 ? html`
+                    <div class="no-results">未找到匹配的实体</div>
+                  ` : ''}
+                </div>
+              ` : ''}
+            </div>
+            <button class="remove-button" @click=${this._removeHistoryEntity} title="移除历史记录实体">
+              <ha-icon icon="mdi:close"></ha-icon>
+            </button>
+          </div>
+        </div>
+
         <!-- 名称重定义 -->
         <div class="form-row">
           <label>名称重定义</label>
@@ -1615,6 +1662,53 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
     this.requestUpdate();
   }
 
+  _onHistoryEntitySearch(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    this._historyEntitySearchTerm = searchTerm;
+    this._showHistoryEntityList = true;
+
+    if (!this.hass) return;
+
+    const allEntities = Object.values(this.hass.states);
+
+    this._filteredHistoryEntities = allEntities.filter(entity => {
+      const entityId = entity.entity_id.toLowerCase();
+      const friendlyName = (entity.attributes.friendly_name || '').toLowerCase();
+      const matchesSearch = entityId.includes(searchTerm) || friendlyName.includes(searchTerm);
+      return matchesSearch;
+    }).slice(0, 50);
+
+    this.requestUpdate();
+  }
+
+  _selectHistoryEntity(entityId) {
+    this.config = {
+      ...this.config,
+      history_entity: entityId
+    };
+
+    this._historyEntitySearchTerm = '';
+    this._showHistoryEntityList = false;
+
+    this._fireEvent();
+    this.requestUpdate();
+  }
+
+  _removeHistoryEntity() {
+    if (!this.config) return;
+
+    this._historyEntitySearchTerm = '';
+    this._showHistoryEntityList = false;
+    this._filteredHistoryEntities = [];
+
+    this.config = {
+      ...this.config,
+      history_entity: undefined
+    };
+    this._fireEvent();
+    this.requestUpdate();
+  }
+
   _themeSelectChanged(e) {
     if (!this.config) return;
     const theme = e.target.value;
@@ -1691,6 +1785,9 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
     this._buttonRowSearchTerms = {};
     this._filteredButtonRowEntities = {};
     this._showButtonRowLists = {};
+    this._historyEntitySearchTerm = '';
+    this._filteredHistoryEntities = [];
+    this._showHistoryEntityList = false;
   }
 }
 customElements.define('xiaoshi-phone-other-card-editor', XiaoshiPhoneOtherCardEditor);
@@ -3829,7 +3926,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
 
   async _fetchHistory() {
     try {
-      const entityId = this.config.entity; if (!entityId) return;
+      const entityId = this.config.history_entity || this.config.entity; if (!entityId) return;
       const periodHours = this._historyFilterPeriod || 24;
       const endTime = new Date(); const startTime = new Date(endTime.getTime() - periodHours * 3600000);
       const data = await this.hass.callApi('GET', `history/period/${startTime.toISOString()}?end_time=${endTime.toISOString()}&filter_entity_id=${entityId}&minimal_response&no_attributes`);
@@ -3850,8 +3947,10 @@ class XiaoshiPhoneOtherCard extends LitElement {
   _showHistoryOverlay() {
     if (this._historyOverlayEl) return;
     const theme = this._evaluateTheme(); const isDark = theme === 'dark';
+    const histEntityId = this.config.history_entity || this.config.entity;
     const ent = this.hass?.states?.[this.config.entity];
-    const roomName = ent?.attributes?.friendly_name || this.config.entity || '设备';
+    const histEnt = this.hass?.states?.[histEntityId];
+    const roomName = (this.config.history_entity ? histEnt?.attributes?.friendly_name || histEntityId : ent?.attributes?.friendly_name || this.config.entity) || '设备';
     const textColor = isDark ? '#fff' : '#333'; const bgColor = isDark ? '#2c2c2c' : '#fff';
     const borderColor = isDark ? '#aaa' : '#888'; const btnBg = isDark ? '#444' : '#f0f0f0';
     const btnIconColor = isDark ? '#ccc' : '#666';
