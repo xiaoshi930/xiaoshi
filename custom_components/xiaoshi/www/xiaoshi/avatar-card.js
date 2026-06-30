@@ -6,12 +6,20 @@ const css = LitElement.prototype.css;
 import { yamlToJson } from '../function/function.js';
 
 window.customCards = window.customCards || [];
-window.customCards.push({
-    type: 'xiaoshi-avatar-card',
-    name: '消逝手机端头像卡片',
-    description: '消逝手机端头像卡片',
-    preview: true
+window.customCards.push(
+    {
+        type: 'xiaoshi-avatar-card',
+        name: '消逝手机端头像卡片',
+        description: '消逝手机端头像卡片',
+        preview: true
+    },    
+    {
+        type: 'xiaoshi-avatar-history-card',
+        name: '消逝头像弹窗-人员历史时间条',
+        description: '在弹窗中显示人员历史时间条',
+        preview: false
 });
+
 
 class XiaoshiAvatarCardEditor extends LitElement {
     static get properties() {
@@ -269,6 +277,13 @@ class XiaoshiAvatarCardEditor extends LitElement {
                     <input type="text" name="popup_top" .value="${c.popup_top || ''}" @change="${this._valueChanged}" placeholder="20px" style="max-width:100px" />
                 </div>
                 <div class="form-row">
+                    <label>历史记录</label>
+                    <select name="show_popup_history" @change="${this._valueChanged}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
+                        <option value="true" .selected="${c.show_popup_history !== 'false'}">显示</option>
+                        <option value="false" .selected="${c.show_popup_history === 'false'}">隐藏</option>
+                    </select>
+                </div>
+                <div class="form-row">
                     <label>弹窗地图</label>
                     <select name="show_popup_map" @change="${this._valueChanged}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
                         <option value="true" .selected="${c.show_popup_map !== 'false'}">显示</option>
@@ -302,7 +317,10 @@ class XiaoshiAvatarCard extends LitElement {
         return {
             hass: { type: Object },
             config: { type: Object },
-            _activeIndex: { type: Number }
+            _activeIndex: { type: Number },
+            _showPopupHistory: { type: Boolean },
+            _historyData: { type: Object },
+            _historyLoading: { type: Boolean }
         };
     }
 
@@ -312,6 +330,11 @@ class XiaoshiAvatarCard extends LitElement {
         this._touchStartX = 0;
         this._touchStartY = 0;
         this._swipeDetected = false;
+        this._showPopupHistory = false;
+        this._historyData = {};
+        this._historyLoading = false;
+        this._popupHistoryFilterPerson = '';
+        this._popupHistoryFilterPeriod = 24;
     }
 
     static get styles() {
@@ -993,6 +1016,7 @@ class XiaoshiAvatarCard extends LitElement {
 
         const cards = [];
         const persons = this._getPersons();
+        let mapConfig = null;
 
         // 1. 构建地图卡片
         if (this.config.show_popup_map !== 'false') {
@@ -1007,21 +1031,23 @@ class XiaoshiAvatarCard extends LitElement {
                 }
             }
 
-            cards.push({
+            mapConfig = {
                 type: 'map',
                 entities: mapEntities,
                 aspect_ratio: '16:9',
                 hours_to_show: this.config.track_hours || 24,
                 theme_mode: this._evaluateTheme()
-            });
+            };
+            cards.push(mapConfig);
         }
 
         // 2. 添加附加卡片（other_cards）
+        let otherCards = [];
         if (this.config.other_cards && this.config.other_cards.trim()) {
             try {
-                const additionalCards = yamlToJson(this.config.other_cards);
+                otherCards = yamlToJson(this.config.other_cards);
                 const theme = this._evaluateTheme();
-                const cardsWithTheme = additionalCards.map(card => {
+                const cardsWithTheme = otherCards.map(card => {
                     if (!card.theme && this.config.theme) {
                         return { ...card, theme: this.config.theme === 'system' ? theme : this.config.theme };
                     }
@@ -1030,6 +1056,23 @@ class XiaoshiAvatarCard extends LitElement {
                 cards.push(...cardsWithTheme);
             } catch (err) {
                 console.error('[XiaoshiAvatarCard] 解析附加卡片失败:', err);
+            }
+        }
+
+        // 3. 如果开启了历史记录，注入历史时间条卡片到最前面
+        if (this.config.show_popup_history !== 'false') {
+            const trackerEntities = persons.map(pc => pc.tracker_entity).filter(Boolean);
+            if (trackerEntities.length > 0) {
+                cards.splice(1, 0, {
+                    type: 'custom:xiaoshi-avatar-history-card',
+                    persons: persons.map(pc => ({
+                        person_entity: pc.person_entity || '',
+                        tracker_entity: pc.tracker_entity || '',
+                        zone_entity: pc.zone_entity || ''
+                    })),
+                    track_hours: this.config.track_hours || 24,
+                    theme: this.config.theme || 'system'
+                });
             }
         }
 
@@ -1168,3 +1211,466 @@ class XiaoshiAvatarCard extends LitElement {
     }
 }
 customElements.define('xiaoshi-avatar-card', XiaoshiAvatarCard);
+
+class XiaoshiAvatarHistoryCard extends LitElement {
+    static properties = {
+        hass: { type: Object },
+        config: { type: Object }
+    };
+
+    static getConfigElement() {
+        return document.createElement('div');
+    }
+
+    static getStubConfig() {
+        return { persons: [], track_hours: 24, theme: 'system' };
+    }
+
+    setConfig(config) {
+        this.config = config || {};
+        this._historyData = {};
+        this._detailOverlayEl = null;
+    }
+
+    _evaluateTheme() {
+        const mode = this.config ? this.config.theme : 'system';
+        if (mode === 'light') return 'light';
+        if (mode === 'dark') return 'dark';
+        if (mode === 'system' || !mode) {
+            return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        }
+        return 'light';
+    }
+
+    render() {
+        if (!this.hass || !this.config) return html``;
+        const persons = this.config.persons || [];
+        const trackHours = this.config.track_hours || 24;
+        const theme = this._evaluateTheme();
+        const isDark = theme === 'dark';
+        // 参照birthday卡片配色: --fg-color / --bg-color
+        const fgColor = isDark ? 'rgb(255,255,255)' : 'rgb(0,0,0)';
+        const bgColor = isDark ? 'rgb(50,50,50)' : 'rgb(255,255,255)';
+        const borderColor = 'rgb(150,150,150,0.5)';
+        // 副文字色（略淡）
+        const subColor = isDark ? 'rgb(200,200,200)' : 'rgb(100,100,100)';
+
+        // 异步获取历史数据
+        this._fetchAndUpdate(persons, trackHours);
+
+        return html`
+            <div style="border-radius:12px;background:${bgColor};overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <!-- 标题栏：参照birthday的card-header -->
+                <div style="display:flex;align-items:center;padding:12px 16px;">
+                    <span style="display:flex;align-items:center;font-size:20px;font-weight:500;color:${fgColor};height:30px;line-height:30px;">
+                        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;background:#4CAF50;animation:pulse 2s infinite;"></span>
+                        历史记录
+                    </span>
+                </div>
+                <!-- 人员时间条列表：参照birthday的device-item -->
+                ${persons.map((pc, i) => {
+                    if (!pc.tracker_entity) return html``;
+                    const ed = this._historyData[pc.tracker_entity];
+                    const name = this._getPersonName(pc);
+                    const isHome = this._isPersonHome(pc);
+                    const dot = isHome ? '#4CAF50' : subColor;
+                    const icon = 'mdi:account';
+                    const pct = ed ? ed._homePct : '...';
+                    const awayPct = ed ? ed._awayPct : '...';
+                    const timeline = ed ? ed._timelineHtml : '<div style="flex:1;height:100%;background:rgba(180,180,180,0.2);border-radius:3px;"></div>';
+                    return html`
+                        <div style="display:flex;align-items:center;margin:0 16px;padding:8px 0;border-top:1px solid ${borderColor};cursor:pointer;gap:4px;"
+                             @click="${(e) => this._onTimelineClick(pc, i, e)}"
+                             @mouseenter="${(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'; }}"
+                             @mouseleave="${(e) => { e.currentTarget.style.background = ''; }}">
+                            <!-- 左侧：人员+状态统计占40%，单行不换行 -->
+                            <div style="flex:0 0 40%;display:flex;align-items:center;gap:4px;min-width:0;overflow:hidden;padding:0 8px;">
+                                <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0;"></span>
+                                <span style="display:flex;align-items:center;gap:3px;font-size:13px;font-weight:500;color:${fgColor};flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                    <ha-icon icon="${icon}" style="--mdc-icon-size:14px;color:#4CAF50;flex-shrink:0;"></ha-icon>${name}
+                                </span>
+                                <span style="font-size:11px;color:#4CAF50;font-weight:bold;white-space:nowrap;flex-shrink:0;">${pct}%</span>
+                                <span style="font-size:11px;color:${subColor};font-weight:bold;white-space:nowrap;flex-shrink:0;">${awayPct}%</span>
+                            </div>
+                            <!-- 右侧：时间条占60% -->
+                            <div style="flex:1;display:flex;align-items:center;gap:4px;min-width:0;">
+                                <div style="flex:1;display:flex;height:6px;border-radius:3px;overflow:hidden;" .innerHTML="${timeline}"></div>
+                                <ha-icon icon="mdi:chevron-right" style="--mdc-icon-size:16px;color:${subColor};flex-shrink:0;"></ha-icon>
+                            </div>
+                        </div>
+                    `;
+                })}
+                <div style="border-bottom:1px solid ${borderColor};margin:0 16px 6px 16px;"></div>
+            </div>
+        `;
+    }
+
+    _getPersonName(pc) {
+        if (pc.person_entity && this.hass.states[pc.person_entity]) {
+            return this.hass.states[pc.person_entity].attributes.friendly_name || pc.person_entity;
+        }
+        if (pc.tracker_entity && this.hass.states[pc.tracker_entity]) {
+            return this.hass.states[pc.tracker_entity].attributes.friendly_name || pc.tracker_entity;
+        }
+        return pc.tracker_entity || '';
+    }
+
+    _isPersonHome(pc) {
+        if (!pc.tracker_entity || !this.hass) return null;
+        const s = this.hass.states[pc.tracker_entity];
+        return s ? s.state === 'home' : null;
+    }
+
+    async _fetchAndUpdate(persons, trackHours) {
+        const entities = persons.map(pc => pc.tracker_entity).filter(Boolean).join(',');
+        if (!entities) return;
+        const key = entities + '_' + trackHours;
+        if (this._lastFetchKey === key) return;
+        this._lastFetchKey = key;
+
+        try {
+            const end = new Date();
+            const start = new Date(end.getTime() - trackHours * 3600000);
+            const data = await this.hass.callApi('GET',
+                `history/period/${start.toISOString()}?end_time=${end.toISOString()}&filter_entity_id=${entities}&minimal_response&no_attributes`);
+
+            const result = {};
+            const rangeEnd = new Date();
+            const rangeStart = new Date(rangeEnd.getTime() - trackHours * 3600000);
+            const all = Array.isArray(data) ? data : [];
+            for (const eh of all) {
+                if (!eh || eh.length === 0) continue;
+                const eid = eh[0].entity_id;
+                if (!eid) continue;
+                const entries = eh.filter(e => e && e.last_changed).sort((a, b) => new Date(b.last_changed) - new Date(a.last_changed));
+                const deduped = this._dedupe(entries);
+                let homeMs = 0, awayMs = 0;
+                for (let i = 0; i < deduped.length; i++) {
+                    const t = new Date(deduped[i].last_changed);
+                    const nt = i + 1 < deduped.length ? new Date(deduped[i + 1].last_changed) : new Date();
+                    const d = Math.max(0, nt - t);
+                    if (this._norm(deduped[i].state) === 'home') homeMs += d; else awayMs += d;
+                }
+                const total = homeMs + awayMs;
+                result[eid] = {
+                    _homePct: total > 0 ? Math.round(homeMs / total * 100) : 0,
+                    _awayPct: total > 0 ? Math.round(awayMs / total * 100) : 0,
+                    _timelineHtml: this._buildTimeline(entries, rangeStart, rangeEnd),
+                    _rawEntries: eh.filter(e => e && e.last_changed)
+                };
+            }
+            this._historyData = result;
+            this.requestUpdate();
+        } catch (e) {
+            console.error('[XiaoshiAvatarHistoryCard] 获取历史失败:', e);
+        }
+    }
+
+    _onTimelineClick(pc, index, e) {
+        e.stopPropagation();
+        const haptic = new Event('haptic', { bubbles: true, cancelable: false, composed: true });
+        haptic.detail = 'light';
+        this.dispatchEvent(haptic);
+        this._showDetailOverlay(pc);
+    }
+
+    // ===== 详细历史记录弹窗 =====
+
+    _showDetailOverlay(targetPc) {
+        if (this._detailOverlayEl) this._closeDetailOverlay();
+        const persons = this.config.persons || [];
+        const theme = this._evaluateTheme();
+        const isDark = theme === 'dark';
+        const textColor = isDark ? '#fff' : '#333';
+        const bgColor = isDark ? '#2c2c2c' : '#fff';
+        const borderColor = isDark ? '#aaa' : '#888';
+        const btnBg = isDark ? '#444' : '#f0f0f0';
+        const btnIconColor = isDark ? '#ccc' : '#666';
+        const chipBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
+        const chipActiveBg = '#4CAF50';
+        const chipActiveColor = '#fff';
+
+        this._detailFilterPerson = targetPc ? (targetPc.tracker_entity || '') : '';
+        this._detailFilterPeriod = this.config.track_hours || 24;
+        this._detailData = {};
+
+        const overlay = document.createElement('div');
+        overlay.className = 'xiaoshi-person-history-overlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:999999;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);';
+        overlay.addEventListener('click', (ev) => { if (ev.target === overlay) this._closeDetailOverlay(); });
+
+        const dialog = document.createElement('div');
+        dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
+
+        // Header
+        const header = document.createElement('div');
+        header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
+        const title = document.createElement('span');
+        title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
+        title.textContent = '人员 - 历史记录';
+        const closeBtn = document.createElement('button');
+        closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;`;
+        closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
+        closeBtn.addEventListener('click', () => this._closeDetailOverlay());
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+
+        // Toolbar
+        const toolbar = document.createElement('div');
+        toolbar.style.cssText = `display:flex;flex-direction:column;gap:8px;padding:10px 5px;margin:0 20px;border-bottom:1px solid ${borderColor};`;
+
+        if (persons.length > 1) {
+            const pr = document.createElement('div');
+            pr.style.cssText = 'display:flex;align-items:flex-start;gap:8px;';
+            const pl = document.createElement('span');
+            pl.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;padding-top:4px;`;
+            pl.textContent = '人员:';
+            pr.appendChild(pl);
+            const pcs = document.createElement('div');
+            pcs.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;flex:1;';
+            pcs.className = 'xiaoshi-detail-person-chips';
+
+            const allC = this._makeChip('全部', '', chipBg, chipActiveBg, chipActiveColor, isDark);
+            allC.addEventListener('click', () => { this._detailFilterPerson = ''; this._refreshChips(pcs, '', this._detailFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'person'); this._refetchDetail(); });
+            pcs.appendChild(allC);
+            for (const pc of persons) {
+                if (!pc.tracker_entity) continue;
+                const nm = this._getPersonName(pc);
+                const c = this._makeChip(nm, pc.tracker_entity, chipBg, chipActiveBg, chipActiveColor, isDark);
+                c.addEventListener('click', () => { this._detailFilterPerson = pc.tracker_entity; this._refreshChips(pcs, pc.tracker_entity, this._detailFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'person'); this._refetchDetail(); });
+                pcs.appendChild(c);
+            }
+            pr.appendChild(pcs);
+            toolbar.appendChild(pr);
+        }
+
+        const tr = document.createElement('div');
+        tr.style.cssText = 'display:flex;align-items:center;gap:8px;';
+        const tl = document.createElement('span');
+        tl.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;`;
+        tl.textContent = '时段:';
+        tr.appendChild(tl);
+        const tcs = document.createElement('div');
+        tcs.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+        tcs.className = 'xiaoshi-detail-time-chips';
+        const periods = [
+            { label: '1小时', v: 1 }, { label: '6小时', v: 6 }, { label: '24小时', v: 24 },
+            { label: '3天', v: 72 }, { label: '7天', v: 168 }, { label: '15天', v: 360 }
+        ];
+        for (const p of periods) {
+            const c = this._makeChip(p.label, p.v, chipBg, chipActiveBg, chipActiveColor, isDark);
+            c.addEventListener('click', () => { this._detailFilterPeriod = p.v; this._refreshChips(tcs, this._detailFilterPerson, p.v, chipBg, chipActiveBg, chipActiveColor, isDark, 'time'); this._refetchDetail(); });
+            tcs.appendChild(c);
+        }
+        tr.appendChild(tcs);
+        toolbar.appendChild(tr);
+
+        const body = document.createElement('div');
+        body.className = 'xiaoshi-detail-body';
+        body.style.cssText = 'flex:1;overflow-y:auto;padding:6px 20px;';
+        body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+
+        dialog.appendChild(header);
+        dialog.appendChild(toolbar);
+        dialog.appendChild(body);
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        this._detailOverlayEl = overlay;
+        this._detailBodyEl = body;
+        this._detailChipsContainer = toolbar;
+        this._fetchDetail();
+    }
+
+    _closeDetailOverlay() {
+        if (this._detailOverlayEl) { this._detailOverlayEl.remove(); this._detailOverlayEl = null; }
+        this._detailBodyEl = null;
+        this._detailData = {};
+    }
+
+    async _fetchDetail() {
+        try {
+            const persons = this.config.persons || [];
+            let eids;
+            if (this._detailFilterPerson) eids = this._detailFilterPerson;
+            else eids = persons.map(pc => pc.tracker_entity).filter(Boolean).join(',');
+            if (!eids) { this._detailData = {}; this._updateDetailContent(); return; }
+
+            const ph = this._detailFilterPeriod || 24;
+            const end = new Date();
+            const start = new Date(end.getTime() - ph * 3600000);
+            const data = await this.hass.callApi('GET',
+                `history/period/${start.toISOString()}?end_time=${end.toISOString()}&filter_entity_id=${eids}&minimal_response&no_attributes`);
+
+            const result = {};
+            const all = Array.isArray(data) ? data : [];
+            for (const eh of all) {
+                if (!eh || eh.length === 0) continue;
+                const eid = eh[0].entity_id;
+                if (!eid) continue;
+                const so = this.hass.states[eid];
+                const name = so?.attributes?.friendly_name || eid;
+                result[eid] = {
+                    name,
+                    entries: eh.filter(e => e && e.last_changed).sort((a, b) => new Date(b.last_changed) - new Date(a.last_changed))
+                };
+            }
+            this._detailData = result;
+        } catch (e) {
+            console.error('[XiaoshiAvatarHistoryCard] 详细历史获取失败:', e);
+            this._detailData = {};
+        } finally {
+            this._updateDetailContent();
+        }
+    }
+
+    async _refetchDetail() {
+        this._detailData = {};
+        if (this._detailBodyEl) {
+            const isDark = this._evaluateTheme() === 'dark';
+            this._detailBodyEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+        }
+        await this._fetchDetail();
+    }
+
+    _updateDetailContent() {
+        if (!this._detailBodyEl) return;
+        const isDark = this._evaluateTheme() === 'dark';
+        const textColor = isDark ? '#fff' : '#333';
+        const entries = Object.entries(this._detailData || {});
+        if (entries.length === 0) {
+            this._detailBodyEl.innerHTML = `<div style="text-align:center;padding:40px;color:${isDark?'#aaa':'#999'};font-size:0.9rem;">暂无历史记录</div>`;
+            return;
+        }
+
+        let html = '';
+        for (const [entityId, data] of entries) {
+            const icon = 'mdi:account';
+            const deduped = this._dedupe(data.entries);
+            let homeMs = 0, awayMs = 0;
+            const withDur = [];
+            for (let i = 0; i < deduped.length; i++) {
+                const e = deduped[i];
+                const time = new Date(e.last_changed);
+                const nt = i + 1 < deduped.length ? new Date(deduped[i + 1].last_changed) : new Date();
+                const d = Math.max(0, nt - time);
+                if (this._norm(e.state) === 'home') homeMs += d; else if (this._norm(e.state) === 'away') awayMs += d;
+                withDur.push({ entry: e, time, durationMs: d });
+            }
+
+            const pf = [];
+            for (const item of withDur) { if (this._norm(item.entry.state) === 'offline' && item.durationMs < 60000) continue; pf.push(item); }
+            const filtered = [];
+            homeMs = 0; awayMs = 0;
+            for (const item of pf) {
+                const last = filtered[filtered.length - 1];
+                const cn = this._norm(item.entry.state);
+                const ln = last ? this._norm(last.entry.state) : null;
+                if (last && ln === cn) { last.durationMs += item.durationMs; last.time = item.time; }
+                else filtered.push({ ...item });
+            }
+            for (const item of filtered) { if (this._norm(item.entry.state) === 'home') homeMs += item.durationMs; else if (this._norm(item.entry.state) === 'away') awayMs += item.durationMs; }
+
+            const totalMs = homeMs + awayMs;
+            const homePct = totalMs > 0 ? Math.round(homeMs / totalMs * 100) : 0;
+            const awayPct = totalMs > 0 ? Math.round(awayMs / totalMs * 100) : 0;
+
+            const ph = this._detailFilterPeriod || 24;
+            const re = new Date();
+            const rs = new Date(re.getTime() - ph * 3600000);
+            const tl = this._buildTimeline(data.entries, rs, re);
+
+            html += `<div style="margin:8px 0;border-bottom:1px solid ${isDark?'#aaa':'#888'};">`;
+            html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">`;
+            html += `<span style="display:flex;align-items:center;gap:4px;font-weight:700;font-size:0.85rem;color:${isDark?'#ddd':'#444'};white-space:nowrap;"><ha-icon icon="${icon}" style="--mdc-icon-size:16px;color:#4CAF50;"></ha-icon>${data.name}</span>`;
+            html += `<span style="font-size:0.7rem;color:${isDark?'#4CAF50':'#388E3C'};white-space:nowrap;">在家 ${homePct}%</span>`;
+            html += `<span style="font-size:0.7rem;color:${isDark?'#aaa':'#888'};white-space:nowrap;">离家 ${awayPct}%</span>`;
+            html += `<div style="flex:1;display:flex;height:8px;border-radius:3px;overflow:hidden;">${tl}</div>`;
+            html += `</div>`;
+
+            for (const { entry, time, durationMs } of filtered) {
+                const ts = time.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                const raw = (entry.state || '').trim().toLowerCase();
+                const isHome = raw === 'home';
+                const isOff = raw === 'unavailable' || raw === 'unknown';
+                const label = isHome ? '在家' : (isOff ? '离线' : '离家');
+                const sc = isHome ? '#4CAF50' : (isOff ? '#f44336' : '#999');
+                const durStr = this._fmtDur(durationMs);
+                const eb = isHome ? (isDark ? 'rgba(76,175,80,0.12)' : 'rgba(76,175,80,0.08)') : (isOff ? (isDark ? 'rgba(244,67,54,0.12)' : 'rgba(244,67,54,0.06)') : (isDark ? '#383838' : '#f5f5f5'));
+                html += `<div style="border-radius:10px;padding:0px 12px;margin-bottom:8px;background:${eb};"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:0.8rem;padding:2px 4px;border-radius:10px;font-weight:500;color:${sc};">${label} · ${durStr}</span><span style="font-size:0.75rem;color:${isDark?'#aaa':'#999'};">${ts}</span></div></div>`;
+            }
+            html += `</div>`;
+        }
+        this._detailBodyEl.innerHTML = html;
+    }
+
+    _fmtDur(ms) {
+        const ph = this._detailFilterPeriod || 24;
+        const pm = ph * 3600000;
+        if (ms < 60000) return '少于1分钟';
+        if (ms >= pm) { const d = Math.floor(ph / 24); return ph < 72 ? `大于${ph}小时` : `大于${d}天`; }
+        const min = Math.floor(ms / 60000);
+        if (min < 60) return `${min}分钟`;
+        const h = Math.floor(min / 60);
+        const rm = min % 60;
+        if (h < 24) return rm > 0 ? `${h}小时${rm}分钟` : `${h}小时`;
+        const days = Math.floor(h / 24);
+        const rh = h % 24;
+        return rh > 0 ? `${days}天${rh}小时` : `${days}天`;
+    }
+
+    _norm(s) { const st = (s || '').trim().toLowerCase(); if (st === 'home') return 'home'; if (st === 'not_home') return 'away'; if (st === 'unavailable' || st === 'unknown') return 'offline'; return st; }
+
+    _dedupe(entries) {
+        if (!entries || entries.length === 0) return [];
+        const sorted = [...entries].sort((a, b) => new Date(a.last_changed) - new Date(b.last_changed));
+        const r = [];
+        for (const e of sorted) { const l = r[r.length - 1]; const cn = this._norm(e.state); const ln = l ? this._norm(l.state) : null; if (l && ln === cn) r[r.length - 1] = e; else r.push(e); }
+        return r;
+    }
+
+    _buildTimeline(entries, rs, re) {
+        const rm = re - rs;
+        if (rm <= 0 || !entries || entries.length === 0) return '<div style="flex:1;height:100%;background:rgba(180,180,180,0.25);border-radius:3px;"></div>';
+        const sorted = [...entries].sort((a, b) => new Date(a.last_changed) - new Date(b.last_changed));
+        const filt = [];
+        for (let i = 0; i < sorted.length; i++) { const ns = this._norm(sorted[i].state); const se = i + 1 < sorted.length ? new Date(sorted[i + 1].last_changed) : re; if (ns === 'offline' && se - new Date(sorted[i].last_changed) < 60000) continue; filt.push(sorted[i]); }
+        const segs = [];
+        for (let i = 0; i < filt.length; i++) {
+            const ss = new Date(filt[i].last_changed);
+            const se = i + 1 < filt.length ? new Date(filt[i + 1].last_changed) : re;
+            const vs = ss < rs ? rs : ss;
+            const ve = se > re ? re : se;
+            const d = ve - vs;
+            if (d > 0) { const ns = this._norm(filt[i].state); const p = (d / rm) * 100; const ls = segs[segs.length - 1]; if (ls && ls.state === ns) ls.percent += p; else segs.push({ state: ns, percent: p }); }
+        }
+        let b = '';
+        for (const s of segs) { const c = s.state === 'home' ? '#4CAF50' : (s.state === 'offline' ? '#f44336' : 'rgba(180,180,180,0.35)'); b += `<div style="width:${s.percent}%;min-width:1px;height:100%;background:${c};flex-shrink:0;"></div>`; }
+        return b || '<div style="flex:1;height:100%;background:rgba(180,180,180,0.25);border-radius:3px;"></div>';
+    }
+
+    _makeChip(label, value, chipBg, activeBg, activeColor, isDark) {
+        const chip = document.createElement('span');
+        chip.setAttribute('data-chip', '1');
+        const isActive = (typeof value === 'number' && value === this._detailFilterPeriod) || (typeof value === 'string' && value === this._detailFilterPerson && value !== '');
+        chip.style.cssText = isActive ? `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};` : `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+        chip.textContent = label;
+        return chip;
+    }
+
+    _refreshChips(container, activePerson, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
+        container.querySelectorAll('[data-chip]').forEach(chip => {
+            const label = chip.textContent;
+            let isActive = false;
+            if (mode === 'time') {
+                isActive = (label === '24小时' && activePeriod === 24) || (label === '1小时' && activePeriod === 1) || (label === '6小时' && activePeriod === 6) || (label === '3天' && activePeriod === 72) || (label === '7天' && activePeriod === 168) || (label === '15天' && activePeriod === 360);
+            } else {
+                isActive = (label === '全部' && activePerson === '') || (label !== '全部' && activePerson !== '');
+                if (isActive && activePerson) { isActive = chip.textContent === (this.hass?.states[activePerson]?.attributes?.friendly_name || activePerson); }
+            }
+            chip.style.background = isActive ? activeBg : chipBg;
+            chip.style.color = isActive ? activeColor : (isDark ? '#ccc' : '#555');
+        });
+    }
+}
+customElements.define('xiaoshi-avatar-history-card', XiaoshiAvatarHistoryCard);
