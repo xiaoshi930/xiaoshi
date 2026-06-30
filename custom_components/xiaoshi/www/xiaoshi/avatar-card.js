@@ -1016,7 +1016,6 @@ class XiaoshiAvatarCard extends LitElement {
 
         const cards = [];
         const persons = this._getPersons();
-        let mapConfig = null;
 
         // 1. 构建地图卡片
         if (this.config.show_popup_map !== 'false') {
@@ -1031,23 +1030,21 @@ class XiaoshiAvatarCard extends LitElement {
                 }
             }
 
-            mapConfig = {
+            cards.push({
                 type: 'map',
                 entities: mapEntities,
                 aspect_ratio: '16:9',
                 hours_to_show: this.config.track_hours || 24,
                 theme_mode: this._evaluateTheme()
-            };
-            cards.push(mapConfig);
+            });
         }
 
         // 2. 添加附加卡片（other_cards）
-        let otherCards = [];
         if (this.config.other_cards && this.config.other_cards.trim()) {
             try {
-                otherCards = yamlToJson(this.config.other_cards);
+                const additionalCards = yamlToJson(this.config.other_cards);
                 const theme = this._evaluateTheme();
-                const cardsWithTheme = otherCards.map(card => {
+                const cardsWithTheme = additionalCards.map(card => {
                     if (!card.theme && this.config.theme) {
                         return { ...card, theme: this.config.theme === 'system' ? theme : this.config.theme };
                     }
@@ -1080,9 +1077,9 @@ class XiaoshiAvatarCard extends LitElement {
 
         this._handleClick();
         const serviceData = { card: cards };
-        const popupWidth = this.config.popup_width || '500px';
+        const popupWidth = this.config.popup_width || Math.min(window.innerWidth * 0.95, 500) + 'px';
         const popupTop = this.config.popup_top || '20px';
-        if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+        serviceData.popup_width = popupWidth;
         if (popupTop !== '20px') serviceData.popup_top = popupTop;
         serviceData.background = 'transparent';
         this.hass.callService('popup_card', 'show', serviceData);
@@ -1259,7 +1256,7 @@ class XiaoshiAvatarHistoryCard extends LitElement {
         this._fetchAndUpdate(persons, trackHours);
 
         return html`
-            <div style="border-radius:12px;background:${bgColor};overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+            <div style="border-radius:12px;background:${bgColor};overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);max-width:500px; margin:0 auto;">
                 <!-- 标题栏：参照birthday的card-header -->
                 <div style="display:flex;align-items:center;padding:12px 16px;">
                     <span style="display:flex;align-items:center;font-size:20px;font-weight:500;color:${fgColor};height:30px;line-height:30px;">
