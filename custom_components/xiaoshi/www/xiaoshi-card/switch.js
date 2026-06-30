@@ -1226,7 +1226,7 @@ class XiaoshiSwitchCard extends LitElement {
 
     const overlay = document.createElement('div');
     overlay.className = 'xiaoshi-history-overlay';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;-webkit-backdrop-filter: blur(10px);backdrop-filter: blur(10px);';
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) this._closeHistoryOverlay();
     });
