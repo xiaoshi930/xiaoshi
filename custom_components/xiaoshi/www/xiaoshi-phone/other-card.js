@@ -162,9 +162,9 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
       _buttonRowSearchTerms: { type: Object },
       _filteredButtonRowEntities: { type: Object },
       _showButtonRowLists: { type: Object },
-      _historyEntitySearchTerm: { type: String },
-      _filteredHistoryEntities: { type: Array },
-      _showHistoryEntityList: { type: Boolean }
+      _historyEntitySearchTerms: { type: Object },
+      _filteredHistoryEntities: { type: Object },
+      _showHistoryEntityLists: { type: Object }
     };
   }
 
@@ -177,7 +177,11 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
       if (!e.target.closest('.entity-selector')) {
         this._showEntityList = false;
         this._showTemperatureList = false;
-        this._showHistoryEntityList = false;
+        if (this._showHistoryEntityLists) {
+          Object.keys(this._showHistoryEntityLists).forEach(key => {
+            this._showHistoryEntityLists[key] = false;
+          });
+        }
 
         if (this._showButtonLists) {
           Object.keys(this._showButtonLists).forEach(key => {
@@ -989,47 +993,64 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
           </div>
         </div>
 
-        <!-- 历史记录实体 -->
-        <div class="form-row">
-          <label>历史记录实体</label>
-          <div class="entity-selector-with-remove">
-            <div class="entity-selector">
-              <input
-                type="text"
-                @input=${this._onHistoryEntitySearch}
-                @focus=${this._onHistoryEntitySearch}
-                .value=${this._historyEntitySearchTerm || this.config.history_entity || ''}
-                placeholder="搜索实体（留空使用设备实体）..."
-                class="entity-search-input"
-              />
-              ${this._showHistoryEntityList ? html`
-                <div class="entity-dropdown">
-                  ${this._filteredHistoryEntities.map(entity => html`
-                    <div
-                      class="entity-option ${this.config.history_entity === entity.entity_id ? 'selected' : ''}"
-                      @click=${() => this._selectHistoryEntity(entity.entity_id)}
-                    >
-                      <div class="entity-info">
-                        <ha-icon icon="${entity.attributes.icon || 'mdi:help-circle'}"></ha-icon>
-                        <div class="entity-details">
-                          <div class="entity-name">${entity.attributes.friendly_name || entity.entity_id}</div>
-                          <div class="entity-id">${entity.entity_id}</div>
+        <!-- 历史记录实体列表 -->
+        <div class="form-group">
+          <label>历史记录实体（可选，留空使用设备实体）</label>
+          ${(this._getHistoryEntities()).map((entity, index) => html`
+            <div class="entity-item" style="background: #f5f5f5; border-radius: 8px; padding: 10px; margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <span style="font-weight: bold; font-size: 13px; color: #000;">历史记录 #${index + 1}</span>
+                <button class="remove-button" @click=${() => this._removeHistoryEntity(index)} title="移除此实体">
+                  <ha-icon icon="mdi:close"></ha-icon>
+                </button>
+              </div>
+              <div class="entity-row" style="display: flex; align-items: center; gap: 8px;">
+                <div class="entity-selector">
+                  <input
+                    type="text"
+                    @input=${(e) => this._onHistoryEntitySearch(e, index)}
+                    @focus=${(e) => this._onHistoryEntitySearch(e, index)}
+                    .value=${this._historyEntitySearchTerms?.[index] || entity || ''}
+                    placeholder="搜索实体..."
+                    class="entity-search-input"
+                  />
+                  ${this._showHistoryEntityLists?.[index] ? html`
+                    <div class="entity-dropdown">
+                      ${this._filteredHistoryEntities?.[index]?.map(he => html`
+                        <div
+                          class="entity-option ${entity === he.entity_id ? 'selected' : ''}"
+                          @click=${() => this._selectHistoryEntity(he.entity_id, index)}
+                        >
+                          <div class="entity-info">
+                            <ha-icon icon="${he.attributes.icon || 'mdi:help-circle'}"></ha-icon>
+                            <div class="entity-details">
+                              <div class="entity-name">${he.attributes.friendly_name || he.entity_id}</div>
+                              <div class="entity-id">${he.entity_id}</div>
+                            </div>
+                          </div>
+                          ${entity === he.entity_id ?
+                            html`<ha-icon icon="mdi:check" class="check-icon"></ha-icon>` : ''}
                         </div>
-                      </div>
-                      ${this.config.history_entity === entity.entity_id ?
-                        html`<ha-icon icon="mdi:check" class="check-icon"></ha-icon>` : ''}
+                      `)}
+                      ${!this._filteredHistoryEntities?.[index] || this._filteredHistoryEntities[index].length === 0 ? html`
+                        <div class="no-results">未找到匹配的实体</div>
+                      ` : ''}
                     </div>
-                  `)}
-                  ${this._filteredHistoryEntities.length === 0 ? html`
-                    <div class="no-results">未找到匹配的实体</div>
                   ` : ''}
                 </div>
-              ` : ''}
+              </div>
             </div>
-            <button class="remove-button" @click=${this._removeHistoryEntity} title="移除历史记录实体">
-              <ha-icon icon="mdi:close"></ha-icon>
-            </button>
+          `)}
+          <div style="display: flex; align-items: center; margin-top: 8px;">
+            <mwc-button
+              class="add-button"
+              @click=${this._addHistoryEntity}
+              outlined
+            >
+              添加历史记录实体
+            </mwc-button>
           </div>
+          <div class="help-text">添加多个实体后，历史记录弹窗可切换查看不同实体</div>
         </div>
 
         <!-- 名称重定义 -->
@@ -1662,16 +1683,21 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
     this.requestUpdate();
   }
 
-  _onHistoryEntitySearch(e) {
+  _onHistoryEntitySearch(e, index) {
     const searchTerm = e.target.value.toLowerCase();
-    this._historyEntitySearchTerm = searchTerm;
-    this._showHistoryEntityList = true;
+
+    if (!this._historyEntitySearchTerms) this._historyEntitySearchTerms = {};
+    if (!this._filteredHistoryEntities) this._filteredHistoryEntities = {};
+    if (!this._showHistoryEntityLists) this._showHistoryEntityLists = {};
+
+    this._historyEntitySearchTerms[index] = searchTerm;
+    this._showHistoryEntityLists[index] = true;
 
     if (!this.hass) return;
 
     const allEntities = Object.values(this.hass.states);
 
-    this._filteredHistoryEntities = allEntities.filter(entity => {
+    this._filteredHistoryEntities[index] = allEntities.filter(entity => {
       const entityId = entity.entity_id.toLowerCase();
       const friendlyName = (entity.attributes.friendly_name || '').toLowerCase();
       const matchesSearch = entityId.includes(searchTerm) || friendlyName.includes(searchTerm);
@@ -1681,30 +1707,69 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
     this.requestUpdate();
   }
 
-  _selectHistoryEntity(entityId) {
-    this.config = {
-      ...this.config,
-      history_entity: entityId
-    };
+  _selectHistoryEntity(entityId, index) {
+    const entities = this._getHistoryEntities();
+    entities[index] = entityId;
 
-    this._historyEntitySearchTerm = '';
-    this._showHistoryEntityList = false;
+    const newConfig = {
+      ...this.config,
+      history_entities: entities.length > 0 ? entities : undefined
+    };
+    delete newConfig.history_entity;
+    this.config = newConfig;
+
+    if (!this._historyEntitySearchTerms) this._historyEntitySearchTerms = {};
+    if (!this._showHistoryEntityLists) this._showHistoryEntityLists = {};
+
+    this._historyEntitySearchTerms[index] = '';
+    this._showHistoryEntityLists[index] = false;
 
     this._fireEvent();
     this.requestUpdate();
   }
 
-  _removeHistoryEntity() {
-    if (!this.config) return;
+  _getHistoryEntities() {
+    if (this.config.history_entities) {
+      return Array.isArray(this.config.history_entities) 
+        ? [...this.config.history_entities]
+        : [this.config.history_entities];
+    }
+    if (this.config.history_entity) {
+      return [this.config.history_entity];
+    }
+    return [];
+  }
 
-    this._historyEntitySearchTerm = '';
-    this._showHistoryEntityList = false;
-    this._filteredHistoryEntities = [];
-
-    this.config = {
+  _addHistoryEntity() {
+    const entities = this._getHistoryEntities();
+    entities.push('');
+    const newConfig = {
       ...this.config,
-      history_entity: undefined
+      history_entities: entities
     };
+    delete newConfig.history_entity;
+    this.config = newConfig;
+    this._fireEvent();
+    this.requestUpdate();
+  }
+
+  _removeHistoryEntity(index) {
+    const entities = this._getHistoryEntities();
+    entities.splice(index, 1);
+
+    if (!this._historyEntitySearchTerms) this._historyEntitySearchTerms = {};
+    if (!this._showHistoryEntityLists) this._showHistoryEntityLists = {};
+    if (!this._filteredHistoryEntities) this._filteredHistoryEntities = {};
+    delete this._historyEntitySearchTerms[index];
+    delete this._showHistoryEntityLists[index];
+    delete this._filteredHistoryEntities[index];
+
+    const newConfig = {
+      ...this.config,
+      history_entities: entities.length > 0 ? entities : undefined
+    };
+    delete newConfig.history_entity;
+    this.config = newConfig;
     this._fireEvent();
     this.requestUpdate();
   }
@@ -1785,9 +1850,9 @@ class XiaoshiPhoneOtherCardEditor extends LitElement {
     this._buttonRowSearchTerms = {};
     this._filteredButtonRowEntities = {};
     this._showButtonRowLists = {};
-    this._historyEntitySearchTerm = '';
-    this._filteredHistoryEntities = [];
-    this._showHistoryEntityList = false;
+    this._historyEntitySearchTerms = {};
+    this._filteredHistoryEntities = {};
+    this._showHistoryEntityLists = {};
   }
 }
 customElements.define('xiaoshi-phone-other-card-editor', XiaoshiPhoneOtherCardEditor);
@@ -2409,6 +2474,8 @@ class XiaoshiPhoneOtherCard extends LitElement {
     this._showHistory = false;
     this._historyData = {};
     this._historyLoading = false;
+    this._historyFilterEntity = '';
+    this._historyFilterPeriod = 24;
   }
 
   _evaluateTheme() {
@@ -3926,10 +3993,21 @@ class XiaoshiPhoneOtherCard extends LitElement {
 
   async _fetchHistory() {
     try {
-      const entityId = this.config.history_entity || this.config.entity; if (!entityId) return;
+      const filterEntity = this._historyFilterEntity || '';
+      let entityIds;
+      if (filterEntity) {
+        entityIds = filterEntity;
+      } else if (this.config.history_entities && this.config.history_entities.length > 0) {
+        entityIds = this.config.history_entities.join(',');
+      } else if (this.config.history_entity) {
+        entityIds = this.config.history_entity;
+      } else {
+        entityIds = this.config.entity;
+      }
+      if (!entityIds) return;
       const periodHours = this._historyFilterPeriod || 24;
       const endTime = new Date(); const startTime = new Date(endTime.getTime() - periodHours * 3600000);
-      const data = await this.hass.callApi('GET', `history/period/${startTime.toISOString()}?end_time=${endTime.toISOString()}&filter_entity_id=${entityId}&minimal_response&no_attributes`);
+      const data = await this.hass.callApi('GET', `history/period/${startTime.toISOString()}?end_time=${endTime.toISOString()}&filter_entity_id=${entityIds}&minimal_response&no_attributes`);
       const result = {}; const all = Array.isArray(data) ? data : [];
       for (const eh of all) {
         if (!eh || eh.length === 0) continue; const eId = eh[0].entity_id; if (!eId) continue;
@@ -3947,15 +4025,16 @@ class XiaoshiPhoneOtherCard extends LitElement {
   _showHistoryOverlay() {
     if (this._historyOverlayEl) return;
     const theme = this._evaluateTheme(); const isDark = theme === 'dark';
-    const histEntityId = this.config.history_entity || this.config.entity;
+    const histEntityIds = this._getHistoryEntityIds();
     const ent = this.hass?.states?.[this.config.entity];
-    const histEnt = this.hass?.states?.[histEntityId];
-    const roomName = (this.config.history_entity ? histEnt?.attributes?.friendly_name || histEntityId : ent?.attributes?.friendly_name || this.config.entity) || '设备';
+    const firstHistEnt = histEntityIds.length > 0 ? this.hass?.states?.[histEntityIds[0]] : null;
+    const roomName = (histEntityIds.length > 0 ? firstHistEnt?.attributes?.friendly_name || histEntityIds[0] : ent?.attributes?.friendly_name || this.config.entity) || '设备';
     const textColor = isDark ? '#fff' : '#333'; const bgColor = isDark ? '#2c2c2c' : '#fff';
     const borderColor = isDark ? '#aaa' : '#888'; const btnBg = isDark ? '#444' : '#f0f0f0';
     const btnIconColor = isDark ? '#ccc' : '#666';
     const chipBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
     const chipActiveBg = this._getHistoryAccentColor(); const chipActiveColor = '#fff';
+    this._historyFilterEntity = '';
     this._historyFilterPeriod = 24;
     const overlay = document.createElement('div'); overlay.className = 'xiaoshi-history-overlay';
     overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;-webkit-backdrop-filter: blur(10px);backdrop-filter: blur(10px);';
@@ -3968,14 +4047,52 @@ class XiaoshiPhoneOtherCard extends LitElement {
     closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
     header.appendChild(tit); header.appendChild(closeBtn);
     const toolbar = document.createElement('div'); toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 5px;margin:0 20px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
-    const timeRow = document.createElement('div'); timeRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    toolbar.className = 'xiaoshi-history-toolbar';
+
+    // Entity filter chips (only when multiple history entities)
+    const hasMultiple = histEntityIds.length > 1;
+    if (hasMultiple) {
+      const entityRow = document.createElement('div');
+      entityRow.style.cssText = 'display:flex;align-items:flex-start;gap:8px;flex-basis:100%;';
+      const entityLabel = document.createElement('span');
+      entityLabel.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;padding-top:4px;`;
+      entityLabel.textContent = '实体:';
+      entityRow.appendChild(entityLabel);
+      const entityChips = document.createElement('div');
+      entityChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;flex:1;';
+      entityChips.className = 'xiaoshi-entity-chips';
+
+      const allChip = this._buildFilterChip('全部', '', chipBg, chipActiveBg, chipActiveColor, isDark, 'entity');
+      allChip.addEventListener('click', () => {
+        this._historyFilterEntity = '';
+        this._refreshHistoryChips(entityChips, this._historyFilterEntity, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'entity');
+        this._refetchWithFilters();
+      });
+      entityChips.appendChild(allChip);
+
+      for (const eId of histEntityIds) {
+        const so2 = this.hass.states[eId];
+        const eName = so2?.attributes?.friendly_name || eId;
+        const chip = this._buildFilterChip(eName, eId, chipBg, chipActiveBg, chipActiveColor, isDark, 'entity');
+        chip.addEventListener('click', () => {
+          this._historyFilterEntity = eId;
+          this._refreshHistoryChips(entityChips, this._historyFilterEntity, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'entity');
+          this._refetchWithFilters();
+        });
+        entityChips.appendChild(chip);
+      }
+      entityRow.appendChild(entityChips);
+      toolbar.appendChild(entityRow);
+    }
+
+    const timeRow = document.createElement('div'); timeRow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-basis:100%;';
     const timeLabel = document.createElement('span'); timeLabel.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;`; timeLabel.textContent = '时段:';
     timeRow.appendChild(timeLabel);
     const timeChips = document.createElement('div'); timeChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;'; timeChips.className = 'xiaoshi-time-chips';
     const periods = [{ label: '1小时', value: 1 },{ label: '6小时', value: 6 },{ label: '24小时', value: 24 },{ label: '3天', value: 72 },{ label: '7天', value: 168 },{ label: '15天', value: 360 }];
     for (const p of periods) {
-      const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
-      chip.addEventListener('click', () => { this._historyFilterPeriod = p.value; this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time'); this._refetchWithFilters(); });
+      const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
+      chip.addEventListener('click', () => { this._historyFilterPeriod = p.value; this._refreshHistoryChips(timeChips, this._historyFilterEntity, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time'); this._refetchWithFilters(); });
       timeChips.appendChild(chip);
     }
     timeRow.appendChild(timeChips); toolbar.appendChild(timeRow);
@@ -3983,6 +4100,17 @@ class XiaoshiPhoneOtherCard extends LitElement {
     body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
     dialog.appendChild(header); dialog.appendChild(toolbar); dialog.appendChild(body); overlay.appendChild(dialog); document.body.appendChild(overlay);
     this._historyOverlayEl = overlay; this._historyBodyEl = body;
+  }
+
+  _getHistoryEntityIds() {
+    if (this.config.history_entities && this.config.history_entities.length > 0) {
+      return Array.isArray(this.config.history_entities)
+        ? [...this.config.history_entities]
+        : [this.config.history_entities];
+    }
+    if (this.config.history_entity) return [this.config.history_entity];
+    if (this.config.entity) return [this.config.entity];
+    return [];
   }
 
   _updateHistoryContent() {
@@ -4027,7 +4155,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
 
   _closeHistoryOverlay() {
     if (this._historyOverlayEl) { this._historyOverlayEl.remove(); this._historyOverlayEl = null; this._historyBodyEl = null; }
-    this._showHistory = false; this._historyData = {}; this._historyLoading = false; this._historyFilterPeriod = 24;
+    this._showHistory = false; this._historyData = {}; this._historyLoading = false; this._historyFilterEntity = ''; this._historyFilterPeriod = 24;
   }
 
   _normalizeState(state) {
@@ -4093,17 +4221,31 @@ class XiaoshiPhoneOtherCard extends LitElement {
     const d=Math.floor(h/24);const rh=h%24;return rh>0?`${d}天${rh}小时`:`${d}天`;
   }
 
-  _buildFilterChip(label, value, chipBg, activeBg, activeColor, isDark) {
+  _buildFilterChip(label, value, chipBg, activeBg, activeColor, isDark, mode) {
     const chip=document.createElement('span');chip.setAttribute('data-chip','1');
-    const isActive=(typeof value==='number'&&value===this._historyFilterPeriod);
+    let isActive=false;
+    if(mode==='entity'){
+      isActive=(typeof value==='string'&&value===this._historyFilterEntity);
+    }else{
+      isActive=(typeof value==='number'&&value===this._historyFilterPeriod);
+    }
     if(isActive)chip.style.cssText=`padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${activeBg};color:${activeColor};`;
     else chip.style.cssText=`padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
     chip.textContent=label;return chip;
   }
 
-  _refreshHistoryChips(container, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
+  _refreshHistoryChips(container, activeEntity, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
     const chips=container.querySelectorAll('[data-chip]');
-    chips.forEach(chip=>{const label=chip.textContent;if(mode==='time'){const isActive=(label==='24小时'&&activePeriod===24)||(label==='1小时'&&activePeriod===1)||(label==='6小时'&&activePeriod===6)||(label==='3天'&&activePeriod===72)||(label==='7天'&&activePeriod===168)||(label==='15天'&&activePeriod===360);if(isActive){chip.style.background=activeBg;chip.style.color=activeColor;}else{chip.style.background=chipBg;chip.style.color=isDark?'#ccc':'#555';}}});
+    chips.forEach(chip=>{const label=chip.textContent;
+      if(mode==='entity'){
+        const isActive=(label==='全部'&&activeEntity==='')||(label!=='全部'&&activeEntity!=='');
+        if(isActive&&chip.textContent===(activeEntity?(this.hass?.states[activeEntity]?.attributes?.friendly_name||activeEntity):'全部')){
+          chip.style.background=activeBg;chip.style.color=activeColor;
+        }else{chip.style.background=chipBg;chip.style.color=isDark?'#ccc':'#555';}
+      }else{
+        const isActive=(label==='24小时'&&activePeriod===24)||(label==='1小时'&&activePeriod===1)||(label==='6小时'&&activePeriod===6)||(label==='3天'&&activePeriod===72)||(label==='7天'&&activePeriod===168)||(label==='15天'&&activePeriod===360);
+        if(isActive){chip.style.background=activeBg;chip.style.color=activeColor;}else{chip.style.background=chipBg;chip.style.color=isDark?'#ccc':'#555';}
+      }});
   }
 
   _refetchWithFilters() {
