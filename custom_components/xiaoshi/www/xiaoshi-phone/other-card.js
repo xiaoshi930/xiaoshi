@@ -4028,7 +4028,7 @@ class XiaoshiPhoneOtherCard extends LitElement {
     const histEntityIds = this._getHistoryEntityIds();
     const ent = this.hass?.states?.[this.config.entity];
     const firstHistEnt = histEntityIds.length > 0 ? this.hass?.states?.[histEntityIds[0]] : null;
-    const roomName = (histEntityIds.length > 0 ? firstHistEnt?.attributes?.friendly_name || histEntityIds[0] : ent?.attributes?.friendly_name || this.config.entity) || '设备';
+    const roomName = (histEntityIds.length === 1 ? firstHistEnt?.attributes?.friendly_name || histEntityIds[0] : ent?.attributes?.friendly_name || this.config.entity) || '设备';
     const textColor = isDark ? '#fff' : '#333'; const bgColor = isDark ? '#2c2c2c' : '#fff';
     const borderColor = isDark ? '#aaa' : '#888'; const btnBg = isDark ? '#444' : '#f0f0f0';
     const btnIconColor = isDark ? '#ccc' : '#666';
