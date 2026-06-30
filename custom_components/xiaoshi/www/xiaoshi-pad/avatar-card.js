@@ -11,6 +11,12 @@ window.customCards.push({
     name: '消逝(A平板端)-头像卡片',
     description: '平板端头像卡片',
     preview: true
+},
+{
+    type: 'xiaoshi-avatar-history-card',
+    name: '消逝头像弹窗-人员历史时间条',
+    description: '在弹窗中显示人员历史时间条',
+    preview: false
 });
 
 class XiaoshiAvatarPadCardEditor extends LitElement {
@@ -114,6 +120,13 @@ class XiaoshiAvatarPadCardEditor extends LitElement {
                     <input type="text" name="popup_width" .value="${c.popup_width || ''}" @change="${this._valueChanged}" placeholder="500px" style="max-width:100px" />
                     <label style="min-width:auto">弹窗位置</label>
                     <input type="text" name="popup_top" .value="${c.popup_top || ''}" @change="${this._valueChanged}" placeholder="50%" style="max-width:100px" />
+                </div>
+                <div class="form-row">
+                    <label>历史记录</label>
+                    <select name="show_popup_history" @change="${this._valueChanged}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
+                        <option value="true" .selected="${c.show_popup_history !== 'false'}">显示</option>
+                        <option value="false" .selected="${c.show_popup_history === 'false'}">隐藏</option>
+                    </select>
                 </div>
                 <div class="form-row">
                     <label>弹窗地图</label>
@@ -785,7 +798,24 @@ class XiaoshiAvatarPadCard extends LitElement {
             });
         }
 
-        // 2. 添加附加卡片（other_cards）
+        // 2. 如果开启了历史记录，注入历史时间条卡片到地图卡片后面
+        if (this.config.show_popup_history !== 'false') {
+            const trackerEntities = persons.map(pc => pc.tracker_entity).filter(Boolean);
+            if (trackerEntities.length > 0) {
+                cards.push({
+                    type: 'custom:xiaoshi-avatar-history-card',
+                    persons: persons.map(pc => ({
+                        person_entity: pc.person_entity || '',
+                        tracker_entity: pc.tracker_entity || '',
+                        zone_entity: pc.zone_entity || ''
+                    })),
+                    track_hours: this.config.track_hours || 24,
+                    theme: this.config.theme || 'function'
+                });
+            }
+        }
+
+        // 3. 添加附加卡片（other_cards）
         if (this.config.other_cards && this.config.other_cards.trim()) {
             try {
                 const additionalCards = yamlToJson(this.config.other_cards);

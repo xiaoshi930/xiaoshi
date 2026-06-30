@@ -681,12 +681,18 @@ class XiaoshiWeatherPadCard extends XiaoshiWeatherBase {
       hass: { type: Object },
       config: { type: Object },
       entity: { type: Object },
-      mode: { type: String }
+      mode: { type: String },
+      _showHistory: { type: Boolean, state: true },
+      _historyData: { type: Object, state: true },
+      _historyLoading: { type: Boolean, state: true }
     };
   }
 
   constructor() {
     super();
+    this._showHistory = false;
+    this._historyData = {};
+    this._historyLoading = false;
   }
 
   static get styles() {
@@ -772,6 +778,8 @@ class XiaoshiWeatherPadCard extends XiaoshiWeatherBase {
       /*预警图标和文字样式*/
       .warning-icon-text { color: #FFA726; height: 20px; font-size: 18px; font-weight: bold; cursor: pointer; transition: transform 0.2s ease; white-space: nowrap; align-self: center; margin-left: auto; margin-top: -2px; }
       .warning-icon-text:hover { transform: scale(1.1); }
+      .history-btn{padding:1px 2px;margin-top:0;border:none;border-radius:5px;font-size:10px;cursor:pointer;transition:all 0.3s ease;color:white;font-weight:bold;}
+      .history-btn:hover{opacity:0.85;transform:scale(1.05)}
       .unavailable { display: flex; align-items: center; justify-content: center; height: 0; min-height: 0; max-height: 0; margin: 0; padding: 0; }`;
   }
   
@@ -1430,9 +1438,16 @@ class XiaoshiWeatherPadCard extends XiaoshiWeatherBase {
 
         </div>
 
-        <div class="update-time" style="display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
+        <div class="update-time" style="display: flex; justify-content: space-between; align-items: center;font-size: 10px;">
           <div>
+            <!-- 历史记录按钮 -->
+            <button class="history-btn" style="background: #069bb9;" @click=${this._toggleHistory}>
+              历史
+            </button>
             ${this._getRelativeTime(update_time)}  
+            <button style="margin-left: 1px; color: #04d2f6ff; background: none; border: none; cursor: pointer; font-size: 10px; font-weight: bold; padding: 0;" 
+              @click="${() => this._refresh_weather()}">↺
+            </button>
           </div>
           
           <!-- 日出日落信息 - 放在右侧 -->
@@ -1490,10 +1505,10 @@ class XiaoshiWeatherPadCard extends XiaoshiWeatherBase {
         relativeTime = `${diffDays}天前`;
       }
       
-      return `数据更新时间：: ${relativeTime}`;
+      return `更新时间：: ${relativeTime}`;
     } catch (error) {
       console.warn('时间解析错误:', error);
-      return `数据更新时间：${updateTime}`;
+      return `更新时间：${updateTime}`;
     }
   }
 
@@ -1555,6 +1570,374 @@ class XiaoshiWeatherPadCard extends XiaoshiWeatherBase {
     `;
   }
 
+  // ========== 历史记录（参照phone天气） ==========
+  _toggleHistory() {
+    this._handleClick();
+    if (this._showHistory) {
+      this._closeHistoryOverlay();
+      return;
+    }
+    this._showHistory = true;
+    this._showHistoryOverlay();
+    this._fetchHistory();
+  }
+
+  _refresh_weather() {
+    this._handleClick();
+    if (!this.config?.entity) return;
+    this.hass.callService('qweather', 'update_weather', {
+      entity_id: this.config.entity,
+    });
+  }
+
+  async _fetchHistory() {
+    try {
+      const entityId = this.config.entity;
+      const periodHours = this._historyFilterPeriod || 24;
+      const endTime = new Date();
+      const startTime = new Date(endTime.getTime() - periodHours * 60 * 60 * 1000);
+      const startStr = startTime.toISOString();
+      const endStr = endTime.toISOString();
+      const data = await this.hass.callApi(
+        'GET',
+        `history/period/${startStr}?end_time=${endStr}&filter_entity_id=${entityId}&minimal_response&no_attributes`
+      );
+      const result = {};
+      const allEntities = Array.isArray(data) ? data : [];
+      for (const entityHistory of allEntities) {
+        if (!entityHistory || entityHistory.length === 0) continue;
+        const eId = entityHistory[0].entity_id;
+        if (!eId) continue;
+        const stateObj = this.hass.states[eId];
+        const friendlyName = stateObj?.attributes?.friendly_name || stateObj?.attributes?.city || eId;
+        const rawEntries = entityHistory
+          .filter(entry => entry && entry.last_changed)
+          .sort((a, b) => new Date(b.last_changed) - new Date(a.last_changed));
+        const entries = [];
+        for (const entry of rawEntries) {
+          const last = entries[entries.length - 1];
+          const curRaw = (entry.state || '').trim();
+          const lastRaw = last ? (last.state || '').trim() : null;
+          if (last && lastRaw === curRaw) {
+            entries[entries.length - 1] = entry;
+          } else {
+            entries.push(entry);
+          }
+        }
+        if (entries.length > 0) {
+          result[eId] = { name: friendlyName, entries: entries };
+        }
+      }
+      this._historyData = result;
+    } catch (e) {
+      console.error('获取天气历史记录失败:', e);
+      this._historyData = {};
+    } finally {
+      this._historyLoading = false;
+      this._updateHistoryContent();
+    }
+  }
+
+  _showHistoryOverlay() {
+    if (this._historyOverlayEl) return;
+    const theme = this._evaluateTheme();
+    const isDark = theme !== 'light';
+    const ent = this.hass?.states?.[this.config.entity];
+    const cityName = ent?.attributes?.city || ent?.attributes?.friendly_name || this.config.entity || '天气';
+    const textColor = isDark ? '#fff' : '#333';
+    const bgColor = isDark ? '#2c2c2c' : '#fff';
+    const borderColor = isDark ? '#aaa' : '#888';
+    const btnBg = isDark ? '#444' : '#f0f0f0';
+    const btnIconColor = isDark ? '#ccc' : '#666';
+    const chipBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
+    const chipActiveBg = this._getHistoryAccentColor();
+    const chipActiveColor = '#fff';
+    this._historyFilterPeriod = 24;
+    const overlay = document.createElement('div');
+    overlay.className = 'xiaoshi-history-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;-webkit-backdrop-filter: blur(10px);backdrop-filter: blur(10px);';
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) this._closeHistoryOverlay(); });
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
+    const header = document.createElement('div');
+    header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
+    const title = document.createElement('span');
+    title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
+    title.textContent = `${cityName} - 天气历史记录`;
+    const closeBtn = document.createElement('button');
+    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
+    closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
+    closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+    const toolbar = document.createElement('div');
+    toolbar.className = 'xiaoshi-history-toolbar';
+    toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 5px;margin:0 20px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
+    const timeRow = document.createElement('div');
+    timeRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    const timeLabel = document.createElement('span');
+    timeLabel.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;`;
+    timeLabel.textContent = '时段:';
+    timeRow.appendChild(timeLabel);
+    const timeChips = document.createElement('div');
+    timeChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+    timeChips.className = 'xiaoshi-time-chips';
+    const periods = [
+      { label: '1小时', value: 1 }, { label: '6小时', value: 6 },
+      { label: '24小时', value: 24 }, { label: '3天', value: 72 },
+      { label: '7天', value: 168 }, { label: '10天', value: 240 }
+    ];
+    for (const p of periods) {
+      const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
+      chip.addEventListener('click', () => {
+        this._handleClick();
+        this._historyFilterPeriod = p.value;
+        this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
+        this._refetchWithFilters();
+      });
+      timeChips.appendChild(chip);
+    }
+    timeRow.appendChild(timeChips);
+    toolbar.appendChild(timeRow);
+    const body = document.createElement('div');
+    body.className = 'xiaoshi-history-body';
+    body.style.cssText = 'flex:1;overflow-y:auto;padding:6px 20px;';
+    body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+    dialog.appendChild(header);
+    dialog.appendChild(toolbar);
+    dialog.appendChild(body);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    this._historyOverlayEl = overlay;
+    this._historyBodyEl = body;
+  }
+
+  _updateHistoryContent() {
+    if (!this._historyBodyEl) return;
+    const theme = this._evaluateTheme();
+    const isDark = theme !== 'light';
+    if (this._historyLoading) {
+      this._historyBodyEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+      return;
+    }
+    const items = Object.entries(this._historyData);
+    if (items.length === 0) {
+      this._historyBodyEl.innerHTML = `<div style="text-align:center;padding:40px;color:${isDark?'#aaa':'#999'};font-size:0.9rem;">暂无天气历史记录</div>`;
+      return;
+    }
+    let html = '';
+    for (const [, data] of items) {
+      const dedupedEntries = [];
+      for (const entry of data.entries) {
+        const last = dedupedEntries[dedupedEntries.length - 1];
+        const curRaw = (entry.state || '').trim();
+        const lastRaw = last ? (last.state || '').trim() : null;
+        if (last && lastRaw === curRaw) {
+          dedupedEntries[dedupedEntries.length - 1] = entry;
+        } else { dedupedEntries.push(entry); }
+      }
+      const entriesWithDuration = [];
+      for (let i = 0; i < dedupedEntries.length; i++) {
+        const entry = dedupedEntries[i];
+        const time = new Date(entry.last_changed);
+        const prevEntry = dedupedEntries[i - 1];
+        const endTime = prevEntry ? new Date(prevEntry.last_changed) : new Date();
+        const durationMs = Math.max(0, endTime - time);
+        entriesWithDuration.push({ entry, time, durationMs });
+      }
+      const filtered = [];
+      for (const item of entriesWithDuration) {
+        const last = filtered[filtered.length - 1];
+        const curRaw = (item.entry.state || '').trim();
+        const lastRaw = last ? (last.entry.state || '').trim() : null;
+        if (last && lastRaw === curRaw) {
+          last.durationMs += item.durationMs;
+          last.time = item.time;
+        } else { filtered.push({ ...item }); }
+      }
+      html += `<div style="margin:8px 0px;border-bottom:1px solid ${isDark?'#aaa':'#888'};">`;
+      const periodHours = this._historyFilterPeriod || 24;
+      const now = new Date();
+      const rangeStart = new Date(now.getTime() - periodHours * 60 * 60 * 1000);
+      const timelineBlocks = this._buildTimeline(data.entries, rangeStart, now);
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">`;
+      html += `<span style="font-weight:700;font-size:0.85rem;color:${isDark?'#ddd':'#444'};white-space:nowrap;">${data.name}</span>`;
+      html += `<div style="flex:1;display:flex;height:8px;border-radius:3px;overflow:hidden;">${timelineBlocks}</div>`;
+      html += `</div>`;
+      for (const { entry, time, durationMs } of filtered) {
+        const timeStr = time.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const rawState = (entry.state || '').trim();
+        const stateLabel = this._translateWeatherState(rawState);
+        const stateColor = this._getWeatherStateColor(rawState);
+        const durationStr = this._formatDuration(durationMs);
+        const scRgb = stateColor.replace(/[^\d,]/g, '');
+        const entryBg = isDark ? `rgba(${scRgb},0.12)` : `rgba(${scRgb},0.08)`;
+        html += `<div style="border-radius:10px;padding:1px 12px;margin-bottom:8px;background:${entryBg};"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:0.8rem;padding:2px 4px;border-radius:10px;font-weight:500;color:${stateColor};">${stateLabel} · ${durationStr}</span><span style="font-size:0.75rem;color:${isDark?'#aaa':'#999'};">${timeStr}</span></div></div>`;
+      }
+      html += `</div>`;
+    }
+    this._historyBodyEl.innerHTML = html;
+  }
+
+  _closeHistoryOverlay() {
+    this._handleClick();
+    if (this._historyOverlayEl) {
+      this._historyOverlayEl.remove();
+      this._historyOverlayEl = null;
+      this._historyBodyEl = null;
+    }
+    this._showHistory = false;
+    this._historyData = {};
+    this._historyLoading = false;
+    this._historyFilterPeriod = 24;
+  }
+
+  _getHistoryAccentColor() {
+    const theme = this._evaluateTheme();
+    const isDark = theme !== 'light';
+    return isDark ? '#4FC3F7' : '#0288D1';
+  }
+
+  _translateWeatherState(state) {
+    const s = (state || '').trim();
+    const translations = {
+      'sunny': '晴', 'clear-night': '晴', 'partlycloudy': '少云',
+      'cloudy': '多云', 'overcast': '阴',
+      'light-rain': '小雨', 'rainy': '雨', 'moderate-rain': '中雨',
+      'heavy-rain': '大雨', 'torrential-rain': '暴雨', 'pouring': '暴雨',
+      'rain-shower': '阵雨', 'thunderstorm': '雷阵雨', 'lightning-rainy': '雷阵雨',
+      'lightning': '雷电', 'light-snow': '小雪', 'snowy': '雪',
+      'moderate-snow': '中雪', 'heavy-snow': '大雪', 'blizzard': '暴雪',
+      'snow-shower': '阵雪', 'snowy-rainy': '雨夹雪', 'rain-snow': '雨雪天气',
+      'fog': '雾', 'haze': '霾', 'sand': '扬沙', 'hail': '冰雹',
+      'windy': '大风', 'windy-variant': '大风', 'hot': '热',
+      'fair': '晴间多云', 'exceptional': '异常天气', 'freezing-rain': '冻雨',
+    };
+    const cnNames = {
+      '晴': '晴', '少云': '少云', '多云': '多云', '阴': '阴',
+      '小雨': '小雨', '中雨': '中雨', '大雨': '大雨', '暴雨': '暴雨',
+      '阵雨': '阵雨', '雷阵雨': '雷阵雨', '雨': '雨',
+      '小雪': '小雪', '中雪': '中雪', '大雪': '大雪', '暴雪': '暴雪',
+      '阵雪': '阵雪', '雪': '雪', '雨夹雪': '雨夹雪', '雨雪天气': '雨雪天气', '冻雨': '冻雨',
+      '雾': '雾', '霾': '霾', '扬沙': '扬沙', '冰雹': '冰雹',
+      '晴间多云': '晴间多云', '热': '热',
+    };
+    return translations[s] || cnNames[s] || s;
+  }
+
+  _getWeatherStateColor(state) {
+    const s = (state || '').trim();
+    if (s === 'sunny' || s === 'clear-night') return 'rgb(255, 152, 0)';
+    if (s === 'partlycloudy' || s === 'fair') return 'rgb(255, 152, 0)';
+    if (s === 'cloudy' || s === 'overcast') return 'rgb(255, 152, 0)';
+    if (s.includes('rain') || s === 'rainy' || s === 'pouring' || s === 'thunderstorm' || s === 'lightning-rainy' || s === 'lightning') return 'rgb(33, 150, 243)';
+    if (s.includes('snow') || s === 'snowy' || s === 'snowy-rainy' || s === 'rain-snow') return 'rgb(0, 188, 212)';
+    if (s === 'fog' || s === 'haze') return 'rgb(96, 125, 139)';
+    if (s === 'sand') return 'rgb(121, 85, 72)';
+    if (s === 'hail') return 'rgb(233, 30, 99)';
+    if (s === 'windy' || s === 'windy-variant') return 'rgb(0, 150, 136)';
+    if (s === 'hot') return 'rgb(244, 67, 54)';
+    if (s === 'exceptional') return 'rgb(156, 39, 176)';
+    if (s === 'freezing-rain') return 'rgb(92, 107, 192)';
+    if (s === '晴') return 'rgb(255, 152, 0)';
+    if (s === '少云' || s === '晴间多云') return 'rgb(255, 152, 0)';
+    if (s === '多云' || s === '阴') return 'rgb(255, 152, 0)';
+    if (s.includes('雨')) return 'rgb(33, 150, 243)';
+    if (s.includes('雪')) return 'rgb(0, 188, 212)';
+    if (s === '雾' || s === '霾') return 'rgb(96, 125, 139)';
+    if (s === '冰雹') return 'rgb(233, 30, 99)';
+    return 'rgb(158, 158, 158)';
+  }
+
+  _buildTimeline(entries, rangeStart, rangeEnd) {
+    const rangeMs = rangeEnd - rangeStart;
+    if (rangeMs <= 0 || entries.length === 0) return '';
+    const sorted = [...entries].sort((a, b) => new Date(a.last_changed) - new Date(b.last_changed));
+    const segments = [];
+    for (let i = 0; i < sorted.length; i++) {
+      const entry = sorted[i];
+      const segStart = new Date(entry.last_changed);
+      const segEnd = i + 1 < sorted.length ? new Date(sorted[i + 1].last_changed) : rangeEnd;
+      const visibleStart = segStart < rangeStart ? rangeStart : segStart;
+      const visibleEnd = segEnd > rangeEnd ? rangeEnd : segEnd;
+      const durationMs = visibleEnd - visibleStart;
+      if (durationMs > 0) {
+        const rawState = (entry.state || '').trim();
+        const percent = (durationMs / rangeMs) * 100;
+        const lastSeg = segments[segments.length - 1];
+        if (lastSeg && lastSeg.state === rawState) { lastSeg.percent += percent; }
+        else { segments.push({ state: rawState, percent }); }
+      }
+    }
+    let blocks = '';
+    for (const seg of segments) {
+      const color = this._getWeatherStateColor(seg.state);
+      blocks += `<div style="width:${seg.percent}%;min-width:1px;height:100%;background:${color};flex-shrink:0;"></div>`;
+    }
+    return blocks;
+  }
+
+  _formatDuration(ms) {
+    const periodHours = this._historyFilterPeriod || 24;
+    const periodMs = periodHours * 60 * 60 * 1000;
+    if (ms < 60000) return '少于1分钟';
+    if (ms >= periodMs) {
+      if (periodHours < 24) return `大于${periodHours}小时`;
+      if (periodHours < 72) return `大于${periodHours}小时`;
+      const days = Math.floor(periodHours / 24);
+      return `大于${days}天`;
+    }
+    const minutes = Math.floor(ms / 60000);
+    if (minutes < 60) return `${minutes}分钟`;
+    const hours = Math.floor(minutes / 60);
+    const remainMin = minutes % 60;
+    if (hours < 24) return remainMin > 0 ? `${hours}小时${remainMin}分钟` : `${hours}小时`;
+    const days = Math.floor(hours / 24);
+    const remainHr = hours % 24;
+    return remainHr > 0 ? `${days}天${remainHr}小时` : `${days}天`;
+  }
+
+  _buildFilterChip(label, value, chipBg, activeBg, activeColor, isDark) {
+    const chip = document.createElement('span');
+    chip.setAttribute('data-chip', '1');
+    const isActive = (typeof value === 'number' && value === this._historyFilterPeriod);
+    if (isActive) {
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
+    } else {
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+    }
+    chip.textContent = label;
+    chip.addEventListener('mouseenter', () => { chip.style.opacity = '0.85'; chip.style.transform = 'scale(1.05)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; chip.style.transform = 'scale(1)'; });
+    return chip;
+  }
+
+  _refreshHistoryChips(container, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
+    const chips = container.querySelectorAll('[data-chip]');
+    chips.forEach(chip => {
+      const label = chip.textContent;
+      if (mode === 'time') {
+        const isActive = (label === '24小时' && activePeriod === 24) ||
+          (label === '1小时' && activePeriod === 1) ||
+          (label === '6小时' && activePeriod === 6) ||
+          (label === '3天' && activePeriod === 72) ||
+          (label === '7天' && activePeriod === 168) ||
+          (label === '10天' && activePeriod === 240);
+        if (isActive) { chip.style.background = activeBg; chip.style.color = activeColor; }
+        else { chip.style.background = chipBg; chip.style.color = isDark ? '#ccc' : '#555'; }
+      }
+    });
+  }
+
+  _refetchWithFilters() {
+    this._historyLoading = true;
+    this._historyData = {};
+    if (this._historyBodyEl) { this._updateHistoryContent(); }
+    this._fetchHistory();
+  }
+
   getCardSize() {
     return 8;
   }
@@ -1567,7 +1950,10 @@ class XiaoshiHourlyWeatherCard extends XiaoshiWeatherBase {
       hass: { type: Object },
       config: { type: Object },
       entity: { type: Object },
-      mode: { type: String }
+      mode: { type: String },
+      _showHistory: { type: Boolean, state: true },
+      _historyData: { type: Object, state: true },
+      _historyLoading: { type: Boolean, state: true }
     };
   }
   // 温度计算常量
@@ -2509,6 +2895,374 @@ class XiaoshiHourlyWeatherCard extends XiaoshiWeatherBase {
     `;
   }
 
+  // ========== 历史记录（参照phone天气） ==========
+  _toggleHistory() {
+    this._handleClick();
+    if (this._showHistory) {
+      this._closeHistoryOverlay();
+      return;
+    }
+    this._showHistory = true;
+    this._showHistoryOverlay();
+    this._fetchHistory();
+  }
+
+  _refresh_weather() {
+    this._handleClick();
+    if (!this.config?.entity) return;
+    this.hass.callService('qweather', 'update_weather', {
+      entity_id: this.config.entity,
+    });
+  }
+
+  async _fetchHistory() {
+    try {
+      const entityId = this.config.entity;
+      const periodHours = this._historyFilterPeriod || 24;
+      const endTime = new Date();
+      const startTime = new Date(endTime.getTime() - periodHours * 60 * 60 * 1000);
+      const startStr = startTime.toISOString();
+      const endStr = endTime.toISOString();
+      const data = await this.hass.callApi(
+        'GET',
+        `history/period/${startStr}?end_time=${endStr}&filter_entity_id=${entityId}&minimal_response&no_attributes`
+      );
+      const result = {};
+      const allEntities = Array.isArray(data) ? data : [];
+      for (const entityHistory of allEntities) {
+        if (!entityHistory || entityHistory.length === 0) continue;
+        const eId = entityHistory[0].entity_id;
+        if (!eId) continue;
+        const stateObj = this.hass.states[eId];
+        const friendlyName = stateObj?.attributes?.friendly_name || stateObj?.attributes?.city || eId;
+        const rawEntries = entityHistory
+          .filter(entry => entry && entry.last_changed)
+          .sort((a, b) => new Date(b.last_changed) - new Date(a.last_changed));
+        const entries = [];
+        for (const entry of rawEntries) {
+          const last = entries[entries.length - 1];
+          const curRaw = (entry.state || '').trim();
+          const lastRaw = last ? (last.state || '').trim() : null;
+          if (last && lastRaw === curRaw) {
+            entries[entries.length - 1] = entry;
+          } else {
+            entries.push(entry);
+          }
+        }
+        if (entries.length > 0) {
+          result[eId] = { name: friendlyName, entries: entries };
+        }
+      }
+      this._historyData = result;
+    } catch (e) {
+      console.error('获取天气历史记录失败:', e);
+      this._historyData = {};
+    } finally {
+      this._historyLoading = false;
+      this._updateHistoryContent();
+    }
+  }
+
+  _showHistoryOverlay() {
+    if (this._historyOverlayEl) return;
+    const theme = this._evaluateTheme();
+    const isDark = theme !== 'light';
+    const ent = this.hass?.states?.[this.config.entity];
+    const cityName = ent?.attributes?.city || ent?.attributes?.friendly_name || this.config.entity || '天气';
+    const textColor = isDark ? '#fff' : '#333';
+    const bgColor = isDark ? '#2c2c2c' : '#fff';
+    const borderColor = isDark ? '#aaa' : '#888';
+    const btnBg = isDark ? '#444' : '#f0f0f0';
+    const btnIconColor = isDark ? '#ccc' : '#666';
+    const chipBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
+    const chipActiveBg = this._getHistoryAccentColor();
+    const chipActiveColor = '#fff';
+    this._historyFilterPeriod = 24;
+    const overlay = document.createElement('div');
+    overlay.className = 'xiaoshi-history-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;-webkit-backdrop-filter: blur(10px);backdrop-filter: blur(10px);';
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) this._closeHistoryOverlay(); });
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
+    const header = document.createElement('div');
+    header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
+    const title = document.createElement('span');
+    title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
+    title.textContent = `${cityName} - 天气历史记录`;
+    const closeBtn = document.createElement('button');
+    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
+    closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
+    closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+    const toolbar = document.createElement('div');
+    toolbar.className = 'xiaoshi-history-toolbar';
+    toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 5px;margin:0 20px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
+    const timeRow = document.createElement('div');
+    timeRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    const timeLabel = document.createElement('span');
+    timeLabel.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;`;
+    timeLabel.textContent = '时段:';
+    timeRow.appendChild(timeLabel);
+    const timeChips = document.createElement('div');
+    timeChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+    timeChips.className = 'xiaoshi-time-chips';
+    const periods = [
+      { label: '1小时', value: 1 }, { label: '6小时', value: 6 },
+      { label: '24小时', value: 24 }, { label: '3天', value: 72 },
+      { label: '7天', value: 168 }, { label: '10天', value: 240 }
+    ];
+    for (const p of periods) {
+      const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
+      chip.addEventListener('click', () => {
+        this._handleClick();
+        this._historyFilterPeriod = p.value;
+        this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
+        this._refetchWithFilters();
+      });
+      timeChips.appendChild(chip);
+    }
+    timeRow.appendChild(timeChips);
+    toolbar.appendChild(timeRow);
+    const body = document.createElement('div');
+    body.className = 'xiaoshi-history-body';
+    body.style.cssText = 'flex:1;overflow-y:auto;padding:6px 20px;';
+    body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+    dialog.appendChild(header);
+    dialog.appendChild(toolbar);
+    dialog.appendChild(body);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    this._historyOverlayEl = overlay;
+    this._historyBodyEl = body;
+  }
+
+  _updateHistoryContent() {
+    if (!this._historyBodyEl) return;
+    const theme = this._evaluateTheme();
+    const isDark = theme !== 'light';
+    if (this._historyLoading) {
+      this._historyBodyEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+      return;
+    }
+    const items = Object.entries(this._historyData);
+    if (items.length === 0) {
+      this._historyBodyEl.innerHTML = `<div style="text-align:center;padding:40px;color:${isDark?'#aaa':'#999'};font-size:0.9rem;">暂无天气历史记录</div>`;
+      return;
+    }
+    let html = '';
+    for (const [, data] of items) {
+      const dedupedEntries = [];
+      for (const entry of data.entries) {
+        const last = dedupedEntries[dedupedEntries.length - 1];
+        const curRaw = (entry.state || '').trim();
+        const lastRaw = last ? (last.state || '').trim() : null;
+        if (last && lastRaw === curRaw) {
+          dedupedEntries[dedupedEntries.length - 1] = entry;
+        } else { dedupedEntries.push(entry); }
+      }
+      const entriesWithDuration = [];
+      for (let i = 0; i < dedupedEntries.length; i++) {
+        const entry = dedupedEntries[i];
+        const time = new Date(entry.last_changed);
+        const prevEntry = dedupedEntries[i - 1];
+        const endTime = prevEntry ? new Date(prevEntry.last_changed) : new Date();
+        const durationMs = Math.max(0, endTime - time);
+        entriesWithDuration.push({ entry, time, durationMs });
+      }
+      const filtered = [];
+      for (const item of entriesWithDuration) {
+        const last = filtered[filtered.length - 1];
+        const curRaw = (item.entry.state || '').trim();
+        const lastRaw = last ? (last.entry.state || '').trim() : null;
+        if (last && lastRaw === curRaw) {
+          last.durationMs += item.durationMs;
+          last.time = item.time;
+        } else { filtered.push({ ...item }); }
+      }
+      html += `<div style="margin:8px 0px;border-bottom:1px solid ${isDark?'#aaa':'#888'};">`;
+      const periodHours = this._historyFilterPeriod || 24;
+      const now = new Date();
+      const rangeStart = new Date(now.getTime() - periodHours * 60 * 60 * 1000);
+      const timelineBlocks = this._buildTimeline(data.entries, rangeStart, now);
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">`;
+      html += `<span style="font-weight:700;font-size:0.85rem;color:${isDark?'#ddd':'#444'};white-space:nowrap;">${data.name}</span>`;
+      html += `<div style="flex:1;display:flex;height:8px;border-radius:3px;overflow:hidden;">${timelineBlocks}</div>`;
+      html += `</div>`;
+      for (const { entry, time, durationMs } of filtered) {
+        const timeStr = time.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const rawState = (entry.state || '').trim();
+        const stateLabel = this._translateWeatherState(rawState);
+        const stateColor = this._getWeatherStateColor(rawState);
+        const durationStr = this._formatDuration(durationMs);
+        const scRgb = stateColor.replace(/[^\d,]/g, '');
+        const entryBg = isDark ? `rgba(${scRgb},0.12)` : `rgba(${scRgb},0.08)`;
+        html += `<div style="border-radius:10px;padding:1px 12px;margin-bottom:8px;background:${entryBg};"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:0.8rem;padding:2px 4px;border-radius:10px;font-weight:500;color:${stateColor};">${stateLabel} · ${durationStr}</span><span style="font-size:0.75rem;color:${isDark?'#aaa':'#999'};">${timeStr}</span></div></div>`;
+      }
+      html += `</div>`;
+    }
+    this._historyBodyEl.innerHTML = html;
+  }
+
+  _closeHistoryOverlay() {
+    this._handleClick();
+    if (this._historyOverlayEl) {
+      this._historyOverlayEl.remove();
+      this._historyOverlayEl = null;
+      this._historyBodyEl = null;
+    }
+    this._showHistory = false;
+    this._historyData = {};
+    this._historyLoading = false;
+    this._historyFilterPeriod = 24;
+  }
+
+  _getHistoryAccentColor() {
+    const theme = this._evaluateTheme();
+    const isDark = theme !== 'light';
+    return isDark ? '#4FC3F7' : '#0288D1';
+  }
+
+  _translateWeatherState(state) {
+    const s = (state || '').trim();
+    const translations = {
+      'sunny': '晴', 'clear-night': '晴', 'partlycloudy': '少云',
+      'cloudy': '多云', 'overcast': '阴',
+      'light-rain': '小雨', 'rainy': '雨', 'moderate-rain': '中雨',
+      'heavy-rain': '大雨', 'torrential-rain': '暴雨', 'pouring': '暴雨',
+      'rain-shower': '阵雨', 'thunderstorm': '雷阵雨', 'lightning-rainy': '雷阵雨',
+      'lightning': '雷电', 'light-snow': '小雪', 'snowy': '雪',
+      'moderate-snow': '中雪', 'heavy-snow': '大雪', 'blizzard': '暴雪',
+      'snow-shower': '阵雪', 'snowy-rainy': '雨夹雪', 'rain-snow': '雨雪天气',
+      'fog': '雾', 'haze': '霾', 'sand': '扬沙', 'hail': '冰雹',
+      'windy': '大风', 'windy-variant': '大风', 'hot': '热',
+      'fair': '晴间多云', 'exceptional': '异常天气', 'freezing-rain': '冻雨',
+    };
+    const cnNames = {
+      '晴': '晴', '少云': '少云', '多云': '多云', '阴': '阴',
+      '小雨': '小雨', '中雨': '中雨', '大雨': '大雨', '暴雨': '暴雨',
+      '阵雨': '阵雨', '雷阵雨': '雷阵雨', '雨': '雨',
+      '小雪': '小雪', '中雪': '中雪', '大雪': '大雪', '暴雪': '暴雪',
+      '阵雪': '阵雪', '雪': '雪', '雨夹雪': '雨夹雪', '雨雪天气': '雨雪天气', '冻雨': '冻雨',
+      '雾': '雾', '霾': '霾', '扬沙': '扬沙', '冰雹': '冰雹',
+      '晴间多云': '晴间多云', '热': '热',
+    };
+    return translations[s] || cnNames[s] || s;
+  }
+
+  _getWeatherStateColor(state) {
+    const s = (state || '').trim();
+    if (s === 'sunny' || s === 'clear-night') return 'rgb(255, 152, 0)';
+    if (s === 'partlycloudy' || s === 'fair') return 'rgb(255, 152, 0)';
+    if (s === 'cloudy' || s === 'overcast') return 'rgb(255, 152, 0)';
+    if (s.includes('rain') || s === 'rainy' || s === 'pouring' || s === 'thunderstorm' || s === 'lightning-rainy' || s === 'lightning') return 'rgb(33, 150, 243)';
+    if (s.includes('snow') || s === 'snowy' || s === 'snowy-rainy' || s === 'rain-snow') return 'rgb(0, 188, 212)';
+    if (s === 'fog' || s === 'haze') return 'rgb(96, 125, 139)';
+    if (s === 'sand') return 'rgb(121, 85, 72)';
+    if (s === 'hail') return 'rgb(233, 30, 99)';
+    if (s === 'windy' || s === 'windy-variant') return 'rgb(0, 150, 136)';
+    if (s === 'hot') return 'rgb(244, 67, 54)';
+    if (s === 'exceptional') return 'rgb(156, 39, 176)';
+    if (s === 'freezing-rain') return 'rgb(92, 107, 192)';
+    if (s === '晴') return 'rgb(255, 152, 0)';
+    if (s === '少云' || s === '晴间多云') return 'rgb(255, 152, 0)';
+    if (s === '多云' || s === '阴') return 'rgb(255, 152, 0)';
+    if (s.includes('雨')) return 'rgb(33, 150, 243)';
+    if (s.includes('雪')) return 'rgb(0, 188, 212)';
+    if (s === '雾' || s === '霾') return 'rgb(96, 125, 139)';
+    if (s === '冰雹') return 'rgb(233, 30, 99)';
+    return 'rgb(158, 158, 158)';
+  }
+
+  _buildTimeline(entries, rangeStart, rangeEnd) {
+    const rangeMs = rangeEnd - rangeStart;
+    if (rangeMs <= 0 || entries.length === 0) return '';
+    const sorted = [...entries].sort((a, b) => new Date(a.last_changed) - new Date(b.last_changed));
+    const segments = [];
+    for (let i = 0; i < sorted.length; i++) {
+      const entry = sorted[i];
+      const segStart = new Date(entry.last_changed);
+      const segEnd = i + 1 < sorted.length ? new Date(sorted[i + 1].last_changed) : rangeEnd;
+      const visibleStart = segStart < rangeStart ? rangeStart : segStart;
+      const visibleEnd = segEnd > rangeEnd ? rangeEnd : segEnd;
+      const durationMs = visibleEnd - visibleStart;
+      if (durationMs > 0) {
+        const rawState = (entry.state || '').trim();
+        const percent = (durationMs / rangeMs) * 100;
+        const lastSeg = segments[segments.length - 1];
+        if (lastSeg && lastSeg.state === rawState) { lastSeg.percent += percent; }
+        else { segments.push({ state: rawState, percent }); }
+      }
+    }
+    let blocks = '';
+    for (const seg of segments) {
+      const color = this._getWeatherStateColor(seg.state);
+      blocks += `<div style="width:${seg.percent}%;min-width:1px;height:100%;background:${color};flex-shrink:0;"></div>`;
+    }
+    return blocks;
+  }
+
+  _formatDuration(ms) {
+    const periodHours = this._historyFilterPeriod || 24;
+    const periodMs = periodHours * 60 * 60 * 1000;
+    if (ms < 60000) return '少于1分钟';
+    if (ms >= periodMs) {
+      if (periodHours < 24) return `大于${periodHours}小时`;
+      if (periodHours < 72) return `大于${periodHours}小时`;
+      const days = Math.floor(periodHours / 24);
+      return `大于${days}天`;
+    }
+    const minutes = Math.floor(ms / 60000);
+    if (minutes < 60) return `${minutes}分钟`;
+    const hours = Math.floor(minutes / 60);
+    const remainMin = minutes % 60;
+    if (hours < 24) return remainMin > 0 ? `${hours}小时${remainMin}分钟` : `${hours}小时`;
+    const days = Math.floor(hours / 24);
+    const remainHr = hours % 24;
+    return remainHr > 0 ? `${days}天${remainHr}小时` : `${days}天`;
+  }
+
+  _buildFilterChip(label, value, chipBg, activeBg, activeColor, isDark) {
+    const chip = document.createElement('span');
+    chip.setAttribute('data-chip', '1');
+    const isActive = (typeof value === 'number' && value === this._historyFilterPeriod);
+    if (isActive) {
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
+    } else {
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+    }
+    chip.textContent = label;
+    chip.addEventListener('mouseenter', () => { chip.style.opacity = '0.85'; chip.style.transform = 'scale(1.05)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; chip.style.transform = 'scale(1)'; });
+    return chip;
+  }
+
+  _refreshHistoryChips(container, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
+    const chips = container.querySelectorAll('[data-chip]');
+    chips.forEach(chip => {
+      const label = chip.textContent;
+      if (mode === 'time') {
+        const isActive = (label === '24小时' && activePeriod === 24) ||
+          (label === '1小时' && activePeriod === 1) ||
+          (label === '6小时' && activePeriod === 6) ||
+          (label === '3天' && activePeriod === 72) ||
+          (label === '7天' && activePeriod === 168) ||
+          (label === '10天' && activePeriod === 240);
+        if (isActive) { chip.style.background = activeBg; chip.style.color = activeColor; }
+        else { chip.style.background = chipBg; chip.style.color = isDark ? '#ccc' : '#555'; }
+      }
+    });
+  }
+
+  _refetchWithFilters() {
+    this._historyLoading = true;
+    this._historyData = {};
+    if (this._historyBodyEl) { this._updateHistoryContent(); }
+    this._fetchHistory();
+  }
+
   getCardSize() {
     return 8;
   }
@@ -2597,6 +3351,374 @@ class XiaoshiWarningWeatherCard extends XiaoshiWeatherBase {
           </div>
         </div>
     `;
+  }
+
+  // ========== 历史记录（参照phone天气） ==========
+  _toggleHistory() {
+    this._handleClick();
+    if (this._showHistory) {
+      this._closeHistoryOverlay();
+      return;
+    }
+    this._showHistory = true;
+    this._showHistoryOverlay();
+    this._fetchHistory();
+  }
+
+  _refresh_weather() {
+    this._handleClick();
+    if (!this.config?.entity) return;
+    this.hass.callService('qweather', 'update_weather', {
+      entity_id: this.config.entity,
+    });
+  }
+
+  async _fetchHistory() {
+    try {
+      const entityId = this.config.entity;
+      const periodHours = this._historyFilterPeriod || 24;
+      const endTime = new Date();
+      const startTime = new Date(endTime.getTime() - periodHours * 60 * 60 * 1000);
+      const startStr = startTime.toISOString();
+      const endStr = endTime.toISOString();
+      const data = await this.hass.callApi(
+        'GET',
+        `history/period/${startStr}?end_time=${endStr}&filter_entity_id=${entityId}&minimal_response&no_attributes`
+      );
+      const result = {};
+      const allEntities = Array.isArray(data) ? data : [];
+      for (const entityHistory of allEntities) {
+        if (!entityHistory || entityHistory.length === 0) continue;
+        const eId = entityHistory[0].entity_id;
+        if (!eId) continue;
+        const stateObj = this.hass.states[eId];
+        const friendlyName = stateObj?.attributes?.friendly_name || stateObj?.attributes?.city || eId;
+        const rawEntries = entityHistory
+          .filter(entry => entry && entry.last_changed)
+          .sort((a, b) => new Date(b.last_changed) - new Date(a.last_changed));
+        const entries = [];
+        for (const entry of rawEntries) {
+          const last = entries[entries.length - 1];
+          const curRaw = (entry.state || '').trim();
+          const lastRaw = last ? (last.state || '').trim() : null;
+          if (last && lastRaw === curRaw) {
+            entries[entries.length - 1] = entry;
+          } else {
+            entries.push(entry);
+          }
+        }
+        if (entries.length > 0) {
+          result[eId] = { name: friendlyName, entries: entries };
+        }
+      }
+      this._historyData = result;
+    } catch (e) {
+      console.error('获取天气历史记录失败:', e);
+      this._historyData = {};
+    } finally {
+      this._historyLoading = false;
+      this._updateHistoryContent();
+    }
+  }
+
+  _showHistoryOverlay() {
+    if (this._historyOverlayEl) return;
+    const theme = this._evaluateTheme();
+    const isDark = theme !== 'light';
+    const ent = this.hass?.states?.[this.config.entity];
+    const cityName = ent?.attributes?.city || ent?.attributes?.friendly_name || this.config.entity || '天气';
+    const textColor = isDark ? '#fff' : '#333';
+    const bgColor = isDark ? '#2c2c2c' : '#fff';
+    const borderColor = isDark ? '#aaa' : '#888';
+    const btnBg = isDark ? '#444' : '#f0f0f0';
+    const btnIconColor = isDark ? '#ccc' : '#666';
+    const chipBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
+    const chipActiveBg = this._getHistoryAccentColor();
+    const chipActiveColor = '#fff';
+    this._historyFilterPeriod = 24;
+    const overlay = document.createElement('div');
+    overlay.className = 'xiaoshi-history-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;-webkit-backdrop-filter: blur(10px);backdrop-filter: blur(10px);';
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) this._closeHistoryOverlay(); });
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
+    const header = document.createElement('div');
+    header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
+    const title = document.createElement('span');
+    title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
+    title.textContent = `${cityName} - 天气历史记录`;
+    const closeBtn = document.createElement('button');
+    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
+    closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
+    closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+    const toolbar = document.createElement('div');
+    toolbar.className = 'xiaoshi-history-toolbar';
+    toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 5px;margin:0 20px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
+    const timeRow = document.createElement('div');
+    timeRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    const timeLabel = document.createElement('span');
+    timeLabel.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;`;
+    timeLabel.textContent = '时段:';
+    timeRow.appendChild(timeLabel);
+    const timeChips = document.createElement('div');
+    timeChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+    timeChips.className = 'xiaoshi-time-chips';
+    const periods = [
+      { label: '1小时', value: 1 }, { label: '6小时', value: 6 },
+      { label: '24小时', value: 24 }, { label: '3天', value: 72 },
+      { label: '7天', value: 168 }, { label: '10天', value: 240 }
+    ];
+    for (const p of periods) {
+      const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
+      chip.addEventListener('click', () => {
+        this._handleClick();
+        this._historyFilterPeriod = p.value;
+        this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
+        this._refetchWithFilters();
+      });
+      timeChips.appendChild(chip);
+    }
+    timeRow.appendChild(timeChips);
+    toolbar.appendChild(timeRow);
+    const body = document.createElement('div');
+    body.className = 'xiaoshi-history-body';
+    body.style.cssText = 'flex:1;overflow-y:auto;padding:6px 20px;';
+    body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+    dialog.appendChild(header);
+    dialog.appendChild(toolbar);
+    dialog.appendChild(body);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    this._historyOverlayEl = overlay;
+    this._historyBodyEl = body;
+  }
+
+  _updateHistoryContent() {
+    if (!this._historyBodyEl) return;
+    const theme = this._evaluateTheme();
+    const isDark = theme !== 'light';
+    if (this._historyLoading) {
+      this._historyBodyEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+      return;
+    }
+    const items = Object.entries(this._historyData);
+    if (items.length === 0) {
+      this._historyBodyEl.innerHTML = `<div style="text-align:center;padding:40px;color:${isDark?'#aaa':'#999'};font-size:0.9rem;">暂无天气历史记录</div>`;
+      return;
+    }
+    let html = '';
+    for (const [, data] of items) {
+      const dedupedEntries = [];
+      for (const entry of data.entries) {
+        const last = dedupedEntries[dedupedEntries.length - 1];
+        const curRaw = (entry.state || '').trim();
+        const lastRaw = last ? (last.state || '').trim() : null;
+        if (last && lastRaw === curRaw) {
+          dedupedEntries[dedupedEntries.length - 1] = entry;
+        } else { dedupedEntries.push(entry); }
+      }
+      const entriesWithDuration = [];
+      for (let i = 0; i < dedupedEntries.length; i++) {
+        const entry = dedupedEntries[i];
+        const time = new Date(entry.last_changed);
+        const prevEntry = dedupedEntries[i - 1];
+        const endTime = prevEntry ? new Date(prevEntry.last_changed) : new Date();
+        const durationMs = Math.max(0, endTime - time);
+        entriesWithDuration.push({ entry, time, durationMs });
+      }
+      const filtered = [];
+      for (const item of entriesWithDuration) {
+        const last = filtered[filtered.length - 1];
+        const curRaw = (item.entry.state || '').trim();
+        const lastRaw = last ? (last.entry.state || '').trim() : null;
+        if (last && lastRaw === curRaw) {
+          last.durationMs += item.durationMs;
+          last.time = item.time;
+        } else { filtered.push({ ...item }); }
+      }
+      html += `<div style="margin:8px 0px;border-bottom:1px solid ${isDark?'#aaa':'#888'};">`;
+      const periodHours = this._historyFilterPeriod || 24;
+      const now = new Date();
+      const rangeStart = new Date(now.getTime() - periodHours * 60 * 60 * 1000);
+      const timelineBlocks = this._buildTimeline(data.entries, rangeStart, now);
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">`;
+      html += `<span style="font-weight:700;font-size:0.85rem;color:${isDark?'#ddd':'#444'};white-space:nowrap;">${data.name}</span>`;
+      html += `<div style="flex:1;display:flex;height:8px;border-radius:3px;overflow:hidden;">${timelineBlocks}</div>`;
+      html += `</div>`;
+      for (const { entry, time, durationMs } of filtered) {
+        const timeStr = time.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const rawState = (entry.state || '').trim();
+        const stateLabel = this._translateWeatherState(rawState);
+        const stateColor = this._getWeatherStateColor(rawState);
+        const durationStr = this._formatDuration(durationMs);
+        const scRgb = stateColor.replace(/[^\d,]/g, '');
+        const entryBg = isDark ? `rgba(${scRgb},0.12)` : `rgba(${scRgb},0.08)`;
+        html += `<div style="border-radius:10px;padding:1px 12px;margin-bottom:8px;background:${entryBg};"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:0.8rem;padding:2px 4px;border-radius:10px;font-weight:500;color:${stateColor};">${stateLabel} · ${durationStr}</span><span style="font-size:0.75rem;color:${isDark?'#aaa':'#999'};">${timeStr}</span></div></div>`;
+      }
+      html += `</div>`;
+    }
+    this._historyBodyEl.innerHTML = html;
+  }
+
+  _closeHistoryOverlay() {
+    this._handleClick();
+    if (this._historyOverlayEl) {
+      this._historyOverlayEl.remove();
+      this._historyOverlayEl = null;
+      this._historyBodyEl = null;
+    }
+    this._showHistory = false;
+    this._historyData = {};
+    this._historyLoading = false;
+    this._historyFilterPeriod = 24;
+  }
+
+  _getHistoryAccentColor() {
+    const theme = this._evaluateTheme();
+    const isDark = theme !== 'light';
+    return isDark ? '#4FC3F7' : '#0288D1';
+  }
+
+  _translateWeatherState(state) {
+    const s = (state || '').trim();
+    const translations = {
+      'sunny': '晴', 'clear-night': '晴', 'partlycloudy': '少云',
+      'cloudy': '多云', 'overcast': '阴',
+      'light-rain': '小雨', 'rainy': '雨', 'moderate-rain': '中雨',
+      'heavy-rain': '大雨', 'torrential-rain': '暴雨', 'pouring': '暴雨',
+      'rain-shower': '阵雨', 'thunderstorm': '雷阵雨', 'lightning-rainy': '雷阵雨',
+      'lightning': '雷电', 'light-snow': '小雪', 'snowy': '雪',
+      'moderate-snow': '中雪', 'heavy-snow': '大雪', 'blizzard': '暴雪',
+      'snow-shower': '阵雪', 'snowy-rainy': '雨夹雪', 'rain-snow': '雨雪天气',
+      'fog': '雾', 'haze': '霾', 'sand': '扬沙', 'hail': '冰雹',
+      'windy': '大风', 'windy-variant': '大风', 'hot': '热',
+      'fair': '晴间多云', 'exceptional': '异常天气', 'freezing-rain': '冻雨',
+    };
+    const cnNames = {
+      '晴': '晴', '少云': '少云', '多云': '多云', '阴': '阴',
+      '小雨': '小雨', '中雨': '中雨', '大雨': '大雨', '暴雨': '暴雨',
+      '阵雨': '阵雨', '雷阵雨': '雷阵雨', '雨': '雨',
+      '小雪': '小雪', '中雪': '中雪', '大雪': '大雪', '暴雪': '暴雪',
+      '阵雪': '阵雪', '雪': '雪', '雨夹雪': '雨夹雪', '雨雪天气': '雨雪天气', '冻雨': '冻雨',
+      '雾': '雾', '霾': '霾', '扬沙': '扬沙', '冰雹': '冰雹',
+      '晴间多云': '晴间多云', '热': '热',
+    };
+    return translations[s] || cnNames[s] || s;
+  }
+
+  _getWeatherStateColor(state) {
+    const s = (state || '').trim();
+    if (s === 'sunny' || s === 'clear-night') return 'rgb(255, 152, 0)';
+    if (s === 'partlycloudy' || s === 'fair') return 'rgb(255, 152, 0)';
+    if (s === 'cloudy' || s === 'overcast') return 'rgb(255, 152, 0)';
+    if (s.includes('rain') || s === 'rainy' || s === 'pouring' || s === 'thunderstorm' || s === 'lightning-rainy' || s === 'lightning') return 'rgb(33, 150, 243)';
+    if (s.includes('snow') || s === 'snowy' || s === 'snowy-rainy' || s === 'rain-snow') return 'rgb(0, 188, 212)';
+    if (s === 'fog' || s === 'haze') return 'rgb(96, 125, 139)';
+    if (s === 'sand') return 'rgb(121, 85, 72)';
+    if (s === 'hail') return 'rgb(233, 30, 99)';
+    if (s === 'windy' || s === 'windy-variant') return 'rgb(0, 150, 136)';
+    if (s === 'hot') return 'rgb(244, 67, 54)';
+    if (s === 'exceptional') return 'rgb(156, 39, 176)';
+    if (s === 'freezing-rain') return 'rgb(92, 107, 192)';
+    if (s === '晴') return 'rgb(255, 152, 0)';
+    if (s === '少云' || s === '晴间多云') return 'rgb(255, 152, 0)';
+    if (s === '多云' || s === '阴') return 'rgb(255, 152, 0)';
+    if (s.includes('雨')) return 'rgb(33, 150, 243)';
+    if (s.includes('雪')) return 'rgb(0, 188, 212)';
+    if (s === '雾' || s === '霾') return 'rgb(96, 125, 139)';
+    if (s === '冰雹') return 'rgb(233, 30, 99)';
+    return 'rgb(158, 158, 158)';
+  }
+
+  _buildTimeline(entries, rangeStart, rangeEnd) {
+    const rangeMs = rangeEnd - rangeStart;
+    if (rangeMs <= 0 || entries.length === 0) return '';
+    const sorted = [...entries].sort((a, b) => new Date(a.last_changed) - new Date(b.last_changed));
+    const segments = [];
+    for (let i = 0; i < sorted.length; i++) {
+      const entry = sorted[i];
+      const segStart = new Date(entry.last_changed);
+      const segEnd = i + 1 < sorted.length ? new Date(sorted[i + 1].last_changed) : rangeEnd;
+      const visibleStart = segStart < rangeStart ? rangeStart : segStart;
+      const visibleEnd = segEnd > rangeEnd ? rangeEnd : segEnd;
+      const durationMs = visibleEnd - visibleStart;
+      if (durationMs > 0) {
+        const rawState = (entry.state || '').trim();
+        const percent = (durationMs / rangeMs) * 100;
+        const lastSeg = segments[segments.length - 1];
+        if (lastSeg && lastSeg.state === rawState) { lastSeg.percent += percent; }
+        else { segments.push({ state: rawState, percent }); }
+      }
+    }
+    let blocks = '';
+    for (const seg of segments) {
+      const color = this._getWeatherStateColor(seg.state);
+      blocks += `<div style="width:${seg.percent}%;min-width:1px;height:100%;background:${color};flex-shrink:0;"></div>`;
+    }
+    return blocks;
+  }
+
+  _formatDuration(ms) {
+    const periodHours = this._historyFilterPeriod || 24;
+    const periodMs = periodHours * 60 * 60 * 1000;
+    if (ms < 60000) return '少于1分钟';
+    if (ms >= periodMs) {
+      if (periodHours < 24) return `大于${periodHours}小时`;
+      if (periodHours < 72) return `大于${periodHours}小时`;
+      const days = Math.floor(periodHours / 24);
+      return `大于${days}天`;
+    }
+    const minutes = Math.floor(ms / 60000);
+    if (minutes < 60) return `${minutes}分钟`;
+    const hours = Math.floor(minutes / 60);
+    const remainMin = minutes % 60;
+    if (hours < 24) return remainMin > 0 ? `${hours}小时${remainMin}分钟` : `${hours}小时`;
+    const days = Math.floor(hours / 24);
+    const remainHr = hours % 24;
+    return remainHr > 0 ? `${days}天${remainHr}小时` : `${days}天`;
+  }
+
+  _buildFilterChip(label, value, chipBg, activeBg, activeColor, isDark) {
+    const chip = document.createElement('span');
+    chip.setAttribute('data-chip', '1');
+    const isActive = (typeof value === 'number' && value === this._historyFilterPeriod);
+    if (isActive) {
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
+    } else {
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+    }
+    chip.textContent = label;
+    chip.addEventListener('mouseenter', () => { chip.style.opacity = '0.85'; chip.style.transform = 'scale(1.05)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; chip.style.transform = 'scale(1)'; });
+    return chip;
+  }
+
+  _refreshHistoryChips(container, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
+    const chips = container.querySelectorAll('[data-chip]');
+    chips.forEach(chip => {
+      const label = chip.textContent;
+      if (mode === 'time') {
+        const isActive = (label === '24小时' && activePeriod === 24) ||
+          (label === '1小时' && activePeriod === 1) ||
+          (label === '6小时' && activePeriod === 6) ||
+          (label === '3天' && activePeriod === 72) ||
+          (label === '7天' && activePeriod === 168) ||
+          (label === '10天' && activePeriod === 240);
+        if (isActive) { chip.style.background = activeBg; chip.style.color = activeColor; }
+        else { chip.style.background = chipBg; chip.style.color = isDark ? '#ccc' : '#555'; }
+      }
+    });
+  }
+
+  _refetchWithFilters() {
+    this._historyLoading = true;
+    this._historyData = {};
+    if (this._historyBodyEl) { this._updateHistoryContent(); }
+    this._fetchHistory();
   }
 
   getCardSize() {
@@ -2711,6 +3833,374 @@ class XiaoshiAqiWeatherCard extends XiaoshiWeatherBase {
     `;
   }
 
+  // ========== 历史记录（参照phone天气） ==========
+  _toggleHistory() {
+    this._handleClick();
+    if (this._showHistory) {
+      this._closeHistoryOverlay();
+      return;
+    }
+    this._showHistory = true;
+    this._showHistoryOverlay();
+    this._fetchHistory();
+  }
+
+  _refresh_weather() {
+    this._handleClick();
+    if (!this.config?.entity) return;
+    this.hass.callService('qweather', 'update_weather', {
+      entity_id: this.config.entity,
+    });
+  }
+
+  async _fetchHistory() {
+    try {
+      const entityId = this.config.entity;
+      const periodHours = this._historyFilterPeriod || 24;
+      const endTime = new Date();
+      const startTime = new Date(endTime.getTime() - periodHours * 60 * 60 * 1000);
+      const startStr = startTime.toISOString();
+      const endStr = endTime.toISOString();
+      const data = await this.hass.callApi(
+        'GET',
+        `history/period/${startStr}?end_time=${endStr}&filter_entity_id=${entityId}&minimal_response&no_attributes`
+      );
+      const result = {};
+      const allEntities = Array.isArray(data) ? data : [];
+      for (const entityHistory of allEntities) {
+        if (!entityHistory || entityHistory.length === 0) continue;
+        const eId = entityHistory[0].entity_id;
+        if (!eId) continue;
+        const stateObj = this.hass.states[eId];
+        const friendlyName = stateObj?.attributes?.friendly_name || stateObj?.attributes?.city || eId;
+        const rawEntries = entityHistory
+          .filter(entry => entry && entry.last_changed)
+          .sort((a, b) => new Date(b.last_changed) - new Date(a.last_changed));
+        const entries = [];
+        for (const entry of rawEntries) {
+          const last = entries[entries.length - 1];
+          const curRaw = (entry.state || '').trim();
+          const lastRaw = last ? (last.state || '').trim() : null;
+          if (last && lastRaw === curRaw) {
+            entries[entries.length - 1] = entry;
+          } else {
+            entries.push(entry);
+          }
+        }
+        if (entries.length > 0) {
+          result[eId] = { name: friendlyName, entries: entries };
+        }
+      }
+      this._historyData = result;
+    } catch (e) {
+      console.error('获取天气历史记录失败:', e);
+      this._historyData = {};
+    } finally {
+      this._historyLoading = false;
+      this._updateHistoryContent();
+    }
+  }
+
+  _showHistoryOverlay() {
+    if (this._historyOverlayEl) return;
+    const theme = this._evaluateTheme();
+    const isDark = theme !== 'light';
+    const ent = this.hass?.states?.[this.config.entity];
+    const cityName = ent?.attributes?.city || ent?.attributes?.friendly_name || this.config.entity || '天气';
+    const textColor = isDark ? '#fff' : '#333';
+    const bgColor = isDark ? '#2c2c2c' : '#fff';
+    const borderColor = isDark ? '#aaa' : '#888';
+    const btnBg = isDark ? '#444' : '#f0f0f0';
+    const btnIconColor = isDark ? '#ccc' : '#666';
+    const chipBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
+    const chipActiveBg = this._getHistoryAccentColor();
+    const chipActiveColor = '#fff';
+    this._historyFilterPeriod = 24;
+    const overlay = document.createElement('div');
+    overlay.className = 'xiaoshi-history-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;-webkit-backdrop-filter: blur(10px);backdrop-filter: blur(10px);';
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) this._closeHistoryOverlay(); });
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
+    const header = document.createElement('div');
+    header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
+    const title = document.createElement('span');
+    title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
+    title.textContent = `${cityName} - 天气历史记录`;
+    const closeBtn = document.createElement('button');
+    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
+    closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
+    closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+    const toolbar = document.createElement('div');
+    toolbar.className = 'xiaoshi-history-toolbar';
+    toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 5px;margin:0 20px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
+    const timeRow = document.createElement('div');
+    timeRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    const timeLabel = document.createElement('span');
+    timeLabel.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;`;
+    timeLabel.textContent = '时段:';
+    timeRow.appendChild(timeLabel);
+    const timeChips = document.createElement('div');
+    timeChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+    timeChips.className = 'xiaoshi-time-chips';
+    const periods = [
+      { label: '1小时', value: 1 }, { label: '6小时', value: 6 },
+      { label: '24小时', value: 24 }, { label: '3天', value: 72 },
+      { label: '7天', value: 168 }, { label: '10天', value: 240 }
+    ];
+    for (const p of periods) {
+      const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
+      chip.addEventListener('click', () => {
+        this._handleClick();
+        this._historyFilterPeriod = p.value;
+        this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
+        this._refetchWithFilters();
+      });
+      timeChips.appendChild(chip);
+    }
+    timeRow.appendChild(timeChips);
+    toolbar.appendChild(timeRow);
+    const body = document.createElement('div');
+    body.className = 'xiaoshi-history-body';
+    body.style.cssText = 'flex:1;overflow-y:auto;padding:6px 20px;';
+    body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+    dialog.appendChild(header);
+    dialog.appendChild(toolbar);
+    dialog.appendChild(body);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    this._historyOverlayEl = overlay;
+    this._historyBodyEl = body;
+  }
+
+  _updateHistoryContent() {
+    if (!this._historyBodyEl) return;
+    const theme = this._evaluateTheme();
+    const isDark = theme !== 'light';
+    if (this._historyLoading) {
+      this._historyBodyEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+      return;
+    }
+    const items = Object.entries(this._historyData);
+    if (items.length === 0) {
+      this._historyBodyEl.innerHTML = `<div style="text-align:center;padding:40px;color:${isDark?'#aaa':'#999'};font-size:0.9rem;">暂无天气历史记录</div>`;
+      return;
+    }
+    let html = '';
+    for (const [, data] of items) {
+      const dedupedEntries = [];
+      for (const entry of data.entries) {
+        const last = dedupedEntries[dedupedEntries.length - 1];
+        const curRaw = (entry.state || '').trim();
+        const lastRaw = last ? (last.state || '').trim() : null;
+        if (last && lastRaw === curRaw) {
+          dedupedEntries[dedupedEntries.length - 1] = entry;
+        } else { dedupedEntries.push(entry); }
+      }
+      const entriesWithDuration = [];
+      for (let i = 0; i < dedupedEntries.length; i++) {
+        const entry = dedupedEntries[i];
+        const time = new Date(entry.last_changed);
+        const prevEntry = dedupedEntries[i - 1];
+        const endTime = prevEntry ? new Date(prevEntry.last_changed) : new Date();
+        const durationMs = Math.max(0, endTime - time);
+        entriesWithDuration.push({ entry, time, durationMs });
+      }
+      const filtered = [];
+      for (const item of entriesWithDuration) {
+        const last = filtered[filtered.length - 1];
+        const curRaw = (item.entry.state || '').trim();
+        const lastRaw = last ? (last.entry.state || '').trim() : null;
+        if (last && lastRaw === curRaw) {
+          last.durationMs += item.durationMs;
+          last.time = item.time;
+        } else { filtered.push({ ...item }); }
+      }
+      html += `<div style="margin:8px 0px;border-bottom:1px solid ${isDark?'#aaa':'#888'};">`;
+      const periodHours = this._historyFilterPeriod || 24;
+      const now = new Date();
+      const rangeStart = new Date(now.getTime() - periodHours * 60 * 60 * 1000);
+      const timelineBlocks = this._buildTimeline(data.entries, rangeStart, now);
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">`;
+      html += `<span style="font-weight:700;font-size:0.85rem;color:${isDark?'#ddd':'#444'};white-space:nowrap;">${data.name}</span>`;
+      html += `<div style="flex:1;display:flex;height:8px;border-radius:3px;overflow:hidden;">${timelineBlocks}</div>`;
+      html += `</div>`;
+      for (const { entry, time, durationMs } of filtered) {
+        const timeStr = time.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const rawState = (entry.state || '').trim();
+        const stateLabel = this._translateWeatherState(rawState);
+        const stateColor = this._getWeatherStateColor(rawState);
+        const durationStr = this._formatDuration(durationMs);
+        const scRgb = stateColor.replace(/[^\d,]/g, '');
+        const entryBg = isDark ? `rgba(${scRgb},0.12)` : `rgba(${scRgb},0.08)`;
+        html += `<div style="border-radius:10px;padding:1px 12px;margin-bottom:8px;background:${entryBg};"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:0.8rem;padding:2px 4px;border-radius:10px;font-weight:500;color:${stateColor};">${stateLabel} · ${durationStr}</span><span style="font-size:0.75rem;color:${isDark?'#aaa':'#999'};">${timeStr}</span></div></div>`;
+      }
+      html += `</div>`;
+    }
+    this._historyBodyEl.innerHTML = html;
+  }
+
+  _closeHistoryOverlay() {
+    this._handleClick();
+    if (this._historyOverlayEl) {
+      this._historyOverlayEl.remove();
+      this._historyOverlayEl = null;
+      this._historyBodyEl = null;
+    }
+    this._showHistory = false;
+    this._historyData = {};
+    this._historyLoading = false;
+    this._historyFilterPeriod = 24;
+  }
+
+  _getHistoryAccentColor() {
+    const theme = this._evaluateTheme();
+    const isDark = theme !== 'light';
+    return isDark ? '#4FC3F7' : '#0288D1';
+  }
+
+  _translateWeatherState(state) {
+    const s = (state || '').trim();
+    const translations = {
+      'sunny': '晴', 'clear-night': '晴', 'partlycloudy': '少云',
+      'cloudy': '多云', 'overcast': '阴',
+      'light-rain': '小雨', 'rainy': '雨', 'moderate-rain': '中雨',
+      'heavy-rain': '大雨', 'torrential-rain': '暴雨', 'pouring': '暴雨',
+      'rain-shower': '阵雨', 'thunderstorm': '雷阵雨', 'lightning-rainy': '雷阵雨',
+      'lightning': '雷电', 'light-snow': '小雪', 'snowy': '雪',
+      'moderate-snow': '中雪', 'heavy-snow': '大雪', 'blizzard': '暴雪',
+      'snow-shower': '阵雪', 'snowy-rainy': '雨夹雪', 'rain-snow': '雨雪天气',
+      'fog': '雾', 'haze': '霾', 'sand': '扬沙', 'hail': '冰雹',
+      'windy': '大风', 'windy-variant': '大风', 'hot': '热',
+      'fair': '晴间多云', 'exceptional': '异常天气', 'freezing-rain': '冻雨',
+    };
+    const cnNames = {
+      '晴': '晴', '少云': '少云', '多云': '多云', '阴': '阴',
+      '小雨': '小雨', '中雨': '中雨', '大雨': '大雨', '暴雨': '暴雨',
+      '阵雨': '阵雨', '雷阵雨': '雷阵雨', '雨': '雨',
+      '小雪': '小雪', '中雪': '中雪', '大雪': '大雪', '暴雪': '暴雪',
+      '阵雪': '阵雪', '雪': '雪', '雨夹雪': '雨夹雪', '雨雪天气': '雨雪天气', '冻雨': '冻雨',
+      '雾': '雾', '霾': '霾', '扬沙': '扬沙', '冰雹': '冰雹',
+      '晴间多云': '晴间多云', '热': '热',
+    };
+    return translations[s] || cnNames[s] || s;
+  }
+
+  _getWeatherStateColor(state) {
+    const s = (state || '').trim();
+    if (s === 'sunny' || s === 'clear-night') return 'rgb(255, 152, 0)';
+    if (s === 'partlycloudy' || s === 'fair') return 'rgb(255, 152, 0)';
+    if (s === 'cloudy' || s === 'overcast') return 'rgb(255, 152, 0)';
+    if (s.includes('rain') || s === 'rainy' || s === 'pouring' || s === 'thunderstorm' || s === 'lightning-rainy' || s === 'lightning') return 'rgb(33, 150, 243)';
+    if (s.includes('snow') || s === 'snowy' || s === 'snowy-rainy' || s === 'rain-snow') return 'rgb(0, 188, 212)';
+    if (s === 'fog' || s === 'haze') return 'rgb(96, 125, 139)';
+    if (s === 'sand') return 'rgb(121, 85, 72)';
+    if (s === 'hail') return 'rgb(233, 30, 99)';
+    if (s === 'windy' || s === 'windy-variant') return 'rgb(0, 150, 136)';
+    if (s === 'hot') return 'rgb(244, 67, 54)';
+    if (s === 'exceptional') return 'rgb(156, 39, 176)';
+    if (s === 'freezing-rain') return 'rgb(92, 107, 192)';
+    if (s === '晴') return 'rgb(255, 152, 0)';
+    if (s === '少云' || s === '晴间多云') return 'rgb(255, 152, 0)';
+    if (s === '多云' || s === '阴') return 'rgb(255, 152, 0)';
+    if (s.includes('雨')) return 'rgb(33, 150, 243)';
+    if (s.includes('雪')) return 'rgb(0, 188, 212)';
+    if (s === '雾' || s === '霾') return 'rgb(96, 125, 139)';
+    if (s === '冰雹') return 'rgb(233, 30, 99)';
+    return 'rgb(158, 158, 158)';
+  }
+
+  _buildTimeline(entries, rangeStart, rangeEnd) {
+    const rangeMs = rangeEnd - rangeStart;
+    if (rangeMs <= 0 || entries.length === 0) return '';
+    const sorted = [...entries].sort((a, b) => new Date(a.last_changed) - new Date(b.last_changed));
+    const segments = [];
+    for (let i = 0; i < sorted.length; i++) {
+      const entry = sorted[i];
+      const segStart = new Date(entry.last_changed);
+      const segEnd = i + 1 < sorted.length ? new Date(sorted[i + 1].last_changed) : rangeEnd;
+      const visibleStart = segStart < rangeStart ? rangeStart : segStart;
+      const visibleEnd = segEnd > rangeEnd ? rangeEnd : segEnd;
+      const durationMs = visibleEnd - visibleStart;
+      if (durationMs > 0) {
+        const rawState = (entry.state || '').trim();
+        const percent = (durationMs / rangeMs) * 100;
+        const lastSeg = segments[segments.length - 1];
+        if (lastSeg && lastSeg.state === rawState) { lastSeg.percent += percent; }
+        else { segments.push({ state: rawState, percent }); }
+      }
+    }
+    let blocks = '';
+    for (const seg of segments) {
+      const color = this._getWeatherStateColor(seg.state);
+      blocks += `<div style="width:${seg.percent}%;min-width:1px;height:100%;background:${color};flex-shrink:0;"></div>`;
+    }
+    return blocks;
+  }
+
+  _formatDuration(ms) {
+    const periodHours = this._historyFilterPeriod || 24;
+    const periodMs = periodHours * 60 * 60 * 1000;
+    if (ms < 60000) return '少于1分钟';
+    if (ms >= periodMs) {
+      if (periodHours < 24) return `大于${periodHours}小时`;
+      if (periodHours < 72) return `大于${periodHours}小时`;
+      const days = Math.floor(periodHours / 24);
+      return `大于${days}天`;
+    }
+    const minutes = Math.floor(ms / 60000);
+    if (minutes < 60) return `${minutes}分钟`;
+    const hours = Math.floor(minutes / 60);
+    const remainMin = minutes % 60;
+    if (hours < 24) return remainMin > 0 ? `${hours}小时${remainMin}分钟` : `${hours}小时`;
+    const days = Math.floor(hours / 24);
+    const remainHr = hours % 24;
+    return remainHr > 0 ? `${days}天${remainHr}小时` : `${days}天`;
+  }
+
+  _buildFilterChip(label, value, chipBg, activeBg, activeColor, isDark) {
+    const chip = document.createElement('span');
+    chip.setAttribute('data-chip', '1');
+    const isActive = (typeof value === 'number' && value === this._historyFilterPeriod);
+    if (isActive) {
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
+    } else {
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+    }
+    chip.textContent = label;
+    chip.addEventListener('mouseenter', () => { chip.style.opacity = '0.85'; chip.style.transform = 'scale(1.05)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; chip.style.transform = 'scale(1)'; });
+    return chip;
+  }
+
+  _refreshHistoryChips(container, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
+    const chips = container.querySelectorAll('[data-chip]');
+    chips.forEach(chip => {
+      const label = chip.textContent;
+      if (mode === 'time') {
+        const isActive = (label === '24小时' && activePeriod === 24) ||
+          (label === '1小时' && activePeriod === 1) ||
+          (label === '6小时' && activePeriod === 6) ||
+          (label === '3天' && activePeriod === 72) ||
+          (label === '7天' && activePeriod === 168) ||
+          (label === '10天' && activePeriod === 240);
+        if (isActive) { chip.style.background = activeBg; chip.style.color = activeColor; }
+        else { chip.style.background = chipBg; chip.style.color = isDark ? '#ccc' : '#555'; }
+      }
+    });
+  }
+
+  _refetchWithFilters() {
+    this._historyLoading = true;
+    this._historyData = {};
+    if (this._historyBodyEl) { this._updateHistoryContent(); }
+    this._fetchHistory();
+  }
+
   getCardSize() {
     return 3;
   }
@@ -2781,6 +4271,374 @@ class XiaoshiIndicesWeatherCard extends XiaoshiWeatherBase {
         </div>
       </div>
     `;
+  }
+
+  // ========== 历史记录（参照phone天气） ==========
+  _toggleHistory() {
+    this._handleClick();
+    if (this._showHistory) {
+      this._closeHistoryOverlay();
+      return;
+    }
+    this._showHistory = true;
+    this._showHistoryOverlay();
+    this._fetchHistory();
+  }
+
+  _refresh_weather() {
+    this._handleClick();
+    if (!this.config?.entity) return;
+    this.hass.callService('qweather', 'update_weather', {
+      entity_id: this.config.entity,
+    });
+  }
+
+  async _fetchHistory() {
+    try {
+      const entityId = this.config.entity;
+      const periodHours = this._historyFilterPeriod || 24;
+      const endTime = new Date();
+      const startTime = new Date(endTime.getTime() - periodHours * 60 * 60 * 1000);
+      const startStr = startTime.toISOString();
+      const endStr = endTime.toISOString();
+      const data = await this.hass.callApi(
+        'GET',
+        `history/period/${startStr}?end_time=${endStr}&filter_entity_id=${entityId}&minimal_response&no_attributes`
+      );
+      const result = {};
+      const allEntities = Array.isArray(data) ? data : [];
+      for (const entityHistory of allEntities) {
+        if (!entityHistory || entityHistory.length === 0) continue;
+        const eId = entityHistory[0].entity_id;
+        if (!eId) continue;
+        const stateObj = this.hass.states[eId];
+        const friendlyName = stateObj?.attributes?.friendly_name || stateObj?.attributes?.city || eId;
+        const rawEntries = entityHistory
+          .filter(entry => entry && entry.last_changed)
+          .sort((a, b) => new Date(b.last_changed) - new Date(a.last_changed));
+        const entries = [];
+        for (const entry of rawEntries) {
+          const last = entries[entries.length - 1];
+          const curRaw = (entry.state || '').trim();
+          const lastRaw = last ? (last.state || '').trim() : null;
+          if (last && lastRaw === curRaw) {
+            entries[entries.length - 1] = entry;
+          } else {
+            entries.push(entry);
+          }
+        }
+        if (entries.length > 0) {
+          result[eId] = { name: friendlyName, entries: entries };
+        }
+      }
+      this._historyData = result;
+    } catch (e) {
+      console.error('获取天气历史记录失败:', e);
+      this._historyData = {};
+    } finally {
+      this._historyLoading = false;
+      this._updateHistoryContent();
+    }
+  }
+
+  _showHistoryOverlay() {
+    if (this._historyOverlayEl) return;
+    const theme = this._evaluateTheme();
+    const isDark = theme !== 'light';
+    const ent = this.hass?.states?.[this.config.entity];
+    const cityName = ent?.attributes?.city || ent?.attributes?.friendly_name || this.config.entity || '天气';
+    const textColor = isDark ? '#fff' : '#333';
+    const bgColor = isDark ? '#2c2c2c' : '#fff';
+    const borderColor = isDark ? '#aaa' : '#888';
+    const btnBg = isDark ? '#444' : '#f0f0f0';
+    const btnIconColor = isDark ? '#ccc' : '#666';
+    const chipBg = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)';
+    const chipActiveBg = this._getHistoryAccentColor();
+    const chipActiveColor = '#fff';
+    this._historyFilterPeriod = 24;
+    const overlay = document.createElement('div');
+    overlay.className = 'xiaoshi-history-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;-webkit-backdrop-filter: blur(10px);backdrop-filter: blur(10px);';
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) this._closeHistoryOverlay(); });
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
+    const header = document.createElement('div');
+    header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
+    const title = document.createElement('span');
+    title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
+    title.textContent = `${cityName} - 天气历史记录`;
+    const closeBtn = document.createElement('button');
+    closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
+    closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
+    closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
+    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+    const toolbar = document.createElement('div');
+    toolbar.className = 'xiaoshi-history-toolbar';
+    toolbar.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px 5px;margin:0 20px;border-bottom:1px solid ${borderColor};flex-wrap:wrap;`;
+    const timeRow = document.createElement('div');
+    timeRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    const timeLabel = document.createElement('span');
+    timeLabel.style.cssText = `font-size:0.75rem;color:${isDark?'#aaa':'#888'};flex-shrink:0;`;
+    timeLabel.textContent = '时段:';
+    timeRow.appendChild(timeLabel);
+    const timeChips = document.createElement('div');
+    timeChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+    timeChips.className = 'xiaoshi-time-chips';
+    const periods = [
+      { label: '1小时', value: 1 }, { label: '6小时', value: 6 },
+      { label: '24小时', value: 24 }, { label: '3天', value: 72 },
+      { label: '7天', value: 168 }, { label: '10天', value: 240 }
+    ];
+    for (const p of periods) {
+      const chip = this._buildFilterChip(p.label, p.value, chipBg, chipActiveBg, chipActiveColor, isDark);
+      chip.addEventListener('click', () => {
+        this._handleClick();
+        this._historyFilterPeriod = p.value;
+        this._refreshHistoryChips(timeChips, this._historyFilterPeriod, chipBg, chipActiveBg, chipActiveColor, isDark, 'time');
+        this._refetchWithFilters();
+      });
+      timeChips.appendChild(chip);
+    }
+    timeRow.appendChild(timeChips);
+    toolbar.appendChild(timeRow);
+    const body = document.createElement('div');
+    body.className = 'xiaoshi-history-body';
+    body.style.cssText = 'flex:1;overflow-y:auto;padding:6px 20px;';
+    body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+    dialog.appendChild(header);
+    dialog.appendChild(toolbar);
+    dialog.appendChild(body);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    this._historyOverlayEl = overlay;
+    this._historyBodyEl = body;
+  }
+
+  _updateHistoryContent() {
+    if (!this._historyBodyEl) return;
+    const theme = this._evaluateTheme();
+    const isDark = theme !== 'light';
+    if (this._historyLoading) {
+      this._historyBodyEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:${isDark?'#aaa':'#999'};"><ha-icon icon="mdi:loading" style="--mdc-icon-size:24px;"></ha-icon>&nbsp;加载中...</div>`;
+      return;
+    }
+    const items = Object.entries(this._historyData);
+    if (items.length === 0) {
+      this._historyBodyEl.innerHTML = `<div style="text-align:center;padding:40px;color:${isDark?'#aaa':'#999'};font-size:0.9rem;">暂无天气历史记录</div>`;
+      return;
+    }
+    let html = '';
+    for (const [, data] of items) {
+      const dedupedEntries = [];
+      for (const entry of data.entries) {
+        const last = dedupedEntries[dedupedEntries.length - 1];
+        const curRaw = (entry.state || '').trim();
+        const lastRaw = last ? (last.state || '').trim() : null;
+        if (last && lastRaw === curRaw) {
+          dedupedEntries[dedupedEntries.length - 1] = entry;
+        } else { dedupedEntries.push(entry); }
+      }
+      const entriesWithDuration = [];
+      for (let i = 0; i < dedupedEntries.length; i++) {
+        const entry = dedupedEntries[i];
+        const time = new Date(entry.last_changed);
+        const prevEntry = dedupedEntries[i - 1];
+        const endTime = prevEntry ? new Date(prevEntry.last_changed) : new Date();
+        const durationMs = Math.max(0, endTime - time);
+        entriesWithDuration.push({ entry, time, durationMs });
+      }
+      const filtered = [];
+      for (const item of entriesWithDuration) {
+        const last = filtered[filtered.length - 1];
+        const curRaw = (item.entry.state || '').trim();
+        const lastRaw = last ? (last.entry.state || '').trim() : null;
+        if (last && lastRaw === curRaw) {
+          last.durationMs += item.durationMs;
+          last.time = item.time;
+        } else { filtered.push({ ...item }); }
+      }
+      html += `<div style="margin:8px 0px;border-bottom:1px solid ${isDark?'#aaa':'#888'};">`;
+      const periodHours = this._historyFilterPeriod || 24;
+      const now = new Date();
+      const rangeStart = new Date(now.getTime() - periodHours * 60 * 60 * 1000);
+      const timelineBlocks = this._buildTimeline(data.entries, rangeStart, now);
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">`;
+      html += `<span style="font-weight:700;font-size:0.85rem;color:${isDark?'#ddd':'#444'};white-space:nowrap;">${data.name}</span>`;
+      html += `<div style="flex:1;display:flex;height:8px;border-radius:3px;overflow:hidden;">${timelineBlocks}</div>`;
+      html += `</div>`;
+      for (const { entry, time, durationMs } of filtered) {
+        const timeStr = time.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const rawState = (entry.state || '').trim();
+        const stateLabel = this._translateWeatherState(rawState);
+        const stateColor = this._getWeatherStateColor(rawState);
+        const durationStr = this._formatDuration(durationMs);
+        const scRgb = stateColor.replace(/[^\d,]/g, '');
+        const entryBg = isDark ? `rgba(${scRgb},0.12)` : `rgba(${scRgb},0.08)`;
+        html += `<div style="border-radius:10px;padding:1px 12px;margin-bottom:8px;background:${entryBg};"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:0.8rem;padding:2px 4px;border-radius:10px;font-weight:500;color:${stateColor};">${stateLabel} · ${durationStr}</span><span style="font-size:0.75rem;color:${isDark?'#aaa':'#999'};">${timeStr}</span></div></div>`;
+      }
+      html += `</div>`;
+    }
+    this._historyBodyEl.innerHTML = html;
+  }
+
+  _closeHistoryOverlay() {
+    this._handleClick();
+    if (this._historyOverlayEl) {
+      this._historyOverlayEl.remove();
+      this._historyOverlayEl = null;
+      this._historyBodyEl = null;
+    }
+    this._showHistory = false;
+    this._historyData = {};
+    this._historyLoading = false;
+    this._historyFilterPeriod = 24;
+  }
+
+  _getHistoryAccentColor() {
+    const theme = this._evaluateTheme();
+    const isDark = theme !== 'light';
+    return isDark ? '#4FC3F7' : '#0288D1';
+  }
+
+  _translateWeatherState(state) {
+    const s = (state || '').trim();
+    const translations = {
+      'sunny': '晴', 'clear-night': '晴', 'partlycloudy': '少云',
+      'cloudy': '多云', 'overcast': '阴',
+      'light-rain': '小雨', 'rainy': '雨', 'moderate-rain': '中雨',
+      'heavy-rain': '大雨', 'torrential-rain': '暴雨', 'pouring': '暴雨',
+      'rain-shower': '阵雨', 'thunderstorm': '雷阵雨', 'lightning-rainy': '雷阵雨',
+      'lightning': '雷电', 'light-snow': '小雪', 'snowy': '雪',
+      'moderate-snow': '中雪', 'heavy-snow': '大雪', 'blizzard': '暴雪',
+      'snow-shower': '阵雪', 'snowy-rainy': '雨夹雪', 'rain-snow': '雨雪天气',
+      'fog': '雾', 'haze': '霾', 'sand': '扬沙', 'hail': '冰雹',
+      'windy': '大风', 'windy-variant': '大风', 'hot': '热',
+      'fair': '晴间多云', 'exceptional': '异常天气', 'freezing-rain': '冻雨',
+    };
+    const cnNames = {
+      '晴': '晴', '少云': '少云', '多云': '多云', '阴': '阴',
+      '小雨': '小雨', '中雨': '中雨', '大雨': '大雨', '暴雨': '暴雨',
+      '阵雨': '阵雨', '雷阵雨': '雷阵雨', '雨': '雨',
+      '小雪': '小雪', '中雪': '中雪', '大雪': '大雪', '暴雪': '暴雪',
+      '阵雪': '阵雪', '雪': '雪', '雨夹雪': '雨夹雪', '雨雪天气': '雨雪天气', '冻雨': '冻雨',
+      '雾': '雾', '霾': '霾', '扬沙': '扬沙', '冰雹': '冰雹',
+      '晴间多云': '晴间多云', '热': '热',
+    };
+    return translations[s] || cnNames[s] || s;
+  }
+
+  _getWeatherStateColor(state) {
+    const s = (state || '').trim();
+    if (s === 'sunny' || s === 'clear-night') return 'rgb(255, 152, 0)';
+    if (s === 'partlycloudy' || s === 'fair') return 'rgb(255, 152, 0)';
+    if (s === 'cloudy' || s === 'overcast') return 'rgb(255, 152, 0)';
+    if (s.includes('rain') || s === 'rainy' || s === 'pouring' || s === 'thunderstorm' || s === 'lightning-rainy' || s === 'lightning') return 'rgb(33, 150, 243)';
+    if (s.includes('snow') || s === 'snowy' || s === 'snowy-rainy' || s === 'rain-snow') return 'rgb(0, 188, 212)';
+    if (s === 'fog' || s === 'haze') return 'rgb(96, 125, 139)';
+    if (s === 'sand') return 'rgb(121, 85, 72)';
+    if (s === 'hail') return 'rgb(233, 30, 99)';
+    if (s === 'windy' || s === 'windy-variant') return 'rgb(0, 150, 136)';
+    if (s === 'hot') return 'rgb(244, 67, 54)';
+    if (s === 'exceptional') return 'rgb(156, 39, 176)';
+    if (s === 'freezing-rain') return 'rgb(92, 107, 192)';
+    if (s === '晴') return 'rgb(255, 152, 0)';
+    if (s === '少云' || s === '晴间多云') return 'rgb(255, 152, 0)';
+    if (s === '多云' || s === '阴') return 'rgb(255, 152, 0)';
+    if (s.includes('雨')) return 'rgb(33, 150, 243)';
+    if (s.includes('雪')) return 'rgb(0, 188, 212)';
+    if (s === '雾' || s === '霾') return 'rgb(96, 125, 139)';
+    if (s === '冰雹') return 'rgb(233, 30, 99)';
+    return 'rgb(158, 158, 158)';
+  }
+
+  _buildTimeline(entries, rangeStart, rangeEnd) {
+    const rangeMs = rangeEnd - rangeStart;
+    if (rangeMs <= 0 || entries.length === 0) return '';
+    const sorted = [...entries].sort((a, b) => new Date(a.last_changed) - new Date(b.last_changed));
+    const segments = [];
+    for (let i = 0; i < sorted.length; i++) {
+      const entry = sorted[i];
+      const segStart = new Date(entry.last_changed);
+      const segEnd = i + 1 < sorted.length ? new Date(sorted[i + 1].last_changed) : rangeEnd;
+      const visibleStart = segStart < rangeStart ? rangeStart : segStart;
+      const visibleEnd = segEnd > rangeEnd ? rangeEnd : segEnd;
+      const durationMs = visibleEnd - visibleStart;
+      if (durationMs > 0) {
+        const rawState = (entry.state || '').trim();
+        const percent = (durationMs / rangeMs) * 100;
+        const lastSeg = segments[segments.length - 1];
+        if (lastSeg && lastSeg.state === rawState) { lastSeg.percent += percent; }
+        else { segments.push({ state: rawState, percent }); }
+      }
+    }
+    let blocks = '';
+    for (const seg of segments) {
+      const color = this._getWeatherStateColor(seg.state);
+      blocks += `<div style="width:${seg.percent}%;min-width:1px;height:100%;background:${color};flex-shrink:0;"></div>`;
+    }
+    return blocks;
+  }
+
+  _formatDuration(ms) {
+    const periodHours = this._historyFilterPeriod || 24;
+    const periodMs = periodHours * 60 * 60 * 1000;
+    if (ms < 60000) return '少于1分钟';
+    if (ms >= periodMs) {
+      if (periodHours < 24) return `大于${periodHours}小时`;
+      if (periodHours < 72) return `大于${periodHours}小时`;
+      const days = Math.floor(periodHours / 24);
+      return `大于${days}天`;
+    }
+    const minutes = Math.floor(ms / 60000);
+    if (minutes < 60) return `${minutes}分钟`;
+    const hours = Math.floor(minutes / 60);
+    const remainMin = minutes % 60;
+    if (hours < 24) return remainMin > 0 ? `${hours}小时${remainMin}分钟` : `${hours}小时`;
+    const days = Math.floor(hours / 24);
+    const remainHr = hours % 24;
+    return remainHr > 0 ? `${days}天${remainHr}小时` : `${days}天`;
+  }
+
+  _buildFilterChip(label, value, chipBg, activeBg, activeColor, isDark) {
+    const chip = document.createElement('span');
+    chip.setAttribute('data-chip', '1');
+    const isActive = (typeof value === 'number' && value === this._historyFilterPeriod);
+    if (isActive) {
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${activeBg};color:${activeColor};`;
+    } else {
+      chip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${chipBg};color:${isDark?'#ccc':'#555'};`;
+    }
+    chip.textContent = label;
+    chip.addEventListener('mouseenter', () => { chip.style.opacity = '0.85'; chip.style.transform = 'scale(1.05)'; });
+    chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; chip.style.transform = 'scale(1)'; });
+    return chip;
+  }
+
+  _refreshHistoryChips(container, activePeriod, chipBg, activeBg, activeColor, isDark, mode) {
+    const chips = container.querySelectorAll('[data-chip]');
+    chips.forEach(chip => {
+      const label = chip.textContent;
+      if (mode === 'time') {
+        const isActive = (label === '24小时' && activePeriod === 24) ||
+          (label === '1小时' && activePeriod === 1) ||
+          (label === '6小时' && activePeriod === 6) ||
+          (label === '3天' && activePeriod === 72) ||
+          (label === '7天' && activePeriod === 168) ||
+          (label === '10天' && activePeriod === 240);
+        if (isActive) { chip.style.background = activeBg; chip.style.color = activeColor; }
+        else { chip.style.background = chipBg; chip.style.color = isDark ? '#ccc' : '#555'; }
+      }
+    });
+  }
+
+  _refetchWithFilters() {
+    this._historyLoading = true;
+    this._historyData = {};
+    if (this._historyBodyEl) { this._updateHistoryContent(); }
+    this._fetchHistory();
   }
 
   getCardSize() {
