@@ -1,4 +1,4 @@
-console.info("%c 消逝卡-汇总卡 \n%c  2026.6.4.27 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
+console.info("%c 消逝卡-汇总卡 \n%c  2026.6.4.28 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
 
 import('./function/function.js');
 import('./xiaoshi/phone-card.js');
