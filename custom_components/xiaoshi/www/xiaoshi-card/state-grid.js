@@ -510,7 +510,7 @@ class XiaoshiStateGridButtonEditor extends LitElement {
           name !== 'decimal_precision' && name !== 'width' && name !== 'color_num' &&
           name !== 'color_cost' && name !== 'balance_name' && name !== 'global_warning' &&
           name !== 'entity_layout' && name !== 'entities_per_row' && name !== 'default_show_calendar' &&
-          name !== 'utility_type' && name !== 'popup_cards') return;
+          name !== 'utility_type' && name !== 'popup_cards' && name !== 'hold_popup_cards') return;
       finalValue = value;
     }
     if (name === 'button_width') finalValue = value || '16.8vw';
@@ -958,7 +958,7 @@ class XiaoshiStateGridButton extends LitElement {
     const displayText = formattedDisplayValue !== null && displayUnit ? `${formattedDisplayValue}${displayUnit}` : formattedDisplayValue;
 
     return html`
-      <div class="balance-status" style="--fg-color: ${numberColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
+      <div class="balance-status" style="--fg-color: ${numberColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick} @pointerdown=${this._onHoldStart} @pointerup=${this._onHoldEnd}>
         <span class="status-emoji">${buttonEmoji}</span>
         <span style="color: ${numberColor};">${displayText}</span>
       </div>
