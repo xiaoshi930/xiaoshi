@@ -339,6 +339,10 @@ class XiaoshiRoomCardEditor extends LitElement {
     - entity: sensor.xxx
       name: 名称' rows="3" style="flex:1;font-size:12px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box"></textarea>
                 </div>
+                <div class="form-row">
+                    <label style="min-width:80px">温度长按弹窗</label>
+                    <textarea name="temperature_hold_popup" .value="${c.temperature_hold_popup || ''}" @change="${this._jsonFieldChanged}" placeholder='长按弹出卡片' rows="3" style="flex:1;font-size:12px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box"></textarea>
+                </div>
                 <div class="entity-row">
                     <label>湿度</label>
                     <div class="entity-search" style="flex:1">
@@ -378,6 +382,10 @@ class XiaoshiRoomCardEditor extends LitElement {
   entities:
     - entity: sensor.xxx
       name: 名称' rows="3" style="flex:1;font-size:12px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box"></textarea>
+                </div>
+                <div class="form-row">
+                    <label style="min-width:80px">湿度长按弹窗</label>
+                    <textarea name="humidity_hold_popup" .value="${c.humidity_hold_popup || ''}" @change="${this._jsonFieldChanged}" placeholder='长按弹出卡片' rows="3" style="flex:1;font-size:12px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box"></textarea>
                 </div>
                 <div class="entity-row">
                     <label>PM2.5</label>
@@ -419,6 +427,10 @@ class XiaoshiRoomCardEditor extends LitElement {
     - entity: sensor.xxx
       name: 名称' rows="3" style="flex:1;font-size:12px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box"></textarea>
                 </div>
+                <div class="form-row">
+                    <label style="min-width:80px">PM2.5长按弹窗</label>
+                    <textarea name="pm25_hold_popup" .value="${c.pm25_hold_popup || ''}" @change="${this._jsonFieldChanged}" placeholder='长按弹出卡片' rows="3" style="flex:1;font-size:12px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box"></textarea>
+                </div>
                 <div class="entity-row">
                     <label>人在</label>
                     <div class="entity-search" style="flex:1">
@@ -452,6 +464,10 @@ class XiaoshiRoomCardEditor extends LitElement {
                     <input type="text" name="person_icon" .value="${c.person_icon || ''}" @change="${this._valueChanged}" placeholder="mdi图标" style="width:70px;flex:none" />
                     <input type="text" name="person_icon_size" .value="${c.person_icon_size || ''}" @change="${this._valueChanged}" placeholder="例如：3" style="width:80px;flex:none" />
                     <input type="color" name="person_color" .value="${c.person_color || '#ff5722'}" @change="${this._valueChanged}" />
+                </div>
+                <div class="form-row">
+                    <label style="min-width:80px">人在长按弹窗</label>
+                    <textarea name="person_hold_popup" .value="${c.person_hold_popup || ''}" @change="${this._jsonFieldChanged}" placeholder='长按弹出卡片' rows="3" style="flex:1;font-size:12px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box"></textarea>
                 </div>
 
                 <div class="form-row">
@@ -582,6 +598,18 @@ class XiaoshiRoomCardEditor extends LitElement {
                                 style="flex:1;resize:vertical;padding:5px 6px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;font-size:12px"
                             ></textarea>
                         </div>
+                        <div class="device-row">
+                            <label style="font-weight:bold;font-size:12px;white-space:nowrap">长按弹窗</label>
+                            <textarea
+                                .value="${dev.hold_popup_cards || ''}"
+                                @change="${(e) => {
+                                    this._deviceFieldChanged(i, 'hold_popup_cards', e.target.value.trim() || null);
+                                }}"
+                                placeholder='长按弹出卡片'
+                                rows="3"
+                                style="flex:1;resize:vertical;padding:5px 6px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;font-size:12px"
+                            ></textarea>
+                        </div>
                         <div class="device-row" style="justify-content:flex-end">
                             <button class="device-remove" @click="${() => this._removeDevice(i)}">删除</button>
                         </div>
@@ -611,6 +639,8 @@ class XiaoshiRoomCard extends LitElement {
         super();
     this._holdTimer = null;
     this._holdTriggered = false;
+    this._holdTarget = null;
+    this._holdData = null;
         this._showHistory = false;
         this._historyData = {};
         this._historyLoading = false;
@@ -933,19 +963,19 @@ class XiaoshiRoomCard extends LitElement {
             const st = this._getSensorValue(tempEntity);
             const val = st ? _formatSensorVal(st.state) : '--';
             const unit = (st && st.state !== 'unknown' && st.state !== 'unavailable') ? (st.attributes.unit_of_measurement || '°C') : '';
-            sensorItems.push({ icon: this.config.temperature_icon || 'mdi:thermometer', value: val, unit, color: this.config.temperature_color || '#d44e4e', popup: this.config.temperature_popup || null });
+            sensorItems.push({ icon: this.config.temperature_icon || 'mdi:thermometer', value: val, unit, color: this.config.temperature_color || '#d44e4e', popup: this.config.temperature_popup || null, holdPopup: this.config.temperature_hold_popup || null });
         }
         if (humiEntity) {
             const st = this._getSensorValue(humiEntity);
             const val = st ? _formatSensorVal(st.state) : '--';
             const unit = (st && st.state !== 'unknown' && st.state !== 'unavailable') ? (st.attributes.unit_of_measurement || '%') : '';
-            sensorItems.push({ icon: this.config.humidity_icon || 'mdi:water-percent', value: val, unit, color: this.config.humidity_color || '#2196f3', popup: this.config.humidity_popup || null });
+            sensorItems.push({ icon: this.config.humidity_icon || 'mdi:water-percent', value: val, unit, color: this.config.humidity_color || '#2196f3', popup: this.config.humidity_popup || null, holdPopup: this.config.humidity_hold_popup || null });
         }
         if (pm25Entity) {
             const st = this._getSensorValue(pm25Entity);
             const val = st ? _formatSensorVal(st.state) : '--';
             const unit = (st && st.state !== 'unknown' && st.state !== 'unavailable') ? (st.attributes.unit_of_measurement || 'μg/m³') : '';
-            sensorItems.push({ icon: this.config.pm25_icon || 'mdi:blur', value: val, unit, color: this.config.pm25_color || '#4caf50', popup: this.config.pm25_popup || null });
+            sensorItems.push({ icon: this.config.pm25_icon || 'mdi:blur', value: val, unit, color: this.config.pm25_color || '#4caf50', popup: this.config.pm25_popup || null, holdPopup: this.config.pm25_hold_popup || null });
         }
 
         // 设备布局：动态填充到6个
@@ -979,7 +1009,9 @@ class XiaoshiRoomCard extends LitElement {
         // 传感器渲染公共片段
         const sensorHtml = sensorItems.map(s => html`
             <div class="sensor-chip" style="background:${s.color};"
-                @click="${() => s.popup ? this._showSensorPopup(s.popup) : null}">
+                @click="${() => s.popup ? this._showSensorPopup(s.popup) : null}"
+                @pointerdown="${(e) => s.holdPopup ? this._onSensorHoldStart(e, s.holdPopup) : null}"
+                @pointerup="${(e) => s.holdPopup ? this._onSensorHoldEnd(e) : null}">
                 <span class="sensor-icon"><ha-icon icon="${s.icon}"></ha-icon></span>
                 <span class="sensor-value">${s.value}${s.unit}</span>
             </div>
@@ -987,7 +1019,7 @@ class XiaoshiRoomCard extends LitElement {
 
         // 人在图标渲染
         const personHtml = html`
-            <div class="person-icon ${!personEntity ? 'person-hidden' : ''} ${isHome ? 'person-home' : ''}" style="color:${isHome ? (this.config.person_color || '#ff5722') : '#888'}${this.config.person_icon_size ? ';width:' + this.config.person_icon_size + 'vh;height:' + this.config.person_icon_size + 'vh' : ''}" @click="${() => this._togglePersonHistory()}">
+            <div class="person-icon ${!personEntity ? 'person-hidden' : ''} ${isHome ? 'person-home' : ''}" style="color:${isHome ? (this.config.person_color || '#ff5722') : '#888'}${this.config.person_icon_size ? ';width:' + this.config.person_icon_size + 'vh;height:' + this.config.person_icon_size + 'vh' : ''}" @click="${() => this._togglePersonHistory()}" @pointerdown="${(e) => this.config.person_hold_popup ? this._onPersonHoldStart(e) : null}" @pointerup="${(e) => this.config.person_hold_popup ? this._onPersonHoldEnd(e) : null}">
                 <ha-icon icon="${isHome ? (this.config.person_icon || 'mdi:motion-sensor') : 'mdi:motion-sensor-off'}" style="${this.config.person_icon_size ? '--mdc-icon-size:' + this.config.person_icon_size + 'vh' : ''}"></ha-icon>
             </div>
         `;
@@ -1088,29 +1120,71 @@ class XiaoshiRoomCard extends LitElement {
                 class="device-btn ${isOn ? 'active' : ''}"
                 style="background:${bgColor}; color:${iconColor}"
                 @click="${() => this._onDeviceClick(device)}"
-                @pointerdown="${this._onHoldStart}"
-                @pointerup="${this._onHoldEnd}"
+                @pointerdown="${(e) => this._onDeviceHoldStart(e, device)}"
+                @pointerup="${(e) => this._onDeviceHoldEnd(e)}"
             >
                 <ha-icon icon="${icon}" class="${animateClass}" style="--mdc-icon-size:${device.icon_size || 2.8}vh;width:${device.icon_size || 2.8}vh;height:${device.icon_size || 2.8}vh"></ha-icon>
                 ${showBadge ? html`<span class="badge" style="background:${device.badge_color || '#f44336'}">${activeCount}</span>` : html`<span class="badge hidden"></span>`}
             </button>
         `;
-    }    // ===== 长按弹窗 (hold_popup_cards) =====
-    _onHoldStart(e) {
+    }    // ===== 长按弹窗机制 =====
+    // 传感器长按
+    _onSensorHoldStart(e, holdPopup) {
+        if (!holdPopup) return;
+        this._holdTarget = 'sensor';
+        this._holdData = holdPopup;
         this._holdTriggered = false;
         this._holdTimer = setTimeout(() => {
             this._holdTriggered = true;
             this._onHoldPopup();
         }, 500);
     }
-    _onHoldEnd() {
+    _onSensorHoldEnd(e) {
         if (this._holdTimer) {
             clearTimeout(this._holdTimer);
             this._holdTimer = null;
         }
     }
+    // 设备长按
+    _onDeviceHoldStart(e, device) {
+        if (!device) return;
+        const holdConfig = device.hold_popup_cards;
+        if (!holdConfig || !holdConfig.trim()) return;
+        this._holdTarget = 'device';
+        this._holdData = holdConfig;
+        this._holdTriggered = false;
+        this._holdTimer = setTimeout(() => {
+            this._holdTriggered = true;
+            this._onHoldPopup();
+        }, 500);
+    }
+    _onDeviceHoldEnd(e) {
+        if (this._holdTimer) {
+            clearTimeout(this._holdTimer);
+            this._holdTimer = null;
+        }
+    }
+    // 人在长按
+    _onPersonHoldStart(e) {
+        if (!this.config.person_hold_popup) return;
+        this._holdTarget = 'person';
+        this._holdData = this.config.person_hold_popup;
+        this._holdTriggered = false;
+        this._holdTimer = setTimeout(() => {
+            this._holdTriggered = true;
+            this._onHoldPopup();
+        }, 500);
+    }
+    _onPersonHoldEnd(e) {
+        if (this._holdTimer) {
+            clearTimeout(this._holdTimer);
+            this._holdTimer = null;
+        }
+    }
+    // 统一长按弹窗
     _onHoldPopup() {
-        const holdConfig = this.config.hold_popup_cards;
+        if (!this._holdData) return;
+        const holdConfig = typeof this._holdData === 'string' ? this._holdData : '';
         if (!holdConfig || !holdConfig.trim()) return;
         try {
             const h = this._hass || this.hass;
