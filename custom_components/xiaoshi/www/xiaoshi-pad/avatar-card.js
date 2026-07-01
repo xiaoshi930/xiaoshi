@@ -146,11 +146,15 @@ class XiaoshiAvatarPadCardEditor extends LitElement {
                 </div>
 
                 <div class="form-row" style="flex-direction:column;align-items:stretch;">
-                    <label style="margin-bottom:4px;">附加卡片配置（YAML格式，参照balance-button的other_cards）</label>
-                    <textarea name="other_cards" .value="${c.other_cards || ''}" @change="${this._valueChanged}" placeholder="# 示例配置：添加button卡片
+                    <label style="margin-bottom:4px;">附加卡片配置（YAML格式，字段名：popup_cards / other_cards / popup 均可）</label>
+                    <textarea name="popup_cards" .value="${c.popup_cards || c.other_cards || c.popup || ''}" @change="${this._valueChanged}" placeholder="# 示例配置：添加button卡片
 - type: custom:button-card
   template: 测试模板(最好引用模板，否则大概率会报错)" style="min-height:80px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-family:inherit;"></textarea>
                 </div>
+        <div class="form-group">
+          <label>长按弹出内容（hold_popup_cards）</label>
+          <textarea name="hold_popup_cards" .value="${c.hold_popup_cards || ''}" @change="${this._valueChanged}" placeholder="长按时弹出的YAML卡片配置"></textarea>
+        </div>
 
                 <div class="section-title">人员配置</div>
                 <div class="person-section">
@@ -264,6 +268,8 @@ class XiaoshiAvatarPadCard extends LitElement {
 
     constructor() {
         super();
+    this._holdTimer = null;
+    this._holdTriggered = false;
     }
 
     static get styles() {
@@ -762,7 +768,9 @@ class XiaoshiAvatarPadCard extends LitElement {
             <div class="card-wrapper" style="width:${this.config.card_width || '120px'};height:${this.config.card_height || '120px'};">
                 <div class="card-item"
                     style="background:${bg};"
-                    @click="${() => this._onCardClick()}">
+                    @click="${() => this._onCardClick()}"
+                    @pointerdown="${this._onHoldStart}"
+                    @pointerup="${this._onHoldEnd}">
                     ${this._renderCardContent(data, allData, pc)}
                 </div>
             </div>
@@ -815,10 +823,11 @@ class XiaoshiAvatarPadCard extends LitElement {
             }
         }
 
-        // 3. 添加附加卡片（other_cards）
-        if (this.config.other_cards && this.config.other_cards.trim()) {
+        // 3. 添加附加卡片（popup_cards / other_cards / popup）
+        const additionalCardsYaml = this.config.popup_cards || this.config.other_cards || this.config.popup;
+        if (additionalCardsYaml && additionalCardsYaml.trim()) {
             try {
-                const additionalCards = yamlToJson(this.config.other_cards);
+                const additionalCards = yamlToJson(additionalCardsYaml);
                 const theme = this._evaluateTheme();
                 const cardsWithTheme = additionalCards.map(card => {
                     if (!card.theme && this.config.theme) {
@@ -991,7 +1000,49 @@ class XiaoshiAvatarPadCard extends LitElement {
                 ${avatarContent}
             </div>
         `;
+    }    // ===== 长按弹窗 (hold_popup_cards) =====
+    _onHoldStart(e) {
+        this._holdTriggered = false;
+        this._holdTimer = setTimeout(() => {
+            this._holdTriggered = true;
+            this._onHoldPopup();
+        }, 500);
     }
+    _onHoldEnd() {
+        if (this._holdTimer) {
+            clearTimeout(this._holdTimer);
+            this._holdTimer = null;
+        }
+    }
+    _onHoldPopup() {
+        const holdConfig = this.config.hold_popup_cards;
+        if (!holdConfig || !holdConfig.trim()) return;
+        try {
+            const h = this._hass || this.hass;
+            const cards = yamlToJson(holdConfig);
+            if (!cards || cards.length === 0) return;
+            const theme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+            const cardsWithTheme = cards.map(card => {
+                if (!card.theme && this.config.theme) {
+                    return { ...card, theme: this.config.theme === 'system' ? theme : this.config.theme };
+                }
+                return card;
+            });
+            if (this._handleClick) this._handleClick();
+            const serviceData = { card: cardsWithTheme };
+            const popupWidth = this.config.popup_width || '95%';
+            const popupTop = this.config.popup_top || '20px';
+            if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+            if (popupTop !== '20px') serviceData.popup_top = popupTop;
+            serviceData.background = 'transparent';
+            h.callService('popup_card', 'show', serviceData);
+        } catch (err) {
+            console.error('解析长按弹窗卡片失败:', err);
+        }
+    }
+
+
+    
 
     // ===== 弹窗服务调用 =====
     _handleClick() {

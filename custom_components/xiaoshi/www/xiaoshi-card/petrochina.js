@@ -220,6 +220,8 @@ const PetroChinaBaseMixin = (superClass) => class extends superClass {
     this._loading = false;
     this._refreshInterval = null;
     this.theme = 'system';
+    this._holdTimer = null;
+    this._holdTriggered = false;
     this._selectedHistoryYear = null;
   }
 
@@ -313,6 +315,47 @@ const PetroChinaBaseMixin = (superClass) => class extends superClass {
     }
 
     this._loading = false;
+  }
+
+  // ===== 长按弹窗 (hold_popup_cards) =====
+  _onHoldStart(e) {
+    this._holdTriggered = false;
+    this._holdTimer = setTimeout(() => {
+      this._holdTriggered = true;
+      this._onHoldPopup();
+    }, 500);
+  }
+  _onHoldEnd() {
+    if (this._holdTimer) {
+      clearTimeout(this._holdTimer);
+      this._holdTimer = null;
+    }
+  }
+  _onHoldPopup() {
+    const holdConfig = this.config.hold_popup_cards;
+    if (!holdConfig || !holdConfig.trim()) return;
+    try {
+      const h = this._hass || this.hass;
+      const cards = yamlToJson(holdConfig);
+      if (!cards || cards.length === 0) return;
+      const theme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+      const cardsWithTheme = cards.map(card => {
+        if (!card.theme && this.config.theme) {
+          return { ...card, theme: this.config.theme === 'system' ? theme : this.config.theme };
+        }
+        return card;
+      });
+      if (this._handleClick) this._handleClick();
+      const serviceData = { card: cardsWithTheme };
+      const popupWidth = this.config.popup_width || '95%';
+      const popupTop = this.config.popup_top || '20px';
+      if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+      if (popupTop !== '20px') serviceData.popup_top = popupTop;
+      serviceData.background = 'transparent';
+      h.callService('popup_card', 'show', serviceData);
+    } catch (err) {
+      console.error('解析长按弹窗卡片失败:', err);
+    }
   }
 
   _handleClick() {
@@ -952,14 +995,18 @@ class XiaoshiPetroChinaButtonEditor extends PetroChinaEditorMixin(LitElement) {
           <label>👇👇👇下方弹出的卡片可增加的其他卡片👇👇👇</label>
           <textarea
             @change=${this._entityChanged}
-            .value=${this.config.other_cards || ''}
-            name="other_cards"
+            .value=${this.config.popup_cards || this.config.other_cards || this.config.popup || ''}
+            name="popup_cards"
             placeholder='# 示例配置：添加button卡片
 - type: custom:button-card
   template: 测试模板(最好引用模板，否则大概率会报错)
 - type: custom:button-card
   template: 测试模板(最好引用模板，否则大概率会报错)'>
           </textarea>
+        </div>
+        <div class="form-group">
+          <label>长按弹出内容（hold_popup_cards）</label>
+          <textarea @change=${this._entityChanged} .value=${this.config.hold_popup_cards || ''} name="hold_popup_cards" placeholder='长按时弹出的YAML卡片配置'></textarea>
         </div>
 
         <div class="form-group">
@@ -1086,11 +1133,11 @@ class XiaoshiPetroChinaButton extends PetroChinaBaseMixin(LitElement) {
   }
 
   _handleButtonClick() {
-    const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'popup_top', 'popup_width'];
+    const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'popup_top', 'popup_width', 'other_cards', 'popup_cards', 'popup', 'hold_popup_cards'];
     const cards = [];
     const balanceCardConfig = {};
     Object.keys(this.config).forEach(key => {
-      if (!excludedParams.includes(key) && key !== 'other_cards') {
+      if (!excludedParams.includes(key)) {
         balanceCardConfig[key] = this.config[key];
       }
     });
@@ -1098,9 +1145,10 @@ class XiaoshiPetroChinaButton extends PetroChinaBaseMixin(LitElement) {
       type: 'custom:xiaoshi-petrochina-card',
       ...balanceCardConfig
     });
-    if (this.config.other_cards && this.config.other_cards.trim()) {
+    const additionalCardsYaml = this.config.popup_cards || this.config.other_cards || this.config.popup;
+    if (additionalCardsYaml && additionalCardsYaml.trim()) {
       try {
-        const additionalCardsConfig = yamlToJson(this.config.other_cards);
+        const additionalCardsConfig = yamlToJson(additionalCardsYaml);
         const cardsWithTheme = additionalCardsConfig.map(card => {
           if (!card.theme && this.config.theme) {
             return { ...card, theme: this.config.theme };
@@ -1193,7 +1241,7 @@ class XiaoshiPetroChinaButton extends PetroChinaBaseMixin(LitElement) {
     const iconColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
 
     const buttonHtml = html`
-      <div class="balance-status" style="--fg-color: ${fgColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
+      <div class="balance-status" style="--fg-color: ${fgColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick} @pointerdown=${this._onHoldStart} @pointerup=${this._onHoldEnd}>
       ${(buttonIcon.startsWith('mdi:') ? html`<ha-icon class="status-icon" style="color: ${iconColor};" icon="${buttonIcon}"></ha-icon>` : html`<span class="status-icon" style="color: ${iconColor}; font-size: var(--button-icon-size, 13px); line-height: 1;">${buttonIcon}</span>`)}
         <span style="color: ${iconColor};">${displayText}</span>
       </div>

@@ -361,11 +361,15 @@ class XiaoshiStateGridButtonEditor extends LitElement {
 
         <div class="form-group"><label>👇👇👇下方弹出的卡片可增加的其他卡片👇👇👇</label></div>
         <div class="form-group">
-          <textarea @change=${this._entityChanged} .value=${this.config.other_cards || ''} name="other_cards" placeholder='# 示例配置：添加button卡片
+          <textarea @change=${this._entityChanged} .value=${this.config.popup_cards || this.config.other_cards || this.config.popup || ''} name="popup_cards" placeholder='# 示例配置：添加button卡片
 - type: custom:button-card
   template: 测试模板
 - type: custom:button-card
   template: 测试模板'></textarea>
+        </div>
+        <div class="form-group">
+          <label>长按弹出内容（hold_popup_cards）</label>
+          <textarea @change=${this._entityChanged} .value=${this.config.hold_popup_cards || ''} name="hold_popup_cards" placeholder='长按时弹出的YAML卡片配置'></textarea>
         </div>
 
         <div class="form-group"><label>👇👇👇下方是弹出的主卡配置项👇👇👇</label></div>
@@ -506,7 +510,7 @@ class XiaoshiStateGridButtonEditor extends LitElement {
           name !== 'decimal_precision' && name !== 'width' && name !== 'color_num' &&
           name !== 'color_cost' && name !== 'balance_name' && name !== 'global_warning' &&
           name !== 'entity_layout' && name !== 'entities_per_row' && name !== 'default_show_calendar' &&
-          name !== 'utility_type' && name !== 'other_cards') return;
+          name !== 'utility_type' && name !== 'popup_cards') return;
       finalValue = value;
     }
     if (name === 'button_width') finalValue = value || '16.8vw';
@@ -630,6 +634,8 @@ class XiaoshiStateGridButton extends LitElement {
     this._loading = false;
     this._refreshInterval = null;
     this.theme = 'system';
+    this._holdTimer = null;
+    this._holdTriggered = false;
   }
 
   static getConfigElement() {
@@ -713,6 +719,47 @@ class XiaoshiStateGridButton extends LitElement {
     this._loading = false;
   }
 
+  // ===== 长按弹窗 (hold_popup_cards) =====
+  _onHoldStart(e) {
+    this._holdTriggered = false;
+    this._holdTimer = setTimeout(() => {
+      this._holdTriggered = true;
+      this._onHoldPopup();
+    }, 500);
+  }
+  _onHoldEnd() {
+    if (this._holdTimer) {
+      clearTimeout(this._holdTimer);
+      this._holdTimer = null;
+    }
+  }
+  _onHoldPopup() {
+    const holdConfig = this.config.hold_popup_cards;
+    if (!holdConfig || !holdConfig.trim()) return;
+    try {
+      const h = this._hass || this.hass;
+      const cards = yamlToJson(holdConfig);
+      if (!cards || cards.length === 0) return;
+      const theme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+      const cardsWithTheme = cards.map(card => {
+        if (!card.theme && this.config.theme) {
+          return { ...card, theme: this.config.theme === 'system' ? theme : this.config.theme };
+        }
+        return card;
+      });
+      if (this._handleClick) this._handleClick();
+      const serviceData = { card: cardsWithTheme };
+      const popupWidth = this.config.popup_width || '95%';
+      const popupTop = this.config.popup_top || '20px';
+      if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+      if (popupTop !== '20px') serviceData.popup_top = popupTop;
+      serviceData.background = 'transparent';
+      h.callService('popup_card', 'show', serviceData);
+    } catch (err) {
+      console.error('解析长按弹窗卡片失败:', err);
+    }
+  }
+
   _handleClick() {
     const hapticEvent = new Event('haptic', { bubbles: true, cancelable: false, composed: true });
     hapticEvent.detail = 'light';
@@ -754,12 +801,13 @@ class XiaoshiStateGridButton extends LitElement {
       'popup_top', 'popup_width', 'display_mode', 'decimal_precision', 'emoji',
       'tablet_mode',
       'transparent_bg',
-      'lock_white_fg'
+      'lock_white_fg',
+      'other_cards', 'popup_cards', 'popup'
     ];
     const cards = [];
     const stateGridCardConfig = {};
     Object.keys(this.config).forEach(key => {
-      if (!excludedParams.includes(key) && key !== 'other_cards') {
+      if (!excludedParams.includes(key)) {
         stateGridCardConfig[key] = this.config[key];
       }
     });
@@ -767,9 +815,10 @@ class XiaoshiStateGridButton extends LitElement {
       type: 'custom:xiaoshi-state-grid-info',
       ...stateGridCardConfig
     });
-    if (this.config.other_cards && this.config.other_cards.trim()) {
+    const additionalCardsYaml = this.config.popup_cards || this.config.other_cards || this.config.popup;
+    if (additionalCardsYaml && additionalCardsYaml.trim()) {
       try {
-        const additionalCardsConfig = yamlToJson(this.config.other_cards);
+        const additionalCardsConfig = yamlToJson(additionalCardsYaml);
         const cardsWithTheme = additionalCardsConfig.map(card => {
           if (!card.theme && this.config.theme) {
             return { ...card, theme: this.config.theme };
@@ -890,7 +939,7 @@ class XiaoshiStateGridButton extends LitElement {
       const balanceColor = isWarning ? warningColor : tabletFgColor;
 
       return html`
-        <div class="balance-status tablet-mode" style="--fg-color: ${tabletFgColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
+        <div class="balance-status tablet-mode" style="--fg-color: ${tabletFgColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick} @pointerdown=${this._onHoldStart} @pointerup=${this._onHoldEnd}>
           <span class="tablet-balance"><span class="status-emoji">${buttonEmoji}</span><span style="color: ${tabletFgColor};">${uc.balanceLabel}：<span style="color: ${balanceColor};">${balanceValue}元</span></span></span>
           <span class="tablet-days" style="color: ${tabletFgColor};">预计：${daysValue}天</span>
         </div>
@@ -1520,6 +1569,8 @@ class  XiaoshiStateGridInfo extends LitElement {
     this.month = today.getMonth() + 1;
     this.width = '380px';
     this.theme = 'system';
+    this._holdTimer = null;
+    this._holdTriggered = false;
     this.dayData = [];
     this.activeNav = '';
     this.monthData = null;

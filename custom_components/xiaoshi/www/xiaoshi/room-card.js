@@ -8,7 +8,7 @@ import { yamlToJson } from '../function/function.js';
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'xiaoshi-room-card',
-    name: '消逝房间卡片',
+    name: '消逝手机端房间卡片',
     description: '房间状态与设备控制卡片',
     preview: true
 });
@@ -68,6 +68,8 @@ class XiaoshiRoomCardEditor extends LitElement {
 
     constructor() {
         super();
+    this._holdTimer = null;
+    this._holdTriggered = false;
         this._activeSearch = '';
         this._searchTerms = {};
         this._filteredEntities = {};
@@ -607,6 +609,8 @@ class XiaoshiRoomCard extends LitElement {
 
     constructor() {
         super();
+    this._holdTimer = null;
+    this._holdTriggered = false;
         this._showHistory = false;
         this._historyData = {};
         this._historyLoading = false;
@@ -1084,12 +1088,56 @@ class XiaoshiRoomCard extends LitElement {
                 class="device-btn ${isOn ? 'active' : ''}"
                 style="background:${bgColor}; color:${iconColor}"
                 @click="${() => this._onDeviceClick(device)}"
+                @pointerdown="${this._onHoldStart}"
+                @pointerup="${this._onHoldEnd}"
             >
                 <ha-icon icon="${icon}" class="${animateClass}" style="--mdc-icon-size:${device.icon_size || 2.8}vh;width:${device.icon_size || 2.8}vh;height:${device.icon_size || 2.8}vh"></ha-icon>
                 ${showBadge ? html`<span class="badge" style="background:${device.badge_color || '#f44336'}">${activeCount}</span>` : html`<span class="badge hidden"></span>`}
             </button>
         `;
+    }    // ===== 长按弹窗 (hold_popup_cards) =====
+    _onHoldStart(e) {
+        this._holdTriggered = false;
+        this._holdTimer = setTimeout(() => {
+            this._holdTriggered = true;
+            this._onHoldPopup();
+        }, 500);
     }
+    _onHoldEnd() {
+        if (this._holdTimer) {
+            clearTimeout(this._holdTimer);
+            this._holdTimer = null;
+        }
+    }
+    _onHoldPopup() {
+        const holdConfig = this.config.hold_popup_cards;
+        if (!holdConfig || !holdConfig.trim()) return;
+        try {
+            const h = this._hass || this.hass;
+            const cards = yamlToJson(holdConfig);
+            if (!cards || cards.length === 0) return;
+            const theme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+            const cardsWithTheme = cards.map(card => {
+                if (!card.theme && this.config.theme) {
+                    return { ...card, theme: this.config.theme === 'system' ? theme : this.config.theme };
+                }
+                return card;
+            });
+            if (this._handleClick) this._handleClick();
+            const serviceData = { card: cardsWithTheme };
+            const popupWidth = this.config.popup_width || '95%';
+            const popupTop = this.config.popup_top || '20px';
+            if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+            if (popupTop !== '20px') serviceData.popup_top = popupTop;
+            serviceData.background = 'transparent';
+            h.callService('popup_card', 'show', serviceData);
+        } catch (err) {
+            console.error('解析长按弹窗卡片失败:', err);
+        }
+    }
+
+
+    
 
     // ===== 弹窗服务调用 =====
     _handleClick() {

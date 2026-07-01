@@ -221,8 +221,12 @@ class XiaoshiDeviceButtonEditor extends LitElement {
 
         <div class="form-group">
           <label>弹窗卡片（YAML格式）</label>
-          <textarea name="popup_cards" .value="${c.popup_cards || ''}" @change="${this._valueChanged}" placeholder="- type: custom:button-card
+          <textarea name="popup_cards" .value="${c.popup_cards || c.other_cards || c.popup || ''}" @change="${this._valueChanged}" placeholder="- type: custom:button-card
   template: 测试模板"></textarea>
+        </div>
+        <div class="form-group">
+          <label>长按弹出内容（hold_popup_cards）</label>
+          <textarea name="hold_popup_cards" .value="${c.hold_popup_cards || ''}" @change="${this._valueChanged}" placeholder="长按时弹出的YAML卡片配置"></textarea>
         </div>
       </div>
     `;
@@ -266,6 +270,8 @@ class XiaoshiDeviceButton extends LitElement {
   constructor() {
     super();
     this.theme = 'system';
+    this._holdTimer = null;
+    this._holdTriggered = false;
   }
 
   static getConfigElement() {
@@ -397,6 +403,47 @@ class XiaoshiDeviceButton extends LitElement {
   }
 
   // ===== 事件 =====
+  // ===== 长按弹窗 (hold_popup_cards) =====
+  _onHoldStart(e) {
+    this._holdTriggered = false;
+    this._holdTimer = setTimeout(() => {
+      this._holdTriggered = true;
+      this._onHoldPopup();
+    }, 500);
+  }
+  _onHoldEnd() {
+    if (this._holdTimer) {
+      clearTimeout(this._holdTimer);
+      this._holdTimer = null;
+    }
+  }
+  _onHoldPopup() {
+    const holdConfig = this.config.hold_popup_cards;
+    if (!holdConfig || !holdConfig.trim()) return;
+    try {
+      const h = this._hass || this.hass;
+      const cards = yamlToJson(holdConfig);
+      if (!cards || cards.length === 0) return;
+      const theme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+      const cardsWithTheme = cards.map(card => {
+        if (!card.theme && this.config.theme) {
+          return { ...card, theme: this.config.theme === 'system' ? theme : this.config.theme };
+        }
+        return card;
+      });
+      if (this._handleClick) this._handleClick();
+      const serviceData = { card: cardsWithTheme };
+      const popupWidth = this.config.popup_width || '95%';
+      const popupTop = this.config.popup_top || '20px';
+      if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+      if (popupTop !== '20px') serviceData.popup_top = popupTop;
+      serviceData.background = 'transparent';
+      h.callService('popup_card', 'show', serviceData);
+    } catch (err) {
+      console.error('解析长按弹窗卡片失败:', err);
+    }
+  }
+
   _handleClick() {
     const hapticEvent = new Event('haptic', { bubbles: true, cancelable: false, composed: true });
     hapticEvent.detail = 'light';
@@ -406,7 +453,7 @@ class XiaoshiDeviceButton extends LitElement {
   // ===== 点击按钮弹窗 =====
   _handleButtonClick() {
     const cards = [];
-    const popupConfig = this.config.popup_cards || this.config.other_cards;
+    const popupConfig = this.config.popup_cards || this.config.other_cards || this.config.popup;
     if (popupConfig && popupConfig.trim()) {
       try {
         const parsed = yamlToJson(popupConfig);
@@ -494,7 +541,7 @@ class XiaoshiDeviceButton extends LitElement {
     const displayText = buttonText ? `${buttonText}: ${activeCount}` : `${activeCount}`;
 
     return html`
-      <div class="device-status" style="--fg-color: ${numberColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick}>
+      <div class="device-status" style="--fg-color: ${numberColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick} @pointerdown=${this._onHoldStart} @pointerup=${this._onHoldEnd}>
         ${buttonIcon.startsWith('mdi:') 
           ? html`<ha-icon icon="${buttonIcon}" class="status-icon" style="color: ${iconColor};"></ha-icon>`
           : html`<span class="status-icon" style="color: ${iconColor};">${buttonIcon}</span>`

@@ -170,6 +170,17 @@ popup:
             style="min-height: 80px; resize: vertical; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; font-size: 14px; background: var(--card-background-color); color: var(--primary-text-color);"
           ></textarea>
         </div>
+        <div class="field">
+          <label>长按弹出内容（hold_popup_cards）</label>
+          <textarea
+            .value=${this._config.hold_popup_cards || ''}
+            configKey="hold_popup_cards"
+            @value-changed=${this._valueChanged}
+            @change=${this._valueChanged}
+            placeholder="长按时弹出的YAML卡片配置"
+            style="min-height: 60px; resize: vertical; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; font-size: 14px; background: var(--card-background-color); color: var(--primary-text-color);"
+          ></textarea>
+        </div>
         <div class="inline-fields">
           <div class="field">
             <label>弹窗宽度：支持像素(px)、百分比(%)和auto，默认95%</label>
@@ -220,6 +231,8 @@ class XiaoshiPadGridCard extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    this._holdTimer = null;
+    this._holdTriggered = false;
     this.__floorHandler = () => this.requestUpdate();
     window.addEventListener('floor-changed', this.__floorHandler);
   }
@@ -269,7 +282,9 @@ class XiaoshiPadGridCard extends LitElement {
             <div 
               class="grid-item"\n
               style="left: ${grid[0]};top: ${grid[1]};width: ${grid[2]};height: ${grid[3]};background-color: rgba(0, 200, 0, 0.8);filter: ${filter};font-size: ${fsize};"
-              @click=${() => this._handleGridClick(entityConfig)}>
+              @click=${() => this._handleGridClick(entityConfig)}
+              @pointerdown=${this._onHoldStart}
+              @pointerup=${this._onHoldEnd}>
               ${entityConfig.state !== false ? html`${entity.state}${unit}` : ''}
             </div>
           `;
@@ -333,13 +348,51 @@ class XiaoshiPadGridCard extends LitElement {
     return `hue-rotate(${deg}deg)`;
   }
 
+  _onHoldStart(e) {
+    this._holdTriggered = false;
+    this._holdTimer = setTimeout(() => {
+      this._holdTriggered = true;
+      this._onHoldPopup();
+    }, 500);
+  }
+  _onHoldEnd() {
+    if (this._holdTimer) {
+      clearTimeout(this._holdTimer);
+      this._holdTimer = null;
+    }
+  }
+  _onHoldPopup() {
+    const holdConfig = this.config.hold_popup_cards;
+    if (!holdConfig || !holdConfig.trim()) return;
+    try {
+      const cards = yamlToJson(holdConfig);
+      if (!cards || cards.length === 0) return;
+      const theme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+      const cardsWithTheme = cards.map(card => {
+        if (!card.theme && this.config.theme) {
+          return { ...card, theme: this.config.theme === 'system' ? theme : this.config.theme };
+        }
+        return card;
+      });
+      const serviceData = { card: cardsWithTheme };
+      serviceData.background = 'transparent';
+      this.hass.callService('popup_card', 'show', serviceData);
+      const hapticEvent = new Event('haptic', { bubbles: true, cancelable: false, composed: true });
+      hapticEvent.detail = 'light';
+      this.dispatchEvent(hapticEvent);
+    } catch (err) {
+      console.error('解析长按弹窗卡片失败:', err);
+    }
+  }
+
   _handleGridClick(entityConfig) {
     const entity = this.hass.states[entityConfig.entity];
     if (!entity) return;
     const cards = [];
-    if (this.config.popup_cards && this.config.popup_cards.trim()) {
+    const popupConfig = this.config.popup_cards || this.config.other_cards || this.config.popup;
+    if (popupConfig && popupConfig.trim()) {
       try {
-        const additionalCardsConfig = yamlToJson(this.config.popup_cards);
+        const additionalCardsConfig = yamlToJson(popupConfig);
         cards.push(...additionalCardsConfig);
       } catch (error) {
         console.error('解析附加卡片配置失败:', error);

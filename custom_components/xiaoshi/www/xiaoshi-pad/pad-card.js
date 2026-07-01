@@ -62,6 +62,8 @@ class XiaoshiPadCardEditor extends LitElement {
 
     constructor() {
         super();
+    this._holdTimer = null;
+    this._holdTriggered = false;
         this._editFloorIdx = 0;
     }
 
@@ -759,6 +761,8 @@ class XiaoshiPadCard extends LitElement {
 
   constructor() {
     super();
+    this._holdTimer = null;
+    this._holdTriggered = false;
     this._kioskOn = true;
     this._kioskWasOn = false;
     this._blockToggleMenu = null;
@@ -974,6 +978,37 @@ class XiaoshiPadCard extends LitElement {
   _toggleFullscreen() {
     this._kioskOn = !this._kioskOn;
     this.requestUpdate();
+  }
+
+  // ===== 长按弹窗 (hold_popup_cards) =====
+  _onHoldStart(e) {
+    this._holdTriggered = false;
+    this._holdTimer = setTimeout(() => {
+      this._holdTriggered = true;
+      this._onHoldPopup();
+    }, 500);
+  }
+  _onHoldEnd() {
+    if (this._holdTimer) {
+      clearTimeout(this._holdTimer);
+      this._holdTimer = null;
+    }
+  }
+  _onHoldPopup() {
+    const holdConfig = this.config.hold_popup_cards;
+    if (!holdConfig || !holdConfig.trim()) return;
+    try {
+      const cards = yamlToJson(holdConfig);
+      if (!cards || cards.length === 0) return;
+      this._handleHaptic();
+      const serviceData = { card: cards };
+      const popupWidth = this.config.popup_width || '95%';
+      const popupTop = this.config.popup_top || '20px';
+      serviceData.background = 'transparent';
+      this.hass.callService('popup_card', 'show', serviceData);
+    } catch (err) {
+      console.error('解析长按弹窗卡片失败:', err);
+    }
   }
 
   _handleFullscreen() {
