@@ -249,7 +249,6 @@ class XiaoshiPadCameraCard extends LitElement {
     const serviceData = { card: cards };
     serviceData.popup_width = this.config.popup_width || '500px';
     serviceData.popup_top = this.config.popup_top || '20px';
-    serviceData.background = 'transparent';
 
     this.hass.callService('popup_card', 'show', serviceData);
 

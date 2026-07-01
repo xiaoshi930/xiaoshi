@@ -368,6 +368,14 @@ class XiaoshiStateGridButtonEditor extends LitElement {
   template: 测试模板'></textarea>
         </div>
         <div class="form-group">
+          <label>长按弹窗宽度（hold_popup_width）</label>
+          <input @change=${this._entityChanged} .value=${this.config.hold_popup_width || ''} name="hold_popup_width" placeholder="留空则使用弹窗宽度配置" />
+        </div>
+        <div class="form-group">
+          <label>长按弹窗位置（hold_popup_top）</label>
+          <input @change=${this._entityChanged} .value=${this.config.hold_popup_top || ''} name="hold_popup_top" placeholder="留空则使用弹窗位置配置" />
+        </div>
+        <div class="form-group">
           <label>长按弹出内容（hold_popup_cards）</label>
           <textarea @change=${this._entityChanged} .value=${this.config.hold_popup_cards || ''} name="hold_popup_cards" placeholder='长按时弹出的YAML卡片配置'></textarea>
         </div>
@@ -749,11 +757,10 @@ class XiaoshiStateGridButton extends LitElement {
       });
       if (this._handleClick) this._handleClick();
       const serviceData = { card: cardsWithTheme };
-      const popupWidth = this.config.popup_width || '95%';
-      const popupTop = this.config.popup_top || '20px';
+      const popupWidth = this.config.hold_popup_width || this.config.popup_width || '95%';
+      const popupTop = this.config.hold_popup_top || this.config.popup_top || '20px';
       if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
       if (popupTop !== '20px') serviceData.popup_top = popupTop;
-      serviceData.background = 'transparent';
       h.callService('popup_card', 'show', serviceData);
     } catch (err) {
       console.error('解析长按弹窗卡片失败:', err);
@@ -835,7 +842,6 @@ class XiaoshiStateGridButton extends LitElement {
     const popupTop = this.config.popup_top || '20px';
     if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
     if (popupTop !== '20px') serviceData.popup_top = popupTop;
-    serviceData.background = 'transparent';
     this.hass.callService('popup_card', 'show', serviceData);
     this._handleClick();
   }

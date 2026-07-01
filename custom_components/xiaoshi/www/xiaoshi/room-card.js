@@ -285,6 +285,12 @@ class XiaoshiRoomCardEditor extends LitElement {
                     <input type="text" name="popup_top" .value="${c.popup_top || ''}" @change="${this._valueChanged}" placeholder="20px" style="max-width:60px" />
                 </div>
                 <div class="form-row">
+                    <label>长按弹窗宽度</label>
+                    <input type="text" name="hold_popup_width" .value="${c.hold_popup_width || ''}" @change="${this._valueChanged}" placeholder="留空取弹窗宽度" style="max-width:60px" />
+                    <label style="min-width:auto">长按弹窗位置</label>
+                    <input type="text" name="hold_popup_top" .value="${c.hold_popup_top || ''}" @change="${this._valueChanged}" placeholder="留空取弹窗位置" style="max-width:60px" />
+                </div>
+                <div class="form-row">
                     <label>房间名称</label>
                     <input type="text" name="name" .value="${c.name || ''}" @change="${this._valueChanged}" placeholder="如：儿童房" style="max-width:130px" />
                     <input type="text" name="name_size" .value="${c.name_size || ''}" @change="${this._valueChanged}" placeholder="字体大小3vw" style="max-width:100px" />
@@ -838,7 +844,6 @@ class XiaoshiRoomCard extends LitElement {
             const popupTop = this.config.popup_top || '20px';
             if (popupWidth !== 'min(95%, 475px)') serviceData.popup_width = popupWidth;
             if (popupTop !== '20px') serviceData.popup_top = popupTop;
-            serviceData.background = 'transparent';
             this.hass.callService('popup_card', 'show', serviceData);
             return;
         }
@@ -1199,11 +1204,10 @@ class XiaoshiRoomCard extends LitElement {
             });
             if (this._handleClick) this._handleClick();
             const serviceData = { card: cardsWithTheme };
-            const popupWidth = this.config.popup_width || '95%';
-            const popupTop = this.config.popup_top || '20px';
+            const popupWidth = this.config.hold_popup_width || this.config.popup_width || '95%';
+            const popupTop = this.config.hold_popup_top || this.config.popup_top || '20px';
             if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
             if (popupTop !== '20px') serviceData.popup_top = popupTop;
-            serviceData.background = 'transparent';
             h.callService('popup_card', 'show', serviceData);
         } catch (err) {
             console.error('解析长按弹窗卡片失败:', err);

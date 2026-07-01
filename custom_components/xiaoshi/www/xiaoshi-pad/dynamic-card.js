@@ -154,10 +154,22 @@ class XiaoshiDynamicPadCardEditor extends LitElement {
                     <input type="text" name="popup_top" .value="${area.popup_top || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="50%" style="max-width:100px" />
                 </div>
 
+                <div class="form-row" >
+                    <label >长按弹窗宽度</label>
+                    <input type="text" name="hold_popup_width" .value="${area.hold_popup_width || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="留空取弹窗宽度" style="max-width:100px" />
+                    <label style="min-width:auto">长按弹窗位置</label>
+                    <input type="text" name="hold_popup_top" .value="${area.hold_popup_top || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="留空取弹窗位置" style="max-width:100px" />
+                </div>
+
                 <div class="form-row" style="flex-direction:column;align-items:stretch;">
                     <label>弹窗卡片（YAML格式）</label>
                     <textarea name="popup_cards" .value="${area.popup_cards || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="- type: custom:button-card
   template: 测试模板"></textarea>
+                </div>
+
+                <div class="form-row" style="flex-direction:column;align-items:stretch;">
+                    <label>长按弹窗卡片（hold_popup_cards）</label>
+                    <textarea name="hold_popup_cards" .value="${area.hold_popup_cards || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="长按时弹出的YAML卡片配置&#10;- type: custom:button-card&#10;  template: 长按模板"></textarea>
                 </div>
             </div>
         `;
@@ -241,6 +253,7 @@ class XiaoshiDynamicPadCard extends LitElement {
         super();
     this._holdTimer = null;
     this._holdTriggered = false;
+    this._holdTargetIndex = null;
     }
 
     static get styles() {
@@ -520,7 +533,7 @@ class XiaoshiDynamicPadCard extends LitElement {
                 <div class="area-tile"
                     style="background:${bg};height:${this.config.button_height || '56px'};"
                     @click="${() => this._onAreaClick(area)}"
-                    @pointerdown="${this._onHoldStart}"
+                    @pointerdown="${(e) => this._onHoldStart(e, i)}"
                     @pointerup="${this._onHoldEnd}">
                     <ha-icon icon="${icon}" class="area-icon ${animateClass}"></ha-icon>
                     ${area.name ? html`<div class="area-name">${area.name}</div>` : ''}
@@ -584,10 +597,10 @@ class XiaoshiDynamicPadCard extends LitElement {
         const popupTop = areaConfig.popup_top || '50%';
         serviceData.popup_width = popupWidth;
         serviceData.popup_top = popupTop;
-        serviceData.background = 'transparent';
         this.hass.callService('popup_card', 'show', serviceData);
     }    // ===== 长按弹窗 (hold_popup_cards) =====
-    _onHoldStart(e) {
+    _onHoldStart(e, areaIndex) {
+        this._holdTargetIndex = areaIndex;
         this._holdTriggered = false;
         this._holdTimer = setTimeout(() => {
             this._holdTriggered = true;
@@ -601,7 +614,12 @@ class XiaoshiDynamicPadCard extends LitElement {
         }
     }
     _onHoldPopup() {
-        const holdConfig = this.config.hold_popup_cards;
+        const areaIndex = this._holdTargetIndex;
+        const areas = this.config.areas || [];
+        const areaConfig = areas[areaIndex];
+        if (!areaConfig) return;
+
+        const holdConfig = areaConfig.hold_popup_cards || this.config.hold_popup_cards;
         if (!holdConfig || !holdConfig.trim()) return;
         try {
             const h = this._hass || this.hass;
@@ -616,11 +634,10 @@ class XiaoshiDynamicPadCard extends LitElement {
             });
             if (this._handleClick) this._handleClick();
             const serviceData = { card: cardsWithTheme };
-            const popupWidth = this.config.popup_width || '95%';
-            const popupTop = this.config.popup_top || '20px';
+            const popupWidth = areaConfig.hold_popup_width || areaConfig.popup_width || this.config.hold_popup_width || this.config.popup_width || '95%';
+            const popupTop = areaConfig.hold_popup_top || areaConfig.popup_top || this.config.hold_popup_top || this.config.popup_top || '20px';
             if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
             if (popupTop !== '20px') serviceData.popup_top = popupTop;
-            serviceData.background = 'transparent';
             h.callService('popup_card', 'show', serviceData);
         } catch (err) {
             console.error('解析长按弹窗卡片失败:', err);

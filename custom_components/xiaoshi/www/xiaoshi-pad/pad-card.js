@@ -712,6 +712,12 @@ class XiaoshiPadCardEditor extends LitElement {
                                 <textarea class="state-colors-textarea" .value="${di.popup_cards || ''}" @change="${(e) => this._updateDeviceIconField(i, 'popup_cards', e.target.value)}" placeholder="- type: custom:xiaoshi-chart-card&#10;  entities:&#10;    - entity: sensor.xxx"></textarea>
                             </div>
                             <div class="glow-row">
+                                <label>长按弹窗宽度</label>
+                                <input style="width: 80px;" type="text" .value="${di.hold_popup_width || ''}" @change="${(e) => this._updateDeviceIconField(i, 'hold_popup_width', e.target.value)}" placeholder="留空取弹窗宽度">
+                                <label>长按弹窗位置</label>
+                                <input style="width: 80px;" type="text" .value="${di.hold_popup_top || ''}" @change="${(e) => this._updateDeviceIconField(i, 'hold_popup_top', e.target.value)}" placeholder="留空取弹窗位置">
+                            </div>
+                            <div class="glow-row">
                                 <label>长按弹窗</label>
                                 <textarea class="state-colors-textarea" .value="${di.hold_popup_cards || ''}" @change="${(e) => this._updateDeviceIconField(i, 'hold_popup_cards', e.target.value)}" placeholder="长按弹出卡片"></textarea>
                             </div>
@@ -1029,11 +1035,10 @@ class XiaoshiPadCard extends LitElement {
       if (!cards || cards.length === 0) return;
       this._handleHaptic();
       const serviceData = { card: cards };
-      const popupWidth = item.popup_width || '400px';
-      const popupTop = item.popup_top || '20px';
+      const popupWidth = item.hold_popup_width || item.popup_width || '400px';
+      const popupTop = item.hold_popup_top || item.popup_top || '20px';
       serviceData.popup_width = popupWidth;
       serviceData.popup_top = popupTop;
-      serviceData.background = 'transparent';
       this.hass.callService('popup_card', 'show', serviceData);
     } catch (err) {
       console.error('[xiaoshi-pad-card] 解析长按弹窗卡片失败:', err);
@@ -1812,7 +1817,6 @@ class XiaoshiPadCard extends LitElement {
       const popupWidth = item.popup_width || '400px';
       const popupTop = item.popup_top || '20px';
       const serviceData = { card: popupCards };
-      serviceData.background = 'transparent';
       serviceData.popup_width = popupWidth;
       serviceData.popup_top = popupTop;
       this.hass.callService('popup_card', 'show', serviceData);

@@ -170,6 +170,16 @@ popup:
             style="min-height: 80px; resize: vertical; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; font-size: 14px; background: var(--card-background-color); color: var(--primary-text-color);"
           ></textarea>
         </div>
+        <div class="inline-fields">
+          <div class="field">
+            <label>长按弹窗宽度：支持像素(px)、百分比(%)和auto，留空使用弹窗宽度</label>
+            <input type="text" .value=${this._config.hold_popup_width || ''} configKey="hold_popup_width" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="留空取弹窗宽度" />
+          </div>
+          <div class="field">
+            <label>长按弹窗位置：支持百分比(%)和像素(px)，留空使用弹窗位置</label>
+            <input type="text" .value=${this._config.hold_popup_top || ''} configKey="hold_popup_top" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="留空取弹窗位置" />
+          </div>
+        </div>
         <div class="field">
           <label>长按弹出内容（hold_popup_cards）</label>
           <textarea
@@ -376,7 +386,10 @@ class XiaoshiPadGridCard extends LitElement {
         return card;
       });
       const serviceData = { card: cardsWithTheme };
-      serviceData.background = 'transparent';
+      const popupWidth = this.config.hold_popup_width || this.config.popup_width || '95%';
+      const popupTop = this.config.hold_popup_top || this.config.popup_top || '20px';
+      if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+      if (popupTop !== '20px') serviceData.popup_top = popupTop;
       this.hass.callService('popup_card', 'show', serviceData);
       const hapticEvent = new Event('haptic', { bubbles: true, cancelable: false, composed: true });
       hapticEvent.detail = 'light';
@@ -405,7 +418,6 @@ class XiaoshiPadGridCard extends LitElement {
     const popupTop = this.config.popup_top || '20px';
     if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
     if (popupTop !== '20px') serviceData.popup_top = popupTop;
-    serviceData.background = 'transparent';
     this.hass.callService('popup_card', 'show', serviceData);
     const hapticEvent = new Event('haptic', { bubbles: true, cancelable: false, composed: true });
     hapticEvent.detail = 'light';
