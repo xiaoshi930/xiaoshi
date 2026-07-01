@@ -222,6 +222,7 @@ class XiaoshiPadGridCard extends LitElement {
       popup_width: config.popup_width || '95%',
       popup_top: config.popup_top || '20px',
       popup_cards: config.popup_cards || config.other_cards || config.popup || '',
+      hold_popup_cards: config.hold_popup_cards || '',
       entities: (config.entities || []).map(entity => ({
         ...entity,
         state: entity.state !== false,
