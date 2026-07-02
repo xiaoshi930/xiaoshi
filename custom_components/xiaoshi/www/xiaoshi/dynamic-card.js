@@ -161,11 +161,77 @@ class XiaoshiDynamicCardEditor extends LitElement {
                     <label style="margin-bottom:4px;">实体列表</label>
                     <textarea name="entities" .value="${this._entitiesToDisplay(area.entities)}" @change="${(e) => this._areaEntitiesChanged(index, e)}" placeholder="- light.xxx&#10;- switch.xxx&#10;- binary_sensor.xxx"></textarea>
                 </div>
-                <div class="form-row" style="flex-direction:column;align-items:stretch;">
-                    <label style="margin-bottom:4px;">弹窗卡片（YAML格式）</label>
-                    <textarea name="popup_cards" .value="${area.popup_cards || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="- type: custom:button-card
-  template: 测试模板"></textarea>
+                <div class="form-row">
+                    <label>弹窗背景css属性</label>
+                    <select name="popup_background" @change="${(e) => this._areaValueChanged(index, e)}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
+                        <option value="" .selected="${!area.popup_background}">默认</option>
+                        <option value="transparent" .selected="${area.popup_background === 'transparent'}">透明</option>
+                        <option value="theme" .selected="${area.popup_background === 'theme'}">跟随主题</option>
+                        <option value="custom" .selected="${area.popup_background && area.popup_background !== 'transparent' && area.popup_background !== 'theme'}">自定义颜色</option>
+                    </select>
+                    ${area.popup_background && area.popup_background !== 'transparent' && area.popup_background !== 'theme' ? html`
+                    <input type="color" name="popup_background" .value="${area.popup_background || '#ffffff'}" @change="${(e) => this._areaValueChanged(index, e)}" title="自定义背景色" />
+                    ` : ''}
                 </div>
+                <div class="form-row">
+                    <label>启用tap_action</label>
+                    <select name="tap_action_enable" @change="${(e) => this._areaValueChanged(index, e)}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
+                        <option value="" .selected="${!area.tap_action_enable}">否</option>
+                        <option value="true" .selected="${area.tap_action_enable === true || area.tap_action_enable === 'true'}">是</option>
+                    </select>
+                </div>
+                ${area.tap_action_enable === true || area.tap_action_enable === 'true' ? html`
+                <div class="form-row" style="flex-direction:column;align-items:stretch;">
+                    <label style="margin-bottom:4px;">tap_action (YAML格式)</label>
+                    <textarea name="tap_action" .value="${area.tap_action || ''}" @change="${(e) => this._areaValueChanged(index, e)}"
+                        placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway' rows="4" style="flex:1;font-size:12px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box"></textarea>
+                </div>
+                ` : html`
+                <div class="form-row">
+                    <label>弹窗宽度</label>
+                    <input type="text" name="popup_width" .value="${area.popup_width || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="95%" style="max-width:100px" />
+                    <label style="min-width:auto">弹窗位置</label>
+                    <input type="text" name="popup_top" .value="${area.popup_top || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="20px" style="max-width:100px" />
+                </div>
+                <div class="form-row" style="flex-direction:column;align-items:stretch;">
+                    <label style="margin-bottom:4px;">弹窗卡片（YAML格式popup_cards）</label>
+                    <textarea name="popup_cards" .value="${area.popup_cards || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="- type: custom:button-card
+  template: 测试模板" style="min-height:60px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-family:inherit;"></textarea>
+                </div>
+                `}
+                <div class="form-row">
+                    <label>启用hold_action</label>
+                    <select name="hold_action_enable" @change="${(e) => this._areaValueChanged(index, e)}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
+                        <option value="" .selected="${!area.hold_action_enable}">否</option>
+                        <option value="true" .selected="${area.hold_action_enable === true || area.hold_action_enable === 'true'}">是</option>
+                    </select>
+                </div>
+                ${area.hold_action_enable === true || area.hold_action_enable === 'true' ? html`
+                <div class="form-row" style="flex-direction:column;align-items:stretch;">
+                    <label style="margin-bottom:4px;">hold_action (YAML格式)</label>
+                    <textarea name="hold_action" .value="${area.hold_action || ''}" @change="${(e) => this._areaValueChanged(index, e)}"
+                        placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway' rows="4" style="flex:1;font-size:12px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box"></textarea>
+                </div>
+                ` : html`
+                <div class="form-row">
+                    <label>长按弹窗宽度</label>
+                    <input type="text" name="hold_popup_width" .value="${area.hold_popup_width || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="留空取弹窗宽度" style="max-width:100px" />
+                    <label style="min-width:auto">长按弹窗位置</label>
+                    <input type="text" name="hold_popup_top" .value="${area.hold_popup_top || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="留空取弹窗位置" style="max-width:100px" />
+                </div>
+                <div class="form-row" style="flex-direction:column;align-items:stretch;">
+                    <label style="margin-bottom:4px;">长按弹出内容（YAML格式hold_popup_cards）</label>
+                    <textarea name="hold_popup_cards" .value="${area.hold_popup_cards || ''}" @change="${(e) => this._areaValueChanged(index, e)}" placeholder="长按时弹出的YAML卡片配置" style="min-height:60px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-family:inherit;"></textarea>
+                </div>
+                `}
             </div>
         `;
     }
@@ -185,20 +251,6 @@ class XiaoshiDynamicCardEditor extends LitElement {
                         <option value="light" .selected="${c.theme === 'light'}">亮色</option>
                         <option value="dark" .selected="${c.theme === 'dark'}">暗色</option>
                     </select>
-                </div>
-
-                <div class="form-row">
-                    <label>弹窗宽度</label>
-                    <input type="text" name="popup_width" .value="${c.popup_width || ''}" @change="${this._valueChanged}" placeholder="95%" style="max-width:100px" />
-                    <label style="min-width:auto">弹窗位置</label>
-                    <input type="text" name="popup_top" .value="${c.popup_top || ''}" @change="${this._valueChanged}" placeholder="20px" style="max-width:100px" />
-                </div>
-
-                <div class="form-row">
-                    <label>长按弹窗宽度</label>
-                    <input type="text" name="hold_popup_width" .value="${c.hold_popup_width || ''}" @change="${this._valueChanged}" placeholder="留空取弹窗宽度" style="max-width:100px" />
-                    <label style="min-width:auto">长按弹窗位置</label>
-                    <input type="text" name="hold_popup_top" .value="${c.hold_popup_top || ''}" @change="${this._valueChanged}" placeholder="留空取弹窗位置" style="max-width:100px" />
                 </div>
 
                 <div class="form-row">
@@ -235,6 +287,8 @@ class XiaoshiDynamicCardEditor extends LitElement {
                     </select>
                 </div>
                 ` : ''}
+
+
 
                 ${areas.map((area, i) => this._renderAreaSection(area, i))}
                 <button class="btn-add" @click="${this._addArea}" style="width:100%;">+ 添加区域</button>
@@ -515,7 +569,7 @@ class XiaoshiDynamicCard extends LitElement {
                 <div class="area-tile"
                     style="background:${bg};"
                     @click="${() => this._onAreaClick(area)}"
-                    @pointerdown="${this._onHoldStart}"
+                    @pointerdown="${(e) => this._onHoldStart(e, area)}"
                     @pointerup="${this._onHoldEnd}">
                     <ha-icon icon="${icon}" class="area-icon ${animateClass}"></ha-icon>
                     <div class="area-badge ${showBadge ? 'show' : ''}" style="background:${area.on_color || '#f57c00'};">${activeCount}</div>
@@ -532,6 +586,11 @@ class XiaoshiDynamicCard extends LitElement {
 
     // ===== 点击区域弹窗 =====
     _onAreaClick(areaConfig) {
+        if (areaConfig.tap_action_enable === true || areaConfig.tap_action_enable === 'true' || this.config.tap_action_enable === true || this.config.tap_action_enable === 'true') {
+            this._executeAction(areaConfig.tap_action || this.config.tap_action);
+            if (this._handleClick) this._handleClick();
+            return;
+        }
         const cards = [];
 
         const popupConfig = areaConfig.popup_cards || areaConfig.other_cards || areaConfig.popup;
@@ -577,10 +636,20 @@ class XiaoshiDynamicCard extends LitElement {
                 state_color: true
             }));
             const serviceData = { card: entityCards };
-            const popupWidth = this.config.popup_width || 'min(95%, 475px)';
-            const popupTop = this.config.popup_top || '20px';
+            const popupWidth = areaConfig.popup_width || this.config.popup_width || 'min(95%, 475px)';
+            const popupTop = areaConfig.popup_top || this.config.popup_top || '20px';
             if (popupWidth !== 'min(95%, 475px)') serviceData.popup_width = popupWidth;
             if (popupTop !== '20px') serviceData.popup_top = popupTop;
+            // popup_background 处理
+            const popupBg = areaConfig.popup_background || this.config.popup_background;
+            if (popupBg === 'transparent') {
+                serviceData.background = 'transparent';
+            } else if (popupBg === 'theme') {
+                const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+                serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+            } else if (popupBg && popupBg !== '') {
+                serviceData.background = popupBg;
+            }
             this.hass.callService('popup_card', 'show', serviceData);
             return;
         }
@@ -590,9 +659,19 @@ class XiaoshiDynamicCard extends LitElement {
         const popupTop = this.config.popup_top || '20px';
         if (popupWidth !== 'min(95%, 475px)') serviceData.popup_width = popupWidth;
         if (popupTop !== '20px') serviceData.popup_top = popupTop;
+        // popup_background 处理
+        if (this.config.popup_background === 'transparent') {
+            serviceData.background = 'transparent';
+        } else if (this.config.popup_background === 'theme') {
+            const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+            serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+        } else if (this.config.popup_background && this.config.popup_background !== '') {
+            serviceData.background = this.config.popup_background;
+        }
         this.hass.callService('popup_card', 'show', serviceData);
     }    // ===== 长按弹窗 (hold_popup_cards) =====
-    _onHoldStart(e) {
+    _onHoldStart(e, area) {
+        this._holdArea = area;
         this._holdTriggered = false;
         this._holdTimer = setTimeout(() => {
             this._holdTriggered = true;
@@ -606,7 +685,13 @@ class XiaoshiDynamicCard extends LitElement {
         }
     }
     _onHoldPopup() {
-        const holdConfig = this.config.hold_popup_cards;
+        const area = this._holdArea || {};
+        if (area.hold_action_enable === true || area.hold_action_enable === 'true' || this.config.hold_action_enable === true || this.config.hold_action_enable === 'true') {
+            this._executeAction(area.hold_action || this.config.hold_action);
+            if (this._handleClick) this._handleClick();
+            return;
+        }
+        const holdConfig = area.hold_popup_cards || this.config.hold_popup_cards;
         if (!holdConfig || !holdConfig.trim()) return;
         try {
             const h = this._hass || this.hass;
@@ -621,10 +706,20 @@ class XiaoshiDynamicCard extends LitElement {
             });
             if (this._handleClick) this._handleClick();
             const serviceData = { card: cardsWithTheme };
-            const popupWidth = this.config.hold_popup_width || this.config.popup_width || '95%';
-            const popupTop = this.config.hold_popup_top || this.config.popup_top || '20px';
+            const popupWidth = area.hold_popup_width || this.config.hold_popup_width || area.popup_width || this.config.popup_width || '95%';
+            const popupTop = area.hold_popup_top || this.config.hold_popup_top || area.popup_top || this.config.popup_top || '20px';
             if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
             if (popupTop !== '20px') serviceData.popup_top = popupTop;
+            // popup_background 处理
+            const popupBg = area.popup_background || this.config.popup_background;
+            if (popupBg === 'transparent') {
+                serviceData.background = 'transparent';
+            } else if (popupBg === 'theme') {
+                const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+                serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+            } else if (popupBg && popupBg !== '') {
+                serviceData.background = popupBg;
+            }
             h.callService('popup_card', 'show', serviceData);
         } catch (err) {
             console.error('解析长按弹窗卡片失败:', err);
@@ -633,6 +728,25 @@ class XiaoshiDynamicCard extends LitElement {
 
 
     
+
+    _executeAction(actionYaml) {
+        if (!actionYaml || !actionYaml.trim()) return false;
+        try {
+            const actionConfig = yamlToJson(actionYaml);
+            if (!actionConfig || !actionConfig.action) return false;
+            const dotIndex = actionConfig.action.indexOf('.');
+            if (dotIndex < 0) return false;
+            const domain = actionConfig.action.substring(0, dotIndex);
+            const service = actionConfig.action.substring(dotIndex + 1);
+            const serviceData = actionConfig.target ? Object.assign({}, actionConfig.target) : {};
+            if (actionConfig.data) Object.assign(serviceData, actionConfig.data);
+            this.hass.callService(domain, service, serviceData);
+            return true;
+        } catch (err) {
+            console.error('执行action失败:', err);
+            return false;
+        }
+    }
 
     // ===== 弹窗服务调用 =====
     _handleClick() {

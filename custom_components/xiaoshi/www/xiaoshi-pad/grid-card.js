@@ -52,7 +52,7 @@ class XiaoshiPadGridCardEditor extends LitElement {
     if (target.type === 'number') value = Number(value);
     if (target.tagName === 'HA-SWITCH' || target.type === 'checkbox') value = target.checked;
     const newConfig = { ...this._config };
-    if (key === 'popup_cards') {
+    if (key === 'popup_cards' || key === 'tap_action' || key === 'hold_action') {
       newConfig[key] = value || '';
     } else if (value === '' || value === undefined) {
       delete newConfig[key];
@@ -145,8 +145,57 @@ class XiaoshiPadGridCardEditor extends LitElement {
           `)}
           <button class="add-btn" @click=${this._addEntity}>+ 添加实体</button>
         </div>
-        <div class="field">
+        
           <label>👇👇👇下方弹出的卡片可增加的其他卡片👇👇👇</label>
+
+        <div class="field">
+          <label>弹窗背景css属性</label>
+          <select .value=${this._config.popup_background || ''} configKey="popup_background" @change=${this._valueChanged}>
+            <option value="" ?selected=${!this._config.popup_background}>默认</option>
+            <option value="transparent" ?selected=${this._config.popup_background === 'transparent'}>透明(transparent)</option>
+            <option value="theme" ?selected=${this._config.popup_background === 'theme'}>跟随主题(theme)</option>
+            <option value="custom" ?selected=${this._config.popup_background && this._config.popup_background !== 'transparent' && this._config.popup_background !== 'theme'}>自定义颜色</option>
+          </select>
+          ${this._config.popup_background && this._config.popup_background !== 'transparent' && this._config.popup_background !== 'theme' ? html`
+          <input type="color" .value=${this._config.popup_background} configKey="popup_background" @change=${this._valueChanged} title="自定义弹窗背景颜色" style="width:34px;height:30px;padding:1px;border:1px solid #ddd;border-radius:4px;" />
+          ` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin:4px 0;">
+          <input type="checkbox"
+            @change=${this._valueChanged}
+            .checked=${this._config.tap_action_enable === true}
+            configKey="tap_action_enable" id="tap_action_enable"
+          />
+          <label for="tap_action_enable" style="font-weight:normal;">启用tap_action禁用popup_cards</label>
+        </div>
+        ${this._config.tap_action_enable === true ? html`
+        <div class="field">
+          <label>tap_action（执行调用服务）</label>
+          <textarea
+            .value=${this._config.tap_action || ''}
+            configKey="tap_action"
+            @value-changed=${this._valueChanged}
+            @change=${this._valueChanged}
+            placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway'
+            style="min-height: 80px; resize: vertical; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; font-size: 14px; background: var(--card-background-color); color: var(--primary-text-color);"
+          ></textarea>
+        </div>
+        ` : html`
+        <div class="inline-fields">
+          <div class="field">
+            <label>弹窗宽度</label>
+            <input type="text" .value=${this._config.popup_width || ''} configKey="popup_width" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="95%" />
+          </div>
+          <div class="field">
+            <label>弹窗位置</label>
+            <input type="text" .value=${this._config.popup_top || ''} configKey="popup_top" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="20px" />
+          </div>
+        </div>
+        <div class="field">
           <textarea
             .value=${this._config.popup_cards || ''}
             configKey="popup_cards"
@@ -170,18 +219,44 @@ popup:
             style="min-height: 80px; resize: vertical; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; font-size: 14px; background: var(--card-background-color); color: var(--primary-text-color);"
           ></textarea>
         </div>
+        `}
+        <div style="display:flex;align-items:center;gap:6px;margin:4px 0;">
+          <input type="checkbox"
+            @change=${this._valueChanged}
+            .checked=${this._config.hold_action_enable === true}
+            configKey="hold_action_enable" id="hold_action_enable"
+          />
+          <label for="hold_action_enable" style="font-weight:normal;">启用hold_action禁用hold_popup_cards</label>
+        </div>
+        ${this._config.hold_action_enable === true ? html`
+        <div class="field">
+          <label>hold_action（执行调用服务）</label>
+          <textarea
+            .value=${this._config.hold_action || ''}
+            configKey="hold_action"
+            @value-changed=${this._valueChanged}
+            @change=${this._valueChanged}
+            placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway'
+            style="min-height: 80px; resize: vertical; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; font-size: 14px; background: var(--card-background-color); color: var(--primary-text-color);"
+          ></textarea>
+        </div>
+        ` : html`
         <div class="inline-fields">
           <div class="field">
-            <label>长按弹窗宽度：支持像素(px)、百分比(%)和auto，留空使用弹窗宽度</label>
+            <label>长按弹窗宽度</label>
             <input type="text" .value=${this._config.hold_popup_width || ''} configKey="hold_popup_width" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="留空取弹窗宽度" />
           </div>
           <div class="field">
-            <label>长按弹窗位置：支持百分比(%)和像素(px)，留空使用弹窗位置</label>
+            <label>长按弹窗位置</label>
             <input type="text" .value=${this._config.hold_popup_top || ''} configKey="hold_popup_top" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="留空取弹窗位置" />
           </div>
         </div>
         <div class="field">
-          <label>长按弹出内容（hold_popup_cards）</label>
+          <label>长按弹窗位置</label>
           <textarea
             .value=${this._config.hold_popup_cards || ''}
             configKey="hold_popup_cards"
@@ -191,16 +266,7 @@ popup:
             style="min-height: 60px; resize: vertical; padding: 8px; border: 1px solid var(--divider-color); border-radius: 4px; font-size: 14px; background: var(--card-background-color); color: var(--primary-text-color);"
           ></textarea>
         </div>
-        <div class="inline-fields">
-          <div class="field">
-            <label>弹窗宽度：支持像素(px)、百分比(%)和auto，默认95%</label>
-            <input type="text" .value=${this._config.popup_width || ''} configKey="popup_width" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="95%" />
-          </div>
-          <div class="field">
-            <label>弹窗位置：支持百分比(%)和像素(px)，默认20px</label>
-            <input type="text" .value=${this._config.popup_top || ''} configKey="popup_top" @value-changed=${this._valueChanged} @change=${this._valueChanged} placeholder="20px" />
-          </div>
-        </div>
+        `}
       </div>
     `;
   }
@@ -373,6 +439,13 @@ class XiaoshiPadGridCard extends LitElement {
     }
   }
   _onHoldPopup() {
+    if (this.config.hold_action_enable === true) {
+      this._executeAction(this.config.hold_action);
+      const hapticEvent = new Event('haptic', { bubbles: true, cancelable: false, composed: true });
+      hapticEvent.detail = 'light';
+      this.dispatchEvent(hapticEvent);
+      return;
+    }
     const holdConfig = this.config.hold_popup_cards;
     if (!holdConfig || !holdConfig.trim()) return;
     try {
@@ -390,6 +463,15 @@ class XiaoshiPadGridCard extends LitElement {
       const popupTop = this.config.hold_popup_top || this.config.popup_top || '20px';
       if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
       if (popupTop !== '20px') serviceData.popup_top = popupTop;
+      // popup_background 处理
+      if (this.config.popup_background === 'transparent') {
+          serviceData.background = 'transparent';
+      } else if (this.config.popup_background === 'theme') {
+          const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+          serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+      } else if (this.config.popup_background && this.config.popup_background !== '') {
+          serviceData.background = this.config.popup_background;
+      }
       this.hass.callService('popup_card', 'show', serviceData);
       const hapticEvent = new Event('haptic', { bubbles: true, cancelable: false, composed: true });
       hapticEvent.detail = 'light';
@@ -399,7 +481,34 @@ class XiaoshiPadGridCard extends LitElement {
     }
   }
 
+  // ===== tap_action / hold_action 服务调用 =====
+  _executeAction(actionYaml) {
+    if (!actionYaml || !actionYaml.trim()) return false;
+    try {
+      const actionConfig = yamlToJson(actionYaml);
+      if (!actionConfig || !actionConfig.action) return false;
+      const dotIndex = actionConfig.action.indexOf('.');
+      if (dotIndex < 0) return false;
+      const domain = actionConfig.action.substring(0, dotIndex);
+      const service = actionConfig.action.substring(dotIndex + 1);
+      const serviceData = actionConfig.target ? Object.assign({}, actionConfig.target) : {};
+      if (actionConfig.data) Object.assign(serviceData, actionConfig.data);
+      this.hass.callService(domain, service, serviceData);
+      return true;
+    } catch (err) {
+      console.error('执行action失败:', err);
+      return false;
+    }
+  }
+
   _handleGridClick(entityConfig) {
+    if (this.config.tap_action_enable === true) {
+      this._executeAction(this.config.tap_action);
+      const hapticEvent = new Event('haptic', { bubbles: true, cancelable: false, composed: true });
+      hapticEvent.detail = 'light';
+      this.dispatchEvent(hapticEvent);
+      return;
+    }
     const entity = this.hass.states[entityConfig.entity];
     if (!entity) return;
     const cards = [];
@@ -418,6 +527,15 @@ class XiaoshiPadGridCard extends LitElement {
     const popupTop = this.config.popup_top || '20px';
     if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
     if (popupTop !== '20px') serviceData.popup_top = popupTop;
+    // popup_background 处理
+    if (this.config.popup_background === 'transparent') {
+        serviceData.background = 'transparent';
+    } else if (this.config.popup_background === 'theme') {
+        const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+        serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    } else if (this.config.popup_background && this.config.popup_background !== '') {
+        serviceData.background = this.config.popup_background;
+    }
     this.hass.callService('popup_card', 'show', serviceData);
     const hapticEvent = new Event('haptic', { bubbles: true, cancelable: false, composed: true });
     hapticEvent.detail = 'light';

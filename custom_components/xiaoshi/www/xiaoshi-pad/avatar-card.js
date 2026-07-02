@@ -11,12 +11,6 @@ window.customCards.push({
     name: '消逝(A平板端)-头像卡片',
     description: '平板端头像卡片',
     preview: true
-},
-{
-    type: 'xiaoshi-avatar-history-card',
-    name: '消逝头像弹窗-人员历史时间条',
-    description: '在弹窗中显示人员历史时间条',
-    preview: false
 });
 
 class XiaoshiAvatarPadCardEditor extends LitElement {
@@ -46,13 +40,20 @@ class XiaoshiAvatarPadCardEditor extends LitElement {
     }
 
     _valueChanged(e) {
-        const { name, value } = e.target;
+        const { name, value, type, checked } = e.target;
         if (!name) return;
 
-        this.config = {
-            ...this.config,
-            [name]: value
-        };
+        if (type === 'checkbox') {
+            this.config = {
+                ...this.config,
+                [name]: checked
+            };
+        } else {
+            this.config = {
+                ...this.config,
+                [name]: value
+            };
+        }
 
         this._fireConfigChanged();
     }
@@ -115,12 +116,7 @@ class XiaoshiAvatarPadCardEditor extends LitElement {
                     <input type="text" name="card_height" .value="${c.card_height || ''}" @change="${this._valueChanged}" placeholder="120px" style="max-width:100px" />
                 </div>
 
-                <div class="form-row">
-                    <label>弹窗宽度</label>
-                    <input type="text" name="popup_width" .value="${c.popup_width || ''}" @change="${this._valueChanged}" placeholder="500px" style="max-width:100px" />
-                    <label style="min-width:auto">弹窗位置</label>
-                    <input type="text" name="popup_top" .value="${c.popup_top || ''}" @change="${this._valueChanged}" placeholder="50%" style="max-width:100px" />
-                </div>
+
                 <div class="form-row">
                     <label>历史记录</label>
                     <select name="show_popup_history" @change="${this._valueChanged}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
@@ -145,24 +141,78 @@ class XiaoshiAvatarPadCardEditor extends LitElement {
                     <input type="text" name="floor" .value="${c.floor || ''}" @change="${this._valueChanged}" placeholder="留空则不限制，例如: 1" />
                 </div>
 
+                <div class="form-row">
+                    <label>弹窗背景css属性</label>
+                    <select name="popup_background" @change="${this._valueChanged}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
+                        <option value="" .selected="${!c.popup_background}">默认</option>
+                        <option value="transparent" .selected="${c.popup_background === 'transparent'}">透明(transparent)</option>
+                        <option value="theme" .selected="${c.popup_background === 'theme'}">跟随主题(theme)</option>
+                        <option value="custom" .selected="${c.popup_background && c.popup_background !== 'transparent' && c.popup_background !== 'theme'}">自定义颜色</option>
+                    </select>
+                    ${c.popup_background && c.popup_background !== 'transparent' && c.popup_background !== 'theme' ? html`
+                    <input type="color" name="popup_background" .value="${c.popup_background}" @change="${this._valueChanged}" title="自定义弹窗背景颜色" />
+                    ` : ''}
+                </div>
+                <div class="form-row">
+                    <label>启用tap_action</label>
+                    <select name="tap_action_enable" @change="${this._valueChanged}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
+                        <option value="" .selected="${!c.tap_action_enable}">否</option>
+                        <option value="true" .selected="${c.tap_action_enable === true || c.tap_action_enable === 'true'}">是</option>
+                    </select>
+                </div>
+                ${c.tap_action_enable === true || c.tap_action_enable === 'true' ? html`
                 <div class="form-row" style="flex-direction:column;align-items:stretch;">
-                    <label style="margin-bottom:4px;">附加卡片配置（YAML格式，字段名：popup_cards / other_cards / popup 均可）</label>
+                  <label>tap_action（执行调用服务）</label>
+                  <textarea @change=${this._valueChanged} .value=${c.tap_action || ''} name="tap_action"
+                    placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway' style="min-height:80px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-family:inherit;"></textarea>
+                </div>
+                ` : html`
+                <div class="form-row">
+                    <label>弹窗宽度</label>
+                    <input type="text" name="popup_width" .value="${c.popup_width || ''}" @change="${this._valueChanged}" placeholder="500px" style="max-width:100px" />
+                    <label style="min-width:auto">弹窗位置</label>
+                    <input type="text" name="popup_top" .value="${c.popup_top || ''}" @change="${this._valueChanged}" placeholder="50%" style="max-width:100px" />
+                </div>
+                <div class="form-row" style="flex-direction:column;align-items:stretch;">
+                    <label>附加卡片配置（YAML格式，popup_cards）</label>
                     <textarea name="popup_cards" .value="${c.popup_cards || c.other_cards || c.popup || ''}" @change="${this._valueChanged}" placeholder="# 示例配置：添加button卡片
 - type: custom:button-card
   template: 测试模板(最好引用模板，否则大概率会报错)" style="min-height:80px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-family:inherit;"></textarea>
                 </div>
-        <div class="form-group">
-          <label>长按弹窗宽度（hold_popup_width）</label>
-          <input type="text" name="hold_popup_width" .value="${c.hold_popup_width || ''}" @change="${this._valueChanged}" placeholder="留空则使用弹窗宽度配置" />
-        </div>
-        <div class="form-group">
-          <label>长按弹窗位置（hold_popup_top）</label>
-          <input type="text" name="hold_popup_top" .value="${c.hold_popup_top || ''}" @change="${this._valueChanged}" placeholder="留空则使用弹窗位置配置" />
-        </div>
-        <div class="form-group">
-          <label>长按弹出内容（hold_popup_cards）</label>
-          <textarea name="hold_popup_cards" .value="${c.hold_popup_cards || ''}" @change="${this._valueChanged}" placeholder="长按时弹出的YAML卡片配置"></textarea>
-        </div>
+                `}
+                <div class="form-row">
+                    <label>启用hold_action</label>
+                    <select name="hold_action_enable" @change="${this._valueChanged}" style="flex:1;padding:6px 0px;border:1px solid #ddd;border-radius:4px;">
+                        <option value="" .selected="${!c.hold_action_enable}">否</option>
+                        <option value="true" .selected="${c.hold_action_enable === true || c.hold_action_enable === 'true'}">是</option>
+                    </select>
+                </div>
+                ${c.hold_action_enable === true || c.hold_action_enable === 'true' ? html`
+                <div class="form-row" style="flex-direction:column;align-items:stretch;">
+                  <label>hold_action（执行调用服务）</label>
+                  <textarea @change=${this._valueChanged} .value=${c.hold_action || ''} name="hold_action"
+                    placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway' style="min-height:80px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-family:inherit;"></textarea>
+                </div>
+                ` : html`
+                <div class="form-row">
+                    <label>长按弹窗宽度</label>
+                    <input type="text" name="hold_popup_width" .value="${c.hold_popup_width || ''}" @change="${this._valueChanged}" placeholder="留空则使用弹窗宽度配置" style="max-width:100px" />
+                    <label style="min-width:auto">长按弹窗位置</label>
+                    <input type="text" name="hold_popup_top" .value="${c.hold_popup_top || ''}" @change="${this._valueChanged}" placeholder="留空则使用弹窗位置配置" style="max-width:100px" />
+                </div>
+                <div class="form-row" style="flex-direction:column;align-items:stretch;">
+                  <label>长按弹出卡片（YAML格式，hold_popup_cards）</label>
+                  <textarea name="hold_popup_cards" .value="${c.hold_popup_cards || ''}" @change="${this._valueChanged}" placeholder="长按时弹出的YAML卡片配置" style="min-height:80px;resize:vertical;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-family:inherit;"></textarea>
+                </div>
+                `}
 
                 <div class="section-title">人员配置</div>
                 <div class="person-section">
@@ -695,6 +745,26 @@ class XiaoshiAvatarPadCard extends LitElement {
         return fmt(minutes) + 'm';
     }
 
+    // ===== tap_action / hold_action 服务调用 =====
+    _executeAction(actionYaml) {
+        if (!actionYaml || !actionYaml.trim()) return false;
+        try {
+            const actionConfig = yamlToJson(actionYaml);
+            if (!actionConfig || !actionConfig.action) return false;
+            const dotIndex = actionConfig.action.indexOf('.');
+            if (dotIndex < 0) return false;
+            const domain = actionConfig.action.substring(0, dotIndex);
+            const service = actionConfig.action.substring(dotIndex + 1);
+            const serviceData = actionConfig.target ? Object.assign({}, actionConfig.target) : {};
+            if (actionConfig.data) Object.assign(serviceData, actionConfig.data);
+            this.hass.callService(domain, service, serviceData);
+            return true;
+        } catch (err) {
+            console.error('执行action失败:', err);
+            return false;
+        }
+    }
+
     /**
      * 汇总所有人员数据，含在家统计
      */
@@ -789,6 +859,11 @@ class XiaoshiAvatarPadCard extends LitElement {
      * 点击卡片触发弹窗
      */
     _onCardClick() {
+        if (this.config.tap_action_enable === true) {
+            this._executeAction(this.config.tap_action);
+            this._handleClick();
+            return;
+        }
         const cards = [];
         const persons = this._getPersons();
 
@@ -856,6 +931,15 @@ class XiaoshiAvatarPadCard extends LitElement {
         const popupTop = this.config.popup_top || '50%';
         serviceData.popup_width = popupWidth;
         serviceData.popup_top = popupTop;
+        // popup_background 处理
+        if (this.config.popup_background === 'transparent') {
+            serviceData.background = 'transparent';
+        } else if (this.config.popup_background === 'theme') {
+            const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+            serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+        } else if (this.config.popup_background && this.config.popup_background !== '') {
+            serviceData.background = this.config.popup_background;
+        }
         this.hass.callService('popup_card', 'show', serviceData);
         this._handleClick();
     }
@@ -1022,6 +1106,11 @@ class XiaoshiAvatarPadCard extends LitElement {
         }
     }
     _onHoldPopup() {
+        if (this.config.hold_action_enable === true) {
+            this._executeAction(this.config.hold_action);
+            if (this._handleClick) this._handleClick();
+            return;
+        }
         const holdConfig = this.config.hold_popup_cards;
         if (!holdConfig || !holdConfig.trim()) return;
         try {
@@ -1041,6 +1130,15 @@ class XiaoshiAvatarPadCard extends LitElement {
             const popupTop = this.config.hold_popup_top || this.config.popup_top || '20px';
             if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
             if (popupTop !== '20px') serviceData.popup_top = popupTop;
+            // popup_background 处理
+            if (this.config.popup_background === 'transparent') {
+                serviceData.background = 'transparent';
+            } else if (this.config.popup_background === 'theme') {
+                const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+                serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+            } else if (this.config.popup_background && this.config.popup_background !== '') {
+                serviceData.background = this.config.popup_background;
+            }
             h.callService('popup_card', 'show', serviceData);
         } catch (err) {
             console.error('解析长按弹窗卡片失败:', err);

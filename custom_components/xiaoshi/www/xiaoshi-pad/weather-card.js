@@ -36,7 +36,7 @@ class XiaoshiWeatherPadEditor extends LitElement {
   }
 
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass || !this.config) return html``;;
 
     return html`
       <div class="form">
@@ -140,6 +140,25 @@ class XiaoshiWeatherPadEditor extends LitElement {
             .value=${this.config.popup_top !== undefined ? this.config.popup_top : '50%'}
             name="popup_top"
             placeholder="默认50%"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>弹窗背景css属性</label>
+          <select
+            @change=${this._entityChanged}
+            .value=${this.config.popup_background !== undefined ? this.config.popup_background : ''}
+            name="popup_background"
+          >
+            <option value="">默认</option>
+            <option value="transparent">透明</option>
+            <option value="theme">跟随主题</option>
+          </select>
+          <input
+            type="color"
+            @change=${this._entityChanged}
+            .value=${this.config.popup_background && this.config.popup_background !== 'transparent' && this.config.popup_background !== 'theme' ? this.config.popup_background : '#ffffff'}
+            name="popup_background"
           />
         </div>
 
@@ -248,7 +267,7 @@ class XiaoshiWeatherPadEditor extends LitElement {
 
   _entityChanged(e) {
     const { name, value } = e.target;
-    if (!value && name !== 'theme' && name !== 'columns' && name !== 'width' && name !== 'use_custom_entities' && name !== 'temperature_entity' && name !== 'humidity_entity' && name !== 'visual_style' && name !== 'popup_width' && name !== 'popup_top') return;
+    if (!value && name !== 'theme' && name !== 'columns' && name !== 'width' && name !== 'use_custom_entities' && name !== 'temperature_entity' && name !== 'humidity_entity' && name !== 'visual_style' && name !== 'popup_width' && name !== 'popup_top' && name !== 'popup_background') return;
     
     let processedValue = value;
     if (name === 'columns' || name === 'width') {
@@ -832,6 +851,14 @@ class XiaoshiWeatherPadCard extends XiaoshiWeatherBase {
     const popupWidth = this.config.popup_width || 'auto';
     if (popupTop !== '50%') serviceData.popup_top = popupTop;
     if (popupWidth !== 'auto') serviceData.popup_width = popupWidth;
+    if (this.config.popup_background === 'transparent') {
+      serviceData.background = 'transparent';
+    } else if (this.config.popup_background === 'theme') {
+      const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+      serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    } else if (this.config.popup_background && this.config.popup_background !== '') {
+      serviceData.background = this.config.popup_background;
+    }
     this.hass.callService('popup_card', 'show', serviceData);
   }
 

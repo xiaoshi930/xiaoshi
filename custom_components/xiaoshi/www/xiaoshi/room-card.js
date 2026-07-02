@@ -284,12 +284,7 @@ class XiaoshiRoomCardEditor extends LitElement {
                     <label style="min-width:auto">弹窗位置</label>
                     <input type="text" name="popup_top" .value="${c.popup_top || ''}" @change="${this._valueChanged}" placeholder="20px" style="max-width:60px" />
                 </div>
-                <div class="form-row">
-                    <label>长按弹窗宽度</label>
-                    <input type="text" name="hold_popup_width" .value="${c.hold_popup_width || ''}" @change="${this._valueChanged}" placeholder="留空取弹窗宽度" style="max-width:60px" />
-                    <label style="min-width:auto">长按弹窗位置</label>
-                    <input type="text" name="hold_popup_top" .value="${c.hold_popup_top || ''}" @change="${this._valueChanged}" placeholder="留空取弹窗位置" style="max-width:60px" />
-                </div>
+
                 <div class="form-row">
                     <label>房间名称</label>
                     <input type="text" name="name" .value="${c.name || ''}" @change="${this._valueChanged}" placeholder="如：儿童房" style="max-width:130px" />
@@ -518,6 +513,7 @@ class XiaoshiRoomCardEditor extends LitElement {
                 </div>
                 ` : ''}
 
+
                 ${devices.map((dev, i) => html`
                     <div class="device-section">
                         <div class="device-row">
@@ -590,6 +586,65 @@ class XiaoshiRoomCardEditor extends LitElement {
                             ></textarea>
                         </div>
                         <div class="device-row">
+                            <label style="font-weight:bold;font-size:12px;white-space:nowrap">弹窗背景css属性</label>
+                            <select
+                                @change="${(e) => this._deviceFieldChanged(i, 'popup_background', e.target.value)}"
+                                style="flex:1;padding:5px 0px;border:1px solid #ddd;border-radius:4px;font-size:12px"
+                            >
+                                <option value="" .selected="${!dev.popup_background}">默认</option>
+                                <option value="transparent" .selected="${dev.popup_background === 'transparent'}">透明</option>
+                                <option value="theme" .selected="${dev.popup_background === 'theme'}">跟随主题</option>
+                                <option value="custom" .selected="${dev.popup_background && dev.popup_background !== 'transparent' && dev.popup_background !== 'theme'}">自定义颜色</option>
+                            </select>
+                            <input type="color"
+                                .value="${dev.popup_background && dev.popup_background !== 'transparent' && dev.popup_background !== 'theme' ? dev.popup_background : '#ffffff'}"
+                                @change="${(e) => this._deviceFieldChanged(i, 'popup_background', e.target.value)}"
+                                title="自定义背景色"
+                            />
+                        </div>
+                        <div class="device-row">
+                            <label style="font-weight:bold;font-size:12px;white-space:nowrap">启用tap_action</label>
+                            <select
+                                @change="${(e) => this._deviceFieldChanged(i, 'tap_action_enable', e.target.value)}"
+                                style="padding:5px 0px;border:1px solid #ddd;border-radius:4px;font-size:12px"
+                            >
+                                <option value="" .selected="${!dev.tap_action_enable}">否</option>
+                                <option value="true" .selected="${dev.tap_action_enable === true || dev.tap_action_enable === 'true'}">是</option>
+                            </select>
+                        </div>
+                        ${dev.tap_action_enable === true || dev.tap_action_enable === 'true' ? html`
+                        <div class="device-row" style="flex-direction:column;align-items:stretch;">
+                            <label style="font-weight:bold;font-size:12px;">tap_action (YAML格式)</label>
+                            <textarea
+                                .value="${dev.tap_action || ''}"
+                                @change="${(e) => this._deviceFieldChanged(i, 'tap_action', e.target.value)}"
+                                placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway'
+                                rows="3"
+                                style="flex:1;resize:vertical;padding:5px 6px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;font-size:12px"
+                            ></textarea>
+                        </div>
+                        ` : html`
+                        <div class="device-row">
+                            <label style="font-weight:bold;font-size:12px;white-space:nowrap">弹窗宽度</label>
+                            <input type="text"
+                                .value="${dev.popup_width || ''}"
+                                @change="${(e) => this._deviceFieldChanged(i, 'popup_width', e.target.value)}"
+                                placeholder="宽度"
+                                style="width:60px;flex:none;padding:5px 4px;border:1px solid #ddd;border-radius:4px;font-size:12px"
+                            />
+                            <label style="font-weight:bold;font-size:12px;white-space:nowrap">弹窗位置</label>
+                            <input type="text"
+                                .value="${dev.popup_top || ''}"
+                                @change="${(e) => this._deviceFieldChanged(i, 'popup_top', e.target.value)}"
+                                placeholder="位置"
+                                style="width:60px;flex:none;padding:5px 4px;border:1px solid #ddd;border-radius:4px;font-size:12px"
+                            />
+                        </div>
+                        <div class="device-row">
                             <label style="font-weight:bold;font-size:12px;white-space:nowrap">设备弹窗</label>
                             <textarea
                                 .value="${dev.popup || ''}"
@@ -604,6 +659,49 @@ class XiaoshiRoomCardEditor extends LitElement {
                                 style="flex:1;resize:vertical;padding:5px 6px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;font-size:12px"
                             ></textarea>
                         </div>
+                        `}
+                        <div class="device-row">
+                            <label style="font-weight:bold;font-size:12px;white-space:nowrap">启用hold_action</label>
+                            <select
+                                @change="${(e) => this._deviceFieldChanged(i, 'hold_action_enable', e.target.value)}"
+                                style="padding:5px 0px;border:1px solid #ddd;border-radius:4px;font-size:12px"
+                            >
+                                <option value="" .selected="${!dev.hold_action_enable}">否</option>
+                                <option value="true" .selected="${dev.hold_action_enable === true || dev.hold_action_enable === 'true'}">是</option>
+                            </select>
+                        </div>
+                        ${dev.hold_action_enable === true || dev.hold_action_enable === 'true' ? html`
+                        <div class="device-row" style="flex-direction:column;align-items:stretch;">
+                            <label style="font-weight:bold;font-size:12px;">hold_action (YAML格式)</label>
+                            <textarea
+                                .value="${dev.hold_action || ''}"
+                                @change="${(e) => this._deviceFieldChanged(i, 'hold_action', e.target.value)}"
+                                placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway'
+                                rows="3"
+                                style="flex:1;resize:vertical;padding:5px 6px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;font-size:12px"
+                            ></textarea>
+                        </div>
+                        ` : html`
+                        <div class="device-row">
+                            <label style="font-weight:bold;font-size:12px;white-space:nowrap">长按弹窗宽度</label>
+                            <input type="text"
+                                .value="${dev.hold_popup_width || ''}"
+                                @change="${(e) => this._deviceFieldChanged(i, 'hold_popup_width', e.target.value)}"
+                                placeholder="宽度"
+                                style="width:60px;flex:none;padding:5px 4px;border:1px solid #ddd;border-radius:4px;font-size:12px"
+                            />
+                            <label style="font-weight:bold;font-size:12px;white-space:nowrap">长按弹窗位置</label>
+                            <input type="text"
+                                .value="${dev.hold_popup_top || ''}"
+                                @change="${(e) => this._deviceFieldChanged(i, 'hold_popup_top', e.target.value)}"
+                                placeholder="位置"
+                                style="width:60px;flex:none;padding:5px 4px;border:1px solid #ddd;border-radius:4px;font-size:12px"
+                            />
+                        </div>
                         <div class="device-row">
                             <label style="font-weight:bold;font-size:12px;white-space:nowrap">长按弹窗</label>
                             <textarea
@@ -616,6 +714,7 @@ class XiaoshiRoomCardEditor extends LitElement {
                                 style="flex:1;resize:vertical;padding:5px 6px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;font-size:12px"
                             ></textarea>
                         </div>
+                        `}
                         <div class="device-row" style="justify-content:flex-end">
                             <button class="device-remove" @click="${() => this._removeDevice(i)}">删除</button>
                         </div>
@@ -826,6 +925,11 @@ class XiaoshiRoomCard extends LitElement {
      * 点击设备：弹窗或自动生成实体弹窗
      */
     _onDeviceClick(device) {
+        if (device.tap_action_enable === true || device.tap_action_enable === 'true' || this.config.tap_action_enable === true || this.config.tap_action_enable === 'true') {
+            this._executeAction(device.tap_action || this.config.tap_action);
+            if (this._handleClick) this._handleClick();
+            return;
+        }
         if (!device) return;
         const popupConfig = device.popup_cards || device.other_cards || device.popup;
         if (popupConfig) {
@@ -840,10 +944,20 @@ class XiaoshiRoomCard extends LitElement {
             }
             this._handleClick();
             const serviceData = { card: popupCards };
-            const popupWidth = this.config.popup_width || 'min(95%, 475px)';
-            const popupTop = this.config.popup_top || '20px';
+            const popupWidth = device.popup_width || this.config.popup_width || 'min(95%, 475px)';
+            const popupTop = device.popup_top || this.config.popup_top || '20px';
             if (popupWidth !== 'min(95%, 475px)') serviceData.popup_width = popupWidth;
             if (popupTop !== '20px') serviceData.popup_top = popupTop;
+            // popup_background 处理
+            const popupBg = device.popup_background || this.config.popup_background;
+            if (popupBg === 'transparent') {
+                serviceData.background = 'transparent';
+            } else if (popupBg === 'theme') {
+                const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+                serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+            } else if (popupBg && popupBg !== '') {
+                serviceData.background = popupBg;
+            }
             this.hass.callService('popup_card', 'show', serviceData);
             return;
         }
@@ -857,10 +971,20 @@ class XiaoshiRoomCard extends LitElement {
             state_color: true
         }));
         const serviceData = { card: cards };
-        const popupWidth = this.config.popup_width || 'min(95%, 475px)';
-        const popupTop = this.config.popup_top || '20px';
+        const popupWidth = device.popup_width || this.config.popup_width || 'min(95%, 475px)';
+        const popupTop = device.popup_top || this.config.popup_top || '20px';
         if (popupWidth !== 'min(95%, 475px)') serviceData.popup_width = popupWidth;
         if (popupTop !== '20px') serviceData.popup_top = popupTop;
+        // popup_background 处理
+        const popupBg = device.popup_background || this.config.popup_background;
+        if (popupBg === 'transparent') {
+            serviceData.background = 'transparent';
+        } else if (popupBg === 'theme') {
+            const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+            serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+        } else if (popupBg && popupBg !== '') {
+            serviceData.background = popupBg;
+        }
         this.hass.callService('popup_card', 'show', serviceData);
     }
 
@@ -1157,6 +1281,7 @@ class XiaoshiRoomCard extends LitElement {
         if (!holdConfig || !holdConfig.trim()) return;
         this._holdTarget = 'device';
         this._holdData = holdConfig;
+        this._holdDevice = device;
         this._holdTriggered = false;
         this._holdTimer = setTimeout(() => {
             this._holdTriggered = true;
@@ -1188,6 +1313,12 @@ class XiaoshiRoomCard extends LitElement {
     }
     // 统一长按弹窗
     _onHoldPopup() {
+        const device = this._holdDevice || {};
+        if (device.hold_action_enable === true || device.hold_action_enable === 'true' || this.config.hold_action_enable === true || this.config.hold_action_enable === 'true') {
+            this._executeAction(device.hold_action || this.config.hold_action);
+            if (this._handleClick) this._handleClick();
+            return;
+        }
         if (!this._holdData) return;
         const holdConfig = typeof this._holdData === 'string' ? this._holdData : '';
         if (!holdConfig || !holdConfig.trim()) return;
@@ -1204,10 +1335,21 @@ class XiaoshiRoomCard extends LitElement {
             });
             if (this._handleClick) this._handleClick();
             const serviceData = { card: cardsWithTheme };
-            const popupWidth = this.config.hold_popup_width || this.config.popup_width || '95%';
-            const popupTop = this.config.hold_popup_top || this.config.popup_top || '20px';
+            const device = this._holdDevice || {};
+            const popupWidth = device.hold_popup_width || this.config.hold_popup_width || this.config.popup_width || '95%';
+            const popupTop = device.hold_popup_top || this.config.hold_popup_top || this.config.popup_top || '20px';
             if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
             if (popupTop !== '20px') serviceData.popup_top = popupTop;
+            // popup_background 处理
+            const popupBg = device.popup_background || this.config.popup_background;
+            if (popupBg === 'transparent') {
+                serviceData.background = 'transparent';
+            } else if (popupBg === 'theme') {
+                const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+                serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+            } else if (popupBg && popupBg !== '') {
+                serviceData.background = popupBg;
+            }
             h.callService('popup_card', 'show', serviceData);
         } catch (err) {
             console.error('解析长按弹窗卡片失败:', err);
@@ -1216,6 +1358,25 @@ class XiaoshiRoomCard extends LitElement {
 
 
     
+
+    _executeAction(actionYaml) {
+        if (!actionYaml || !actionYaml.trim()) return false;
+        try {
+            const actionConfig = yamlToJson(actionYaml);
+            if (!actionConfig || !actionConfig.action) return false;
+            const dotIndex = actionConfig.action.indexOf('.');
+            if (dotIndex < 0) return false;
+            const domain = actionConfig.action.substring(0, dotIndex);
+            const service = actionConfig.action.substring(dotIndex + 1);
+            const serviceData = actionConfig.target ? Object.assign({}, actionConfig.target) : {};
+            if (actionConfig.data) Object.assign(serviceData, actionConfig.data);
+            this.hass.callService(domain, service, serviceData);
+            return true;
+        } catch (err) {
+            console.error('执行action失败:', err);
+            return false;
+        }
+    }
 
     // ===== 弹窗服务调用 =====
     _handleClick() {
@@ -1229,6 +1390,11 @@ class XiaoshiRoomCard extends LitElement {
     }
 
     _showSensorPopup(popupConfig) {
+        if (this.config.tap_action_enable === true || this.config.tap_action_enable === 'true') {
+            this._executeAction(this.config.tap_action);
+            if (this._handleClick) this._handleClick();
+            return;
+        }
         this._handleClick();
         let cards = [];
         if (typeof popupConfig === 'string') {
@@ -1240,10 +1406,20 @@ class XiaoshiRoomCard extends LitElement {
             }
         }
         const serviceData = { card: cards };
-        const popupWidth = this.config.popup_width || 'min(95%, 475px)';
-        const popupTop = this.config.popup_top || '20px';
+        const popupWidth = device.popup_width || this.config.popup_width || 'min(95%, 475px)';
+        const popupTop = device.popup_top || this.config.popup_top || '20px';
         if (popupWidth !== 'min(95%, 475px)') serviceData.popup_width = popupWidth;
         if (popupTop !== '20px') serviceData.popup_top = popupTop;
+        // popup_background 处理
+        const popupBg = device.popup_background || this.config.popup_background;
+        if (popupBg === 'transparent') {
+            serviceData.background = 'transparent';
+        } else if (popupBg === 'theme') {
+            const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+            serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+        } else if (popupBg && popupBg !== '') {
+            serviceData.background = popupBg;
+        }
         this.hass.callService('popup_card', 'show', serviceData);
     }
 

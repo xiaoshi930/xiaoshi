@@ -67,7 +67,7 @@ class XiaoshiPVECardEditor extends LitElement {
         this._fireConfigChanged();
     }
     render() {
-        if (!this.hass) return html``;
+        if (!this.hass || !this.config) return html``;;
         const c = this.config || {};
         return html`
             <div class="form">

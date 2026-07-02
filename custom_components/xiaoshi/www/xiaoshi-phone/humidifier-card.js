@@ -33,7 +33,7 @@ class XiaoshiPhoneHumidifierCardEditor extends LitElement {
     this.config = config || {};
   }
 
-  firstUpdated() {
+  async firstUpdated() {
     // 点击外部关闭下拉列表
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.entity-selector')) {
@@ -50,13 +50,12 @@ class XiaoshiPhoneHumidifierCardEditor extends LitElement {
         this.requestUpdate();
       }
     });
-  }
 
-  async firstUpdated() {
     await this._setDefaultClimateEntity();
   }
 
   async _setDefaultClimateEntity() {
+    if (!this.hass || !this.config) return;
     if (this.config?.entity) return;
     const entities = Object.keys(this.hass.states).filter(
       eid => eid.startsWith('humidifier.')
@@ -230,7 +229,7 @@ class XiaoshiPhoneHumidifierCardEditor extends LitElement {
   }
 
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass || !this.config) return html``;;
 
     return html`
       <div class="card-config">
@@ -604,7 +603,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
   }
 
   async _fetchDataAndRenderChart() {
-      if (!this.hass) return;
+      if (!this.hass || !this.config) return;
 
       const now = new Date();
       const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -835,7 +834,7 @@ class XiaoshiPhoneHumidifierCard extends LitElement {
   }
 
   render() {
-    if (!this.hass || !this.config.entity) {
+    if (!this.hass || !this.config || !this.config.entity) {
         return html``;
     }
 

@@ -697,6 +697,33 @@ class XiaoshiPadCardEditor extends LitElement {
                                     <input type="text" .value="${di.left || '100px'}" @change="${(e) => this._updateDeviceIconField(i, 'left', e.target.value)}">
                             </div>
                         </div>
+                            <div class="glow-row">
+                                <label>弹窗背景css属性</label>
+                                <select @change="${(e) => this._updateDeviceIconField(i, 'popup_background', e.target.value)}">
+                                    <option value="" .selected="${!di.popup_background}">默认</option>
+                                    <option value="transparent" .selected="${di.popup_background === 'transparent'}">透明</option>
+                                    <option value="theme" .selected="${di.popup_background === 'theme'}">跟随主题</option>
+                                </select>
+                                <input type="color" .value="${di.popup_background && di.popup_background !== 'transparent' && di.popup_background !== 'theme' ? di.popup_background : '#ffffff'}" @change="${(e) => this._updateDeviceIconField(i, 'popup_background', e.target.value)}">
+                            </div>
+                            <div style="display:flex;align-items:center;gap:6px;margin:4px 0;">
+                              <input type="checkbox"
+                                @change=${(e) => this._updateDeviceIconField(i, 'tap_action_enable', e.target.checked)}
+                                .checked=${di.tap_action_enable === true}
+                              />
+                              <label style="font-weight:normal;">启用tap_action禁用popup_cards</label>
+                            </div>
+                            ${di.tap_action_enable === true ? html`
+                            <div class="glow-row">
+                              <label>tap_action</label>
+                              <textarea class="state-colors-textarea" .value="${di.tap_action || ''}" @change="${(e) => this._updateDeviceIconField(i, 'tap_action', e.target.value)}"
+                                placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway'></textarea>
+                            </div>
+                            ` : html`
                             <div class="size-row">
                                 <div class="glow-row">
                                     <label>弹窗宽度</label>
@@ -711,6 +738,25 @@ class XiaoshiPadCardEditor extends LitElement {
                                 <label>弹窗</label>
                                 <textarea class="state-colors-textarea" .value="${di.popup_cards || ''}" @change="${(e) => this._updateDeviceIconField(i, 'popup_cards', e.target.value)}" placeholder="- type: custom:xiaoshi-chart-card&#10;  entities:&#10;    - entity: sensor.xxx"></textarea>
                             </div>
+                            `}
+                            <div style="display:flex;align-items:center;gap:6px;margin:4px 0;">
+                              <input type="checkbox"
+                                @change=${(e) => this._updateDeviceIconField(i, 'hold_action_enable', e.target.checked)}
+                                .checked=${di.hold_action_enable === true}
+                              />
+                              <label style="font-weight:normal;">启用hold_action禁用hold_popup_cards</label>
+                            </div>
+                            ${di.hold_action_enable === true ? html`
+                            <div class="glow-row">
+                              <label>hold_action</label>
+                              <textarea class="state-colors-textarea" .value="${di.hold_action || ''}" @change="${(e) => this._updateDeviceIconField(i, 'hold_action', e.target.value)}"
+                                placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway'></textarea>
+                            </div>
+                            ` : html`
                             <div class="glow-row">
                                 <label>长按弹窗宽度</label>
                                 <input style="width: 80px;" type="text" .value="${di.hold_popup_width || ''}" @change="${(e) => this._updateDeviceIconField(i, 'hold_popup_width', e.target.value)}" placeholder="留空取弹窗宽度">
@@ -721,10 +767,13 @@ class XiaoshiPadCardEditor extends LitElement {
                                 <label>长按弹窗</label>
                                 <textarea class="state-colors-textarea" .value="${di.hold_popup_cards || ''}" @change="${(e) => this._updateDeviceIconField(i, 'hold_popup_cards', e.target.value)}" placeholder="长按弹出卡片"></textarea>
                             </div>
+                            `}
                         </div>
                     `)}
                     <button class="add-glow-btn" @click="${this._addDeviceIcon}">+ 添加设备图标</button>
                 </div>
+
+
 
             </div>
         `;
@@ -1029,6 +1078,11 @@ class XiaoshiPadCard extends LitElement {
     }
   }
   _showDeviceHoldPopup(holdConfig, item) {
+    if (item && item.hold_action_enable === true) {
+      this._executeAction(item.hold_action);
+      this._handleHaptic();
+      return;
+    }
     if (!holdConfig || !holdConfig.trim()) return;
     try {
       const cards = yamlToJson(holdConfig);
@@ -1039,6 +1093,16 @@ class XiaoshiPadCard extends LitElement {
       const popupTop = item.hold_popup_top || item.popup_top || '20px';
       serviceData.popup_width = popupWidth;
       serviceData.popup_top = popupTop;
+      // popup_background 处理
+      const popupBg = item.popup_background || this.config.popup_background;
+      if (popupBg === 'transparent') {
+          serviceData.background = 'transparent';
+      } else if (popupBg === 'theme') {
+          const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+          serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+      } else if (popupBg && popupBg !== '') {
+          serviceData.background = popupBg;
+      }
       this.hass.callService('popup_card', 'show', serviceData);
     } catch (err) {
       console.error('[xiaoshi-pad-card] 解析长按弹窗卡片失败:', err);
@@ -1058,6 +1122,26 @@ class XiaoshiPadCard extends LitElement {
     });
     hapticEvent.detail = 'light';
     this.dispatchEvent(hapticEvent);
+  }
+
+  // ===== tap_action / hold_action 服务调用 =====
+  _executeAction(actionYaml) {
+    if (!actionYaml || !actionYaml.trim()) return false;
+    try {
+      const actionConfig = yamlToJson(actionYaml);
+      if (!actionConfig || !actionConfig.action) return false;
+      const dotIndex = actionConfig.action.indexOf('.');
+      if (dotIndex < 0) return false;
+      const domain = actionConfig.action.substring(0, dotIndex);
+      const service = actionConfig.action.substring(dotIndex + 1);
+      const serviceData = actionConfig.target ? Object.assign({}, actionConfig.target) : {};
+      if (actionConfig.data) Object.assign(serviceData, actionConfig.data);
+      this.hass.callService(domain, service, serviceData);
+      return true;
+    } catch (err) {
+      console.error('执行action失败:', err);
+      return false;
+    }
   }
 
   // ========== 主题计算（基于sun.sun） ==========
@@ -1802,6 +1886,11 @@ class XiaoshiPadCard extends LitElement {
 
   _onDeviceIconClick(item) {
     if (!item) return;
+    if (item.tap_action_enable === true) {
+      this._executeAction(item.tap_action);
+      this._handleHaptic();
+      return;
+    }
     const popupConfig = item.popup_cards || item.other_cards || item.popup;
     if (popupConfig) {
       let popupCards = [];
@@ -1819,6 +1908,16 @@ class XiaoshiPadCard extends LitElement {
       const serviceData = { card: popupCards };
       serviceData.popup_width = popupWidth;
       serviceData.popup_top = popupTop;
+      // popup_background 处理
+      const popupBg = item.popup_background || this.config.popup_background;
+      if (popupBg === 'transparent') {
+          serviceData.background = 'transparent';
+      } else if (popupBg === 'theme') {
+          const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+          serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+      } else if (popupBg && popupBg !== '') {
+          serviceData.background = popupBg;
+      }
       this.hass.callService('popup_card', 'show', serviceData);
       return;
     }

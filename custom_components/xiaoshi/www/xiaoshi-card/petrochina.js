@@ -317,6 +317,25 @@ const PetroChinaBaseMixin = (superClass) => class extends superClass {
     this._loading = false;
   }
 
+  _executeAction(actionYaml) {
+    if (!actionYaml || !actionYaml.trim()) return false;
+    try {
+      const actionConfig = yamlToJson(actionYaml);
+      if (!actionConfig || !actionConfig.action) return false;
+      const dotIndex = actionConfig.action.indexOf('.');
+      if (dotIndex < 0) return false;
+      const domain = actionConfig.action.substring(0, dotIndex);
+      const service = actionConfig.action.substring(dotIndex + 1);
+      const serviceData = actionConfig.target ? Object.assign({}, actionConfig.target) : {};
+      if (actionConfig.data) Object.assign(serviceData, actionConfig.data);
+      this.hass.callService(domain, service, serviceData);
+      return true;
+    } catch (err) {
+      console.error('执行action失败:', err);
+      return false;
+    }
+  }
+
   // ===== 长按弹窗 (hold_popup_cards) =====
   _onHoldStart(e) {
     this._holdTriggered = false;
@@ -332,6 +351,11 @@ const PetroChinaBaseMixin = (superClass) => class extends superClass {
     }
   }
   _onHoldPopup() {
+    if (this.config.hold_action_enable === true) {
+      this._executeAction(this.config.hold_action);
+      if (this._handleClick) this._handleClick();
+      return;
+    }
     const holdConfig = this.config.hold_popup_cards;
     if (!holdConfig || !holdConfig.trim()) return;
     try {
@@ -351,6 +375,14 @@ const PetroChinaBaseMixin = (superClass) => class extends superClass {
       const popupTop = this.config.hold_popup_top || this.config.popup_top || '20px';
       if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
       if (popupTop !== '20px') serviceData.popup_top = popupTop;
+      if (this.config.popup_background === 'transparent') {
+        serviceData.background = 'transparent';
+      } else if (this.config.popup_background === 'theme') {
+        const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+        serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+      } else if (this.config.popup_background && this.config.popup_background !== '') {
+        serviceData.background = this.config.popup_background;
+      }
       h.callService('popup_card', 'show', serviceData);
     } catch (err) {
       console.error('解析长按弹窗卡片失败:', err);
@@ -410,7 +442,7 @@ class XiaoshiPetroChinaCardEditor extends PetroChinaEditorMixin(LitElement) {
   }
 
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass || !this.config) return html``;;
     return html`
       <div class="form">
         <div class="form-group">
@@ -434,6 +466,24 @@ class XiaoshiPetroChinaCardEditor extends PetroChinaEditorMixin(LitElement) {
             <option value="light">浅色主题（白底黑字）</option>
             <option value="dark">深色主题（黑底白字）</option>
           </select>
+        </div>
+        <div class="form-row">
+          <label>弹窗背景css属性</label>
+          <select
+            @change=${this._entityChanged}
+            .value=${this.config.popup_background !== undefined ? this.config.popup_background : ''}
+            name="popup_background"
+          >
+            <option value="">默认</option>
+            <option value="transparent">透明</option>
+            <option value="theme">跟随主题</option>
+          </select>
+          <input
+            type="color"
+            @change=${this._entityChanged}
+            .value=${this.config.popup_background && this.config.popup_background !== 'transparent' && this.config.popup_background !== 'theme' ? this.config.popup_background : '#ffffff'}
+            name="popup_background"
+          />
         </div>
         <div class="form-group">
           <label>油价实体：搜索并选择实体</label>
@@ -795,10 +845,33 @@ class XiaoshiPetroChinaButtonEditor extends PetroChinaEditorMixin(LitElement) {
   }
 
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass || !this.config) return html``;;
     return html`
       <div class="form">
         <!-- 按钮特有配置 -->
+
+        <div class="form-group">
+          <label>主题</label>
+          <select
+            @change=${this._entityChanged}
+            .value=${this.config.theme !== undefined ? this.config.theme : 'system'}
+            name="theme"
+          >
+            <option value="system">跟随系统</option>
+            <option value="light">浅色主题（白底黑字）</option>
+            <option value="dark">深色主题（黑底白字）</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>油价实体：搜索并选择实体</label>
+          ${this._renderEntitySelector()}
+          ${this._renderSelectedEntities()}
+          <div class="help-text">
+            搜索并选择要显示的油价实体，支持多选
+          </div>
+        </div>
+
         <div class="form-group">
           <label>按钮显示图标
           <input
@@ -990,38 +1063,46 @@ class XiaoshiPetroChinaButtonEditor extends PetroChinaEditorMixin(LitElement) {
           />
         </div>
 
-        <div class="form-group">
-          <label>👇👇👇下方弹出的卡片可增加的其他卡片👇👇👇</label>
-          <textarea
+        <div class="form-group"><label>👇👇👇下方弹出的卡片可增加的其他卡片👇👇👇</label></div>
+
+        <div class="form-row">
+          <label>弹窗背景css属性</label>
+          <select
             @change=${this._entityChanged}
-            .value=${this.config.popup_cards || this.config.other_cards || this.config.popup || ''}
-            name="popup_cards"
-            placeholder='# 示例配置：添加button卡片
-- type: custom:button-card
-  template: 测试模板(最好引用模板，否则大概率会报错)
-- type: custom:button-card
-  template: 测试模板(最好引用模板，否则大概率会报错)'>
-          </textarea>
-        </div>
-        <div class="form-group">
-          <label>长按弹窗宽度（hold_popup_width）</label>
-          <input @change=${this._entityChanged} .value=${this.config.hold_popup_width || ''} name="hold_popup_width" placeholder="留空则使用弹窗宽度配置" />
-        </div>
-        <div class="form-group">
-          <label>长按弹窗位置（hold_popup_top）</label>
-          <input @change=${this._entityChanged} .value=${this.config.hold_popup_top || ''} name="hold_popup_top" placeholder="留空则使用弹窗位置配置" />
-        </div>
-        <div class="form-group">
-          <label>长按弹出内容（hold_popup_cards）</label>
-          <textarea @change=${this._entityChanged} .value=${this.config.hold_popup_cards || ''} name="hold_popup_cards" placeholder='长按时弹出的YAML卡片配置'></textarea>
+            .value=${this.config.popup_background !== undefined ? this.config.popup_background : ''}
+            name="popup_background"
+          >
+            <option value="">默认</option>
+            <option value="transparent">透明</option>
+            <option value="theme">跟随主题</option>
+          </select>
+          <input
+            type="color"
+            @change=${this._entityChanged}
+            .value=${this.config.popup_background && this.config.popup_background !== 'transparent' && this.config.popup_background !== 'theme' ? this.config.popup_background : '#ffffff'}
+            name="popup_background"
+          />
         </div>
 
-        <div class="form-group">
-          <label> </label>
-          <label>👇👇👇下方是弹出的主卡配置项👇👇👇</label>
-          <label> </label>
+        <div class="checkbox-group2">
+          <input type="checkbox" class="checkbox-input"
+            @change=${this._entityChanged}
+            .checked=${this.config.tap_action_enable === true}
+            name="tap_action_enable" id="tap_action_enable"
+          />
+          <label for="tap_action_enable">启用tap_action禁用popup_cards</label>
         </div>
-
+        ${this.config.tap_action_enable === true ? html`
+        <div class="form-group">
+          <label>tap_action（执行调用服务）</label>
+          <textarea @change=${this._entityChanged} .value=${this.config.tap_action || ''} name="tap_action"
+            placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway'></textarea>
+        </div>
+        ` : html`
         <div class="form-group">
           <label>弹窗宽度：支持像素(px)、百分比(%)和auto，默认95%</label>
           <input
@@ -1045,26 +1126,52 @@ class XiaoshiPetroChinaButtonEditor extends PetroChinaEditorMixin(LitElement) {
         </div>
 
         <div class="form-group">
-          <label>主题</label>
-          <select
+          <textarea
             @change=${this._entityChanged}
-            .value=${this.config.theme !== undefined ? this.config.theme : 'system'}
-            name="theme"
-          >
-            <option value="system">跟随系统</option>
-            <option value="light">浅色主题（白底黑字）</option>
-            <option value="dark">深色主题（黑底白字）</option>
-          </select>
+            .value=${this.config.popup_cards || this.config.other_cards || this.config.popup || ''}
+            name="popup_cards"
+            placeholder='# 示例配置：添加button卡片
+- type: custom:button-card
+  template: 测试模板(最好引用模板，否则大概率会报错)
+- type: custom:button-card
+  template: 测试模板(最好引用模板，否则大概率会报错)'>
+          </textarea>
         </div>
+        `}
 
-        <div class="form-group">
-          <label>油价实体：搜索并选择实体</label>
-          ${this._renderEntitySelector()}
-          ${this._renderSelectedEntities()}
-          <div class="help-text">
-            搜索并选择要显示的油价实体，支持多选
-          </div>
+        <div class="checkbox-group2">
+          <input type="checkbox" class="checkbox-input"
+            @change=${this._entityChanged}
+            .checked=${this.config.hold_action_enable === true}
+            name="hold_action_enable" id="hold_action_enable"
+          />
+          <label for="hold_action_enable">启用hold_action禁用hold_popup_cards</label>
         </div>
+        ${this.config.hold_action_enable === true ? html`
+        <div class="form-group">
+          <label>hold_action（执行调用服务）</label>
+          <textarea @change=${this._entityChanged} .value=${this.config.hold_action || ''} name="hold_action"
+            placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway'></textarea>
+        </div>
+        ` : html`
+        <div class="form-group">
+          <label>长按弹窗宽度</label>
+          <input @change=${this._entityChanged} .value=${this.config.hold_popup_width || ''} name="hold_popup_width" placeholder="留空则使用弹窗宽度配置" />
+        </div>
+        <div class="form-group">
+          <label>长按弹窗位置</label>
+          <input @change=${this._entityChanged} .value=${this.config.hold_popup_top || ''} name="hold_popup_top" placeholder="留空则使用弹窗位置配置" />
+        </div>
+        <div class="form-group">
+          <label>长按弹出内容（hold_popup_cards）</label>
+          <textarea @change=${this._entityChanged} .value=${this.config.hold_popup_cards || ''} name="hold_popup_cards" placeholder='长按时弹出的YAML卡片配置'></textarea>
+        </div>
+        `}
+
       </div>
     `;
   }
@@ -1075,7 +1182,7 @@ class XiaoshiPetroChinaButtonEditor extends PetroChinaEditorMixin(LitElement) {
     if (type === 'checkbox') {
       finalValue = checked;
     } else {
-      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top' && name !== 'decimal_precision') return;
+      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top' && name !== 'decimal_precision' && name !== 'tap_action' && name !== 'hold_action') return;
       finalValue = value;
     }
     if (name === 'button_width') {
@@ -1140,7 +1247,12 @@ class XiaoshiPetroChinaButton extends PetroChinaBaseMixin(LitElement) {
   }
 
   _handleButtonClick() {
-    const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'popup_top', 'popup_width', 'other_cards', 'popup_cards', 'popup', 'hold_popup_cards'];
+    if (this.config.tap_action_enable === true) {
+      this._executeAction(this.config.tap_action);
+      this._handleClick();
+      return;
+    }
+    const excludedParams = ['type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size', 'popup_top', 'popup_width', 'other_cards', 'popup_cards', 'popup', 'hold_popup_cards', 'popup_background', 'tap_action', 'hold_action'];
     const cards = [];
     const balanceCardConfig = {};
     Object.keys(this.config).forEach(key => {
@@ -1172,6 +1284,14 @@ class XiaoshiPetroChinaButton extends PetroChinaBaseMixin(LitElement) {
     const popupTop = this.config.popup_top || '20px';
     if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
     if (popupTop !== '20px') serviceData.popup_top = popupTop;
+    if (this.config.popup_background === 'transparent') {
+      serviceData.background = 'transparent';
+    } else if (this.config.popup_background === 'theme') {
+      const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+      serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    } else if (this.config.popup_background && this.config.popup_background !== '') {
+      serviceData.background = this.config.popup_background;
+    }
     this.hass.callService('popup_card', 'show', serviceData);
     this._handleClick();
   }

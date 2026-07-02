@@ -32,11 +32,14 @@ class XiaoshiCoverCardEditor extends LitElement {
                 this.requestUpdate();
             }
         });
-        this._setDefaultEntity();
+        // 延迟到下一微任务，避免在 HA 对话框初始化完成前触发 config-changed
+        // 否则 HA 的 isCustomType() 会收到 undefined 导致 startsWith 报错
+        Promise.resolve().then(() => this._setDefaultEntity());
     }
 
     async _setDefaultEntity() {
         if (this.config?.entity) return;
+        if (!this.hass || !this.hass.states) return;
         const entities = Object.keys(this.hass.states).filter(eid => eid.startsWith('cover.'));
         if (entities.length > 0) {
             this.config = { ...(this.config || {}), entity: entities[0] };
@@ -48,10 +51,11 @@ class XiaoshiCoverCardEditor extends LitElement {
         const term = e.target.value.toLowerCase();
         this._searchTerm = term;
         this._showEntityList = true;
-        if (!this.hass) return;
+        if (!this.hass || !this.hass.states) return;
         this._filteredEntities = Object.values(this.hass.states).filter(ent => {
+            if (!ent || !ent.entity_id) return false;
             const eid = ent.entity_id.toLowerCase();
-            const fn = (ent.attributes.friendly_name || '').toLowerCase();
+            const fn = (ent.attributes?.friendly_name || '').toLowerCase();
             return eid.startsWith('cover.') && (eid.includes(term) || fn.includes(term));
         }).slice(0, 50);
         this.requestUpdate();
@@ -86,7 +90,7 @@ class XiaoshiCoverCardEditor extends LitElement {
     }
 
     render() {
-        if (!this.hass) return html``;
+        if (!this.hass || !this.config) return html``;;
         return html`
             <div class="card-config">
                 <div class="row">
@@ -104,9 +108,9 @@ class XiaoshiCoverCardEditor extends LitElement {
                                     <div class="entity-option ${this.config?.entity === ent.entity_id ? 'selected' : ''}"
                                          @click=${() => this._selectEntity(ent.entity_id)}>
                                         <div class="entity-info">
-                                            <ha-icon icon="${ent.attributes.icon || 'mdi:curtains'}"></ha-icon>
+                                            <ha-icon icon="${ent.attributes?.icon || 'mdi:curtains'}"></ha-icon>
                                             <div class="entity-details">
-                                                <div class="entity-name">${ent.attributes.friendly_name || ent.entity_id}</div>
+                                                <div class="entity-name">${ent.attributes?.friendly_name || ent.entity_id}</div>
                                                 <div class="entity-id">${ent.entity_id}</div>
                                             </div>
                                         </div>
@@ -545,9 +549,11 @@ class XiaoshiCoverCard extends LitElement {
         const trackW = track.getBoundingClientRect().width;
         if (trackW <= 0) return;
         const thumbHalf = 8;
-        const clampedLeft = thumbHalf + (value / 100) * (trackW - thumbHalf * 2);
-        if (bar) bar.style.width = `${clampedLeft}px`;
-        if (thumb) thumb.style.left = `${clampedLeft}px`;
+        const percent = value / 100;
+        // 条形宽度：0%时无填充，100%时填满整个轨道
+        if (bar) bar.style.width = `${percent * trackW}px`;
+        // 拇指位置：在有效范围内移动
+        if (thumb) thumb.style.left = `${thumbHalf + percent * (trackW - thumbHalf * 2)}px`;
     }
 
     // ====== 滑块交互 ======
@@ -900,7 +906,15 @@ chip.addEventListener('click', () => {
     }
     this._historyBodyEl.innerHTML = html;
   }
-
+  _handleClick() {
+    const hapticEvent = new Event('haptic', {
+      bubbles: true,
+      cancelable: false,
+      composed: true
+    });
+    hapticEvent.detail = 'light';
+    this.dispatchEvent(hapticEvent);
+  }
   _closeHistoryOverlay() {
     this._handleClick();
     if (this._historyOverlayEl) {

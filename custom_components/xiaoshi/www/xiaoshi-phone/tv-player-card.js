@@ -53,7 +53,7 @@ class TvPlayerEditor extends LitElement {
   }
 
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass || !this.config) return html``;;
 
     const isIntegration = !this.config.tv_connection_mode || this.config.tv_connection_mode === 'integration';
 

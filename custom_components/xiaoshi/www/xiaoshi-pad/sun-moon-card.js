@@ -20,6 +20,7 @@ class SunMoonCardEditor extends LitElement {
     setConfig(config) { this._config = config || {}; }
 
     render() {
+        if (!this._config) return html``;
         return html`
             <div class="editor">
                 <div class="field">

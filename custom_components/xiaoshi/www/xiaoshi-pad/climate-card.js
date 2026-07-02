@@ -456,7 +456,7 @@ class XiaoshiPadClimateCardEditor extends LitElement {
   }
 
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass || !this.config) return html``;;
 
     return html`
       <div class="form">
@@ -1555,7 +1555,7 @@ class XiaoshiPadClimateCardEditor extends LitElement {
   }
 
   _renderButtonConfig(buttonType, index) {
-    if (!this.hass) return html``;
+    if (!this.hass || !this.config) return html``;;
 
     const buttonId = buttonType === 'buttons' ? (this.config.buttons || [])[index] : (this.config.buttons2 || [])[index];
     if (!buttonId) return html``;
@@ -1823,7 +1823,7 @@ class XiaoshiPadClimateCardEditor extends LitElement {
     super.updated(changedProperties);
 
     // 当 hass 第一次加载时，如果没有配置实体，自动选择第一个
-    if (changedProperties.has('hass') && this.hass && !this.config.entity) {
+    if (changedProperties.has('hass') && this.hass && this.config && !this.config.entity) {
       this._autoSelectFirstEntity();
     }
   }

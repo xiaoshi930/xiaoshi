@@ -84,6 +84,18 @@ class XiaoshiPadCameraCardEditor extends LitElement {
           </div>
         </div>
         <div class="field">
+          <label>弹窗背景css属性</label>
+          <select .value=${this._config.popup_background || ''} configKey="popup_background" @change=${this._valueChanged}>
+            <option value="" ?selected=${!this._config.popup_background}>默认</option>
+            <option value="transparent" ?selected=${this._config.popup_background === 'transparent'}>透明(transparent)</option>
+            <option value="theme" ?selected=${this._config.popup_background === 'theme'}>跟随主题(theme)</option>
+            <option value="custom" ?selected=${this._config.popup_background && this._config.popup_background !== 'transparent' && this._config.popup_background !== 'theme'}>自定义颜色</option>
+          </select>
+          ${this._config.popup_background && this._config.popup_background !== 'transparent' && this._config.popup_background !== 'theme' ? html`
+          <input type="color" .value=${this._config.popup_background} configKey="popup_background" @change=${this._valueChanged} title="自定义弹窗背景颜色" style="width:34px;height:30px;padding:1px;border:1px solid #ddd;border-radius:4px;" />
+          ` : ''}
+        </div>
+        <div class="field">
           <label>类型</label>
           <select .value=${this._config.btn_type || 'dome'} configKey="btn_type" @change=${this._valueChanged}>
             <option value="doorbell" ?selected=${this._config.btn_type === 'doorbell'}>门铃</option>
@@ -249,6 +261,16 @@ class XiaoshiPadCameraCard extends LitElement {
     const serviceData = { card: cards };
     serviceData.popup_width = this.config.popup_width || '500px';
     serviceData.popup_top = this.config.popup_top || '20px';
+
+    // popup_background 处理
+    if (this.config.popup_background === 'transparent') {
+        serviceData.background = 'transparent';
+    } else if (this.config.popup_background === 'theme') {
+        const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+        serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    } else if (this.config.popup_background && this.config.popup_background !== '') {
+        serviceData.background = this.config.popup_background;
+    }
 
     this.hass.callService('popup_card', 'show', serviceData);
 

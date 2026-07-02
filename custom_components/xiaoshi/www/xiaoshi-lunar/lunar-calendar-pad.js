@@ -246,6 +246,7 @@ class LunarCalendarPadDateEditor extends LitElement {
   }
 
   render() {
+    if (!this.config) return html``;
     return html`
       <div class="form">
         <div class="form-group">

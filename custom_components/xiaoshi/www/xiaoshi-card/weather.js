@@ -41,7 +41,7 @@ class XiaoshiWeatherPhoneEditor extends LitElement {
   }
 
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass || !this.config) return html``;;
 
     return html`
       <div class="form">
@@ -99,6 +99,25 @@ class XiaoshiWeatherPhoneEditor extends LitElement {
             <option value="light">浅色主题（白底黑字）</option>
             <option value="dark">深色主题（黑底白字）</option>
           </select>
+        </div>
+
+        <div class="form-group">
+          <label>弹窗背景css属性</label>
+          <select
+            @change=${this._entityChanged}
+            .value=${this.config.popup_background !== undefined ? this.config.popup_background : ''}
+            name="popup_background"
+          >
+            <option value="">默认</option>
+            <option value="transparent">透明</option>
+            <option value="theme">跟随主题</option>
+          </select>
+          <input
+            type="color"
+            @change=${this._entityChanged}
+            .value=${this.config.popup_background && this.config.popup_background !== 'transparent' && this.config.popup_background !== 'theme' ? this.config.popup_background : '#ffffff'}
+            name="popup_background"
+          />
         </div>
 
         <div class="form-group">
@@ -231,7 +250,7 @@ class XiaoshiWeatherPhoneEditor extends LitElement {
 
   _entityChanged(e) {
     const { name, value } = e.target;
-    if (!value && name !== 'theme' && name !== 'mode' && name !== 'columns' && name !== 'use_custom_entities' && name !== 'temperature_entity' && name !== 'humidity_entity' && name !== 'city_entity' && name !== 'visual_style' && name !== 'auto_refresh_on_load') return;
+    if (!value && name !== 'theme' && name !== 'mode' && name !== 'columns' && name !== 'use_custom_entities' && name !== 'temperature_entity' && name !== 'humidity_entity' && name !== 'city_entity' && name !== 'visual_style' && name !== 'auto_refresh_on_load' && name !== 'popup_background') return;
 
     let processedValue = value;
     if (name === 'columns' ) {
@@ -2829,7 +2848,7 @@ class XiaoshiWeatherPhoneButtonEditor extends LitElement {
   }
 
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass || !this.config) return html``;;
 
     return html`
       <div class="form">
@@ -2995,6 +3014,26 @@ class XiaoshiWeatherPhoneButtonEditor extends LitElement {
             <option value="light">浅色主题（白底黑字）</option>
             <option value="dark">深色主题（深灰底白字）</option>
           </select>
+        </div>
+
+        <!-- 弹窗背景 -->
+        <div class="form-group">
+          <label>弹窗背景css属性</label>
+          <select
+            @change=${this._entityChanged}
+            .value=${this.config.popup_background !== undefined ? this.config.popup_background : ''}
+            name="popup_background"
+          >
+            <option value="">默认</option>
+            <option value="transparent">透明</option>
+            <option value="theme">跟随主题</option>
+          </select>
+          <input
+            type="color"
+            @change=${this._entityChanged}
+            .value=${this.config.popup_background && this.config.popup_background !== 'transparent' && this.config.popup_background !== 'theme' ? this.config.popup_background : '#ffffff'}
+            name="popup_background"
+          />
         </div>
 
         <!-- 按钮宽度 -->
@@ -3437,7 +3476,7 @@ class XiaoshiWeatherPhoneButton extends LitElement {
   }
 
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass || !this.config) return html``;;
 
     const theme = this._evaluateTheme();
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
@@ -3520,6 +3559,14 @@ class XiaoshiWeatherPhoneButton extends LitElement {
     });
 
     const serviceData = { card: cards };
+    if (this.config.popup_background === 'transparent') {
+        serviceData.background = 'transparent';
+    } else if (this.config.popup_background === 'theme') {
+        const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+        serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    } else if (this.config.popup_background && this.config.popup_background !== '') {
+        serviceData.background = this.config.popup_background;
+    }
     const popupWidth = this.config.popup_width || '95%';
     const popupTop = this.config.popup_top || '20px';
     if (popupWidth !== '95%') serviceData.popup_width = popupWidth;

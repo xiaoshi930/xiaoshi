@@ -83,7 +83,7 @@ class XiaoshiDeviceButtonEditor extends LitElement {
     if (type === 'checkbox') {
       finalValue = checked;
     } else {
-      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top') return;
+      if (!value && name !== 'theme' && name !== 'button_width' && name !== 'button_height' && name !== 'button_font_size' && name !== 'button_icon_size' && name !== 'popup_width' && name !== 'popup_top' && name !== 'popup_background' && name !== 'tap_action' && name !== 'hold_action') return;
       finalValue = value;
     }
     if (name === 'button_width') {
@@ -179,15 +179,6 @@ class XiaoshiDeviceButtonEditor extends LitElement {
           </label>
         </div>
 
-        <div class="section-title">弹窗配置</div>
-
-        <div class="form-row">
-          <label>弹窗宽度</label>
-          <input type="text" name="popup_width" .value="${c.popup_width || ''}" @change="${this._valueChanged}" placeholder="默认95%" style="max-width:100px" />
-          <label style="min-width:auto">弹窗位置</label>
-          <input type="text" name="popup_top" .value="${c.popup_top || ''}" @change="${this._valueChanged}" placeholder="默认20px" style="max-width:100px" />
-        </div>
-
         <div class="section-title">设备实体配置</div>
 
         <div class="form-row">
@@ -219,23 +210,94 @@ class XiaoshiDeviceButtonEditor extends LitElement {
           <textarea name="entities" .value="${this._entitiesToDisplay(c.entities)}" @change="${this._entitiesChanged}" placeholder="- light.xxx&#10;- switch.xxx&#10;- binary_sensor.xxx"></textarea>
         </div>
 
+
+        <div class="section-title">弹窗配置</div>
+
+        <div class="form-row">
+          <label>弹窗背景css属性</label>
+          <select
+            @change=${this._valueChanged}
+            .value=${this.config.popup_background !== undefined ? this.config.popup_background : ''}
+            name="popup_background"
+          >
+            <option value="">默认</option>
+            <option value="transparent">透明</option>
+            <option value="theme">跟随主题</option>
+          </select>
+          <input
+            type="color"
+            @change=${this._valueChanged}
+            .value=${this.config.popup_background && this.config.popup_background !== 'transparent' && this.config.popup_background !== 'theme' ? this.config.popup_background : '#ffffff'}
+            name="popup_background"
+          />
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" class="checkbox-input"
+            @change=${this._valueChanged}
+            .checked=${c.tap_action_enable === true}
+            name="tap_action_enable" id="tap_action_enable"
+          />
+          <label for="tap_action_enable" class="checkbox-label">启用tap_action禁用popup_cards</label>
+        </div>
+        ${c.tap_action_enable === true ? html`
+        <div class="form-group">
+          <label>tap_action（执行调用服务）</label>
+          <textarea @change=${this._valueChanged} .value=${c.tap_action || ''} name="tap_action"
+            placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway'></textarea>
+        </div>
+        ` : html`
+        <div class="form-row">
+          <label>弹窗宽度</label>
+          <input type="text" name="popup_width" .value="${c.popup_width || ''}" @change="${this._valueChanged}" placeholder="默认95%" style="max-width:100px" />
+          <label style="min-width:auto">弹窗位置</label>
+          <input type="text" name="popup_top" .value="${c.popup_top || ''}" @change="${this._valueChanged}" placeholder="默认20px" style="max-width:100px" />
+        </div>
         <div class="form-group">
           <label>弹窗卡片（YAML格式）</label>
           <textarea name="popup_cards" .value="${c.popup_cards || c.other_cards || c.popup || ''}" @change="${this._valueChanged}" placeholder="- type: custom:button-card
   template: 测试模板"></textarea>
         </div>
+        `}
+
+        <div class="checkbox-group">
+          <input type="checkbox" class="checkbox-input"
+            @change=${this._valueChanged}
+            .checked=${c.hold_action_enable === true}
+            name="hold_action_enable" id="hold_action_enable"
+          />
+          <label for="hold_action_enable" class="checkbox-label">启用hold_action禁用hold_popup_cards</label>
+        </div>
+        ${c.hold_action_enable === true ? html`
         <div class="form-group">
-          <label>长按弹窗宽度（hold_popup_width）</label>
+          <label>hold_action（执行调用服务）</label>
+          <textarea @change=${this._valueChanged} .value=${c.hold_action || ''} name="hold_action"
+            placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway'></textarea>
+        </div>
+        ` : html`
+        <div class="form-group">
+          <label>长按弹窗宽度</label>
           <input type="text" name="hold_popup_width" .value="${c.hold_popup_width || ''}" @change="${this._valueChanged}" placeholder="留空则使用弹窗宽度配置" />
         </div>
         <div class="form-group">
-          <label>长按弹窗位置（hold_popup_top）</label>
+          <label>长按弹窗位置</label>
           <input type="text" name="hold_popup_top" .value="${c.hold_popup_top || ''}" @change="${this._valueChanged}" placeholder="留空则使用弹窗位置配置" />
         </div>
         <div class="form-group">
           <label>长按弹出内容（hold_popup_cards）</label>
           <textarea name="hold_popup_cards" .value="${c.hold_popup_cards || ''}" @change="${this._valueChanged}" placeholder="长按时弹出的YAML卡片配置"></textarea>
         </div>
+        `}
+
+
       </div>
     `;
   }
@@ -410,6 +472,26 @@ class XiaoshiDeviceButton extends LitElement {
     return `rgba(${r},${g},${b},${alpha})`;
   }
 
+  // ===== tap_action / hold_action 服务调用 =====
+  _executeAction(actionYaml) {
+    if (!actionYaml || !actionYaml.trim()) return false;
+    try {
+      const actionConfig = yamlToJson(actionYaml);
+      if (!actionConfig || !actionConfig.action) return false;
+      const dotIndex = actionConfig.action.indexOf('.');
+      if (dotIndex < 0) return false;
+      const domain = actionConfig.action.substring(0, dotIndex);
+      const service = actionConfig.action.substring(dotIndex + 1);
+      const serviceData = actionConfig.target ? Object.assign({}, actionConfig.target) : {};
+      if (actionConfig.data) Object.assign(serviceData, actionConfig.data);
+      this.hass.callService(domain, service, serviceData);
+      return true;
+    } catch (err) {
+      console.error('执行action失败:', err);
+      return false;
+    }
+  }
+
   // ===== 事件 =====
   // ===== 长按弹窗 (hold_popup_cards) =====
   _onHoldStart(e) {
@@ -426,6 +508,11 @@ class XiaoshiDeviceButton extends LitElement {
     }
   }
   _onHoldPopup() {
+    if (this.config.hold_action_enable === true) {
+      this._executeAction(this.config.hold_action);
+      if (this._handleClick) this._handleClick();
+      return;
+    }
     const holdConfig = this.config.hold_popup_cards;
     if (!holdConfig || !holdConfig.trim()) return;
     try {
@@ -445,6 +532,14 @@ class XiaoshiDeviceButton extends LitElement {
       const popupTop = this.config.hold_popup_top || this.config.popup_top || '20px';
       if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
       if (popupTop !== '20px') serviceData.popup_top = popupTop;
+      if (this.config.popup_background === 'transparent') {
+        serviceData.background = 'transparent';
+      } else if (this.config.popup_background === 'theme') {
+        const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+        serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+      } else if (this.config.popup_background && this.config.popup_background !== '') {
+        serviceData.background = this.config.popup_background;
+      }
       h.callService('popup_card', 'show', serviceData);
     } catch (err) {
       console.error('解析长按弹窗卡片失败:', err);
@@ -459,6 +554,11 @@ class XiaoshiDeviceButton extends LitElement {
 
   // ===== 点击按钮弹窗 =====
   _handleButtonClick() {
+    if (this.config.tap_action_enable === true) {
+      this._executeAction(this.config.tap_action);
+      this._handleClick();
+      return;
+    }
     const cards = [];
     const popupConfig = this.config.popup_cards || this.config.other_cards || this.config.popup;
     if (popupConfig && popupConfig.trim()) {
@@ -504,6 +604,14 @@ class XiaoshiDeviceButton extends LitElement {
       const popupTop = this.config.popup_top || '20px';
       if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
       if (popupTop !== '20px') serviceData.popup_top = popupTop;
+      if (this.config.popup_background === 'transparent') {
+        serviceData.background = 'transparent';
+      } else if (this.config.popup_background === 'theme') {
+        const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+        serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+      } else if (this.config.popup_background && this.config.popup_background !== '') {
+        serviceData.background = this.config.popup_background;
+      }
       this.hass.callService('popup_card', 'show', serviceData);
       return;
     }
@@ -513,6 +621,14 @@ class XiaoshiDeviceButton extends LitElement {
     const popupTop = this.config.popup_top || '20px';
     if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
     if (popupTop !== '20px') serviceData.popup_top = popupTop;
+    if (this.config.popup_background === 'transparent') {
+      serviceData.background = 'transparent';
+    } else if (this.config.popup_background === 'theme') {
+      const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+      serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    } else if (this.config.popup_background && this.config.popup_background !== '') {
+      serviceData.background = this.config.popup_background;
+    }
     this.hass.callService('popup_card', 'show', serviceData);
   }
   // ===== 渲染 =====

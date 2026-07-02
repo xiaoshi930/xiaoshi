@@ -1668,7 +1668,7 @@ class XiaoshiComputerCard extends LitElement {
   }
 
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass || !this.config) return html``;;
 
     const d = this._discovered;
     if (!d) {

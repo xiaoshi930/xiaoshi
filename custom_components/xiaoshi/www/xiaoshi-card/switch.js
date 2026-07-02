@@ -215,7 +215,7 @@ class XiaoshiSwitchCardEditor extends LitElement {
   }
 
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass || !this.config) return html``;;
 
     return html`
       <div class="form">

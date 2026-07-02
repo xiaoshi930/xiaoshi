@@ -272,7 +272,7 @@ class XiaoshiStateGridButtonEditor extends LitElement {
   }
 
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass || !this.config) return html``;
     const uc = getUtilityConfig(this.config.utility_type);
     const tabletDesc = uc.typeLabel === '电费' ? '电费' : uc.typeLabel === '水费' ? '水费' : '燃气费';
     return html`
@@ -350,41 +350,9 @@ class XiaoshiStateGridButtonEditor extends LitElement {
         </div>
 
         <div class="form-group">
-          <label>弹窗宽度：默认95%</label>
-          <input type="text" @change=${this._entityChanged} .value=${this.config.popup_width !== undefined ? this.config.popup_width : '95%'} name="popup_width" placeholder="默认95%" />
-        </div>
-
-        <div class="form-group">
-          <label>弹窗位置：默认20px</label>
-          <input type="text" @change=${this._entityChanged} .value=${this.config.popup_top !== undefined ? this.config.popup_top : '20px'} name="popup_top" placeholder="默认20px" />
-        </div>
-
-        <div class="form-group"><label>👇👇👇下方弹出的卡片可增加的其他卡片👇👇👇</label></div>
-        <div class="form-group">
-          <textarea @change=${this._entityChanged} .value=${this.config.popup_cards || this.config.other_cards || this.config.popup || ''} name="popup_cards" placeholder='# 示例配置：添加button卡片
-- type: custom:button-card
-  template: 测试模板
-- type: custom:button-card
-  template: 测试模板'></textarea>
-        </div>
-        <div class="form-group">
-          <label>长按弹窗宽度（hold_popup_width）</label>
-          <input @change=${this._entityChanged} .value=${this.config.hold_popup_width || ''} name="hold_popup_width" placeholder="留空则使用弹窗宽度配置" />
-        </div>
-        <div class="form-group">
-          <label>长按弹窗位置（hold_popup_top）</label>
-          <input @change=${this._entityChanged} .value=${this.config.hold_popup_top || ''} name="hold_popup_top" placeholder="留空则使用弹窗位置配置" />
-        </div>
-        <div class="form-group">
-          <label>长按弹出内容（hold_popup_cards）</label>
-          <textarea @change=${this._entityChanged} .value=${this.config.hold_popup_cards || ''} name="hold_popup_cards" placeholder='长按时弹出的YAML卡片配置'></textarea>
-        </div>
-
-        <div class="form-group"><label>👇👇👇下方是弹出的主卡配置项👇👇👇</label></div>
-
-        <div class="form-group">
           <label>主题</label>
           <select @change=${this._entityChanged} .value=${this.config.theme !== undefined ? this.config.theme : 'system'} name="theme">
+            <option value="system">系统主题</option>
             <option value="light">浅色主题</option>
             <option value="dark">深色主题</option>
           </select>
@@ -502,6 +470,103 @@ class XiaoshiStateGridButtonEditor extends LitElement {
             搜索并选择要显示的实体，支持多选。每个实体可配置名称、单位、图标、预警。
           </div>
         </div>
+
+
+        <div class="form-group"><label>👇👇👇下方弹出的卡片可增加的其他卡片👇👇👇</label></div>
+
+        <div class="form-group">
+          <label>弹窗背景css属性</label>
+          <select
+            @change=${this._entityChanged}
+            .value=${this.config.popup_background || ''}
+            name="popup_background"
+          >
+            <option value="">默认</option>
+            <option value="transparent">透明</option>
+            <option value="theme">跟随主题</option>
+            <option value="custom">自定义颜色</option>
+          </select>
+          ${this.config.popup_background === 'custom' ? html`
+            <input
+              type="color"
+              @change=${this._entityChanged}
+              .value=${this.config.popup_background_color || '#ffffff'}
+              name="popup_background"
+              style="width: 34px; height: 30px; padding: 1px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"
+            />
+          ` : ''}
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" class="checkbox-input"
+            @change=${this._entityChanged}
+            .checked=${this.config.tap_action_enable === true}
+            name="tap_action_enable" id="tap_action_enable"
+          />
+          <label for="tap_action_enable" class="checkbox-label">启用tap_action禁用popup_cards</label>
+        </div>
+        ${this.config.tap_action_enable === true ? html`
+        <div class="form-group">
+          <label>tap_action（执行调用服务）</label>
+          <textarea @change=${this._entityChanged} .value=${this.config.tap_action || ''} name="tap_action"
+            placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway'></textarea>
+        </div>
+        ` : html`
+        <div class="form-group">
+          <label>弹窗宽度：默认95%</label>
+          <input type="text" @change=${this._entityChanged} .value=${this.config.popup_width !== undefined ? this.config.popup_width : '95%'} name="popup_width" placeholder="默认95%" />
+        </div>
+
+        <div class="form-group">
+          <label>弹窗位置：默认20px</label>
+          <input type="text" @change=${this._entityChanged} .value=${this.config.popup_top !== undefined ? this.config.popup_top : '20px'} name="popup_top" placeholder="默认20px" />
+        </div>
+        <div class="form-group">
+          <textarea @change=${this._entityChanged} .value=${this.config.popup_cards || this.config.other_cards || this.config.popup || ''} name="popup_cards" placeholder='# 示例配置：添加button卡片
+- type: custom:button-card
+  template: 测试模板
+- type: custom:button-card
+  template: 测试模板'></textarea>
+        </div>
+        `}
+
+        <div class="checkbox-group">
+          <input type="checkbox" class="checkbox-input"
+            @change=${this._entityChanged}
+            .checked=${this.config.hold_action_enable === true}
+            name="hold_action_enable" id="hold_action_enable"
+          />
+          <label for="hold_action_enable" class="checkbox-label">启用hold_action禁用hold_popup_cards</label>
+        </div>
+        ${this.config.hold_action_enable === true ? html`
+        <div class="form-group">
+          <label>hold_action（执行调用服务）</label>
+          <textarea @change=${this._entityChanged} .value=${this.config.hold_action || ''} name="hold_action"
+            placeholder='action: light.turn_on
+target:
+  area_id: living_room
+  entity_id:
+    - light.hallway'></textarea>
+        </div>
+        ` : html`
+        <div class="form-group">
+          <label>长按弹窗宽度</label>
+          <input @change=${this._entityChanged} .value=${this.config.hold_popup_width || ''} name="hold_popup_width" placeholder="留空则使用弹窗宽度配置" />
+        </div>
+        <div class="form-group">
+          <label>长按弹窗位置</label>
+          <input @change=${this._entityChanged} .value=${this.config.hold_popup_top || ''} name="hold_popup_top" placeholder="留空则使用弹窗位置配置" />
+        </div>
+        <div class="form-group">
+          <label>长按弹出内容（hold_popup_cards）</label>
+          <textarea @change=${this._entityChanged} .value=${this.config.hold_popup_cards || ''} name="hold_popup_cards" placeholder='长按时弹出的YAML卡片配置'></textarea>
+        </div>
+        `}
+        
       </div>
     `;
   }
@@ -518,7 +583,9 @@ class XiaoshiStateGridButtonEditor extends LitElement {
           name !== 'decimal_precision' && name !== 'width' && name !== 'color_num' &&
           name !== 'color_cost' && name !== 'balance_name' && name !== 'global_warning' &&
           name !== 'entity_layout' && name !== 'entities_per_row' && name !== 'default_show_calendar' &&
-          name !== 'utility_type' && name !== 'popup_cards' && name !== 'hold_popup_cards') return;
+          name !== 'utility_type' && name !== 'popup_cards' && name !== 'hold_popup_cards' &&
+          name !== 'tap_action' && name !== 'hold_action' &&
+          name !== 'popup_background') return;
       finalValue = value;
     }
     if (name === 'button_width') finalValue = value || '16.8vw';
@@ -727,6 +794,26 @@ class XiaoshiStateGridButton extends LitElement {
     this._loading = false;
   }
 
+  // ===== tap_action / hold_action 服务调用 =====
+  _executeAction(actionYaml) {
+    if (!actionYaml || !actionYaml.trim()) return false;
+    try {
+      const actionConfig = yamlToJson(actionYaml);
+      if (!actionConfig || !actionConfig.action) return false;
+      const dotIndex = actionConfig.action.indexOf('.');
+      if (dotIndex < 0) return false;
+      const domain = actionConfig.action.substring(0, dotIndex);
+      const service = actionConfig.action.substring(dotIndex + 1);
+      const serviceData = actionConfig.target ? Object.assign({}, actionConfig.target) : {};
+      if (actionConfig.data) Object.assign(serviceData, actionConfig.data);
+      this.hass.callService(domain, service, serviceData);
+      return true;
+    } catch (err) {
+      console.error('执行action失败:', err);
+      return false;
+    }
+  }
+
   // ===== 长按弹窗 (hold_popup_cards) =====
   _onHoldStart(e) {
     this._holdTriggered = false;
@@ -742,6 +829,11 @@ class XiaoshiStateGridButton extends LitElement {
     }
   }
   _onHoldPopup() {
+    if (this.config.hold_action_enable === true) {
+      this._executeAction(this.config.hold_action);
+      if (this._handleClick) this._handleClick();
+      return;
+    }
     const holdConfig = this.config.hold_popup_cards;
     if (!holdConfig || !holdConfig.trim()) return;
     try {
@@ -761,6 +853,14 @@ class XiaoshiStateGridButton extends LitElement {
       const popupTop = this.config.hold_popup_top || this.config.popup_top || '20px';
       if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
       if (popupTop !== '20px') serviceData.popup_top = popupTop;
+      if (this.config.popup_background === 'transparent') {
+        serviceData.background = 'transparent';
+      } else if (this.config.popup_background === 'theme') {
+        const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+        serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+      } else if (this.config.popup_background && this.config.popup_background !== '') {
+        serviceData.background = this.config.popup_background;
+      }
       h.callService('popup_card', 'show', serviceData);
     } catch (err) {
       console.error('解析长按弹窗卡片失败:', err);
@@ -803,13 +903,20 @@ class XiaoshiStateGridButton extends LitElement {
   }
 
   _handleButtonClick() {
+    if (this.config.tap_action_enable === true) {
+      this._executeAction(this.config.tap_action);
+      this._handleClick();
+      return;
+    }
     const excludedParams = [
       'type', 'button_height', 'button_width', 'button_font_size', 'button_icon_size',
       'popup_top', 'popup_width', 'display_mode', 'decimal_precision', 'emoji',
       'tablet_mode',
       'transparent_bg',
       'lock_white_fg',
-      'other_cards', 'popup_cards', 'popup'
+      'other_cards', 'popup_cards', 'popup',
+      'tap_action', 'hold_action',
+      'popup_background'
     ];
     const cards = [];
     const stateGridCardConfig = {};
@@ -842,6 +949,14 @@ class XiaoshiStateGridButton extends LitElement {
     const popupTop = this.config.popup_top || '20px';
     if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
     if (popupTop !== '20px') serviceData.popup_top = popupTop;
+    if (this.config.popup_background === 'transparent') {
+      serviceData.background = 'transparent';
+    } else if (this.config.popup_background === 'theme') {
+      const currentTheme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+      serviceData.background = currentTheme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    } else if (this.config.popup_background && this.config.popup_background !== '') {
+      serviceData.background = this.config.popup_background;
+    }
     this.hass.callService('popup_card', 'show', serviceData);
     this._handleClick();
   }
@@ -1037,7 +1152,7 @@ class XiaoshiStateGridEditor extends LitElement {
   }
 
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass || !this.config) return html``;
 
     const editorWidth = this.config.width || '100%';
     const uc = getUtilityConfig(this.config.utility_type);
