@@ -971,12 +971,12 @@ class XiaoshiRoomCard extends LitElement {
             state_color: true
         }));
         const serviceData = { card: cards };
-        const popupWidth = device.popup_width || this.config.popup_width || 'min(95%, 475px)';
-        const popupTop = device.popup_top || this.config.popup_top || '20px';
+        const popupWidth = this.config.popup_width || 'min(95%, 475px)';
+        const popupTop = this.config.popup_top || '20px';
         if (popupWidth !== 'min(95%, 475px)') serviceData.popup_width = popupWidth;
         if (popupTop !== '20px') serviceData.popup_top = popupTop;
         // popup_background 处理
-        const popupBg = device.popup_background || this.config.popup_background;
+        const popupBg = this.config.popup_background;
         if (popupBg === 'transparent') {
             serviceData.background = 'transparent';
         } else if (popupBg === 'theme') {
@@ -1406,12 +1406,12 @@ class XiaoshiRoomCard extends LitElement {
             }
         }
         const serviceData = { card: cards };
-        const popupWidth = device.popup_width || this.config.popup_width || 'min(95%, 475px)';
-        const popupTop = device.popup_top || this.config.popup_top || '20px';
+        const popupWidth = this.config.popup_width || 'min(95%, 475px)';
+        const popupTop = this.config.popup_top || '20px';
         if (popupWidth !== 'min(95%, 475px)') serviceData.popup_width = popupWidth;
         if (popupTop !== '20px') serviceData.popup_top = popupTop;
         // popup_background 处理
-        const popupBg = device.popup_background || this.config.popup_background;
+        const popupBg = this.config.popup_background;
         if (popupBg === 'transparent') {
             serviceData.background = 'transparent';
         } else if (popupBg === 'theme') {
