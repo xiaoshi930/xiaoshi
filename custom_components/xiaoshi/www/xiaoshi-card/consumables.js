@@ -152,13 +152,13 @@ const cardCommonStyles = css`  :host { display: block; max-width:500px; margin: 
   .devices-list.single-column { padding: 0 0 8px 0; }
   .device-left { display: flex; align-items: center; flex: 1; min-width: 0; }
   .device-icon { margin-right: 12px; color: var(--fg-color, #000); flex-shrink: 0; }
-  .device-icon.warning { color: #F44336; }
+  .device-icon.warning { color: var(--warning-color, #F44336); }
   .device-name { color: var(--fg-color, #000); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .device-name.warning { color: #F44336; }
+  .device-name.warning { color: var(--warning-color, #F44336); }
   .device-value { color: var(--fg-color, #000); font-size: 12px; margin-left: auto; flex-shrink: 0; font-weight: bold; }
-  .device-value.warning { color: #F44336; }
+  .device-value.warning { color: var(--warning-color, #F44336); }
   .device-unit { font-size: 12px; color: var(--fg-color, #000); margin-left: 4px; font-weight: bold; }
-  .device-unit.warning { color: #F44336; }
+  .device-unit.warning { color: var(--warning-color, #F44336); }
   .no-devices { text-align: center; padding: 10px 0; color: var(--fg-color, #000); }
   .loading { text-align: center; padding: 10px 0; color: var(--fg-color, #000); }`;
 
@@ -849,8 +849,10 @@ class XiaoshiConsumablesCard extends ConsumablesBaseMixin(LitElement) {
     const bgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
     const warningCount = this._oilPriceData.filter(d => this._isWarning(d)).length;
 
+    const warningColor = this.config.warning_color || '#F44336';
+
     return html`
-      <ha-card style="--fg-color: ${fgColor}; --bg-color: ${bgColor};">
+      <ha-card style="--fg-color: ${fgColor}; --bg-color: ${bgColor}; --warning-color: ${warningColor};">
         <div class="card-header">
           <div class="card-title">
             <span class="offline-indicator" style="background: ${warningCount === 0 ? 'rgb(0,255,0)' : 'rgb(255,0,0)'}; animation: pulse 2s infinite"></span>
@@ -885,6 +887,11 @@ class XiaoshiConsumablesCard extends ConsumablesBaseMixin(LitElement) {
     }
     if (config.theme) {
       this.setAttribute('theme', config.theme);
+    }
+    if (config.warning_color) {
+      this.style.setProperty('--warning-color', config.warning_color);
+    } else {
+      this.style.setProperty('--warning-color', '#F44336');
     }
   }
 
