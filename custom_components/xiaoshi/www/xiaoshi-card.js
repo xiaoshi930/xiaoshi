@@ -1,4 +1,4 @@
-console.info("%c 消逝卡-汇总卡 \n%c  2026.7.0.03 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
+console.info("%c 消逝卡-汇总卡 \n%c  2026.7.0.04 ", "color: red; font-weight: bold; background: black", "color: white; font-weight: bold; background: black");
 
 import('./function/function.js');
 import('./xiaoshi/phone-card.js');
@@ -7,7 +7,7 @@ import('./xiaoshi/dynamic-card.js');
 import('./xiaoshi/room-card.js');
 import('./xiaoshi/popup-card.js')
 
-import('./xiaoshi-card/ha-info.js'); 
+import('./xiaoshi-card/ha-info.js');
 import('./xiaoshi-card/todo.js');
 import('./xiaoshi-card/chart.js');
 import('./xiaoshi-card/balance.js');
@@ -17,17 +17,18 @@ import('./xiaoshi-card/state-grid.js');
 import('./xiaoshi-card/weather.js');
 import('./xiaoshi-card/button.js');
 import('./xiaoshi-card/device.js');
+
 import('./xiaoshi-card/light.js');
 import('./xiaoshi-card/switch.js');
 import('./xiaoshi-card/computer.js');
 import('./xiaoshi-card/pve.js');
 import('./xiaoshi-card/class.js');
+import('./xiaoshi-card/music-player-card.js');
+import('./xiaoshi-card/tv-player-card.js');
 
 import('./xiaoshi-phone/climate-card.js');
 import('./xiaoshi-phone/humidifier-card.js');
 import('./xiaoshi-phone/purifier-card.js');
-import('./xiaoshi-phone/music-player-card.js');
-import('./xiaoshi-phone/tv-player-card.js');
 import('./xiaoshi-phone/fan-card.js');
 import('./xiaoshi-phone/cover-card.js');
 import('./xiaoshi-phone/other-card.js');
