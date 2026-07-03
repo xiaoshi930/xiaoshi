@@ -152,11 +152,13 @@ const cardCommonStyles = css`  :host { display: block; max-width:500px; margin: 
   .devices-list.single-column { padding: 0 0 8px 0; }
   .device-left { display: flex; align-items: center; flex: 1; min-width: 0; }
   .device-icon { margin-right: 12px; color: var(--fg-color, #000); flex-shrink: 0; }
+  .device-icon.warning { color: #F44336; }
   .device-name { color: var(--fg-color, #000); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .device-name.warning { color: #F44336; }
   .device-value { color: var(--fg-color, #000); font-size: 12px; margin-left: auto; flex-shrink: 0; font-weight: bold; }
-  .device-value.warning { color: var(--warning-color, #F44336); }
+  .device-value.warning { color: #F44336; }
   .device-unit { font-size: 12px; color: var(--fg-color, #000); margin-left: 4px; font-weight: bold; }
-  .device-unit.warning { color: var(--warning-color, #F44336); }
+  .device-unit.warning { color: #F44336; }
   .no-devices { text-align: center; padding: 10px 0; color: var(--fg-color, #000); }
   .loading { text-align: center; padding: 10px 0; color: var(--fg-color, #000); }`;
 
@@ -647,8 +649,8 @@ const ConsumablesBaseMixin = (superClass) => class extends superClass {
     return html`
       <div class="device-item" @click=${() => this._handleEntityClick(consumablesData)}>
         <div class="device-left">
-          <ha-icon class="device-icon" icon="${consumablesData.icon}"></ha-icon>
-          <div class="device-name">${consumablesData.friendly_name}</div>
+          <ha-icon class="device-icon ${isWarning ? 'warning' : ''}" icon="${consumablesData.icon}"></ha-icon>
+          <div class="device-name ${isWarning ? 'warning' : ''}">${consumablesData.friendly_name}</div>
         </div>
         <div class="device-value ${isWarning ? 'warning' : ''}">
           ${consumablesData.value}
