@@ -502,6 +502,7 @@ class XiaoshiPadGridCard extends LitElement {
   }
 
   _handleGridClick(entityConfig) {
+    if (this._holdTriggered) return;
     if (this.config.tap_action_enable === true) {
       this._executeAction(this.config.tap_action);
       const hapticEvent = new Event('haptic', { bubbles: true, cancelable: false, composed: true });

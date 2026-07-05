@@ -631,6 +631,7 @@ class XiaoshiDynamicPadCard extends LitElement {
 
     // ===== 点击区域弹窗 =====
     _onAreaClick(areaConfig) {
+        if (this._holdTriggered) return;
         if (areaConfig.tap_action_enable === true) {
             this._executeAction(areaConfig.tap_action);
             this._handleClick();

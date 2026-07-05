@@ -859,6 +859,7 @@ class XiaoshiAvatarPadCard extends LitElement {
      * 点击卡片触发弹窗
      */
     _onCardClick() {
+        if (this._holdTriggered) return;
         if (this.config.tap_action_enable === true) {
             this._executeAction(this.config.tap_action);
             this._handleClick();

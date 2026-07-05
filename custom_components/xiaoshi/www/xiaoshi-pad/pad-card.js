@@ -1885,6 +1885,7 @@ class XiaoshiPadCard extends LitElement {
   }
 
   _onDeviceIconClick(item) {
+    if (this._holdTriggered) return;
     if (!item) return;
     if (item.tap_action_enable === true) {
       this._executeAction(item.tap_action);
