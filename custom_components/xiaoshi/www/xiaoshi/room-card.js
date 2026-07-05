@@ -925,6 +925,7 @@ class XiaoshiRoomCard extends LitElement {
      * 点击设备：弹窗或自动生成实体弹窗
      */
     _onDeviceClick(device) {
+        if (this._holdTriggered) return;
         if (device.tap_action_enable === true || device.tap_action_enable === 'true' || this.config.tap_action_enable === true || this.config.tap_action_enable === 'true') {
             this._executeAction(device.tap_action || this.config.tap_action);
             if (this._handleClick) this._handleClick();
@@ -1390,6 +1391,7 @@ class XiaoshiRoomCard extends LitElement {
     }
 
     _showSensorPopup(popupConfig) {
+        if (this._holdTriggered) return;
         if (this.config.tap_action_enable === true || this.config.tap_action_enable === 'true') {
             this._executeAction(this.config.tap_action);
             if (this._handleClick) this._handleClick();

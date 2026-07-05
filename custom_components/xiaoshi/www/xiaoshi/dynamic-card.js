@@ -586,6 +586,7 @@ class XiaoshiDynamicCard extends LitElement {
 
     // ===== 点击区域弹窗 =====
     _onAreaClick(areaConfig) {
+        if (this._holdTriggered) return;
         if (areaConfig.tap_action_enable === true || areaConfig.tap_action_enable === 'true' || this.config.tap_action_enable === true || this.config.tap_action_enable === 'true') {
             this._executeAction(areaConfig.tap_action || this.config.tap_action);
             if (this._handleClick) this._handleClick();

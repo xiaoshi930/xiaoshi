@@ -894,6 +894,7 @@ class XiaoshiAvatarCard extends LitElement {
      * 点击卡片触发弹窗
      */
     _onCardClick(personConfig, isMain) {
+        if (this._holdTriggered) return;
         if (!isMain) return;
         if (this._swipeDetected) return;
 
