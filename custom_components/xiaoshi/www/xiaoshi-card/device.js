@@ -554,6 +554,7 @@ class XiaoshiDeviceButton extends LitElement {
 
   // ===== 点击按钮弹窗 =====
   _handleButtonClick() {
+    if (this._holdTriggered) return;
     if (this.config.tap_action_enable === true) {
       this._executeAction(this.config.tap_action);
       this._handleClick();

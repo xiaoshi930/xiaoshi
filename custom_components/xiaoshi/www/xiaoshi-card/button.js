@@ -634,6 +634,7 @@ class XiaoshiButton extends LitElement {
   }
 
   _handleButtonClick() {
+    if (this._holdTriggered) return;
     if (this.config.tap_action_enable === true) {
       this._executeAction(this.config.tap_action);
       this._handleClick();
