@@ -495,8 +495,8 @@ class XiaoshiSwitchCard extends LitElement {
     .header-btn:hover { opacity: 0.85; transform: scale(1.05); }
     .switch-list { display: flex; flex-direction: column; }
     .switch-row { display: flex; align-items: center; gap: 12px; min-height: 50px; position: relative; transition: background 0.3s ease; border-bottom: 1px solid rgb(150,150,150,0.5); margin: 0 24px; padding: 0px 6px; }
-    .switch-name-group { position: relative; flex-shrink: 0; z-index: 1; width: 35%; }
-    .switch-name { font-size: 14px; font-weight: 500; width: 35%; flex-shrink: 0; z-index: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .switch-name-group { position: relative; flex-shrink: 0; z-index: 1; width: 25%; }
+    .switch-name { font-size: 14px; font-weight: 500; width: 25%; flex-shrink: 0; z-index: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .switch-controls { flex: 0 0 40%; max-width: 40%; display: flex; flex-direction: column; gap: 6px; z-index: 1; padding: 6px 0; }
     .power-value-display { font-size: 0.8rem; font-weight: 500; display: flex; align-items: center; gap: 4px; padding: 2px 0; }
     .power-button { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); flex-shrink: 0; margin-left: auto; position: relative; }
