@@ -134,6 +134,39 @@ class XiaoshiSwitchCardEditor extends LitElement {
     this.requestUpdate();
   }
 
+  _onTotalPowerSearch(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    if (!this._entitySearchTerms) this._entitySearchTerms = {};
+    if (!this._showEntityLists) this._showEntityLists = {};
+
+    this._entitySearchTerms['total_power'] = searchTerm;
+    this._showEntityLists['total_power'] = true;
+
+    if (!this.hass) return;
+    const allEntities = Object.values(this.hass.states);
+    this._filteredEntities['total_power'] = allEntities.filter(entity => {
+      const entityId = entity.entity_id.toLowerCase();
+      const friendlyName = (entity.attributes.friendly_name || '').toLowerCase();
+      const isSensorType = entityId.startsWith('sensor.');
+      const matchesSearch = entityId.includes(searchTerm) || friendlyName.includes(searchTerm);
+      return isSensorType && matchesSearch;
+    }).slice(0, 50);
+    this.requestUpdate();
+  }
+
+  _selectTotalPowerSensor(entityId) {
+    this.config = {
+      ...this.config,
+      total_power: entityId
+    };
+    if (!this._entitySearchTerms) this._entitySearchTerms = {};
+    if (!this._showEntityLists) this._showEntityLists = {};
+    this._entitySearchTerms['total_power'] = '';
+    this._showEntityLists['total_power'] = false;
+    this._fireEvent();
+    this.requestUpdate();
+  }
+
   _addEntity() {
     const entities = [...(this.config.entities || [])];
     entities.push({ switch: '', power: '' });
@@ -228,6 +261,43 @@ class XiaoshiSwitchCardEditor extends LitElement {
             name="room_name"
             placeholder="例如：客厅、卧室"
           />
+        </div>
+
+        <div class="form-group">
+          <label>总功率 (可选 sensor)</label>
+          <div class="entity-selector">
+            <input
+              type="text"
+              @input=${(e) => this._onTotalPowerSearch(e)}
+              @focus=${(e) => this._onTotalPowerSearch(e)}
+              .value=${this._entitySearchTerms?.['total_power'] || this.config.total_power || ''}
+              placeholder="搜索总功率 sensor (可选)..."
+              class="entity-search-input"
+            />
+            ${this._showEntityLists?.['total_power'] ? html`
+              <div class="entity-dropdown">
+                ${this._filteredEntities?.['total_power']?.map(entity => html`
+                  <div
+                    class="entity-option ${this.config.total_power === entity.entity_id ? 'selected' : ''}"
+                    @click=${() => this._selectTotalPowerSensor(entity.entity_id)}
+                  >
+                    <div class="entity-info">
+                      <ha-icon icon="${entity.attributes.icon || 'mdi:help-circle'}"></ha-icon>
+                      <div class="entity-details">
+                        <div class="entity-name">${entity.attributes.friendly_name || entity.entity_id}</div>
+                        <div class="entity-id">${entity.entity_id}</div>
+                      </div>
+                    </div>
+                    ${this.config.total_power === entity.entity_id ?
+                      html`<ha-icon icon="mdi:check" class="check-icon"></ha-icon>` : ''}
+                  </div>
+                `)}
+                ${!this._filteredEntities?.['total_power'] || this._filteredEntities['total_power'].length === 0 ? html`
+                  <div class="no-results">未找到匹配的实体</div>
+                ` : ''}
+              </div>
+            ` : ''}
+          </div>
         </div>
 
         <div class="form-group">
@@ -330,9 +400,6 @@ class XiaoshiSwitchCardEditor extends LitElement {
               添加插座
             </mwc-button>
           </div>
-          <div class="help-text">
-            添加插座实体和可选的功率传感器
-          </div>
         </div>
 
         <div class="form-group">
@@ -349,18 +416,6 @@ class XiaoshiSwitchCardEditor extends LitElement {
           </select>
         </div>
 
-        <div class="form-group">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <ha-switch
-              .checked=${this.config.total !== 'off'}
-              @change=${(e) => {
-                this.config = { ...this.config, total: e.target.checked ? 'on' : 'off' };
-                this._fireEvent();
-              }}
-            ></ha-switch>
-            <span>显示统计信息</span>
-          </div>
-        </div>
 
         <div class="form-group">
           <label>显示模式</label>
@@ -425,9 +480,6 @@ class XiaoshiSwitchCard extends LitElement {
   static getStubConfig() {
     return {
       entities: [],
-      room_name: "",
-      theme: "system",
-      total: "on"
     };
   }
 
@@ -462,7 +514,13 @@ class XiaoshiSwitchCard extends LitElement {
       from { width: 100% }
       to { width: 0 }
     }
+    @keyframes btn-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(0.8); }
+    }
     .unlock-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: #4CAF50; animation: unlock-progress 5000ms linear; }
+    .power-button.unlocked { pointer-events: auto; animation: btn-pulse 1s ease-in-out infinite; }
+    .header-btn.confirm { animation: btn-pulse 0.8s ease-in-out infinite; }
     .history-icon-btn { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: default; transition: all 0.3s ease; background:transparent; flex-shrink: 0; }
     .history-icon-btn:hover { opacity: 0.85; transform: scale(1.05); }`;
 
@@ -472,11 +530,13 @@ class XiaoshiSwitchCard extends LitElement {
     this._hass = null;
     this._onCount = 0;
     this._unlockedCards = {};
+    this._unlockTimestamps = {};
     this._confirmOffAll = false;
     this._confirmOnAll = false;
     this._showHistory = false;
     this._historyData = {};
     this._historyLoading = false;
+    this._unlockTimestamps = {};
   }
 
   setConfig(config) {
@@ -485,6 +545,7 @@ class XiaoshiSwitchCard extends LitElement {
     this.config = {
       entities: normalizedEntities,
       room_name: configCopy.room_name || '',
+      total_power: configCopy.total_power || '',
       theme: configCopy.theme || 'system',
       width: configCopy.width || '100%',
       show: configCopy.show,
@@ -579,6 +640,13 @@ class XiaoshiSwitchCard extends LitElement {
         }
       }
     });
+    // Add room-level total power sensor
+    if (this.config.total_power && this.hass?.states[this.config.total_power]) {
+      const tpState = this.hass.states[this.config.total_power];
+      if (tpState && !isNaN(tpState.state)) {
+        totalPower += parseFloat(tpState.state);
+      }
+    }
 
     return html`
       <div class="card-header">
@@ -599,12 +667,12 @@ class XiaoshiSwitchCard extends LitElement {
             <ha-icon icon="mdi:chart-box-outline" style="--mdc-icon-size: 20px; color: ${textColor};"></ha-icon>
           </div>
           <div 
-            class="header-btn"
+            class="header-btn ${this._confirmOnAll ? 'confirm' : ''}"
             style="background: ${this._confirmOnAll ? (isDark ? '#ff4444' : '#d32f2f') : '#c8191d'}; color: #FFF;"
             @click=${this._handleOnAll}
           >${this._confirmOnAll ? '确认开启' : '全开'}</div>
           <div 
-            class="header-btn"
+            class="header-btn ${this._confirmOffAll ? 'confirm' : ''}"
             style="background: ${this._confirmOffAll ? '#c8191d' : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)')}; color: ${this._confirmOffAll ? '#FFF' : textColor}; opacity: ${onCount > 0 ? 1 : 0.5};"
             @click=${this._handleOffAll}
           >${this._confirmOffAll ? '确认关闭' : '全关'}</div>
@@ -661,8 +729,7 @@ class XiaoshiSwitchCard extends LitElement {
           ` : html`<div></div>`}
         </div>
         <div class="lock-button ${isUnlocked ? 'unlocked' : ''}" 
-             @click=${() => this._unlockControls(cardId)}
-             @touchend=${() => this._unlockControls(cardId)}>
+             @click=${() => this._unlockControls(cardId)}>
           <ha-icon icon=${isUnlocked ? 'mdi:lock-open' : 'mdi:lock'}></ha-icon>
         </div>
         <div 
@@ -672,7 +739,7 @@ class XiaoshiSwitchCard extends LitElement {
           <ha-icon icon="mdi:power"></ha-icon>
         </div>
         ${isUnlocked ? html`
-          <div class="unlock-progress"></div>
+          <div class="unlock-progress" style="animation-delay:${-Math.min(5000, Date.now() - (this._unlockTimestamps[cardId] || Date.now()))}ms"></div>
         ` : ''}
       </div>
     `;
@@ -700,7 +767,7 @@ class XiaoshiSwitchCard extends LitElement {
 
   // Rebuild switch list dynamically
   updated(changedProperties) {
-    if (changedProperties.has('config') || changedProperties.has('hass')) {
+    if (changedProperties.has('config') || changedProperties.has('hass') || changedProperties.has('_unlockedCards')) {
       const container = this.shadowRoot?.querySelector('.card-container');
       if (!container) return;
 
@@ -714,6 +781,7 @@ class XiaoshiSwitchCard extends LitElement {
       // Rebuild switch list
       const switchList = document.createElement('div');
       switchList.className = 'switch-list';
+
       (this.config.entities || []).forEach((entityPair, index) => {
         const switchEntity = this._getSwitchEntity(entityPair);
         const sensorEntity = this._getPowerSensor(entityPair);
@@ -764,7 +832,6 @@ class XiaoshiSwitchCard extends LitElement {
         lockBtn.innerHTML = `<ha-icon icon="${isUnlocked ? 'mdi:lock-open' : 'mdi:lock'}" style="--mdc-icon-size:18px;transition:all 0.3s ease;color:${isUnlocked ? '#4CAF50' : '#999'};"></ha-icon>`;
         const cardIdCapture = cardId;
         lockBtn.addEventListener('click', () => this._unlockControls(cardIdCapture));
-        lockBtn.addEventListener('touchend', (e) => { e.preventDefault(); this._unlockControls(cardIdCapture); });
         
         const powerBtn = document.createElement('div');
         powerBtn.className = `power-button ${isActive ? 'active' : 'inactive'} ${isUnlocked ? 'unlocked' : ''}`;
@@ -781,7 +848,9 @@ class XiaoshiSwitchCard extends LitElement {
         if (isUnlocked) {
           const progress = document.createElement('div');
           progress.className = 'unlock-progress';
-          progress.style.cssText = 'position:absolute;bottom:0;left:0;height:3px;background:#4CAF50;animation:unlock-progress 5000ms linear;';
+          const elapsed = Date.now() - (this._unlockTimestamps[cardIdCapture] || Date.now());
+          const delay = -Math.min(5000, elapsed);
+          progress.style.cssText = `position:absolute;bottom:0;left:0;height:3px;background:#4CAF50;animation:unlock-progress 5000ms linear;animation-delay:${delay}ms;`;
           row.appendChild(progress);
         }
         
@@ -793,11 +862,19 @@ class XiaoshiSwitchCard extends LitElement {
   }
 
   _unlockControls(cardId) {
+    // Guard: already unlocked, prevent double invocation
+    if (this._unlockedCards[cardId]) return;
     const { UNLOCK } = this.constructor.TIMING;
-    this._unlockedCards[cardId] = true;
+    this._unlockedCards = { ...this._unlockedCards, [cardId]: true };
+    this._unlockTimestamps = { ...this._unlockTimestamps, [cardId]: Date.now() };
     this.requestUpdate();
     setTimeout(() => {
-      delete this._unlockedCards[cardId];
+      const newCards = { ...this._unlockedCards };
+      const newTimestamps = { ...this._unlockTimestamps };
+      delete newCards[cardId];
+      delete newTimestamps[cardId];
+      this._unlockedCards = newCards;
+      this._unlockTimestamps = newTimestamps;
       this.requestUpdate();
     }, UNLOCK);
   }
@@ -806,7 +883,9 @@ class XiaoshiSwitchCard extends LitElement {
     await this.hass.callService('switch', 'toggle', { entity_id: entity });
     this._handleClick();
     // Auto re-lock after toggle
-    delete this._unlockedCards[cardId];
+    const newCards = { ...this._unlockedCards };
+    delete newCards[cardId];
+    this._unlockedCards = newCards;
     this.requestUpdate();
   }
 
@@ -1317,6 +1396,7 @@ class XiaoshiSwitchCard extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._unlockedCards = {};
+    this._unlockTimestamps = {};
     if (this._historyOverlayEl) {
       this._historyOverlayEl.remove();
       this._historyOverlayEl = null;

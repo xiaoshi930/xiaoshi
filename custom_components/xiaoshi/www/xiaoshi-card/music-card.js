@@ -1,4 +1,4 @@
-﻿const whenDefined = (t) => customElements.whenDefined(t);
+const whenDefined = (t) => customElements.whenDefined(t);
 await Promise.race([whenDefined("ha-card"), whenDefined("ha-panel-lovelace")]);
 const LitElement = window.LitElement || Object.getPrototypeOf(customElements.get("ha-card"));
 const html = LitElement.prototype.html;
@@ -6,7 +6,7 @@ const css = LitElement.prototype.css;
  
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "sun-xiaoai-card",
+  type: "xiaoshi-music-card",
   name: "Sun小爱卡片",
   description: "小爱音箱音乐播放器，配合minecraft-dashboard-card使用时自动同步房间背景主题",
   preview: true
@@ -34,64 +34,79 @@ class SunXiaoaiEditor extends LitElement {
       }
       label {
         font-weight: bold;
+        color: #1976d2;
       }
       select, input {
         padding: 8px;
         border: 1px solid #ddd;
         border-radius: 4px;
       }
+      .entity-search-wrap {
+        position: relative;
+      }
+      .entity-search-wrap:focus-within .entity-dropdown {
+        display: block;
+      }
+      .entity-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        max-height: 200px;
+        overflow-y: auto;
+        background: var(--card-background-color,var(--primary-background-color,#fff));
+        border: 1px solid var(--divider-color,#ddd);
+        border-radius: 0 0 4px 4px;
+        z-index: 999;
+        box-shadow: 0 4px 12px var(--shadow-color,rgba(0,0,0,0.15));
+      }
+      .entity-dropdown-item {
+        padding: 5px 10px;
+        cursor: pointer;
+        font-size: 12px;
+        color: var(--primary-text-color,#212121);
+        border-bottom: 1px solid var(--divider-color,#eee);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .entity-dropdown-item:hover {
+        background: var(--secondary-background-color,rgba(0,0,0,0.06));
+      }
+      .entity-dropdown-item.active {
+        background: var(--primary-color,rgba(3,169,244,0.2));
+        color: var(--primary-color,#03a9f4);
+        font-weight: 600;
+      }
     `;
   }
 
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass || !this.config) return html``;
+    // 加载 HA 媒体源列表（含二级子目录）
+    if (!this._localMusicSources && this.hass.callWS) {
+      this._localMusicSources = [];
+      this.hass.callWS({type:'media_source/browse_media'}).then(r => {
+        const root = r?.children || [];
+        Promise.all(root.map(s => this.hass.callWS({type:'media_source/browse_media', media_content_id: s.media_content_id}).then(sub => { s.subs = sub?.children || []; }).catch(() => { s.subs = []; }))).then(() => {
+          this._localMusicSources = root;
+          this.requestUpdate();
+        });
+      }).catch(() => { this._localMusicSources = []; });
+    }
 
     return html`
       <div class="form">
-        <div class="form-group">
-          <label>小米Home实体（主要控制实体）</label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.xiaomi_home || ''}
-            name="xiaomi_home"
-          >
-            <option value="">选择小米Home实体</option>
-            ${Object.keys(this.hass.states)
-              .filter(entityId => entityId.startsWith('media_player.'))
-              .map(entityId => html`
-                <option value="${entityId}" 
-                  .selected=${entityId === this.config.xiaomi_home}>
-                  ${this.hass.states[entityId].attributes.friendly_name || entityId} ${this.hass.states[entityId].attributes.friendly_name ? '(' + entityId + ')' : ''}
-                </option>
-              `)}
-          </select>
-        </div>
+        <div class="module-section-header" style="font-size:12px;font-weight:700;color:#2980b9;background:#ebf5fb;padding:6px 10px;margin:12px 0 4px;border-radius:4px;border-left:3px solid #2980b9;">🎨 卡片展示配置</div>
         
-        <div class="form-group">
-          <label>小米Miot实体（备用实体）</label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.xiaomi_miot || ''}
-            name="xiaomi_miot"
-          >
-            <option value="">选择小米Miot实体（可选）</option>
-            ${Object.keys(this.hass.states)
-              .filter(entityId => entityId.startsWith('media_player.'))
-              .map(entityId => html`
-                <option value="${entityId}" 
-                  .selected=${entityId === this.config.xiaomi_miot}>
-                  ${this.hass.states[entityId].attributes.friendly_name || entityId} ${this.hass.states[entityId].attributes.friendly_name ? '(' + entityId + ')' : ''}
-                </option>
-              `)}
-          </select>
-        </div>
-        
-        <div class="form-group">
-          <label>主题</label>
+        <div style="display:flex;flex-direction:row;align-items:center;gap:8px;">
+          <label style="white-space:nowrap;margin:0;">主题</label>
           <select 
             @change=${this._entityChanged}
             .value=${this.config.theme !== undefined ? this.config.theme : 'system'}
             name="theme"
+            style="flex:1;"
           >
             <option value="system">跟随系统</option>
             <option value="light">浅色主题</option>
@@ -101,276 +116,194 @@ class SunXiaoaiEditor extends LitElement {
           </select>
         </div>
         
-        <div class="form-group">
-          <label>卡片宽度：支持像素(px)和百分比(%)</label>
-          <input 
-            type="text" 
-            @change=${this._entityChanged}
-            .value=${this.config.width !== undefined ? this.config.width : '100%'}
-            name="width"
-            placeholder="默认100%"
-          />
-        </div>
-        
-        <div class="form-group">
-          <label>卡片高度：排除歌词区域的高度，支持像素(px)和百分比(%)</label>
-          <input 
-            type="text" 
-            @change=${this._entityChanged}
-            .value=${this.config.height !== undefined ? this.config.height : '80px'}
-            name="height"
-            placeholder="默认80px"
-          />
-        </div>
-        
-        <div class="form-group">
-          <label>歌词高度：歌词区域的高度，支持像素(px)和百分比(%)</label>
-          <input 
-            type="text" 
-            @change=${this._entityChanged}
-            .value=${this.config.lyrics_height !== undefined ? this.config.lyrics_height : '200px'}
-            name="lyrics_height"
-            placeholder="默认200px"
-          />
-        </div>
-        
-        <div class="form-group">
-          <label>
+        <div style="display:flex;flex-direction:row;gap:6px;">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:row;align-items:center;gap:4px;">
+            <label style="white-space:nowrap;margin:0;">卡片宽度</label>
             <input 
-              type="checkbox" 
+              type="text" 
               @change=${this._entityChanged}
-              .checked=${this.config.always_show_lyrics || false}
-              name="always_show_lyrics"
+              .value=${this.config.width !== undefined ? this.config.width : '100%'}
+              name="width"
+              placeholder="100%"
+              style="flex:1;min-width:0;box-sizing:border-box;"
             />
-            总是显示歌词（勾选时一直显示歌词）
-          </label>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:row;align-items:center;gap:4px;">
+            <label style="white-space:nowrap;margin:0;">卡片高度</label>
+            <input 
+              type="text" 
+              @change=${this._entityChanged}
+              .value=${this.config.height !== undefined ? this.config.height : 'auto'}
+              name="height"
+              placeholder="auto"
+              style="flex:1;min-width:0;box-sizing:border-box;"
+            />
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:row;align-items:center;gap:4px;">
+            <label style="white-space:nowrap;margin:0;">歌词高度</label>
+            <input 
+              type="text" 
+              @change=${this._entityChanged}
+              .value=${this.config.lyrics_height !== undefined ? this.config.lyrics_height : '200px'}
+              name="lyrics_height"
+              placeholder="200px"
+              style="flex:1;min-width:0;box-sizing:border-box;"
+            />
+          </div>
         </div>
-        
+
+        <div class="module-section-header" style="font-size:12px;font-weight:700;color:#c0392b;background:#fdedec;padding:6px 10px;margin:12px 0 4px;border-radius:4px;border-left:3px solid #c0392b;">📡 设备组配置</div>
+
+        ${(() => {
+          const devices = this.config.devices || [];
+          return devices.map((d, di) => {
+            const entityOptions = (prefix, selfId) => Object.keys(this.hass.states)
+              .filter(e => e.startsWith(prefix))
+              .map(e => {
+                const platform = this.hass.entities?.[e]?.platform || '';
+                const fname = this.hass.states[e].attributes.friendly_name || e;
+                const label = platform ? `${fname} [ ${platform}集成 ]` : fname;
+                return html`<option value="${e}" .selected=${(d[selfId] || '') === e}>${label}</option>`;
+              });
+            const textOptions = Object.keys(this.hass.states)
+              .filter(e => e.startsWith('text.'))
+              .map(e => html`<option value="${e}" .selected=${(d.execute_text_directive || '') === e}>${this.hass.states[e].attributes.friendly_name || e}</option>`);
+            return html`
+            <div style="border:1px solid #ddd;border-radius:6px;padding:8px;margin-bottom:8px;position:relative;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                <label style="font-weight:700;font-size:12px;margin:0;">设备名称</label>
+                <input style="flex:1;" @change=${(e) => { devices[di] = {...devices[di], name: e.target.value}; this._entityChanged({target:{name:'devices',value:JSON.stringify(devices)}}); }} .value=${d.name || ''} placeholder="例如: 卧室音箱" />
+                ${di > 0 ? html`<button style="background:#e74c3c;color:#fff;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:11px;" @click=${() => { const newDevices = devices.filter((_, idx) => idx !== di); this._entityChanged({target:{name:'devices',value:JSON.stringify(newDevices)}}); }}>✕ 删除</button>` : ''}
+              </div>
+              ${(() => {
+                const save = (selfId, val) => {
+                  const d2 = {...devices[di], [selfId]: val};
+                  const nd = [...devices];
+                  nd[di] = d2;
+                  this._entityChanged({target:{name:'devices',value:JSON.stringify(nd)}});
+                };
+                return html`
+              <div class="form-group">
+                <label>小米Home实体 (xiaomi_home)</label>
+                <select @change=${(e) => save('xiaomi_home', e.target.value)} .value=${d.xiaomi_home || ''}>
+                  <option value="">选择小米Home实体</option>
+                  ${entityOptions('media_player.', 'xiaomi_home')}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>小米Miot实体 (xiaomi_miot)</label>
+                <select @change=${(e) => save('xiaomi_miot', e.target.value)} .value=${d.xiaomi_miot || ''}>
+                  <option value="">选择小米Miot实体（可选）</option>
+                  ${entityOptions('media_player.', 'xiaomi_miot')}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>[MA集成] 播放器实体 (ma_player_entity)</label>
+                <select @change=${(e) => save('ma_player_entity', e.target.value)} .value=${d.ma_player_entity || ''}>
+                  <option value="">选择 MA 播放器实体</option>
+                  ${entityOptions('media_player.', 'ma_player_entity')}
+                </select>
+              </div>
+                `; })()}
+              ${(() => {
+                const searchPicker = (label, selfId, prefix) => {
+                  const selectedId = d[selfId] || '';
+                  const selPlatform = selectedId ? (this.hass.entities?.[selectedId]?.platform || '') : '';
+                  const displayVal = selPlatform ? `${selectedId} [集成${selPlatform}]` : selectedId;
+                  const ents = Object.keys(this.hass.states)
+                    .filter(e => !prefix || e.startsWith(prefix))
+                    .map(e => ({
+                      id: e,
+                      fname: this.hass.states[e].attributes.friendly_name || e,
+                      platform: this.hass.entities?.[e]?.platform || ''
+                    }));
+                  const saveSel = (eid) => {
+                    const nd = [...devices];
+                    nd[di] = {...devices[di], [selfId]: eid};
+                    this._entityChanged({target:{name:'devices',value:JSON.stringify(nd)}});
+                  };
+                  return html`
+                    <label>${label}</label>
+                    <div class="entity-search-wrap">
+                      <input type="text" .value="${displayVal}"
+                        placeholder="搜索或选择实体..."
+                        style="width:100%;box-sizing:border-box;"
+                        @focus=${(e) => { e.target.select(); }}
+                        @input=${(e) => {
+                          const kw = e.target.value.toLowerCase();
+                          const wrap = e.target.closest('.entity-search-wrap');
+                          if (!wrap) return;
+                          const items = wrap.querySelectorAll('.entity-dropdown-item:not(.entity-clear)');
+                          items.forEach(el => {
+                            el.style.display = (!kw || el.textContent.toLowerCase().includes(kw)) ? '' : 'none';
+                          });
+                        }}
+                      />
+                      <div class="entity-dropdown">
+                        <div class="entity-dropdown-item entity-clear" style="color:#999;"
+                          @mousedown=${(e) => { e.preventDefault(); saveSel(''); e.target.closest('.entity-search-wrap')?.querySelector('input')?.blur(); }}>
+                          -- 清空 --
+                        </div>
+                        ${ents.map(ent => {
+                          const lbl = ent.platform ? `${ent.fname} (${ent.id}) [${ent.platform}集成]` : `${ent.fname} (${ent.id})`;
+                          return html`
+                            <div class="entity-dropdown-item ${ent.id === selectedId ? 'active' : ''}"
+                              @mousedown=${(e) => {
+                                e.preventDefault();
+                                saveSel(ent.id);
+                                e.target.closest('.entity-search-wrap')?.querySelector('input')?.blur();
+                              }}
+                              title="${ent.id}">
+                              ${lbl}
+                            </div>`;
+                        })}
+                      </div>
+                    </div>
+                  `;
+                };
+                return html`
+              <div class="form-group">
+                ${searchPicker('[MA集成] 收藏歌曲按钮实体 (搜索: favorite_current_song)', 'favorite_current_song', 'button.')}
+              </div>
+              <div class="form-group">
+                ${searchPicker('停止闹钟按钮实体 (搜索: stop_alarm)', 'stop_alarm', 'button.')}
+              </div>
+              <div class="form-group">
+                ${searchPicker('播报文本实体 (搜索: play_text)', 'play_text', 'text.')}
+              </div>
+              <div class="form-group">
+                ${searchPicker('执行文本实体 (搜索: execute_text_directive)', 'execute_text_directive', 'text.')}
+              </div>
+              <div class="form-group">
+                ${searchPicker('[Home集成] 小米电台按钮实体 (搜索: play_radio)', 'play_radio', 'button.')}
+              </div>
+              <div class="form-group">
+                ${searchPicker('[Miot集成] 播放控制实体 (搜索: conversation)', 'conversation', '')}
+              </div>
+                `; })()}
+            </div>`;
+          });
+        })()}
+
+        <button style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:6px 12px;cursor:pointer;font-size:12px;margin-bottom:8px;" @click=${() => { const d = [...(this.config.devices || []), { name: '', xiaomi_home: '', xiaomi_miot: '', ma_player_entity: '', favorite_current_song: '', stop_alarm: '', play_radio: '', conversation: '', play_text: '', execute_text_directive: '' }]; this._entityChanged({target:{name:'devices',value:JSON.stringify(d)}}); }}>＋ 添加设备组</button>
+
+        <div class="module-section-header local" style="font-size:12px;font-weight:700;color:#27ae60;background:#eafaf1;padding:6px 10px;margin:12px 0 4px;border-radius:4px;border-left:3px solid #27ae60;">🎵 本地音乐配置</div>
+
         <div class="form-group">
-          <label>房间ID（配合minecraft-dashboard-card主题使用）</label>
-          <input 
-            type="text" 
-            @change=${this._entityChanged}
-            .value=${this.config.room_id || ''}
-            name="room_id"
-            placeholder="例如: living_room"
-          />
-        </div>
-        
-        <div class="form-group">
-          <label>[侧边栏] 小米音乐按钮实体（sidebar_music_entity）</label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.sidebar_music_entity || ''}
-            name="sidebar_music_entity"
-          >
-            <option value="">选择按钮实体（可选）</option>
-            ${Object.keys(this.hass.states)
-              .filter(entityId => entityId.startsWith('button.'))
-              .map(entityId => html`
-                <option value="${entityId}" 
-                  .selected=${entityId === this.config.sidebar_music_entity}>
-                  ${this.hass.states[entityId].attributes.friendly_name || entityId} ${this.hass.states[entityId].attributes.friendly_name ? '(' + entityId + ')' : ''}
-                </option>
-              `)}
+          <label>本地播放路径 (每行一个路径，支持多个路径)<br></label>
+          <textarea @change=${this._entityChanged} .value=${this.config.local_music_path || ''} name="local_music_path" placeholder="例如:&#10;media-source://media_source/local/&#10;media-source://media_source/local/music2/" rows="3" style="padding:8px;border:1px solid #ddd;border-radius:4px;resize:vertical;"></textarea>
+          <small style="color:#888;margin-top:2px;">快捷添加（含子目录，会追加到已有路径）:</small>
+          <select @change=${(e) => { const val = e.target.value; if (!val) return; const old = this.config.local_music_path || ''; const newVal = old ? (old + '\n' + val) : val; this._entityChanged({target: {name: 'local_music_path', value: newVal}}); e.target.value = ''; }}>
+            <option value="">-- 快捷路径 --</option>
+            ${this._localMusicSources?.flatMap(s => [
+              html`<option value="${s.media_content_id}">📁 ${s.title || s.media_content_id}</option>`,
+              ...(s.subs || []).filter(c => c.can_expand).map(c => html`<option value="${c.media_content_id}"> &nbsp;&nbsp;📁 ${c.title}</option>`)
+            ])}
           </select>
         </div>
 
-        <div class="form-group">
-          <label>[右侧] 收藏歌曲按钮实体（favorite_song_entity）<br><small>默认: button.shu_fang_xiao_ai_favorite_current_song</small></label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.favorite_song_entity || ''}
-            name="favorite_song_entity"
-          >
-            <option value="">使用默认实体</option>
-            ${Object.keys(this.hass.states)
-              .filter(entityId => entityId.startsWith('button.'))
-              .map(entityId => html`
-                <option value="${entityId}" 
-                  .selected=${entityId === this.config.favorite_song_entity}>
-                  ${this.hass.states[entityId].attributes.friendly_name || entityId} ${this.hass.states[entityId].attributes.friendly_name ? '(' + entityId + ')' : ''}
-                </option>
-              `)}
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>[右侧] 停止闹钟按钮实体（stop_alarm_entity）</label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.stop_alarm_entity || ''}
-            name="stop_alarm_entity"
-          >
-            <option value="">选择按钮实体（可选）</option>
-            ${Object.keys(this.hass.states)
-              .filter(entityId => entityId.startsWith('button.'))
-              .map(entityId => html`
-                <option value="${entityId}" 
-                  .selected=${entityId === this.config.stop_alarm_entity}>
-                  ${this.hass.states[entityId].attributes.friendly_name || entityId} ${this.hass.states[entityId].attributes.friendly_name ? '(' + entityId + ')' : ''}
-                </option>
-              `)}
-          </select>
-        </div>
-        
-        <div class="form-group">
-          <label>[侧边栏] 小米电台按钮实体（sidebar_radio_entity）</label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.sidebar_radio_entity || ''}
-            name="sidebar_radio_entity"
-          >
-            <option value="">选择按钮实体（可选）</option>
-            ${Object.keys(this.hass.states)
-              .filter(entityId => entityId.startsWith('button.'))
-              .map(entityId => html`
-                <option value="${entityId}" 
-                  .selected=${entityId === this.config.sidebar_radio_entity}>
-                  ${this.hass.states[entityId].attributes.friendly_name || entityId} ${this.hass.states[entityId].attributes.friendly_name ? '(' + entityId + ')' : ''}
-                </option>
-              `)}
-          </select>
-        </div>
-        
-        <div class="form-group">
-          <label>[侧边栏] 小米语音按钮实体（xiaomi_voice_entity）</label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.xiaomi_voice_entity || ''}
-            name="xiaomi_voice_entity"
-          >
-            <option value="">选择实体（可选）</option>
-            ${Object.keys(this.hass.states)
-              .map(entityId => html`
-                <option value="${entityId}" 
-                  .selected=${entityId === this.config.xiaomi_voice_entity}>
-                  ${this.hass.states[entityId].attributes.friendly_name || entityId}
-                </option>
-              `)}
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>[侧边栏] 小爱语音对话实体（conversation_entity）<br><small>用于查询语音对话记录，不配置则使用 xiaomi_voice_entity</small></label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.conversation_entity || ''}
-            name="conversation_entity"
-          >
-            <option value="">选择实体（可选，默认使用小米语音实体）</option>
-            ${Object.keys(this.hass.states)
-              .map(entityId => html`
-                <option value="${entityId}" 
-                  .selected=${entityId === this.config.conversation_entity}>
-                  ${this.hass.states[entityId].attributes.friendly_name || entityId}
-                </option>
-              `)}
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>[侧边栏] 小爱播报实体（play_text_entity）<br><small>用于将文本以 TTS 方式播报出来</small></label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.play_text_entity || ''}
-            name="play_text_entity"
-          >
-            <option value="">选择实体（可选）</option>
-            ${Object.keys(this.hass.states)
-              .filter(entityId => entityId.startsWith('text.'))
-              .map(entityId => html`
-                <option value="${entityId}" 
-                  .selected=${entityId === this.config.play_text_entity}>
-                  ${this.hass.states[entityId].attributes.friendly_name || entityId}
-                </option>
-              `)}
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>[侧边栏] 快捷输入列表（quick_input）<br><small>每行一个，用于语音对话快捷发送</small></label>
-          <textarea
-            @change=${this._entityChanged}
-            .value=${Array.isArray(this.config.quick_input) ? this.config.quick_input.join('\n') : (this.config.quick_input || '')}
-            name="quick_input"
-            placeholder="打开空调&#10;关闭窗帘&#10;播放音乐"
-            rows="4"
-            style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-family:monospace;font-size:13px;resize:vertical;"
-          ></textarea>
-        </div>
-        
-        <div class="form-group">
-          <label>[侧边栏] 小米搜索文本指令实体（text_directive_entity）<br><small>选择 text 域 execute_text_directive 实体，用于搜索歌手/歌曲/专辑名</small></label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.text_directive_entity || ''}
-            name="text_directive_entity"
-          >
-            <option value="">选择 text 域指令实体（可选）</option>
-            <optgroup label="text 域（推荐，筛 execute_text_directive）">
-              ${Object.keys(this.hass.states)
-                .filter(entityId => entityId.startsWith('text.') && (entityId.includes('execute_text_directive') || entityId.includes('text_directive') || entityId.includes('directive')))
-                .map(entityId => html`
-                  <option value="${entityId}" 
-                    .selected=${entityId === this.config.text_directive_entity}>
-                    ${this.hass.states[entityId].attributes.friendly_name || entityId}
-                  </option>
-                `)}
-            </optgroup>
-            <optgroup label="所有 text 域实体">
-              ${Object.keys(this.hass.states)
-                .filter(entityId => entityId.startsWith('text.'))
-                .map(entityId => html`
-                  <option value="${entityId}" 
-                    .selected=${entityId === this.config.text_directive_entity}>
-                    ${this.hass.states[entityId].attributes.friendly_name || entityId}
-                  </option>
-                `)}
-            </optgroup>
-          </select>
-        </div>
-        
-        <div class="form-group">
-          <label>[右侧] 网易推荐按钮实体（netease_recommend_entity）</label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.netease_recommend_entity || ''}
-            name="netease_recommend_entity"
-          >
-            <option value="">选择按钮实体（可选）</option>
-            ${Object.keys(this.hass.states)
-              .filter(entityId => entityId.startsWith('button.'))
-              .map(entityId => html`
-                <option value="${entityId}" 
-                  .selected=${entityId === this.config.netease_recommend_entity}>
-                  ${this.hass.states[entityId].attributes.friendly_name || entityId} ${this.hass.states[entityId].attributes.friendly_name ? '(' + entityId + ')' : ''}
-                </option>
-              `)}
-          </select>
-        </div>
-        
-        <div class="form-group">
-          <label>[右侧] QQ音乐按钮实体（qq_music_entity）</label>
-          <select 
-            @change=${this._entityChanged}
-            .value=${this.config.qq_music_entity || ''}
-            name="qq_music_entity"
-          >
-            <option value="">选择按钮实体（可选）</option>
-            ${Object.keys(this.hass.states)
-              .filter(entityId => entityId.startsWith('button.'))
-              .map(entityId => html`
-                <option value="${entityId}" 
-                  .selected=${entityId === this.config.qq_music_entity}>
-                  ${this.hass.states[entityId].attributes.friendly_name || entityId} ${this.hass.states[entityId].attributes.friendly_name ? '(' + entityId + ')' : ''}
-                </option>
-              `)}
-          </select>
-        </div>
 
         <div class="module-section-header ma" style="font-size:12px;font-weight:700;color:#e67e22;background:#fef5e7;padding:6px 10px;margin:12px 0 4px;border-radius:4px;border-left:3px solid #e67e22;">🎵 Music Assistant 配置</div>
-        <div class="help-text" style="font-size:10px;color:#666;margin-bottom:8px;">配置后，侧边栏「网易推荐」和「QQ音乐」按钮将使用 MA 弹窗模式（替换原有的 button.press）</div>
 
         <div class="form-group">
           <label>[MA] MA 服务器地址 (ma_server_url)</label>
@@ -388,10 +321,6 @@ class SunXiaoaiEditor extends LitElement {
           </select>
         </div>
         <div class="form-group">
-          <label>[MA] MA Entry ID (ma_entry_id)</label>
-          <input @change=${this._entityChanged} .value=${this.config.ma_entry_id || ''} name="ma_entry_id" placeholder="01KTV52Y...">
-        </div>
-        <div class="form-group">
           <label>[MA] 网易云 API 地址 (netease_api_url)</label>
           <input @change=${this._entityChanged} .value=${this.config.netease_api_url || 'http://192.168.2.54:3003'} name="netease_api_url">
         </div>
@@ -403,24 +332,33 @@ class SunXiaoaiEditor extends LitElement {
           <label>[MA] 手动歌单配置 (ma_playlists) — 每行一歌单: 名称|MA_URI</label>
           <textarea @change=${this._entityChanged} .value=${this.config.ma_playlists || ''} name="ma_playlists" rows="4" placeholder="我喜欢|library/8&#10;BGM|library/12" style="padding:8px;border:1px solid #ddd;border-radius:4px;resize:vertical;"></textarea>
         </div>
+
+        <div class="form-group">
+          <label>[通用] 快捷输入列表 (quick_input) — 每行一个</label>
+          <textarea @change=${this._entityChanged} .value=${Array.isArray(this.config.quick_input) ? this.config.quick_input.join('\n') : (this.config.quick_input || '')} name="quick_input" rows="3" placeholder="打开空调&#10;关闭窗帘&#10;播放音乐" style="padding:8px;border:1px solid #ddd;border-radius:4px;resize:vertical;"></textarea>
+        </div>
+
       </div>
     `;
   }
 
   _entityChanged(e) {
     const { name, value } = e.target;
-    if (!value && name !== 'theme' && name !== 'width' && name !== 'height' && name !== 'lyrics_height' && name !== 'room_id' && name !== 'sidebar_music_entity' && name !== 'sidebar_radio_entity' && name !== 'text_directive_entity' && name !== 'xiaomi_voice_entity' && name !== 'conversation_entity' && name !== 'play_text_entity' && name !== 'quick_input' && name !== 'netease_recommend_entity' && name !== 'qq_music_entity' && name !== 'ma_server_url' && name !== 'ma_server_token' && name !== 'ma_player_entity' && name !== 'ma_entry_id' && name !== 'ma_playlists' && name !== 'netease_api_url' && name !== 'netease_uid') return;
+    if (!value && name !== 'theme' && name !== 'width' && name !== 'height' && name !== 'lyrics_height' && name !== 'local_music_path' && name !== 'ma_server_url' && name !== 'ma_server_token' && name !== 'ma_player_entity' && name !== 'ma_playlists' && name !== 'netease_api_url' && name !== 'netease_uid' && name !== 'devices') return;
     
     // 对于width字段，如果为空则使用默认值100%
-    // 对于height字段，如果为空则使用默认值80px
-    // 对于lyrics_height字段，如果为空则使用默认值18px
+    // 对于height字段，如果为空则使用默认值auto
+    // 对于lyrics_height字段，如果为空则使用默认值200px
     let finalValue = value;
     if (name === 'width') {
       finalValue = value || '100%';
     } else if (name === 'height') {
-      finalValue = value || '80px';
+      finalValue = value || 'auto';
     } else if (name === 'lyrics_height') {
       finalValue = value || '200px';
+    } else if (name === 'devices') {
+      // devices 是 JSON 字符串，需要解析
+      try { finalValue = JSON.parse(value); } catch(e) { finalValue = []; }
     }
     
     this.config = {
@@ -439,7 +377,7 @@ class SunXiaoaiEditor extends LitElement {
     this.config = config;
   }
 }
-customElements.define('sun-xiaoai-card-editor', SunXiaoaiEditor);
+customElements.define('xiaoshi-music-card-editor', SunXiaoaiEditor);
 
 class SunXiaoaiCard extends LitElement {
   static get properties() {
@@ -456,14 +394,12 @@ class SunXiaoaiCard extends LitElement {
       width: { type: String },
       height: { type: String },
       lyricsHeight: { type: String },
-      alwaysShowLyrics: { type: Boolean },
       showLyrics: { type: Boolean },
       lyrics: { type: Array },
       currentLyricIndex: { type: Number },
       lyricProgress: { type: Number },
-      roomId: { type: String },
-      roomBgUrl: { type: String },
-      sidebarMusicEntity: { type: String },
+
+
       favoriteSongEntity: { type: String },
       stopAlarmEntity: { type: String },
       action3Entity: { type: String },
@@ -471,9 +407,7 @@ class SunXiaoaiCard extends LitElement {
       action5Entity: { type: String },
       sidebarRadioEntity: { type: String },
       textDirectiveEntity: { type: String },
-      xiaomiVoiceEntity: { type: String },
-      neteaseRecommendEntity: { type: String },
-      qqMusicEntity: { type: String },
+
       _textSearchVisible: { type: Boolean },
       _textSearchQuery: { type: String },
       _textSearchStatus: { type: String },
@@ -483,7 +417,7 @@ class SunXiaoaiCard extends LitElement {
       _backendActive: { type: Boolean },
       _conversationEntity: { type: String },
       _currentConversationBubbleRef: { type: Object },
-      // 本地音乐播放覆盖信息（参照 sun-music-card 的 overlay 模式）
+      // 本地音乐播放覆盖信息（参照 xiaoshi-music-card 的 overlay 模式）
       // ── 三通道独立 overlay（三大板块互不干扰）──
       _miotOverlay: { type: Object },   // 板块1: 小米音乐/小米语音
       _localOverlay: { type: Object },  // 板块2: 本地音乐
@@ -534,11 +468,11 @@ class SunXiaoaiCard extends LitElement {
       }
 
       .card-bg-overlay.off-overlay {
-        background: var(--sun-overlay-off, rgba(15, 12, 8, 0.60));
+        background: var(--xiaoshi-overlay-off, rgba(15, 12, 8, 0.60));
       }
 
       .card-bg-overlay.on-overlay {
-        background: var(--sun-overlay-on, rgba(15, 12, 8, 0.35));
+        background: var(--xiaoshi-overlay-on, rgba(15, 12, 8, 0.35));
       }
 
       .album-bg-layer {
@@ -578,7 +512,7 @@ class SunXiaoaiCard extends LitElement {
       }
 
       .device-info-block {
-        background: var(--sun-btn-bg, rgba(255, 255, 255, 0.10));
+        background: var(--xiaoshi-btn-bg, rgba(255, 255, 255, 0.10));
         border-radius: 12px;
         padding: 8px 4px;
         display: flex;
@@ -592,9 +526,9 @@ class SunXiaoaiCard extends LitElement {
       .device-status-text {
         font-size: 9px;
         font-weight: 600;
-        color: var(--sun-muted, rgba(255, 255, 255, 0.75));
+        color: var(--xiaoshi-muted, rgba(255, 255, 255, 0.75));
         text-align: center;
-        text-shadow: var(--sun-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
+        text-shadow: var(--xiaoshi-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
         white-space: nowrap;
       }
 
@@ -613,20 +547,61 @@ class SunXiaoaiCard extends LitElement {
 
       .sidebar-device-name {
         font-size: 8px;
-        color: var(--sun-muted, rgba(255, 255, 255, 0.5));
+        color: var(--xiaoshi-muted, rgba(255, 255, 255, 0.5));
         text-align: center;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         max-width: 60px;
-        text-shadow: var(--sun-text-shadow, 0 1px 3px rgba(0, 0, 0, 0.5));
+        text-shadow: var(--xiaoshi-text-shadow, 0 1px 3px rgba(0, 0, 0, 0.5));
+      }
+
+      .device-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 60px;
+      }
+      .device-list-item {
+        background: var(--xiaoshi-btn-bg, rgba(255, 255, 255, 0.15));
+        border: 2px solid transparent;
+        border-radius: 10px;
+        padding: 7px 4px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        transition: all 0.2s;
+      }
+      .device-list-item:hover {
+        background: var(--xiaoshi-btn-hover, rgba(255, 255, 255, 0.22));
+      }
+      .device-list-item.active {
+        border-color: var(--xiaoshi-accent, rgba(25,165,225,0.8));
+        background: var(--xiaoshi-btn-active, rgba(25,165,225,0.25));
+      }
+      .device-list-item .dev-name {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--xiaoshi-text, rgba(255, 255, 255, 0.9));
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 54px;
+      }
+      .device-list-item .dev-status {
+        font-size: 8px;
+        color: var(--xiaoshi-muted, rgba(255, 255, 255, 0.6));
+        text-align: center;
       }
 
       .sidebar-btn {
-        background: var(--sun-btn-bg, rgba(255, 255, 255, 0.15));
+        background: var(--xiaoshi-btn-bg, rgba(255, 255, 255, 0.15));
         border: none;
         border-radius: 12px;
-        color: var(--sun-text, #fff);
+        color: var(--xiaoshi-text, #fff);
         cursor: pointer;
         display: flex;
         flex-direction: column;
@@ -638,17 +613,17 @@ class SunXiaoaiCard extends LitElement {
         transition: background 0.2s;
         --mdc-ripple-press-opacity: 0;
         --mdc-icon-size: 20px;
-        text-shadow: var(--sun-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.6));
+        text-shadow: var(--xiaoshi-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.6));
       }
 
       .sidebar-btn:active {
-        background: var(--sun-btn-active, rgba(255, 255, 255, 0.25));
+        background: var(--xiaoshi-btn-active, rgba(255, 255, 255, 0.25));
       }
 
       .sidebar-btn-label {
         font-size: 9px;
-        color: var(--sun-text, #fff);
-        text-shadow: var(--sun-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.7));
+        color: var(--xiaoshi-text, #fff);
+        text-shadow: var(--xiaoshi-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.7));
         letter-spacing: 0.3px;
         font-weight: 500;
       }
@@ -681,24 +656,24 @@ class SunXiaoaiCard extends LitElement {
       .device-name {
         font-size: 14px;
         font-weight: 600;
-        color: var(--sun-text, #fff);
+        color: var(--xiaoshi-text, #fff);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        text-shadow: var(--sun-text-shadow, 0 2px 8px rgba(0, 0, 0, 0.8));
+        text-shadow: var(--xiaoshi-text-shadow, 0 2px 8px rgba(0, 0, 0, 0.8));
       }
 
       .state-text {
         font-size: 12px;
-        color: var(--sun-muted, rgba(255, 255, 255, 0.6));
-        text-shadow: var(--sun-text-shadow, 0 1px 6px rgba(0, 0, 0, 0.7));
+        color: var(--xiaoshi-muted, rgba(255, 255, 255, 0.6));
+        text-shadow: var(--xiaoshi-text-shadow, 0 1px 6px rgba(0, 0, 0, 0.7));
       }
 
       .power-btn {
-        background: var(--sun-btn-bg, rgba(255, 255, 255, 0.15));
+        background: var(--xiaoshi-btn-bg, rgba(255, 255, 255, 0.15));
         border: none;
         border-radius: 8px;
-        color: var(--sun-text, #fff);
+        color: var(--xiaoshi-text, #fff);
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -707,11 +682,11 @@ class SunXiaoaiCard extends LitElement {
         height: 32px;
         transition: background 0.2s;
         --mdc-ripple-press-opacity: 0;
-        text-shadow: var(--sun-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
+        text-shadow: var(--xiaoshi-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
       }
 
       .power-btn:active {
-        background: var(--sun-btn-active, rgba(255, 255, 255, 0.3));
+        background: var(--xiaoshi-btn-active, rgba(255, 255, 255, 0.3));
       }
 
       .main-area {
@@ -723,8 +698,8 @@ class SunXiaoaiCard extends LitElement {
       }
 
       .album-art {
-        width: 140px;
-        height: 140px;
+        width: 120px;
+        height: 120px;
         border-radius: 20px;
         background-size: cover;
         background-position: center;
@@ -737,8 +712,8 @@ class SunXiaoaiCard extends LitElement {
       }
 
       .album-art-placeholder {
-        color: var(--sun-muted, rgba(255, 255, 255, 0.5));
-        text-shadow: var(--sun-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
+        color: var(--xiaoshi-muted, rgba(255, 255, 255, 0.5));
+        text-shadow: var(--xiaoshi-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
       }
 
       .song-info-area {
@@ -752,30 +727,30 @@ class SunXiaoaiCard extends LitElement {
       .song-title {
         font-size: 18px;
         font-weight: 700;
-        color: var(--sun-text, #fff);
+        color: var(--xiaoshi-text, #fff);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        text-shadow: var(--sun-text-shadow, 0 2px 8px rgba(0, 0, 0, 0.8));
+        text-shadow: var(--xiaoshi-text-shadow, 0 2px 8px rgba(0, 0, 0, 0.8));
       }
 
       .song-artist {
         font-size: 13px;
         font-weight: 400;
-        color: var(--sun-muted, rgba(255, 255, 255, 0.75));
+        color: var(--xiaoshi-muted, rgba(255, 255, 255, 0.75));
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        text-shadow: var(--sun-text-shadow, 0 1px 6px rgba(0, 0, 0, 0.7));
+        text-shadow: var(--xiaoshi-text-shadow, 0 1px 6px rgba(0, 0, 0, 0.7));
       }
 
       .song-source {
         font-size: 11px;
-        color: var(--sun-muted, rgba(255, 255, 255, 0.45));
+        color: var(--xiaoshi-muted, rgba(255, 255, 255, 0.45));
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        text-shadow: var(--sun-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
+        text-shadow: var(--xiaoshi-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
       }
 
       .action-buttons-row {
@@ -786,10 +761,10 @@ class SunXiaoaiCard extends LitElement {
       }
 
       .action-btn {
-        background: var(--sun-btn-bg, rgba(255, 255, 255, 0.12));
+        background: var(--xiaoshi-btn-bg, rgba(255, 255, 255, 0.12));
         border: none;
         border-radius: 8px;
-        color: var(--sun-text, #fff);
+        color: var(--xiaoshi-text, #fff);
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -802,11 +777,11 @@ class SunXiaoaiCard extends LitElement {
       }
 
       .action-btn:hover {
-        background: var(--sun-btn-hover, rgba(255, 255, 255, 0.22));
+        background: var(--xiaoshi-btn-hover, rgba(255, 255, 255, 0.22));
       }
 
       .action-btn:active {
-        background: var(--sun-btn-active, rgba(255, 255, 255, 0.3));
+        background: var(--xiaoshi-btn-active, rgba(255, 255, 255, 0.3));
       }
 
       .action-btn ha-icon {
@@ -830,16 +805,16 @@ class SunXiaoaiCard extends LitElement {
 
       .progress-time {
         font-size: 11px;
-        color: var(--sun-muted, rgba(255, 255, 255, 0.7));
+        color: var(--xiaoshi-muted, rgba(255, 255, 255, 0.7));
         min-width: 36px;
         text-align: center;
-        text-shadow: var(--sun-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
+        text-shadow: var(--xiaoshi-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
       }
 
       .progress-track {
         flex: 1;
         height: 4px;
-        background: var(--sun-btn-bg, rgba(255, 255, 255, 0.15));
+        background: var(--xiaoshi-btn-bg, rgba(255, 255, 255, 0.15));
         border-radius: 2px;
         position: relative;
         overflow: hidden;
@@ -864,10 +839,10 @@ class SunXiaoaiCard extends LitElement {
       }
 
       .control-btn {
-        background: var(--sun-btn-bg, rgba(255, 255, 255, 0.15));
+        background: var(--xiaoshi-btn-bg, rgba(255, 255, 255, 0.15));
         border: none;
         border-radius: 8px;
-        color: var(--sun-text, #fff);
+        color: var(--xiaoshi-text, #fff);
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -877,12 +852,12 @@ class SunXiaoaiCard extends LitElement {
         transition: background 0.2s;
         --mdc-ripple-press-opacity: 0;
         --mdc-icon-size: 20px;
-        text-shadow: var(--sun-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
+        text-shadow: var(--xiaoshi-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
         flex-shrink: 0;
       }
 
       .control-btn:active {
-        background: var(--sun-btn-active, rgba(255, 255, 255, 0.3));
+        background: var(--xiaoshi-btn-active, rgba(255, 255, 255, 0.3));
       }
 
       .control-btn.active-ctrl {
@@ -903,7 +878,7 @@ class SunXiaoaiCard extends LitElement {
         transition: background 0.2s;
         --mdc-ripple-press-opacity: 0;
         --mdc-icon-size: 28px;
-        text-shadow: var(--sun-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.3));
+        text-shadow: var(--xiaoshi-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.3));
       }
 
       .play-pause-btn:active {
@@ -920,27 +895,27 @@ class SunXiaoaiCard extends LitElement {
       .volume-icon-btn {
         background: none;
         border: none;
-        color: var(--sun-text, rgba(255, 255, 255, 0.8));
+        color: var(--xiaoshi-text, rgba(255, 255, 255, 0.8));
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         --mdc-icon-size: 20px;
-        text-shadow: var(--sun-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
+        text-shadow: var(--xiaoshi-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
       }
 
       .volume-value {
         font-size: 12px;
-        color: var(--sun-muted, rgba(255, 255, 255, 0.7));
+        color: var(--xiaoshi-muted, rgba(255, 255, 255, 0.7));
         min-width: 30px;
         text-align: center;
-        text-shadow: var(--sun-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
+        text-shadow: var(--xiaoshi-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5));
       }
 
       .volume-track {
         flex: 1;
         height: 4px;
-        background: var(--sun-btn-bg, rgba(255, 255, 255, 0.15));
+        background: var(--xiaoshi-btn-bg, rgba(255, 255, 255, 0.15));
         border-radius: 2px;
         position: relative;
         cursor: pointer;
@@ -1383,31 +1358,8 @@ class SunXiaoaiCard extends LitElement {
         flex-shrink: 0;
       }
 
-      /* ══════════ 紧凑布局（无 MA 板块3）══════════ */
-      .compact-layout .left-sidebar {
-        display: none !important;
-      }
-      .compact-layout .player-main {
-        flex: 1;
-        padding-left: 0;
-      }
-      .compact-layout .player-content {
-        justify-content: center;
-      }
-      .compact-layout .main-area {
-        justify-content: flex-start;
-        gap: 14px;
-      }
-      .compact-layout .action-buttons-row {
-        justify-content: flex-start;
-        gap: 6px;
-      }
-      .compact-layout .action-btn {
-        width: 36px;
-        height: 36px;
-        padding: 4px;
-        border-radius: 10px;
-        --mdc-icon-size: 18px;
+      .multi-device .left-sidebar {
+        display: flex !important;
       }
     `;
   }
@@ -1450,12 +1402,10 @@ class SunXiaoaiCard extends LitElement {
     this._dragVolume = undefined;
     this.theme = 'system';
     this.width = '100%';
-    this.height = '80px';
+    this.height = 'auto';
     this.lyricsHeight = '200px';
-    this.alwaysShowLyrics = false;
-    this.showLyrics = false;
-    this.roomId = '';
-    this.roomBgUrl = '';
+    this.showLyrics = true;
+
     this._currentThemeIndex = 0;
     this._boundThemeChangeHandler = this._handleThemeChangeEvent.bind(this);
     this.lyrics = [];
@@ -1478,7 +1428,7 @@ class SunXiaoaiCard extends LitElement {
     };
     // 歌词时间调节状态
     this.lyricsTimeAdjustment = 0; // 总调节时间（毫秒）
-    this.sidebarMusicEntity = '';
+
     this.favoriteSongEntity = '';
     this.stopAlarmEntity = '';
     this.action3Entity = '';
@@ -1491,9 +1441,7 @@ class SunXiaoaiCard extends LitElement {
     this._historyFilterPeriod = 24;
     this.sidebarRadioEntity = '';
     this.textDirectiveEntity = '';
-    this.xiaomiVoiceEntity = '';
-    this.neteaseRecommendEntity = '';
-    this.qqMusicEntity = '';
+
     this._textSearchVisible = false;
     this._textSearchQuery = '';
     this._textSearchStatus = '';
@@ -1564,8 +1512,6 @@ class SunXiaoaiCard extends LitElement {
     this._ncmLyricsOk = false;
     this._overlayLyrics = [];
     this._lastDiagSnapshot = '';
-    // 后端 API (本地音乐播放器)
-    this._localMusicApiBase = 'http://192.168.2.54:5500/api/';
     this._conversationEntity = '';
     this._currentConversationBubbleRef = null;
     // 工具对象
@@ -1655,7 +1601,6 @@ class SunXiaoaiCard extends LitElement {
     // ── 暂停板块2（LOCAL 通道）──
     const localActive = this._localOverlay && this._localOverlay.source === 'local' && this._localOverlay.active && this._localOverlay.title;
     if (localActive) {
-      console.log('[sun-xiaoai-card] 🛑 MIoT 激活前：暂停 LOCAL 通道');
       if (localTargetEntity) {
         this._hass.callService('media_player', 'media_pause', { entity_id: localTargetEntity }).catch(() => {});
       }
@@ -1667,7 +1612,6 @@ class SunXiaoaiCard extends LitElement {
     const maActive = this._maOverlay && this._maOverlay.active && this._maOverlay.source &&
       ['netease', 'qqmusic', 'ma_search'].includes(this._maOverlay.source);
     if (maActive) {
-      console.log('[sun-xiaoai-card] 🛑 MIoT 激活前：暂停 MA 通道');
       // 通过 MA WS 发送 stop
       if (this._maWsConnected && this._maPlayerId) {
         try { this._maWsSend('player_queues/stop', { queue_id: this._maQueueId || this._maPlayerId }); } catch(e) {}
@@ -1701,7 +1645,6 @@ class SunXiaoaiCard extends LitElement {
         if (title && !MIOT_FAKE.has(title)) {
           // 检查是否 LOCAL 当前自己正在播放此实体 → 不暂停自己
           if (!(this._localOverlay.source === 'local' && this._localOverlay.active)) {
-            console.log('[sun-xiaoai-card] 🛑 LOCAL 播放前：暂停 MIoT 通道');
             this._hass.callService('media_player', 'media_pause', { entity_id: miotEntity }).catch(() => {});
           }
         }
@@ -1713,7 +1656,6 @@ class SunXiaoaiCard extends LitElement {
     const maActive = this._maOverlay && this._maOverlay.active && this._maOverlay.source &&
       ['netease', 'qqmusic', 'local', 'ma_search'].includes(this._maOverlay.source);
     if (maActive) {
-      console.log('[sun-xiaoai-card] 🛑 LOCAL 播放前：暂停 MA 通道');
       // 优先通过 MA WS 发送 stop 指令
       if (this._maWsConnected) {
         try { this._maWsSend('stop', {}); } catch(e) {}
@@ -1749,7 +1691,6 @@ class SunXiaoaiCard extends LitElement {
         if (title && !MIOT_FAKE.has(title)) {
           // 检查是否 MA 当前自己正在通过此实体播放 → 不暂停自己
           if (!(this._maOverlay.source && this._maOverlay.active)) {
-            console.log('[sun-xiaoai-card] 🛑 MA 播放前：暂停 MIoT 通道（板块1）');
             this._hass.callService('media_player', 'media_pause', { entity_id: miotEntity }).catch(() => {});
           }
         }
@@ -1760,7 +1701,6 @@ class SunXiaoaiCard extends LitElement {
     // 判断 LOCAL 是否正在播放：local overlay 活跃 + 有标题
     const localActive = this._localOverlay && this._localOverlay.source === 'local' && this._localOverlay.active && this._localOverlay.title;
     if (localActive) {
-      console.log('[sun-xiaoai-card] 🛑 MA 播放前：暂停 LOCAL 通道（板块2）');
       // 通过 MA WS 或 HA 暂停
       if (localTargetEntity) {
         this._hass.callService('media_player', 'media_pause', { entity_id: localTargetEntity }).catch(() => {});
@@ -1864,7 +1804,6 @@ class SunXiaoaiCard extends LitElement {
         this._saveCache();
       }
     } catch (error) {
-      console.error("初始化歌词缓存失败:", error);
       this.lyricsCache = new Map();
     }
   }
@@ -1891,9 +1830,9 @@ class SunXiaoaiCard extends LitElement {
   }
 
   _injectPlayerStyles() {
-    if (document.getElementById('sun-player-global-styles')) return;
+    if (document.getElementById('xiaoshi-player-global-styles')) return;
     const s = document.createElement('style');
-    s.id = 'sun-player-global-styles';
+    s.id = 'xiaoshi-player-global-styles';
     s.textContent = `
       .media-player-popup{display:flex;flex-direction:column;overflow:hidden;}
       .media-player-top-bar{display:flex;align-items:center;justify-content:center;padding:12px 16px;border-bottom:1px solid var(--room-popup-divider,rgba(0,0,0,0.06));flex-shrink:0;}
@@ -1988,8 +1927,8 @@ class SunXiaoaiCard extends LitElement {
       .conv-quick-input-item:active{background:rgba(52,152,219,0.1);}
       .conv-quick-input-empty{padding:20px;text-align:center;color:var(--room-secondary-text,#999);font-size:13px;}
 
-      .sun-xiaoai-toast{animation:sun-toast-in 0.3s ease;}
-      @keyframes sun-toast-in{from{opacity:0;transform:translateX(-50%) translateY(10px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+      .xiaoshi-toast{animation:xiaoshi-toast-in 0.3s ease;}
+      @keyframes xiaoshi-toast-in{from{opacity:0;transform:translateX(-50%) translateY(10px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
     `;
     document.head.appendChild(s);
   }
@@ -2017,14 +1956,12 @@ class SunXiaoaiCard extends LitElement {
       if (this._localOverlay.active && this._localOverlay.title) {
         return false; // LOCAL 确实在播放
       }
-      console.log('[sun-xiaoai-card] 🔄 LOCAL 通道已停止，清除残留，允许 MIoT 接管');
       this._activeChannel = '';
     }
     if (this._activeChannel === 'ma') {
       if (this._maOverlay.active && this._maOverlay.source) {
         return false; // MA 确实在播放
       }
-      console.log('[sun-xiaoai-card] 🔄 MA 通道已停止，清除残留，允许 MIoT 接管');
       this._activeChannel = '';
     }
 
@@ -2032,7 +1969,6 @@ class SunXiaoaiCard extends LitElement {
     if (this._localOverlay.source === 'local') {
       if (miotWantsToTakeover) {
         // MIoT 正在播放 → 保存 LOCAL 状态，清除 overlay
-        console.log('[sun-xiaoai-card] 🎵 MIoT 抢占：清除 LOCAL overlay, 保存状态');
         // 确保 LOCAL 数据已保存到 localStorage
         if (this._localOverlay.title) {
           this._reportNowPlayingData({
@@ -2082,7 +2018,6 @@ class SunXiaoaiCard extends LitElement {
     if (this._maOverlay.source && ['qqmusic','netease','ma_search'].includes(this._maOverlay.source)) {
       if (miotWantsToTakeover) {
         // MIoT 正在播放 → 保存 MA 状态，清除 overlay
-        console.log('[sun-xiaoai-card] 🎵 MIoT 抢占：清除 MA overlay, 保存状态(source=' + this._maOverlay.source + ')');
         if (this._maOverlay.title) {
           this._reportNowPlayingData({
             title: this._maOverlay.title,
@@ -2235,13 +2170,33 @@ class SunXiaoaiCard extends LitElement {
 
   // Home Assistant 卡片必需的方法
   setConfig(config) {
-    if (!config.xiaomi_home && !config.xiaomi_miot) {
-      throw new Error('You need to define xiaomi_home or xiaomi_miot');
+    // ── 设备组：从 devices 数组加载 ──
+    const devices = config.devices;
+    if (!devices || !Array.isArray(devices) || devices.length === 0) {
+      this._devices = [];
+      this._activeDeviceIndex = 0;
+      this._config = { ...config, xiaomi_home: '', xiaomi_miot: '' };
+      this.xiaomiHomeEntity = '';
+      this.xiaomiMiotEntity = '';
+      this._layoutMode = 'full';
+      this._hasPanel3 = false;
+      return;
     }
+    this._devices = devices.map((d, i) => ({ ...d, _id: d._id || `device_${i}` }));
+    this._activeDeviceIndex = this._activeDeviceIndex || 0;
+    const activeDevice = this._devices[this._activeDeviceIndex] || this._devices[0];
+    this._activeDeviceIndex = this._devices.indexOf(activeDevice);
     
     this._config = {
-      xiaomi_home: config.xiaomi_home,
-      xiaomi_miot: config.xiaomi_miot,
+      xiaomi_home: activeDevice.xiaomi_home,
+      xiaomi_miot: activeDevice.xiaomi_miot,
+      ma_player_entity: activeDevice.ma_player_entity || '',
+      favorite_current_song: activeDevice.favorite_current_song || '',
+      stop_alarm: activeDevice.stop_alarm || '',
+      play_radio: activeDevice.play_radio || '',
+      conversation: activeDevice.conversation || '',
+      play_text: activeDevice.play_text || '',
+      execute_text_directive: activeDevice.execute_text_directive || '',
       theme: config.theme,
       width: config.width,
       height: config.height,
@@ -2261,7 +2216,7 @@ class SunXiaoaiCard extends LitElement {
     
     // 确保height有默认值
     if (this._config.height === undefined) {
-      this._config.height = '80px';
+      this._config.height = 'auto';
     }
     
     // 确保lyrics_height有默认值
@@ -2269,16 +2224,6 @@ class SunXiaoaiCard extends LitElement {
       this._config.lyrics_height = '200px';
     }
     
-    // 确保always_show_lyrics有默认值
-    if (this._config.always_show_lyrics === undefined) {
-      this._config.always_show_lyrics = false;
-    }
-    
-    // 确保room_id有默认值
-    if (this._config.room_id === undefined) {
-      this._config.room_id = '';
-    }
-    this.roomId = this._config.room_id;
     
     // 同步主卡片主题
     this._syncThemeFromMainCard();
@@ -2288,23 +2233,20 @@ class SunXiaoaiCard extends LitElement {
     this.width = this._config.width;
     this.height = this._config.height;
     this.lyricsHeight = this._config.lyrics_height;
-    this.alwaysShowLyrics = this._config.always_show_lyrics;
-    this.sidebarMusicEntity = this._config.sidebar_music_entity || '';
-    this.favoriteSongEntity = this._config.favorite_song_entity || 'button.shu_fang_xiao_ai_favorite_current_song';
-    this.stopAlarmEntity = this._config.stop_alarm_entity || '';
+
+    this.favoriteSongEntity = this._config.favorite_current_song || '';
+    this.stopAlarmEntity = this._config.stop_alarm || '';
     this.action3Entity = this._config.action3_entity || '';
     this.action4Entity = this._config.action4_entity || '';
     this.action5Entity = this._config.action5_entity || '';
-    this.sidebarRadioEntity = this._config.sidebar_radio_entity || '';
-    this.textDirectiveEntity = this._config.text_directive_entity || '';
-    this.xiaomiVoiceEntity = this._config.xiaomi_voice_entity || '';
-    this.conversationEntity = this._config.conversation_entity || '';
-    this.playTextEntity = this._config.play_text_entity || '';
+    this.sidebarRadioEntity = this._config.play_radio || '';
+    this.textDirectiveEntity = this._config.execute_text_directive || '';
+    this.conversationEntity = this._config.conversation || '';
+    this.playTextEntity = this._config.play_text || '';
     // quick_input 支持字符串（换行分隔）或数组
     const qi = this._config.quick_input;
     this._quickInput = Array.isArray(qi) ? qi : (typeof qi === 'string' ? qi.split('\n').map(s => s.trim()).filter(Boolean) : []);
-    this.neteaseRecommendEntity = this._config.netease_recommend_entity || '';
-    this.qqMusicEntity = this._config.qq_music_entity || '';
+
 
     // ── MA (Music Assistant) 配置 ──
     this.maServerUrl = (this._config.ma_server_url || '').replace(/\/+$/, '');
@@ -2317,17 +2259,8 @@ class SunXiaoaiCard extends LitElement {
     this.neteaseApiUrl = (this._config.netease_api_url || '').replace(/\/+$/, '');
     this.neteaseUid = this._config.netease_uid || '';
 
-    // ── 面板检测：根据前端 UI 配置决定布局模式 ──
-    // 板块3 (MA/Q音/网易推荐): ma_server_url + ma_server_token 同时配置
-    this._hasPanel3 = !!(this._config.ma_server_url && this._config.ma_server_token);
-    // 板块2 (本地音乐): sidebar_music_entity 或 api_base_url 配置
-    this._hasPanel2 = !!(this._config.sidebar_music_entity || this._config.api_base_url);
-    // 板块1 (MIoT): always present when xiaomi_miot/xiaomi_home exists
-    this._layoutMode = this._hasPanel3 ? 'full' : 'compact';
-    console.log('[sun-xiaoai-card] 布局模式:', this._layoutMode,
-      '| 板块1(MIoT):', !!(this._config.xiaomi_miot || this._config.xiaomi_home),
-      '| 板块2(本地):', this._hasPanel2,
-      '| 板块3(MA):', this._hasPanel3);
+    // ── 统一使用全功能布局 ──
+    this._layoutMode = 'full';
 
     // MA WebSocket 连接触发
     if (this.maServerUrl && this.maServerToken && !this._maWsConnected) {
@@ -2374,7 +2307,6 @@ class SunXiaoaiCard extends LitElement {
             id: lsData.song_id || null
           };
         }
-        console.log('[sun-xiaoai-card] 📦 刷新恢复本地音乐 overlay:', lsData.title);
       }
       this._applyLocalMusicOverlay();
     }
@@ -2414,7 +2346,7 @@ class SunXiaoaiCard extends LitElement {
     const MIOT_FAKE_PRE = new Set(['请欣赏', '请欣赏（音乐）', '暂无播放', '正在加载', 'QQ音乐', '无音乐播放']);
     const miotOverriding = entityPlaying && entityCurrentTitle && !MIOT_FAKE_PRE.has(entityCurrentTitle);
 
-    // ===== MA WebSocket 数据优先（参照 sun-music-card.js 三路分支） =====
+    // ===== MA WebSocket 数据优先（参照 xiaoshi-music-card.js 三路分支） =====
     // ⚠️ MIoT 抢占时跳过 MA WS 优先，走 HA 实体回退路径
     const maWsActive = (this._activeChannel === 'ma' || (!this._activeChannel && !miotOverriding && this._maWsConnected && this._maTrackName && this._isMaSourceActive()));
     const maWsConnecting = (this._activeChannel === 'ma' || (!this._activeChannel && !miotOverriding && this._maWsConnected && !this._maTrackName));
@@ -2466,7 +2398,7 @@ class SunXiaoaiCard extends LitElement {
         const maIsPlaying = ['playing', 'Playing', '播放', '播放中', '正在播放'].includes(maPlayerState.state);
         if (maIsPlaying) this.isPlaying = true;
       }
-      // 参照 sun-music-card.js: MA WS 重连期间，根据 localStorage 主动恢复 overlay
+      // 参照 xiaoshi-music-card.js: MA WS 重连期间，根据 localStorage 主动恢复 overlay
       // 避免渲染走 attributes.media_title 显示 MIoT 占位符（如"请欣赏（音乐）"）
       // ── 三通道恢复：独立检查各通道 localStorage ──
       const maSourceEmpty = !this._maOverlay.source;
@@ -2492,17 +2424,14 @@ class SunXiaoaiCard extends LitElement {
               this._maOverlay.source = 'ma_search';
               if (typeof this._applyMASearchOverlay === 'function') this._applyMASearchOverlay();
             }
-            console.log('[sun-xiaoai-card] MA WS 连接中，从 localStorage 恢复 overlay:', saved);
           }
         } catch(e) {}
       }
-      console.log('[sun-xiaoai-card] MA WS 连接中，等待队列数据... (保持 overlay 不变)');
-
     } else {
       // ===== MA WS 未连接或无数据，回退到 HA 实体属性 =====
       // 关键修复：优先从 localStorage 恢复 MA overlay（板块3 保存的真实歌曲信息），
       // 避免 HA MA 实体中的占位符（"请欣赏"）直接覆盖到 UI。
-      // 参考 sun-music-card.js：localStorage 优先于 HA 实体。
+      // 参考 xiaoshi-music-card.js：localStorage 优先于 HA 实体。
       if (this._activeChannel !== 'local' && this._activeChannel !== 'miot' && (!this._maOverlay.title || !this._maOverlay.source)) {
         this._restoreMaOverlayFromLocalStorage();
       }
@@ -2525,7 +2454,6 @@ class SunXiaoaiCard extends LitElement {
           this._maOverlay.coverUrl = a.entity_picture || a.media_image_url || this._maOverlay.coverUrl;
           this._maLastSongTitle = a.media_title;
           this._maLastSongArtist = this._filterArtist(a.media_title, a.media_artist || a.artist || '');
-          console.log('[sun-xiaoai-card] MA WS 未连接，从 HA MA 实体补充:', a.media_title);
         }
         this.isPlaying = ['playing', 'Playing', '播放', '播放中', '正在播放'].includes(maPlayerState.state);
         if (!this.localVolumeUpdate && a.volume_level !== undefined) {
@@ -2555,7 +2483,6 @@ class SunXiaoaiCard extends LitElement {
                 this._maOverlay.source = 'ma_search';
                 if (typeof this._applyMASearchOverlay === 'function') this._applyMASearchOverlay();
               }
-              console.log('[sun-xiaoai-card] MA WS 未连接，从 localStorage 恢复 overlay:', saved);
             }
           } catch(e) {}
         }
@@ -2629,11 +2556,11 @@ class SunXiaoaiCard extends LitElement {
     // 更新进度信息
     this.requestUpdate();
     
-    // 如果启用了"总是显示歌词"且当前未显示歌词，则自动显示
-    if (this.alwaysShowLyrics && !this.showLyrics) {
+    // 默认总是显示歌词
+    if (!this.showLyrics) {
       this.showLyrics = true;
-      // 首次自动显示歌词时尝试加载真实歌词
-      if (this.lyrics.length === 0) {
+      // 首次自动显示歌词时异步加载（避免阻塞界面）
+      if (this.lyrics.length === 0 && !this._lyricsLoading) {
         this.loadLyricsForCurrentSong();
       }
     }
@@ -2667,19 +2594,29 @@ class SunXiaoaiCard extends LitElement {
   }
 
   static getConfigElement() {
-    return document.createElement("sun-xiaoai-card-editor");
+    return document.createElement("xiaoshi-music-card-editor");
   }
 
   static getStubConfig() {
     return {
-      xiaomi_home: "media_player.xiaomi_home",
-      xiaomi_miot: "media_player.xiaomi_speaker",
+      devices: [{
+        name: '',
+        xiaomi_home: '',
+        xiaomi_miot: '',
+        ma_player_entity: '',
+        favorite_current_song: '',
+        stop_alarm: '',
+        play_radio: '',
+        conversation: '',
+        play_text: '',
+        execute_text_directive: '',
+        quick_input: '',
+      }],
       theme: "system",
       width: "100%",
-      height: "80px",
+      height: "auto",
       lyrics_height: "200px",
-      always_show_lyrics: false,
-      room_id: ""
+
     };
   }
 
@@ -2701,13 +2638,48 @@ class SunXiaoaiCard extends LitElement {
     this.requestUpdate();
   }
 
+  // ======= 设备组切换 =======
+  _switchDevice(index) {
+    if (index === this._activeDeviceIndex || index < 0 || index >= this._devices.length) return;
+    this._activeDeviceIndex = index;
+    const d = this._devices[index];
+    if (!d) return;
+    this.xiaomiHomeEntity = d.xiaomi_home || '';
+    this.xiaomiMiotEntity = d.xiaomi_miot || '';
+    this.maPlayerEntity = d.ma_player_entity || '';
+    this.favoriteSongEntity = d.favorite_current_song || '';
+    this.stopAlarmEntity = d.stop_alarm || '';
+    this.sidebarRadioEntity = d.play_radio || '';
+    this.conversationEntity = d.conversation || '';
+    this.playTextEntity = d.play_text || '';
+    this.textDirectiveEntity = d.execute_text_directive || '';
+    this._config.xiaomi_home = d.xiaomi_home || '';
+    this._config.xiaomi_miot = d.xiaomi_miot || '';
+    this._config.ma_player_entity = d.ma_player_entity || '';
+    this._config.favorite_current_song = d.favorite_current_song || '';
+    this._config.stop_alarm = d.stop_alarm || '';
+    this._config.play_radio = d.play_radio || '';
+    this._config.conversation = d.conversation || '';
+    this._config.play_text = d.play_text || '';
+    this._config.execute_text_directive = d.execute_text_directive || '';
+    // 切换设备时重置状态
+    this._activeChannel = '';
+    this._miotOverlay = {}; this._localOverlay = {}; this._maOverlay = {};
+    this.showLyrics = true; this.lyrics = [];
+    this.requestUpdate();
+  }
+  _getDeviceName(index) {
+    const d = this._devices[index];
+    if (!d) return '';
+    return d.name || (this._hass?.states[d.xiaomi_home]?.attributes?.friendly_name) || (this._hass?.states[d.xiaomi_miot]?.attributes?.friendly_name) || ('设备' + (index + 1));
+  }
+
   // 控制方法 - 调用实际的 Home Assistant 服务
   async callService(service, data = {}) {
     if (this._hass) {
       try {
         await this._hass.callService(service.split('.')[0], service.split('.')[1], data);
       } catch (error) {
-        console.error('服务调用失败:', error);
       }
     }
   }
@@ -2722,7 +2694,7 @@ class SunXiaoaiCard extends LitElement {
   }
 
   /**
-   * 通过 text_directive_entity (notify_entity) 发送文本指令到小爱音箱
+   * 通过 execute_text_directive (notify_entity) 发送文本指令到小爱音箱
    * 适用于 text.xxx_execute_text_directive 实体
    */
   async callNotify(text) {
@@ -2733,7 +2705,6 @@ class SunXiaoaiCard extends LitElement {
         value: text
       });
     } catch (error) {
-      console.error('[sun-xiaoai-card] text.set_value 调用失败:', error);
     }
   }
 
@@ -2777,40 +2748,6 @@ class SunXiaoaiCard extends LitElement {
     const target = this._getVolumeTargetEntity();
     if (target) {
       this.callService('media_player.volume_set', { entity_id: target, volume_level: newVolume / 100 });
-    }
-  }
-
-  handleLyricsToggle() {
-    this._handleClick();
-    
-    // 如果启用了"总是显示歌词"，则不允许关闭歌词
-    if (this.alwaysShowLyrics) {
-      return;
-    }
-    
-    this.showLyrics = !this.showLyrics;
-    
-    // 打开歌词时，重新获取实体中的当前进度
-    if (this.showLyrics) {
-      // 重新初始化时间进度（获取当前实体进度）
-      this.initSmoothTimeOnce();
-      
-      // 首次打开歌词时尝试加载真实歌词
-      if (this.lyrics.length === 0) {
-        this.loadLyricsForCurrentSong();
-      } else {
-        // 如果已有歌词，立即更新当前歌词索引
-        if (this.smoothCurrentTime > 0) {
-          this.updateCurrentLyricIndex(this.smoothCurrentTime);
-        }
-      }
-    }
-    
-    this.requestUpdate();
-    
-    // 打开歌词时，如果有当前歌词，滚动到对应位置
-    if (this.showLyrics && this.currentLyricIndex >= 0) {
-      setTimeout(() => this.scrollToCurrentLyric(), 200);
     }
   }
 
@@ -2883,53 +2820,44 @@ class SunXiaoaiCard extends LitElement {
 
   // 为当前播放歌曲加载歌词
   async loadLyricsForCurrentSong() {
-    const primaryState = this.xiaomiHomeState || this.xiaomiMiotState;
-    if (!primaryState || !primaryState.attributes) {
-      // 即使实体无状态，如果有已保存的歌曲信息也尝试加载歌词
-      const si = this._mediaPlayerState?.currentItem;
-      if (si?.title && si?.artist) {
-        try { await this.searchAndFetchLyrics(si.title, si.artist); } catch(e) { this._localLyricsFallbackOrNoLyrics(); }
+    this._lyricsLoading = true;
+    try {
+      const primaryState = this.xiaomiHomeState || this.xiaomiMiotState;
+      if (!primaryState || !primaryState.attributes) {
+        const si = this._mediaPlayerState?.currentItem;
+        if (si?.title && si?.artist) {
+          try { await this.searchAndFetchLyrics(si.title, si.artist); } catch(e) { this._localLyricsFallbackOrNoLyrics(); }
+          return;
+        }
+        this.loadNoLyrics();
         return;
       }
-      this.loadNoLyrics();
-      return;
-    }
 
-    // 优先使用 overlay 信息（本地音乐）或已保存的歌曲信息
-    const savedItem = this._mediaPlayerState?.currentItem;
-    let title = this._overlayTitle || savedItem?.title || primaryState.attributes.media_title;
-    let artist = this._overlayArtist || savedItem?.artist || primaryState.attributes.media_artist;
-    let sourceEntity = "主实体";
+      const savedItem = this._mediaPlayerState?.currentItem;
+      let title = this._overlayTitle || savedItem?.title || primaryState.attributes.media_title;
+      let artist = this._overlayArtist || savedItem?.artist || primaryState.attributes.media_artist;
 
-    // 如果主实体没有歌曲信息，尝试从备用实体获取
-    if (!title || !artist) {
-      
-      const backupState = primaryState === this.xiaomiHomeState ? this.xiaomiMiotState : this.xiaomiHomeState;
-      
-      if (backupState && backupState.attributes) {
-        const backupTitle = backupState.attributes.media_title;
-        const backupArtist = backupState.attributes.media_artist;
-        
-        if (backupTitle && backupArtist) {
-          title = backupTitle;
-          artist = backupArtist;
-          sourceEntity = "备用实体";
+      if (!title || !artist) {
+        const backupState = primaryState === this.xiaomiHomeState ? this.xiaomiMiotState : this.xiaomiHomeState;
+        if (backupState && backupState.attributes) {
+          const bTitle = backupState.attributes.media_title;
+          const bArtist = backupState.attributes.media_artist;
+          if (bTitle && bArtist) { title = bTitle; artist = bArtist; }
         }
       }
-    }
 
-    if (!title || !artist) {
-      this.loadNoLyrics();
-      return;
-    }
+      if (!title || !artist) {
+        this.loadNoLyrics();
+        return;
+      }
 
-    try {
-      await this.searchAndFetchLyrics(title, artist);
-    } catch (error) {
-      // ── 本地音乐通道专属备用歌词源 ──
-      // 网易云 API 失败时，如果当前是 LOCAL 通道且歌曲有后端 ID，
-      // 回退到卡片内置的 _fetchSongLyrics（后端 media/songs/{id}/lyrics API）
-      this._localLyricsFallbackOrNoLyrics();
+      try {
+        await this.searchAndFetchLyrics(title, artist);
+      } catch (error) {
+        this._localLyricsFallbackOrNoLyrics();
+      }
+    } finally {
+      this._lyricsLoading = false;
     }
   }
 
@@ -2947,14 +2875,12 @@ class SunXiaoaiCard extends LitElement {
     // ── 尝试后端歌词 API（卡片内置的 _fetchSongLyrics）──
     const songId = this._mediaPlayerState?.currentItem?.id;
     if (!songId) {
-      console.log('[sun-xiaoai-card] 本地音乐无后端 ID，无法使用备用歌词源');
       this.loadNoLyrics();
       return;
     }
     try {
       const lyricsText = await this._fetchSongLyrics(songId);
       if (lyricsText && lyricsText.trim()) {
-        console.log('[sun-xiaoai-card] ✅ 本地音乐备用歌词源加载成功（后端 API）');
         this.lyrics = this.parseLyrics(lyricsText);
         if (this.lyrics.length > 0) {
           this.currentLyricIndex = 0;
@@ -2964,10 +2890,8 @@ class SunXiaoaiCard extends LitElement {
           return;
         }
       }
-      console.log('[sun-xiaoai-card] 本地音乐备用歌词源也无歌词');
       this.loadNoLyrics();
     } catch(e) {
-      console.error('[sun-xiaoai-card] 本地音乐备用歌词源异常:', e);
       this.loadNoLyrics();
     }
   }
@@ -3110,7 +3034,6 @@ class SunXiaoaiCard extends LitElement {
       
       throw lastError || new Error("获取歌词失败");
     } catch (error) {
-      console.error(`获取歌词失败: ${error.message}`);
       throw error;
     }
   }
@@ -3143,7 +3066,6 @@ class SunXiaoaiCard extends LitElement {
             return this._processLyrics(result.lyrics);
           }
         } catch (error) {
-          console.error(`搜索尝试 ${i + 1} 失败: ${error.message}`);
           if (i === searchAttempts.length - 1) {
             throw error;
           }
@@ -3152,7 +3074,6 @@ class SunXiaoaiCard extends LitElement {
       
       throw new Error("未找到歌词");
     } catch (error) {
-      console.error(`搜索歌词失败: ${error.message}`);
       this._handleSearchError(cacheKey);
       throw error;
     }
@@ -3174,9 +3095,7 @@ class SunXiaoaiCard extends LitElement {
         timestamp: Date.now()
       });
       this._saveCache();
-      console.info(`缓存歌词: ${cacheKey}`);
     } catch (error) {
-      console.error(`缓存歌词失败: ${error.message}`);
     }
   }
 
@@ -3201,12 +3120,10 @@ class SunXiaoaiCard extends LitElement {
         cached.timestamp = Date.now();
         this.lyricsCache.set(cacheKey, cached);
         this._saveCache();
-        console.info(`使用缓存的歌词: ${cacheKey}`);
         return cached.lyrics;
       }
       this.lyricsCache.delete(cacheKey);
       this._saveCache();
-      console.info(`删除无效的歌词缓存: ${cacheKey}`);
     }
     return null;
   }
@@ -3218,7 +3135,6 @@ class SunXiaoaiCard extends LitElement {
         localStorage.setItem("music_player_lyrics_cache", JSON.stringify(cacheObject));
       }
     } catch (error) {
-      console.error(`保存缓存失败: ${error.message}`);
     }
   }
 
@@ -3505,7 +3421,7 @@ class SunXiaoaiCard extends LitElement {
         } catch(e) {}
       }
       if (url) {
-        // 直接使用原始 media_content_id，HA 内部处理路由（参照 sun-music-card）
+        // 直接使用原始 media_content_id，HA 内部处理路由（参照 xiaoshi-music-card）
         const resolvedUrl = url;
         if (resolvedUrl) {
           this.callService('media_player.play_media', {
@@ -3570,7 +3486,7 @@ class SunXiaoaiCard extends LitElement {
     const targetEntity = (this._localOverlay.source === 'local' && this._localMusicPlayerCfg) ? this._localMusicPlayerCfg.mediaEntity : this._getActiveTargetEntity();
     if (!targetEntity) return;
     if (this.textDirectiveEntity) {
-      // 通过 text_directive_entity 发送文本指令
+      // 通过 execute_text_directive 发送文本指令
       const state = this._hass?.states[targetEntity];
       const currentShuffle = state?.attributes?.shuffle || false;
       const command = currentShuffle ? '顺序播放' : '随机播放';
@@ -3587,7 +3503,6 @@ class SunXiaoaiCard extends LitElement {
         shuffle: !currentShuffle
       });
     } catch (e) {
-      console.warn('[sun-xiaoai-card] shuffle_set 不支持:', e);
     }
   }
 
@@ -3596,7 +3511,7 @@ class SunXiaoaiCard extends LitElement {
     const targetEntity = (this._localOverlay.source === 'local' && this._localMusicPlayerCfg) ? this._localMusicPlayerCfg.mediaEntity : this._getActiveTargetEntity();
     if (!targetEntity) return;
     if (this.textDirectiveEntity) {
-      // 通过 text_directive_entity 发送文本指令
+      // 通过 execute_text_directive 发送文本指令
       const state = this._hass?.states[targetEntity];
       const currentRepeat = state?.attributes?.repeat || 'off';
       let command = '循环播放';
@@ -3620,7 +3535,6 @@ class SunXiaoaiCard extends LitElement {
         repeat: newRepeat
       });
     } catch (e) {
-      console.warn('[sun-xiaoai-card] repeat_set 不支持:', e);
     }
   }
 
@@ -3647,13 +3561,20 @@ class SunXiaoaiCard extends LitElement {
       return;
     }
     this._showHistory = true;
+    this._historyDeviceIndex = this._activeDeviceIndex || 0;
     this._showHistoryOverlay();
-    this._fetchHistory();
+    this._fetchHistory(this._historyDeviceIndex);
   }
 
-  async _fetchHistory() {
+  async _fetchHistory(deviceIndex) {
+    this._historyLoading = true;
+    this._updateHistoryContent();
     try {
-      const targetEntity = this.xiaomiMiotEntity || this.xiaomiHomeEntity;
+      const di = deviceIndex ?? this._historyDeviceIndex ?? this._activeDeviceIndex;
+      const dev = this._devices?.[di];
+      const dMiot = (dev?.xiaomi_miot || '').trim();
+      const dHome = (dev?.xiaomi_home || '').trim();
+      const targetEntity = dMiot || dHome || this.xiaomiMiotEntity || this.xiaomiHomeEntity;
       if (!targetEntity) return;
       const periodHours = this._historyFilterPeriod || 24;
       const endTime = new Date();
@@ -3694,7 +3615,6 @@ class SunXiaoaiCard extends LitElement {
       }
       this._historyData = result;
     } catch (e) {
-      console.error('[sun-xiaoai-card] 获取播放历史记录失败:', e);
       this._historyData = [];
     } finally {
       this._historyLoading = false;
@@ -3732,18 +3652,59 @@ class SunXiaoaiCard extends LitElement {
 
     // 标题栏
     const header = document.createElement('div');
-    header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
+    header.style.cssText = `display:flex;flex-direction:column;gap:6px;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
+    const headerTop = document.createElement('div');
+    headerTop.style.cssText = 'display:flex;justify-content:space-between;align-items:center;';
     const title = document.createElement('span');
     title.style.cssText = `font-size:1.1rem;font-weight:700;color:${textColor};`;
-    title.textContent = `${roomName} - 播放历史`;
+    const dev = this._devices?.[this._historyDeviceIndex || 0];
+    const devName = dev?.name || roomName;
+    title.textContent = `${devName} - 播放历史`;
+    headerTop.appendChild(title);
     const closeBtn = document.createElement('button');
     closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:default;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
     closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
     closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
     closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
     closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
-    header.appendChild(title);
-    header.appendChild(closeBtn);
+    headerTop.appendChild(closeBtn);
+    header.appendChild(headerTop);
+
+    // 多设备切换 chips
+    if (this._devices && this._devices.length > 1) {
+      const deviceChips = document.createElement('div');
+      deviceChips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+      for (let di = 0; di < this._devices.length; di++) {
+        const d = this._devices[di];
+        const dName = d.name || (this._hass?.states?.[d.xiaomi_home]?.attributes?.friendly_name) || ('设备'+(di+1));
+        const dChip = document.createElement('span');
+        dChip.setAttribute('data-device-chip', di);
+        dChip.textContent = dName;
+        const isActive = di === (this._historyDeviceIndex || 0);
+        dChip.style.cssText = `padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:500;cursor:default;white-space:nowrap;transition:opacity 0.2s,transform 0.2s;background:${isActive ? chipActiveBg : chipBg};color:${isActive ? chipActiveColor : (isDark?'#ccc':'#555')};`;
+        dChip.addEventListener('mouseenter', () => { dChip.style.opacity = '0.85'; dChip.style.transform = 'scale(1.05)'; });
+        dChip.addEventListener('mouseleave', () => { dChip.style.opacity = '1'; dChip.style.transform = 'scale(1)'; });
+        dChip.addEventListener('click', () => {
+          this._handleClick();
+          this._historyDeviceIndex = di;
+          // 更新所有设备chip样式
+          deviceChips.querySelectorAll('[data-device-chip]').forEach(c => {
+            const idx = parseInt(c.getAttribute('data-device-chip'));
+            const active = idx === di;
+            c.style.background = active ? chipActiveBg : chipBg;
+            c.style.color = active ? chipActiveColor : (isDark?'#ccc':'#555');
+          });
+          const dev2 = this._devices?.[di];
+          const devName2 = dev2?.name || (this._hass?.states?.[dev2?.xiaomi_home]?.attributes?.friendly_name) || ('设备'+(di+1));
+          title.textContent = `${devName2} - 播放历史`;
+          this._historyLoading = true;
+          this._historyData = [];
+          this._fetchHistory(di);
+        });
+        deviceChips.appendChild(dChip);
+      }
+      header.appendChild(deviceChips);
+    }
 
     // 时段选择工具栏
     const toolbar = document.createElement('div');
@@ -4055,7 +4016,7 @@ class SunXiaoaiCard extends LitElement {
   handleSidebarRadioPress() {
     this._handleClick();
     if (!this.sidebarRadioEntity) {
-      console.warn('[sun-xiaoai-card] 未配置 sidebar_radio_entity');
+      this._showToast('请先配置小米电台实体 play_radio', 'warning');
       return;
     }
     // 手动切换到 MIoT 通道：先暂停其他通道，清除残留 overlay
@@ -4065,28 +4026,10 @@ class SunXiaoaiCard extends LitElement {
     this.callService('button.press', { entity_id: this.sidebarRadioEntity });
   }
 
-  handleXiaomiVoicePress() {
-    this._handleClick();
-    if (!this.xiaomiVoiceEntity) {
-      console.warn('[sun-xiaoai-card] 未配置 xiaomi_voice_entity');
-      return;
-    }
-    // 手动切换到 MIoT 通道：先暂停其他通道，清除残留 overlay
-    this._pauseOtherChannelsForMiot();
-    this._setChannel('miot');
-    this._miotOverlay = { title: '', artist: '', coverUrl: '', source: 'miot', active: true };
-    // 小米语音按钮 - 具体功能待配置，目前按压实体
-    try {
-      this.callService('button.press', { entity_id: this.xiaomiVoiceEntity });
-    } catch (e) {
-      console.warn('[sun-xiaoai-card] xiaomi_voice_entity 按压失败:', e);
-    }
-  }
 
   handleTextSearchPress() {
     this._handleClick();
     if (!this.textDirectiveEntity) {
-      console.warn('[sun-xiaoai-card] 未配置 text_directive_entity');
       return;
     }
     this._textSearchVisible = !this._textSearchVisible;
@@ -4136,7 +4079,6 @@ class SunXiaoaiCard extends LitElement {
         this.requestUpdate();
       }, 3000);
     } catch (error) {
-      console.error('[sun-xiaoai-card] 文本搜索指令发送失败:', error);
       this._textSearchStatus = 'error';
       this.requestUpdate();
     }
@@ -4155,7 +4097,7 @@ class SunXiaoaiCard extends LitElement {
 
   _loadSearchHistory() {
     try {
-      const raw = localStorage.getItem('sun-xiaoai-card-search-history');
+      const raw = localStorage.getItem('xiaoshi-music-card-search-history');
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) return parsed.slice(0, 10);
@@ -4168,7 +4110,7 @@ class SunXiaoaiCard extends LitElement {
 
   _saveSearchHistory() {
     try {
-      localStorage.setItem('sun-xiaoai-card-search-history', JSON.stringify(this._textSearchHistory));
+      localStorage.setItem('xiaoshi-music-card-search-history', JSON.stringify(this._textSearchHistory));
     } catch (e) {
       // 存储失败则忽略
     }
@@ -4264,23 +4206,7 @@ class SunXiaoaiCard extends LitElement {
     `;
   }
 
-  handleNeteaseRecommend() {
-    this._handleClick();
-    if (!this.neteaseRecommendEntity) {
-      console.warn('[sun-xiaoai-card] 未配置 netease_recommend_entity');
-      return;
-    }
-    this.callService('button.press', { entity_id: this.neteaseRecommendEntity });
-  }
 
-  handleQQMusic() {
-    this._handleClick();
-    if (!this.qqMusicEntity) {
-      console.warn('[sun-xiaoai-card] 未配置 qq_music_entity');
-      return;
-    }
-    this.callService('button.press', { entity_id: this.qqMusicEntity });
-  }
 
   getProgressPercentage() {
     // MA WS 活跃时用 MA 进度
@@ -4385,7 +4311,6 @@ class SunXiaoaiCard extends LitElement {
   render() {
     const progressPercentage = this.getProgressPercentage();
     const themeColors = this._getThemeButtonColors();
-    const roomImageUrl = this._getRoomImageUrl();
     
     // 智能选择背景图片的实体状态
     let primaryState = null;
@@ -4574,11 +4499,9 @@ class SunXiaoaiCard extends LitElement {
     };
     // 注入主题 CSS 变量，供所有子元素使用
     const themeCssVars = currentTheme === 'light'
-      ? `--sun-text:rgb(0,0,0);--sun-muted:rgba(0,0,0,.55);--sun-overlay-off:rgba(255,255,255,.75);--sun-overlay-on:rgba(255,255,255,.50);--sun-btn-bg:rgba(0,0,0,.06);--sun-btn-active:rgba(0,0,0,.12);--sun-btn-hover:rgba(0,0,0,.10);--sun-text-shadow:none;`
-      : `--sun-text:#fff;--sun-muted:rgba(255,255,255,.6);--sun-overlay-off:rgba(15,12,8,.60);--sun-overlay-on:rgba(15,12,8,.35);--sun-btn-bg:rgba(255,255,255,.10);--sun-btn-active:rgba(255,255,255,.25);--sun-btn-hover:rgba(255,255,255,.22);--sun-text-shadow:0 1px 4px rgba(0,0,0,0.5);`;
-    const bgStyle = roomImageUrl
-      ? `background-image:url('${roomImageUrl}');background-size:cover;background-position:center;`
-      : `background:${themeBgMap[currentTheme] || themeBgMap.dark};${themeCssVars}`;
+      ? `--xiaoshi-text:rgb(0,0,0);--xiaoshi-muted:rgba(0,0,0,.55);--xiaoshi-overlay-off:rgba(255,255,255,.75);--xiaoshi-overlay-on:rgba(255,255,255,.50);--xiaoshi-btn-bg:rgba(0,0,0,.10);--xiaoshi-btn-active:rgba(0,0,0,.18);--xiaoshi-btn-hover:rgba(0,0,0,.14);--xiaoshi-text-shadow:none;`
+      : `--xiaoshi-text:#fff;--xiaoshi-muted:rgba(255,255,255,.6);--xiaoshi-overlay-off:rgba(15,12,8,.60);--xiaoshi-overlay-on:rgba(15,12,8,.35);--xiaoshi-btn-bg:rgba(255,255,255,.10);--xiaoshi-btn-active:rgba(255,255,255,.25);--xiaoshi-btn-hover:rgba(255,255,255,.22);--xiaoshi-text-shadow:0 1px 4px rgba(0,0,0,0.5);`;
+    const bgStyle = `background:${themeBgMap[currentTheme] || themeBgMap.dark};${themeCssVars}`;
 
     // overlay 类名
     const overlayClass = this.isPlaying ? 'card-bg-overlay on-overlay' : 'card-bg-overlay off-overlay';
@@ -4589,50 +4512,57 @@ class SunXiaoaiCard extends LitElement {
       : '';
 
     return html`
-      <div class="card ${this._layoutMode === 'compact' ? 'compact-layout' : 'full-layout'}" style="${bgStyle}; width: ${this.width}; min-width: ${this.width}; max-width: ${this.width};">
+      <div class="card full-layout${(this._devices && this._devices.length > 1) ? ' multi-device' : ''}" style="${bgStyle}; width: ${this.width}; min-width: ${this.width}; max-width: ${this.width};">
         <div class="${overlayClass}"></div>
         ${finalCover ? html`<div class="album-bg-layer" style="${albumBgStyle}"></div>` : ''}
 
         <div class="player-content" style="height: ${this.height}; min-height: ${this.height}; max-height: ${this.height};">
-          <!-- 左侧导航栏（仅全功能布局显示） -->
-          ${this._hasPanel3 ? html`
+          <!-- 左侧导航栏 -->
           <div class="left-sidebar">
-            <div class="device-info-block" style="background: ${themeColors.bg};">
-              <div class="sidebar-device-name">${friendlyName}</div>
-              ${finalCover ? html`
-                <div class="sidebar-device-avatar" style="background-image: url('${finalCover}');"></div>
-              ` : html`
-                <div class="sidebar-device-avatar">
-                  <ha-icon icon="mdi:music-note" style="--mdc-icon-size: 20px; color: var(--sun-muted, rgba(255,255,255,0.5));"></ha-icon>
-                </div>
-              `}
-              <div class="device-status-text">${stateText}</div>
+            <!-- 设备列表 -->
+            ${(this._devices && this._devices.length > 0) ? html`
+            <div class="device-list">
+              ${this._devices.map((d, i) => {
+                const devState = this._hass?.states[d.xiaomi_home] || this._hass?.states[d.xiaomi_miot];
+                const devName = d.name || (devState?.attributes?.friendly_name) || ('设备' + (i + 1));
+                const rawState = (devState?.state || '').trim();
+                const devText = rawState === 'playing' ? '播放' : rawState === 'paused' ? '暂停' : rawState === 'idle' ? '待机' : rawState === 'off' ? '关闭' : '离线';
+                return html`
+                  <div class="device-list-item ${i === this._activeDeviceIndex ? 'active' : ''}"
+                       style="background: ${themeColors.bg};"
+                       @click=${() => this._switchDevice(i)}
+                       title="${devName} — ${devText}">
+                    <div class="dev-name">${devName}</div>
+                    <div class="dev-status">${devText}</div>
+                  </div>
+                `;
+              })}
             </div>
+            ` : ''}
             <!-- 侧边栏按钮 -->
             <!-- 网易推荐 — MA 弹窗模式 -->
-            <button class="sidebar-btn" style="background: ${themeColors.bg}; ${this.neteaseApiUrl ? '' : 'opacity: 0.4;'}" @click=${this.handleNeteaseRecommendedToggle} title="${this.neteaseApiUrl ? '网易云推荐歌单' : '未配置 netease_api_url'}">
+            <button class="sidebar-btn" style="background: ${themeColors.bg}; ${this.neteaseApiUrl ? '' : 'opacity: 0.4;'}" @click=${() => { if (!this.neteaseApiUrl) { this._showToast('请先配置网易云API地址 netease_api_url', 'warning'); return; } this.handleNeteaseRecommendedToggle(); }} title="${this.neteaseApiUrl ? '网易云推荐歌单' : '未配置 netease_api_url'}">
               <ha-icon icon="mdi:playlist-music"></ha-icon>
               <span class="sidebar-btn-label">网易推荐</span>
             </button>
             <!-- QQ音乐 — MA 播放列表弹窗 -->
-            <button class="sidebar-btn" style="background: ${themeColors.bg}; ${this.maPlaylistsConfig ? '' : 'opacity: 0.4;'}" @click=${this.handleMaPlaylistsToggle} title="${this.maPlaylistsConfig ? 'MA 播放列表' : '未配置 ma_playlists'}">
+            <button class="sidebar-btn" style="background: ${themeColors.bg}; ${this.maPlaylistsConfig ? '' : 'opacity: 0.4;'}" @click=${() => { if (!this.maPlaylistsConfig) { this._showToast('请先配置MA歌单 ma_playlists', 'warning'); return; } this.handleMaPlaylistsToggle(); }} title="${this.maPlaylistsConfig ? 'MA 播放列表' : '未配置 ma_playlists'}">
               <ha-icon icon="mdi:playlist-star"></ha-icon>
               <span class="sidebar-btn-label">QQ音乐</span>
             </button>
-            <button class="sidebar-btn" style="background: ${themeColors.bg};" @click=${() => { this._handleClick(); this.showLocalMusicPopup(null, this.shadowRoot?.querySelector('.sidebar-btn[title*="本地音乐"]')); }} title="本地音乐 — 播放列表与后台播放控制">
+            <button class="sidebar-btn" style="background: ${themeColors.bg}; ${this._config?.local_music_path ? '' : 'opacity: 0.4;'}" @click=${() => { this._handleClick(); if (!this._config?.local_music_path) { this._showToast('请先配置本地音乐路径 local_music_path', 'warning'); return; } this.showLocalMusicPopup(null, this.shadowRoot?.querySelector('.sidebar-btn[title*="本地音乐"]')); }} title="${this._config?.local_music_path ? '本地音乐 — 播放列表与后台播放控制' : '未配置 local_music_path'}">
               <ha-icon icon="mdi:speaker-multiple"></ha-icon>
               <span class="sidebar-btn-label">本地音乐</span>
             </button>
-            <button class="sidebar-btn" style="background: ${themeColors.bg}; ${this.sidebarRadioEntity ? '' : 'opacity: 0.4;'}" @click=${this.handleSidebarRadioPress} title="${this.sidebarRadioEntity ? (this._hass?.states[this.sidebarRadioEntity]?.attributes.friendly_name || '小米电台') : '未配置 sidebar_radio_entity'}">
+            <button class="sidebar-btn" style="background: ${themeColors.bg}; ${this.sidebarRadioEntity ? '' : 'opacity: 0.4;'}" @click=${this.handleSidebarRadioPress} title="${this.sidebarRadioEntity ? (this._hass?.states[this.sidebarRadioEntity]?.attributes.friendly_name || '小米电台') : '未配置 play_radio'}">
               <ha-icon icon="mdi:radio"></ha-icon>
               <span class="sidebar-btn-label">小米电台</span>
             </button>
-            <button class="sidebar-btn" style="background: ${themeColors.bg};" @click=${() => { this._handleClick(); this.showXiaoaiConversation(this.shadowRoot?.querySelector('.sidebar-btn[title*="语音对话"]')); }} title="小米语音对话记录">
+            <button class="sidebar-btn" style="background: ${themeColors.bg}; ${this.conversationEntity ? '' : 'opacity: 0.4;'}" @click=${() => { this._handleClick(); if (!this.conversationEntity) { this._showToast('请先配置小米语音实体 conversation', 'warning'); return; } this.showXiaoaiConversation(this.shadowRoot?.querySelector('.sidebar-btn[title*="语音对话"]')); }} title="${this.conversationEntity ? '小米语音对话记录' : '未配置 conversation'}">
               <ha-icon icon="mdi:magnify"></ha-icon>
               <span class="sidebar-btn-label">小米语音</span>
             </button>
           </div>
-          ` : ''}
 
           <!-- 右侧播放主体 -->
           <div class="player-main">
@@ -4648,11 +4578,9 @@ class SunXiaoaiCard extends LitElement {
               <!-- 右：歌曲信息区 -->
               <div class="song-info-area">
                 <div class="song-title">${activeTitle || '未播放'}</div>
-                <div class="song-artist">${activeArtist || ''}</div>
+                <div class="song-artist">${activeArtist || '\u00A0'}</div>
                 ${attributes.media_source_name ? html`<div class="song-source">${attributes.media_source_name}</div>` : ''}
                 <div class="action-buttons-row">
-                  ${this._hasPanel3 ? html`
-                  <!-- 全功能布局：收藏/闹钟/历史/后台/歌词 -->
                   <button class="action-btn" style="background: ${themeColors.bg}; ${this.favoriteSongEntity ? '' : 'opacity: 0.4;'}" @click=${this.handleFavoriteCurrentSong} title="收藏当前播放歌曲">
                     <ha-icon icon="mdi:heart"></ha-icon>
                   </button>
@@ -4662,47 +4590,6 @@ class SunXiaoaiCard extends LitElement {
                   <button class="action-btn" style="background: ${themeColors.bg}; ${this.xiaomiMiotEntity || this.xiaomiHomeEntity ? '' : 'opacity: 0.4;'}" @click=${this._toggleHistory} title="播放历史记录">
                     <ha-icon icon="mdi:chart-box-outline"></ha-icon>
                   </button>
-                  <button class="action-btn" style="background: ${themeColors.bg};" @click=${this._handleBackendPlayToggleMain} title="${this._backendActive ? '停止后端列表播放' : '启动后端列表播放'}">
-                    <ha-icon icon="${this._backendActive ? 'mdi:stop-circle-outline' : 'mdi:sync'}"></ha-icon>
-                  </button>
-                  <button class="action-btn" style="background: ${this.showLyrics ? 'rgba(25,165,225,0.45)' : themeColors.bg};" @click=${this.handleLyricsToggle} ?disabled=${this.alwaysShowLyrics} title="歌词">
-                    <ha-icon icon="${this.showLyrics ? 'mdi:text-box-remove' : 'mdi:text-box'}"></ha-icon>
-                  </button>
-                  ` : (this._hasPanel2 ? html`
-                  <!-- 紧凑布局 P1+P2：小米电台/小米语音/本地音乐/历史记录/后台播放控制 -->
-                  <button class="action-btn" style="background: ${themeColors.bg}; ${this.sidebarRadioEntity ? '' : 'opacity: 0.4;'}" @click=${this.handleSidebarRadioPress} title="小米电台">
-                    <ha-icon icon="mdi:radio"></ha-icon>
-                  </button>
-                  <button class="action-btn" style="background: ${themeColors.bg};" @click=${() => { this._handleClick(); this.showXiaoaiConversation(); }} title="小米语音">
-                    <ha-icon icon="mdi:magnify"></ha-icon>
-                  </button>
-                  <button class="action-btn" style="background: ${themeColors.bg};" @click=${() => { this._handleClick(); this.showLocalMusicPopup(null, this.shadowRoot?.querySelector('.action-btn[title*="本地音乐"]')); }} title="本地音乐">
-                    <ha-icon icon="mdi:speaker-multiple"></ha-icon>
-                  </button>
-                  <button class="action-btn" style="background: ${themeColors.bg}; ${this.xiaomiMiotEntity || this.xiaomiHomeEntity ? '' : 'opacity: 0.4;'}" @click=${this._toggleHistory} title="播放历史记录">
-                    <ha-icon icon="mdi:chart-box-outline"></ha-icon>
-                  </button>
-                  <button class="action-btn" style="background: ${themeColors.bg};" @click=${this._handleBackendPlayToggleMain} title="${this._backendActive ? '停止后端列表播放' : '启动后端列表播放'}">
-                    <ha-icon icon="${this._backendActive ? 'mdi:stop-circle-outline' : 'mdi:sync'}"></ha-icon>
-                  </button>
-                  ` : html`
-                  <!-- 紧凑布局 P1 only：小米电台/小米语音/停止闹钟/历史记录/歌词显示 -->
-                  <button class="action-btn" style="background: ${themeColors.bg}; ${this.sidebarRadioEntity ? '' : 'opacity: 0.4;'}" @click=${this.handleSidebarRadioPress} title="小米电台">
-                    <ha-icon icon="mdi:radio"></ha-icon>
-                  </button>
-                  <button class="action-btn" style="background: ${themeColors.bg}; ${this.textDirectiveEntity ? '' : 'opacity: 0.4;'}" @click=${this.handleTextSearchPress} title="${this.textDirectiveEntity ? '小米语音 — 通过文本指令点播歌曲' : '未配置 text_directive_entity'}">
-                    <ha-icon icon="mdi:magnify"></ha-icon>
-                  </button>
-                  <button class="action-btn" style="background: ${themeColors.bg}; ${this.stopAlarmEntity ? '' : 'opacity: 0.4;'}" @click=${this.handleStopAlarm} title="停止当前闹钟">
-                    <ha-icon icon="mdi:alarm"></ha-icon>
-                  </button>
-                  <button class="action-btn" style="background: ${themeColors.bg}; ${this.xiaomiMiotEntity || this.xiaomiHomeEntity ? '' : 'opacity: 0.4;'}" @click=${this._toggleHistory} title="播放历史记录">
-                    <ha-icon icon="mdi:chart-box-outline"></ha-icon>
-                  </button>
-                  <button class="action-btn" style="background: ${this.showLyrics ? 'rgba(25,165,225,0.45)' : themeColors.bg};" @click=${this.handleLyricsToggle} ?disabled=${this.alwaysShowLyrics} title="歌词">
-                    <ha-icon icon="${this.showLyrics ? 'mdi:text-box-remove' : 'mdi:text-box'}"></ha-icon>
-                  </button>
-                  `)}
                 </div>
               </div>
             </div>
@@ -4764,12 +4651,7 @@ class SunXiaoaiCard extends LitElement {
               <button class="control-btn" style="background: ${themeColors.bg};" @click=${this.handleRepeat} title="循环模式">
                 <ha-icon icon="mdi:repeat"></ha-icon>
               </button>
-              ${(this._layoutMode === 'compact' && this._hasPanel2) ? html`
-              <!-- 紧凑 P1+P2 模式：歌词按钮移至单曲循环右侧 -->
-              <button class="control-btn" style="background: ${this.showLyrics ? 'rgba(25,165,225,0.45)' : themeColors.bg};" @click=${this.handleLyricsToggle} ?disabled=${this.alwaysShowLyrics} title="歌词">
-                <ha-icon icon="${this.showLyrics ? 'mdi:text-box-remove' : 'mdi:text-box'}"></ha-icon>
-              </button>
-              ` : ''}
+
             </div>
 
             <!-- 音量 -->
@@ -4840,7 +4722,6 @@ class SunXiaoaiCard extends LitElement {
     const themes = this._getEffectiveThemes();
     if (themes.length === 0) {
       this._currentThemeIndex = 0;
-      this._updateRoomBg();
       return;
     }
     try {
@@ -4854,7 +4735,6 @@ class SunXiaoaiCard extends LitElement {
     } catch (e) {
       this._currentThemeIndex = 0;
     }
-    this._updateRoomBg();
   }
 
   getImageUrl(configuredPath) {
@@ -4874,31 +4754,6 @@ class SunXiaoaiCard extends LitElement {
     return configuredPath;
   }
 
-  _getRoomImageUrl() {
-    if (!this.roomId) return '';
-    if (window.__mcRoomBgUrls && window.__mcRoomBgUrls[this.roomId]) {
-      return window.__mcRoomBgUrls[this.roomId];
-    }
-    const mainCard = this._deepQuerySelector('minecraft-dashboard-card');
-    if (mainCard && mainCard._config && Array.isArray(mainCard._config.rooms)) {
-      const roomConfig = mainCard._config.rooms.find(r => (r.id || r.name) === this.roomId);
-      if (roomConfig && roomConfig.image) {
-        if (typeof mainCard.getImageUrl === 'function') {
-          return mainCard.getImageUrl(roomConfig.image);
-        }
-        return this.getImageUrl(roomConfig.image);
-      }
-    }
-    return '';
-  }
-
-  _updateRoomBg() {
-    const url = this._getRoomImageUrl();
-    if (url !== this.roomBgUrl) {
-      this.roomBgUrl = url;
-      this.requestUpdate();
-    }
-  }
 
   // ========== 新增布局相关方法 ==========
 
@@ -4912,7 +4767,7 @@ class SunXiaoaiCard extends LitElement {
 
     if (themes.length === 0) {
       return {
-        bg: isLight ? 'rgba(0, 0, 0, 0.06)' : 'rgba(20, 18, 12, 0.45)',
+        bg: isLight ? 'rgba(255, 255, 255, 0.6)' : 'rgba(20, 18, 12, 0.45)',
         fg: fixedFg,
         muted: fixedMuted
       };
@@ -5078,7 +4933,6 @@ class SunXiaoaiCard extends LitElement {
       this._syncThemeFromMainCard();
       return;
     }
-    this._updateRoomBg();
   }
 
   // ========================================
@@ -5095,7 +4949,6 @@ class SunXiaoaiCard extends LitElement {
       // 自动使用小爱音箱实体
       const autoEntity = this.xiaomiMiotEntity || this.xiaomiHomeEntity;
       if (!autoEntity) return null;
-      const defaultUsers = ['孙先生', '孟女士'];
       return {
         name: this._hass?.states[autoEntity]?.attributes?.friendly_name || '小爱音箱',
         mediaEntity: autoEntity,
@@ -5104,13 +4957,12 @@ class SunXiaoaiCard extends LitElement {
         pageTabs: [{ name: '本地播放', icon: 'mdi:music', _builtin: 'player' }],
         defaultPage: '',
         playerPageLabel: '本地播放',
-        tabs: defaultUsers.map(u => ({ name: u, icon: 'mdi:account-music', playlists: [] })),
-        users: defaultUsers,
+        tabs: [],
+        users: [],
       };
     }
-    const users = Array.isArray(src.user)
-      ? src.user : (typeof src.user === 'string' ? src.user.split(',').map(s => s.trim()).filter(Boolean) : []);
-    const playlistTabs = users.map(u => ({ name: u, icon: 'mdi:account-music', playlists: [] }));
+    const users = [];
+    const playlistTabs = [];
     const playerPageLabel = src.player_page_label || '本地播放';
     const pageTabs = [{ name: playerPageLabel, icon: 'mdi:music', _builtin: 'player' }];
     const userTabs = Array.isArray(src.tabs) ? src.tabs : [];
@@ -5144,8 +4996,10 @@ class SunXiaoaiCard extends LitElement {
       _popupContainer: null,
     };
     const popupState = state;
-    const users = playerCfg.users || [];
-    const playlistPromise = users.length > 0 ? Promise.all(users.map(u => this._fetchPlaylists(u))) : Promise.resolve(null);
+    // 配置了 local_music_path 时从媒体源加载（空值从根目录浏览）
+    const playlistPromise = (this._config?.local_music_path !== undefined)
+      ? Promise.all([this._fetchPlaylists('')])
+      : Promise.resolve(null);
     let contentContainer;
 
     const closePopup = this.showPopup({
@@ -5163,8 +5017,14 @@ class SunXiaoaiCard extends LitElement {
     });
 
     playlistPromise.then(allPlaylists => {
-      if (allPlaylists && playerCfg.tabs) {
-        allPlaylists.forEach((pls, idx) => { if (playerCfg.tabs[idx]) playerCfg.tabs[idx].playlists = pls; });
+      if (allPlaylists) {
+        // 使用 local_music_path 时，直接填充第一个用户标签
+        if (this._config?.local_music_path && allPlaylists[0]) {
+          playerCfg.tabs = [{ name: '本地音乐', icon: 'mdi:music', playlists: allPlaylists[0] }];
+          playerCfg.users = [''];
+        } else if (playerCfg.tabs) {
+          allPlaylists.forEach((pls, idx) => { if (playerCfg.tabs[idx]) playerCfg.tabs[idx].playlists = pls; });
+        }
       }
       if (contentContainer) {
         this._fetchNowPlaying(playerCfg).then(nowPlaying => {
@@ -5298,7 +5158,7 @@ class SunXiaoaiCard extends LitElement {
     const playUrl = item.media_content_id || item.url || '';
     if (playUrl) this._hass.callService('media_player', 'play_media', { entity_id: te, media_content_id: playUrl, media_content_type: item.media_type || 'music' }).catch(() => {});
     this._saveMediaPlayerState(state); this._reportNowPlaying(cfg, state, item); this._saveCurrentPlayingItem(item, cfg, state);
-    // 设置本地音乐覆盖信息（参照 sun-music-card overlay 模式，确保右侧控制区正确显示）
+    // 设置本地音乐覆盖信息（参照 xiaoshi-music-card overlay 模式，确保右侧控制区正确显示）
     this._setChannel('local');
     this._overlayTitle = item.title || item.name || '';
     this._overlayArtist = item.artist || '';
@@ -5376,81 +5236,8 @@ class SunXiaoaiCard extends LitElement {
     this._mediaPlayerRefreshTimer = this._timers.setTimeout(tick, 1000);
   }
 
-  async _refreshBackendButton(container, cfg) {
-    const btn = container.querySelector('[data-action="backend-play"]'); if (!btn) return;
-    const eid = cfg.mediaEntity; if (!eid || cfg._backendActive === false) return;
-    try { const r = await fetch(this._mediaApiUrl('media/queue?entity_id=' + encodeURIComponent(eid))); const j = await r.json(); const ia = j?.data?.is_active === 1; cfg._backendActive = !!ia; if (ia && !(btn.querySelector('span')?.textContent || '').includes('停止')) { btn.innerHTML = '<ha-icon icon="mdi:stop-circle-outline" style="--mdc-icon-size:14px;flex-shrink:0;"></ha-icon><span>停止后端播放</span>'; btn.style.background = '#e74c3c'; btn.style.color = '#fff'; btn.style.borderColor = '#e74c3c'; } } catch(e) { cfg._backendActive = false; }
-  }
 
-  // 主卡片右面板后端播放按钮 — 切换后台播放（与弹窗内逻辑一致）
-  async _handleBackendPlayToggleMain() {
-    const cfg = this._parsePlayerConfig({});
-    if (!cfg) { this._showToast('未找到媒体实体', 'warning'); return; }
-    const eid = cfg.mediaEntity;
-    try {
-      // 先检查后端队列状态
-      const statusUrl = this._mediaApiUrl('media/queue?entity_id=' + encodeURIComponent(eid));
-      const statusResp = await fetch(statusUrl);
-      const statusJson = await statusResp.json();
-      const isActive = statusJson?.data?.is_active === 1;
-      this._backendActive = isActive;
-      // 如果活跃 → 停止
-      if (isActive) {
-        const stopUrl = this._mediaApiUrl('media/queue?entity_id=' + encodeURIComponent(eid));
-        await fetch(stopUrl, { method: 'DELETE' });
-        this._backendActive = false;
-        this._showToast('后端播放已停止', 'info');
-        this.requestUpdate();
-        return;
-      }
-    } catch(e) {}
 
-    // 不活跃 → 启动后端播放：先拉取用户播放列表
-    const savedState = this._mediaPlayerState || {};
-    const users = cfg.users || [];
-    if (users.length > 0) {
-      const allPlaylists = await Promise.all(users.map(u => this._fetchPlaylists(u)));
-      allPlaylists.forEach((pls, idx) => { if (cfg.tabs[idx]) cfg.tabs[idx].playlists = pls; });
-    }
-    const tIdx = savedState.activeTabIndex || 0;
-    const plIdx = savedState.activePlaylistIndex >= 0 ? savedState.activePlaylistIndex : 0;
-    const currentPl = cfg.tabs?.[tIdx]?.playlists?.[plIdx];
-    if (!currentPl || !Array.isArray(currentPl.items) || currentPl.items.length === 0) {
-      this._showToast('请先打开本地音乐，选择有歌曲的播放列表', 'warning'); return;
-    }
-    const startIdx = savedState.activeItemIndex >= 0 ? savedState.activeItemIndex : 0;
-    const startTrack = currentPl.items[startIdx];
-    const entityState = this._hass?.states?.[eid];
-    const isCurrentlyPlaying = entityState?.state === 'playing';
-    if (startTrack) {
-      // 🛑 LOCAL 后端播放前：先暂停板块1（MIoT）和板块3（MA）—— 三通道互斥
-      this._pauseOtherChannels();
-      if (!isCurrentlyPlaying) {
-        this._hass.callService('media_player', 'play_media', {
-          entity_id: eid,
-          media_content_id: startTrack.media_content_id || startTrack.url || '',
-          media_content_type: startTrack.media_type || 'music'
-        }).catch(() => {});
-      }
-    }
-    const tracksSlim = currentPl.items.map(it => ({
-      id: it.id || null, title: it.title || '', artist: it.artist || '',
-      album: it.album || '', media_content_id: it.media_content_id || it.url || '',
-      media_type: it.media_type || 'music', duration: it.duration || 0,
-      has_cover: it.has_cover || 0, has_lyrics: it.has_lyrics || 0
-    }));
-    try {
-      const startResp = await fetch(this._mediaApiUrl('media/queue'), {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entity_id: eid, tracks: tracksSlim, current_index: startIdx, is_active: true })
-      });
-      const startJson = await startResp.json();
-      if (!startResp.ok || !startJson.success) { this._showToast('后端列表播放启动失败', 'error'); return; }
-      this._backendActive = true;
-      this._showToast('后端列表播放已启动', 'success');
-      this.requestUpdate();
-    } catch(fetchErr) { this._showToast('后端请求失败: ' + fetchErr.message, 'error'); }
-  }
 
   _calcRealPosition(es) { if (!es) return 0; const p = es.attributes?.media_position || 0; const ua = es.attributes?.media_position_updated_at; if (es.state === 'playing' && ua) return p + Math.max(0, Math.floor((Date.now() - new Date(ua).getTime()) / 1000)); return p; }
 
@@ -5494,11 +5281,40 @@ class SunXiaoaiCard extends LitElement {
   }
 
   // ======= 播放列表 API =======
-  async _fetchPlaylists(userName) { try { const r = await fetch(this._mediaApiUrl('media/playlists?user=' + encodeURIComponent(userName))); const j = await r.json(); if (!j.success) return []; return (j.data?.playlists || []).map(p => ({ id: p.id, name: p.name, items: Array.isArray(p.songs) ? p.songs : [] })); } catch(e) { return []; } }
-  async _savePlaylist(userName, name) { try { const r = await fetch(this._mediaApiUrl('media/playlists'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_name: userName, name }) }); const j = await r.json(); return j.success; } catch(e) { return false; } }
-  async _deletePlaylist(playlistId, userName) { try { const r = await fetch(this._mediaApiUrl('media/playlists/' + encodeURIComponent(playlistId)), { method: 'DELETE' }); const j = await r.json(); return j.success; } catch(e) { return false; } }
-  async _addSongToBackend(playlistId, songItem) { if (!playlistId || !songItem) return null; try { const r = await fetch(this._mediaApiUrl('media/playlists/' + encodeURIComponent(playlistId) + '/songs'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ media_content_id: songItem.media_content_id || '', media_type: songItem.media_type || 'music', title: songItem.title || '' }) }); const j = await r.json(); if (j.success && j.id) return j.id; return null; } catch(e) { return null; } }
-  async _deleteSongFromBackend(songId) { if (!songId) return false; try { const r = await fetch(this._mediaApiUrl('media/songs/' + encodeURIComponent(songId)), { method: 'DELETE' }); const j = await r.json(); return j.success; } catch(e) { return false; } }
+  async _fetchPlaylists(userName) { try { const paths = (this._config?.local_music_path || '').split('\n').map(p => p.trim()).filter(p => p); if (paths.length === 0) { const pls = []; await this._collectPlaylists('', pls); return pls.filter(p => p.items.length > 0); } const all = []; for (const path of paths) { const pls = []; await this._collectPlaylists(path, pls); all.push(pls.filter(p => p.items.length > 0)); } return all.flat(); } catch(e) { return []; } }
+
+  async _collectPlaylists(mediaContentId, pls) {
+    const result = await this._browseMediaSource(mediaContentId).catch(() => ({children:[]}));
+    const children = result.children || [];
+    const directFiles = [];
+    for (const c of children) {
+      if (c.can_expand) {
+        // 递归处理子文件夹——每个子文件夹作为一个独立歌单
+        await this._collectPlaylists(c.media_content_id, pls);
+      } else if (this._isAudioFile(c)) {
+        directFiles.push({ title: c.title, artist: '', media_content_id: c.media_content_id, media_type: c.media_content_type || 'music', cover_url: c.thumbnail || '' });
+      }
+    }
+    if (directFiles.length > 0) pls.push({ id: mediaContentId, name: this._getFolderName(mediaContentId), items: directFiles });
+  }
+
+  _getFolderName(mediaContentId) {
+    const parts = mediaContentId.split('/'); return parts[parts.length - 1] || parts[parts.length - 2] || '本地音乐';
+  }
+
+  _isAudioFile(c) {
+    const name = (c.title || c.name || '').toLowerCase();
+    const ext = name.split('.').pop();
+    const audioExts = ['mp3','flac','wav','ogg','m4a','wma','aac','opus','ape','aiff','dsf','dff','wv','alac','ac3','dts','m4b','mid','midi','ra','spx','tta','cda'];
+    if (audioExts.includes(ext)) return true;
+    const type = (c.media_content_type || '').toLowerCase();
+    if (type === 'music' || type === 'audio' || type.startsWith('audio/')) return true;
+    return false;
+  }
+  async _savePlaylist(userName, name) { return false; /* 配置只读 */ }
+  async _deletePlaylist(playlistId, userName) { return false; /* 配置只读 */ }
+  async _addSongToBackend(playlistId, songItem) { return null; /* 配置只读 */ }
+  async _deleteSongFromBackend(songId) { return false; /* 配置只读 */ }
   async _refreshPlaylists(cfg, state) { const u = cfg.users?.[state.activeTabIndex]; if (!u) return; const pls = await this._fetchPlaylists(u); const tb = cfg.tabs[state.activeTabIndex]; if (tb) tb.playlists = pls; if (state._popupContainer) this._rerenderCurrentView(state._popupContainer, cfg, state); }
   /** 上报正在播放（通用数据对象，供各通道调用）
    *  @param {Object} data - 播放数据
@@ -5543,15 +5359,6 @@ class SunXiaoaiCard extends LitElement {
       };
       localStorage.setItem(lsKey, JSON.stringify(lsData));
     } catch (lsError) {}
-
-    // 上报到后端 API
-    try {
-      await fetch(this._mediaApiUrl('media/now_playing'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-    } catch (e) {}
   }
 
   async _reportNowPlaying(cfg, state, item) {
@@ -5559,9 +5366,7 @@ class SunXiaoaiCard extends LitElement {
     const u = cfg.users?.[state.activeTabIndex] || '';
     let pid = null;
     if (state.activePlaylistIndex >= 0) pid = cfg.tabs?.[state.activeTabIndex]?.playlists?.[state.activePlaylistIndex]?.id || null;
-    // 保存到后端 API
-    try { await fetch(this._mediaApiUrl('media/now_playing'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entity_id: cfg.mediaEntity, song_id: item.id, playlist_id: pid, user: u }) }); } catch(e) {}
-    // 同时写入 localStorage（刷新页面恢复 — 使用 local 通道独立命名空间）
+    // 保存到 localStorage（刷新页面恢复 — 使用 local 通道独立命名空间）
     try {
       const lsData = {
         entity_id: cfg.mediaEntity,
@@ -5612,7 +5417,6 @@ class SunXiaoaiCard extends LitElement {
       }
       // 歌曲匹配检查（仅 MA 通道：MA WS 报告了不同歌曲时跳过 localStorage 恢复，避免旧数据覆盖）
       if (ch === 'ma' && this._maTrackName && data.title !== this._maTrackName) {
-        console.log('[sun-xiaoai-card] MA 通道 localStorage song mismatch (MA WS: ' + this._maTrackName + ' vs 存储: ' + data.title + '), 跳过恢复');
         return null;
       }
       // 过期检查
@@ -5628,7 +5432,7 @@ class SunXiaoaiCard extends LitElement {
     } catch(e) { return null; }
   }
 
-  /** 从 localStorage 恢复 MA 通道 overlay（参照 sun-music-card.js 恢复逻辑）
+  /** 从 localStorage 恢复 MA 通道 overlay（参照 xiaoshi-music-card.js 恢复逻辑）
    *  根据 last_source 区分网易推荐/QQ音乐，调用各自的恢复方法。
    *  仅操作 _maOverlay，不影响 MIoT/LOCAL。
    */
@@ -5645,16 +5449,14 @@ class SunXiaoaiCard extends LitElement {
 
     // 若两者皆无，则放弃
     if (!lsData && !savedSource) {
-      console.log('[sun-xiaoai-card] 📦 MA-localStorage 无数据，放弃恢复');
       return;
     }
 
-    // 检测占位符（和 sun-music-card.js 一致）
+    // 检测占位符（和 xiaoshi-music-card.js 一致）
     const MIOT_PSEUDO = ['请欣赏（音乐）', '请欣赏', '暂无播放', '暂未播放', 'QQ音乐', '正在加载', '加载中', '无音乐播放'];
     if (lsData && lsData.title) {
       const isPseudo = MIOT_PSEUDO.some(p => lsData.title.includes(p));
       if (isPseudo) {
-        console.log('[sun-xiaoai-card] 📦 MA-localStorage 标题是占位符，清除:', lsData.title);
         try { localStorage.removeItem(this._getNpKey('ma')); } catch(e) {}
         lsData = null;
       }
@@ -5671,7 +5473,6 @@ class SunXiaoaiCard extends LitElement {
         this._maOverlay.artist = lsData.artist || '';
         this._maOverlay.coverUrl = lsData.cover_url || '';
       }
-      console.log('[sun-xiaoai-card] 📦 MA-localStorage 恢复 (netease):', this._maOverlay.title);
     } else if (effectiveSource === 'qqmusic') {
       this._setChannel('ma');
       this._maOverlay.source = 'qqmusic';
@@ -5681,7 +5482,6 @@ class SunXiaoaiCard extends LitElement {
         this._maOverlay.artist = lsData.artist || '';
         this._maOverlay.coverUrl = lsData.cover_url || '';
       }
-      console.log('[sun-xiaoai-card] 📦 MA-localStorage 恢复 (qqmusic):', this._maOverlay.title);
     } else if (effectiveSource === 'ma_search') {
       this._setChannel('ma');
       this._maOverlay.source = 'ma_search';
@@ -5691,7 +5491,6 @@ class SunXiaoaiCard extends LitElement {
         this._maOverlay.artist = lsData.artist || '';
         this._maOverlay.coverUrl = lsData.cover_url || '';
       }
-      console.log('[sun-xiaoai-card] 📦 MA-localStorage 恢复 (ma_search):', this._maOverlay.title);
     } else if (lsData) {
       this._setChannel('ma');
       this._maOverlay.source = lsData.source || '';
@@ -5699,7 +5498,6 @@ class SunXiaoaiCard extends LitElement {
       this._maOverlay.title = lsData.title || '';
       this._maOverlay.artist = lsData.artist || '';
       this._maOverlay.coverUrl = lsData.cover_url || '';
-      console.log('[sun-xiaoai-card] 📦 MA-localStorage 恢复 (generic):', this._maOverlay.title, 'source=', lsData.source);
     }
 
     this.requestUpdate();
@@ -5720,44 +5518,11 @@ class SunXiaoaiCard extends LitElement {
       }
     } catch(e) {}
   }
-  async _fetchNowPlaying(cfg) { try { const r = await fetch(this._mediaApiUrl('media/now_playing?entity_id=' + encodeURIComponent(cfg.mediaEntity))); const j = await r.json(); return (j.success && j.data) ? j.data : null; } catch(e) { return null; } }
-  async _clearNowPlaying(cfg) { try { await fetch(this._mediaApiUrl('media/now_playing?entity_id=' + encodeURIComponent(cfg.mediaEntity)), { method: 'DELETE' }); } catch(e) {} this._clearNowPlayingLocalStorage(cfg?.mediaEntity ? 'local' : ''); }
+  async _fetchNowPlaying(cfg) { return null; /* 不再使用后端API */ }
+  async _clearNowPlaying(cfg) { this._clearNowPlayingLocalStorage(cfg?.mediaEntity ? 'local' : ''); }
 
-  // ======= 删除确认 =======
-  _showDeleteConfirm(pl, plIdx, cfg, state) {
-    let cb, cc;
-    const cp = this.showPopup({ content: () => { const w = document.createElement('div'); w.style.cssText = 'padding:24px;text-align:center;'; w.innerHTML = '<ha-icon icon="mdi:delete-alert" style="--mdc-icon-size:48px;color:#e74c3c;"></ha-icon><div style="font-size:16px;font-weight:600;color:var(--room-primary-text,#2c3e50);margin-top:12px;">删除播放列表</div><div style="font-size:13px;color:var(--room-secondary-text,#999);margin-top:8px;">确定删除「' + this._escapeHtml(pl.name || '') + '」？此操作不可撤销。</div><div style="display:flex;gap:10px;margin-top:20px;justify-content:center;"><button class="del-cancel-btn" style="padding:8px 24px;border:1px solid var(--room-popup-card-border,rgba(0,0,0,0.1));border-radius:8px;cursor:pointer;background:var(--room-button-bg,rgba(0,0,0,0.05));color:var(--room-primary-text,#2c3e50);font-size:13px;">取消</button><button class="del-confirm-btn" style="padding:8px 24px;border:none;border-radius:8px;cursor:pointer;background:#e74c3c;color:#fff;font-size:13px;font-weight:600;">确认删除</button></div>'; return w; }, style: 'width:min(340px,85vw);border-radius:16px;padding:0;background:var(--room-popup-bg,rgba(255,255,255,0.98));', showOverlay: true, showBackground: true });
-    setTimeout(() => { const p = document.querySelector('.sun-popup'); if (!p) return; const cc2 = p.querySelector('.del-cancel-btn'); const cb2 = p.querySelector('.del-confirm-btn'); if (cc2) cc2.addEventListener('click', () => cp()); if (cb2) cb2.addEventListener('click', async () => { cb2.textContent = '...'; cb2.disabled = true; await this._doDeletePlaylist(pl, plIdx, cfg, state); cp(); }); }, 50);
-  }
 
-  async _doDeletePlaylist(pl, plIdx, cfg, state) {
-    if (!pl.id) { const tb = cfg.tabs[state.activeTabIndex]; if (tb?.playlists) { tb.playlists.splice(plIdx, 1); if (state.activePlaylistIndex === plIdx) state.activePlaylistIndex = -1; else if (state.activePlaylistIndex > plIdx) state.activePlaylistIndex--; } }
-    else { await this._deletePlaylist(pl.id); await this._refreshPlaylists(cfg, state); }
-    if (state._popupContainer && state.activePageIndex === 0) this._rerenderCurrentView(state._popupContainer, cfg, state);
-  }
-
-  // ======= 刷新播放列表元数据（歌曲封面/歌词）=======
-  _showRefreshConfirm(pl, plIdx, cfg, state) {
-    let cc, cb;
-    const cp = this.showPopup({ content: () => { const w = document.createElement('div'); w.style.cssText = 'padding:24px;text-align:center;'; w.innerHTML = '<ha-icon icon="mdi:refresh" style="--mdc-icon-size:48px;color:#3498db;"></ha-icon><div style="font-size:16px;font-weight:600;color:var(--room-primary-text,#2c3e50);margin-top:12px;">刷新元数据</div><div style="font-size:13px;color:var(--room-secondary-text,#999);margin-top:8px;">确定重新扫描「' + this._escapeHtml(pl.name || '') + '」的歌曲元数据？<br>该操作将在后台运行，可能需要几分钟。</div><div style="display:flex;gap:10px;margin-top:20px;justify-content:center;"><button class="ref-cancel-btn" style="padding:8px 24px;border:1px solid var(--room-popup-card-border,rgba(0,0,0,0.1));border-radius:8px;cursor:pointer;background:var(--room-button-bg,rgba(0,0,0,0.05));color:var(--room-primary-text,#2c3e50);font-size:13px;">取消</button><button class="ref-confirm-btn" style="padding:8px 24px;border:none;border-radius:8px;cursor:pointer;background:#3498db;color:#fff;font-size:13px;font-weight:600;">确认刷新</button></div>'; return w; }, style: 'width:min(340px,85vw);border-radius:16px;padding:0;background:var(--room-popup-bg,rgba(255,255,255,0.98));', showOverlay: true, showBackground: true });
-    setTimeout(() => { const p = document.querySelector('.sun-popup'); if (!p) return; const cc2 = p.querySelector('.ref-cancel-btn'); const cb2 = p.querySelector('.ref-confirm-btn'); if (cc2) cc2.addEventListener('click', () => cp()); if (cb2) cb2.addEventListener('click', async () => { cb2.textContent = '...'; cb2.disabled = true; await this._refreshPlaylistMeta(pl, plIdx, cfg, state); cp(); }); }, 50);
-  }
-
-  async _refreshPlaylistMeta(pl, plIdx, cfg, state) {
-    if (!pl.id) return this._showToast('该列表暂无后端ID，无法刷新元数据', 'warning');
-    try {
-      const r = await fetch(this._mediaApiUrl('media/playlists/' + encodeURIComponent(pl.id) + '?refresh_meta=1'), { method: 'PUT' });
-      const j = await r.json();
-      if (j.success) {
-        this._showToast('已启动元数据刷新：「' + this._escapeHtml(pl.name || '') + '」', 'success');
-        await this._refreshPlaylists(cfg, state);
-      } else {
-        this._showToast('刷新失败：' + (j.message || '未知错误'), 'error');
-      }
-    } catch(e) { this._showToast('刷新请求失败：' + e.message, 'error'); }
-  }
-
-  // ======= 整列表播放 / 后台队列（参照 sun-music-card）=======
+  // ======= 整列表播放 / 后台队列（参照 xiaoshi-music-card）=======
   async _startQueuePlayback(cfg, state, pl) {
     if (!pl || !Array.isArray(pl.items) || pl.items.length === 0) { this._showToast('列表为空，无法播放', 'warning'); return; }
     // 🛑 LOCAL 队列播放前：先暂停板块1（MIoT）和板块3（MA）—— 三通道互斥
@@ -5788,34 +5553,8 @@ class SunXiaoaiCard extends LitElement {
     this._showToast('已开始播放列表「' + this._escapeHtml(pl.name || '') + '」', 'success');
   }
 
-  async _toggleBackendQueue(cfg, state, pl, btn) {
-    const entityId = cfg.mediaEntity;
-    if (!pl || !Array.isArray(pl.items) || pl.items.length === 0) { this._showToast('列表为空', 'warning'); return; }
-    if (!entityId) { this._showToast('未配置媒体实体', 'warning'); return; }
 
-    // 如果正在后台播放，则先停止
-    if (cfg._backendActive) {
-      try {
-        const stopUrl = this._mediaApiUrl('media/queue?entity_id=' + encodeURIComponent(entityId));
-        await fetch(stopUrl, { method: 'DELETE' });
-        cfg._backendActive = false;
-        if (btn) { btn.innerHTML = '<ha-icon icon="mdi:sync" style="--mdc-icon-size:12px;flex-shrink:0;"></ha-icon>后台播放'; btn.style.background = 'transparent'; btn.style.color = 'var(--room-icon-color,#3498db)'; btn.style.borderColor = 'var(--room-popup-card-border,rgba(0,0,0,0.12))'; }
-        this._showToast('已停止后台播放', 'info');
-      } catch(e) { this._showToast('停止后台播放失败', 'error'); }
-      return;
-    }
 
-    const startIdx = state.activeItemIndex >= 0 ? state.activeItemIndex : 0;
-    const tracksSlim = pl.items.map(it => ({ id: it.id || null, title: it.title || '', artist: it.artist || '', album: it.album || '', media_content_id: it.media_content_id || it.url || '', media_type: it.media_type || 'music', duration: it.duration || 0, has_cover: it.has_cover || 0, has_lyrics: it.has_lyrics || 0 }));
-    try {
-      const startResp = await fetch(this._mediaApiUrl('media/queue'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entity_id: entityId, tracks: tracksSlim, current_index: startIdx, is_active: true }) });
-      const startJson = await startResp.json();
-      if (!startResp.ok || !startJson.success) { this._showToast('后台播放启动失败', 'error'); return; }
-      cfg._backendActive = true;
-      if (btn) { btn.innerHTML = '<ha-icon icon="mdi:stop-circle-outline" style="--mdc-icon-size:12px;flex-shrink:0;"></ha-icon>停止后台播放'; btn.style.background = '#e74c3c'; btn.style.color = '#fff'; btn.style.borderColor = '#e74c3c'; }
-      this._showToast('后台播放已启动', 'success');
-    } catch(e) { this._showToast('后台请求失败：' + e.message, 'error'); }
-  }
 
   // ======= 媒体库浏览 =======
   _browseMediaSource(parentId) {
@@ -5945,20 +5684,13 @@ class SunXiaoaiCard extends LitElement {
     this._showToast('已添加 ' + added + ' 首歌曲到播放列表', 'success');
   }
 
-  async _removeFromPlaylist(cfg, state, tabIndex, playlistIndex, itemIndex) {
-    const tb = cfg.tabs[tabIndex]; const pl = tb?.playlists?.[playlistIndex]; if (!pl?.items) return;
-    const rm = pl.items.splice(itemIndex, 1)[0]; if (rm?.id) await this._deleteSongFromBackend(rm.id);
-    if (state.activeItemIndex === itemIndex) state.activeItemIndex = -1; else if (state.activeItemIndex > itemIndex) state.activeItemIndex--;
-    if (state._popupContainer) this._rerenderCurrentView(state._popupContainer, cfg, state);
-  }
-
   _showToast(msg, type) {
-    const existing = document.querySelector('.sun-xiaoai-toast');
+    const existing = document.querySelector('.xiaoshi-toast');
     if (existing) existing.remove();
     const toast = document.createElement('div');
-    toast.className = 'sun-xiaoai-toast';
+    toast.className = 'xiaoshi-toast';
     const colors = { success: '#2ecc71', warning: '#f39c12', error: '#e74c3c', info: '#3498db' };
-    toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:100000;background:' + (colors[type] || '#333') + ';color:#fff;padding:10px 22px;border-radius:20px;font-size:14px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2);pointer-events:none;max-width:90vw;text-align:center;';
+    toast.style.cssText = 'position:fixed;top:50%;left:50%;transform:translateX(-50%);z-index:100000;background:' + (colors[type] || '#333') + ';color:#fff;padding:10px 22px;border-radius:20px;font-size:14px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2);pointer-events:none;max-width:90vw;text-align:center;';
     toast.textContent = msg;
     document.body.appendChild(toast);
     window.setTimeout(() => { toast.remove(); }, 2500);
@@ -5975,7 +5707,7 @@ class SunXiaoaiCard extends LitElement {
     } = options || {};
 
     const overlay = document.createElement('div');
-    overlay.className = 'sun-popup-overlay';
+    overlay.className = 'xiaoshi-popup-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:99990;';
     if (showBackground) {
       overlay.style.background = overlayBlur
@@ -5983,7 +5715,7 @@ class SunXiaoaiCard extends LitElement {
         : 'rgba(0,0,0,0.35)';
     }
     const popup = document.createElement('div');
-    popup.className = className || 'sun-popup';
+    popup.className = className || 'xiaoshi-popup';
     popup.style.cssText = (style || '') + ';position:relative;z-index:1;margin:auto;';
     if (width) popup.style.width = width;
     if (maxWidth) popup.style.maxWidth = maxWidth;
@@ -6046,14 +5778,14 @@ class SunXiaoaiCard extends LitElement {
     } = options || {};
 
     const overlay = document.createElement('div');
-    overlay.className = 'sun-bubble-overlay';
+    overlay.className = 'xiaoshi-bubble-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:99990;';
     if (showBackdrop) {
       overlay.style.background = 'rgba(0,0,0,0.35)';
     }
 
     const bubble = document.createElement('div');
-    bubble.className = className || 'sun-bubble';
+    bubble.className = className || 'xiaoshi-bubble';
     bubble.style.cssText = 'position:fixed;z-index:1;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,0.2);overflow:hidden;';
     if (width) bubble.style.width = width;
     if (maxWidth) bubble.style.maxWidth = maxWidth + 'px';
@@ -6311,7 +6043,7 @@ class SunXiaoaiCard extends LitElement {
     this._bindPlayerEvents(popupContainer, cfg, state);
   }
 
-  // 参照 sun-music-card.js handlePlaylistTabSwitch：仅更新 tab 栏 + 滚动内容区
+  // 参照 xiaoshi-music-card.js handlePlaylistTabSwitch：仅更新 tab 栏 + 滚动内容区
   // 避免 _renderListView 的 innerHTML='' 全量重建导致用户切换卡顿
   _updateTabContent(container, cfg, state) {
     if (!container) return;
@@ -6402,48 +6134,19 @@ class SunXiaoaiCard extends LitElement {
   }
 
   _renderListView(container, cfg, state) {
-    // 参照 sun-music-card.js 的 lit-html 行为：每次渲染前清空容器，避免 append 堆积导致重复弹窗
+    // 参照 xiaoshi-music-card.js 的 lit-html 行为：每次渲染前清空容器，避免 append 堆积导致重复弹窗
     container.innerHTML = '';
     const bg = document.createElement('div'); bg.style.cssText = 'position:absolute;inset:0;z-index:0;background:var(--room-popup-bg,rgba(255,255,255,0.98));backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);pointer-events:none;';
     container.appendChild(bg);
     const wrap = document.createElement('div'); wrap.style.cssText = 'position:relative;z-index:1;display:flex;flex-direction:column;height:100%;';
-    // ===== 顶部栏：关闭 + 标题 + 操作按钮（新建/添加） =====
-    const topRow = document.createElement('div'); topRow.style.cssText = 'display:flex;align-items:center;gap:8px;padding:12px 16px;flex-shrink:0;';
-    const closeBtn = document.createElement('button'); closeBtn.dataset.action = 'close-popup'; closeBtn.title = '关闭';
-    closeBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:none;border-radius:50%;cursor:pointer;background:var(--room-button-bg,rgba(0,0,0,0.06));color:var(--room-icon-color,#555);flex-shrink:0;';
-    closeBtn.innerHTML = '<ha-icon icon="mdi:close" style="--mdc-icon-size:18px;"></ha-icon>';
-    if (state._closePopup) { closeBtn.addEventListener('click', () => state._closePopup()); }
-    topRow.appendChild(closeBtn);
-    const titleEl = document.createElement('div'); titleEl.style.cssText = 'flex:1;text-align:center;font-size:15px;font-weight:600;color:var(--room-primary-text,#2c3e50);'; titleEl.textContent = this._escapeHtml(cfg.name || cfg.playerPageLabel || '播放列表'); topRow.appendChild(titleEl);
-    // 右侧操作按钮组：新建列表 + 从媒体库添加（保持 justify-content:flex-end 以兼容 _bindPlayerEvents 的替换逻辑）
-    const actionWrap = document.createElement('div');
-    actionWrap.style.cssText = 'display:flex;align-items:center;justify-content:flex-end;gap:6px;';
-    const topNewBtn = document.createElement('button'); topNewBtn.dataset.action = 'new-playlist'; topNewBtn.title = '新建播放列表';
-    topNewBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;width:30px;height:30px;border:none;border-radius:8px;cursor:pointer;background:var(--room-button-bg,rgba(0,0,0,0.05));color:var(--room-icon-color,#2ecc71);flex-shrink:0;';
-    topNewBtn.innerHTML = '<ha-icon icon="mdi:playlist-plus" style="--mdc-icon-size:18px;"></ha-icon>';
-    // 直接绑定点击事件（参照 sun-music-card handleNewPlaylist，不依赖事件委托）
-    topNewBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const user = cfg.users?.[state.activeTabIndex];
-      if (!user) return;
-      actionWrap.innerHTML = '';
-      const iw = this._createNewPlaylistInput(user, cfg, state, () => {
-        this._rerenderCurrentView(state._popupContainer, cfg, state);
-      });
-      actionWrap.appendChild(iw);
-    });
-    const topAddMediaBtn = document.createElement('button'); topAddMediaBtn.title = '从媒体库添加';
-    topAddMediaBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;width:30px;height:30px;border:none;border-radius:8px;cursor:pointer;background:var(--room-button-bg,rgba(0,0,0,0.05));color:var(--room-icon-color,#3498db);flex-shrink:0;';
-    topAddMediaBtn.innerHTML = '<ha-icon icon="mdi:music-box-multiple" style="--mdc-icon-size:18px;"></ha-icon>';
-    topAddMediaBtn.addEventListener('click', () => { this._openMediaBrowser(cfg, state, state.activeTabIndex, state.activePlaylistIndex >= 0 ? state.activePlaylistIndex : 0); });
-    actionWrap.appendChild(topNewBtn); actionWrap.appendChild(topAddMediaBtn); topRow.appendChild(actionWrap);
+    // ===== 顶部栏：简化 — 仅标题 =====
+    const topRow = document.createElement('div'); topRow.style.cssText = 'display:flex;align-items:center;padding:12px 16px;flex-shrink:0;';
+    const titleEl = document.createElement('div'); titleEl.style.cssText = 'flex:1;text-align:center;font-size:15px;font-weight:600;color:var(--room-primary-text,#2c3e50);'; titleEl.textContent = '本地音乐'; topRow.appendChild(titleEl);
     wrap.appendChild(topRow);
-    // 用户 Tab 栏
-    if (cfg.tabs.length > 0) { const tabBar = this._renderUserTabBar(cfg, state); wrap.appendChild(tabBar); }
     // 滚动内容区
     const scrollArea = document.createElement('div'); scrollArea.style.cssText = 'flex:1;overflow-y:auto;padding:4px 16px 24px;-webkit-overflow-scrolling:touch;min-height:0;';
     const currentTab = cfg.tabs[state.activeTabIndex]; const playlists = Array.isArray(currentTab?.playlists) ? currentTab.playlists : [];
-    if (playlists.length === 0) { const emptyDiv = document.createElement('div'); emptyDiv.style.cssText = 'text-align:center;padding:40px 0;color:var(--room-secondary-text,#999);font-size:13px;'; emptyDiv.textContent = '暂无播放列表，点击右上角 + 新建'; scrollArea.appendChild(emptyDiv); }
+    if (playlists.length === 0) { const emptyDiv = document.createElement('div'); emptyDiv.style.cssText = 'text-align:center;padding:40px 0;color:var(--room-secondary-text,#999);font-size:13px;'; emptyDiv.textContent = '暂无音乐'; scrollArea.appendChild(emptyDiv); }
     else { const listWrap = document.createElement('div'); listWrap.className = 'pl-list-wrap'; listWrap.style.cssText = ''; playlists.forEach((pl, plIdx) => { this._renderPlaylistItem(listWrap, pl, plIdx, cfg, state, container); }); scrollArea.appendChild(listWrap); }
     wrap.appendChild(scrollArea); container.appendChild(wrap);
   }
@@ -6458,65 +6161,18 @@ class SunXiaoaiCard extends LitElement {
     const nameEl = document.createElement('span'); nameEl.style.cssText = 'flex:1;font-size:13px;font-weight:600;color:var(--room-primary-text,#2c3e50);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'; nameEl.textContent = this._escapeHtml(pl.name || '列表 ' + (plIdx + 1)); header.appendChild(nameEl);
     const countEl = document.createElement('span'); countEl.style.cssText = 'font-size:11px;color:var(--room-secondary-text,#999);flex-shrink:0;'; countEl.textContent = (items.length || 0) + ' 首'; header.appendChild(countEl);
 
-    // ===== 4个操作按钮（参照 sun-music-card 的 pl-item-actions） =====
-    const actions = document.createElement('div');
-    actions.style.cssText = 'display:flex;align-items:center;gap:2px;flex-shrink:0;margin-left:2px;';
 
-    // ① 播放全部（mdi:play）
+    // 播放全部按钮
     const playAllBtn = document.createElement('button');
     playAllBtn.title = '播放全部';
-    playAllBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:none;border-radius:6px;cursor:pointer;background:transparent;color:var(--room-icon-color,#3498db);';
-    playAllBtn.innerHTML = '<ha-icon icon="mdi:play" style="--mdc-icon-size:16px;"></ha-icon>';
+    playAllBtn.style.cssText = 'display:flex;align-items:center;gap:3px;padding:4px 10px;border:1px solid var(--room-popup-card-border,rgba(0,0,0,0.12));border-radius:6px;cursor:pointer;background:transparent;color:var(--room-icon-color,#3498db);font-size:11px;font-weight:500;flex-shrink:0;margin-left:4px;';
+    playAllBtn.innerHTML = '<ha-icon icon="mdi:play" style="--mdc-icon-size:12px;flex-shrink:0;"></ha-icon>播放列表';
     playAllBtn.addEventListener('click', (e) => { e.stopPropagation(); if (items.length > 0) { state.activeItemIndex = 0; this._playMediaItem(items[0], cfg, state, this.shadowRoot?.querySelector('.media-player-popup')); } });
-    actions.appendChild(playAllBtn);
-
-    // ② 刷新元数据（mdi:refresh）
-    const refreshBtn = document.createElement('button');
-    refreshBtn.title = '刷新元数据（重新扫描歌曲）';
-    refreshBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:none;border-radius:6px;cursor:pointer;background:transparent;color:var(--room-icon-color,#3498db);';
-    refreshBtn.innerHTML = '<ha-icon icon="mdi:refresh" style="--mdc-icon-size:15px;"></ha-icon>';
-    refreshBtn.addEventListener('click', (e) => { e.stopPropagation(); this._showRefreshConfirm(pl, plIdx, cfg, state); });
-    actions.appendChild(refreshBtn);
-
-    // ③ 从媒体库添加到本列表（mdi:plus-circle-outline）
-    const addMediaBtn = document.createElement('button');
-    addMediaBtn.title = '从媒体库添加';
-    addMediaBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:none;border-radius:6px;cursor:pointer;background:transparent;color:var(--room-icon-color,#3498db);';
-    addMediaBtn.innerHTML = '<ha-icon icon="mdi:plus-circle-outline" style="--mdc-icon-size:16px;"></ha-icon>';
-    addMediaBtn.addEventListener('click', (e) => { e.stopPropagation(); this._openMediaBrowser(cfg, state, state.activeTabIndex, plIdx); });
-    actions.appendChild(addMediaBtn);
-
-    // ④ 删除列表（mdi:delete-outline）
-    const delPlBtn = document.createElement('button');
-    delPlBtn.title = '删除播放列表';
-    delPlBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:none;border-radius:6px;cursor:pointer;background:transparent;color:var(--room-secondary-text,#ccc);';
-    delPlBtn.innerHTML = '<ha-icon icon="mdi:delete-outline" style="--mdc-icon-size:15px;"></ha-icon>';
-    delPlBtn.addEventListener('mouseenter', () => { delPlBtn.style.color = '#e74c3c'; delPlBtn.style.background = 'rgba(231,76,60,0.15)'; });
-    delPlBtn.addEventListener('mouseleave', () => { delPlBtn.style.color = 'var(--room-secondary-text,#ccc)'; delPlBtn.style.background = 'transparent'; });
-    delPlBtn.addEventListener('click', (e) => { e.stopPropagation(); this._showDeleteConfirm(pl, plIdx, cfg, state); });
-    actions.appendChild(delPlBtn);
-    header.appendChild(actions);
+    header.appendChild(playAllBtn);
     card.appendChild(header);
 
     if (plIdx === state.activePlaylistIndex && items.length > 0) {
-      // ===== 歌曲列表头部：播放列表 按钮（参照 sun-music-card 的 pl-songs-header） =====
-      const songsHeader = document.createElement('div');
-      songsHeader.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 12px 4px;flex-shrink:0;';
-
-      const headerTitle = document.createElement('span');
-      headerTitle.style.cssText = 'flex:1;font-size:11px;font-weight:500;color:var(--room-secondary-text,#999);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-      headerTitle.textContent = pl.name + ' · ' + items.length + ' 首';
-      songsHeader.appendChild(headerTitle);
-
-      // 播放整个列表（蓝色 mdi:play + "播放列表"）
-      const playAllQueueBtn = document.createElement('button');
-      playAllQueueBtn.title = '播放整个列表';
-      playAllQueueBtn.style.cssText = 'display:flex;align-items:center;gap:3px;padding:4px 8px;border:1px solid var(--room-popup-card-border,rgba(0,0,0,0.12));border-radius:6px;cursor:pointer;background:transparent;color:var(--room-icon-color,#3498db);font-size:11px;font-weight:500;';
-      playAllQueueBtn.innerHTML = '<ha-icon icon="mdi:play" style="--mdc-icon-size:12px;flex-shrink:0;"></ha-icon>播放列表';
-      playAllQueueBtn.addEventListener('click', async (e) => { e.stopPropagation(); await this._startQueuePlayback(cfg, state, pl); });
-      songsHeader.appendChild(playAllQueueBtn);
-
-      card.appendChild(songsHeader);
+      // 直接渲染歌曲列表，不重复显示文件夹信息
 
       // ===== 歌曲列表 =====
       const itemsWrap = document.createElement('div');
@@ -6545,7 +6201,7 @@ class SunXiaoaiCard extends LitElement {
         artistDiv.textContent = item.artist || '';
         infoDiv.appendChild(artistDiv);
         itemEl.appendChild(infoDiv);
-        // 元数据标签（LRC / COVER，参照 sun-music-card）
+        // 元数据标签（LRC / COVER，参照 xiaoshi-music-card）
         const tagWrap = document.createElement('div');
         tagWrap.style.cssText = 'display:flex;align-items:center;gap:3px;flex-shrink:0;';
         if (item.has_lyrics || item.has_lyrics === 1) {
@@ -6566,15 +6222,6 @@ class SunXiaoaiCard extends LitElement {
         durSpan.style.cssText = 'font-size:10px;color:var(--room-secondary-text,#999);flex-shrink:0;';
         durSpan.textContent = item.duration ? this._formatMediaTime(item.duration) : '';
         itemEl.appendChild(durSpan);
-        // 删除单首歌
-        const delItemBtn = document.createElement('button');
-        delItemBtn.title = '移除';
-        delItemBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;width:22px;height:22px;border:none;border-radius:4px;cursor:pointer;background:transparent;color:var(--room-secondary-text,#ccc);flex-shrink:0;';
-        delItemBtn.innerHTML = '<ha-icon icon="mdi:close-circle-outline" style="--mdc-icon-size:14px;"></ha-icon>';
-        delItemBtn.addEventListener('mouseenter', () => { delItemBtn.style.color = '#e74c3c'; delItemBtn.style.background = 'rgba(231,76,60,0.15)'; });
-        delItemBtn.addEventListener('mouseleave', () => { delItemBtn.style.color = 'var(--room-secondary-text,#ccc)'; delItemBtn.style.background = 'transparent'; });
-        delItemBtn.addEventListener('click', (ev) => { ev.stopPropagation(); this._removeFromPlaylist(cfg, state, state.activeTabIndex, plIdx, iIdx); });
-        itemEl.appendChild(delItemBtn);
         itemsWrap.appendChild(itemEl);
       });
       card.appendChild(itemsWrap);
@@ -6589,12 +6236,10 @@ class SunXiaoaiCard extends LitElement {
   }
 
   // ========================================
-  // API URL 构建
+  // API URL 构建（已弃用，本地音乐改为读取配置文件）
   // ========================================
   _mediaApiUrl(path) {
-    const base = (this._config?.api_base_url || '/api/ha_data_store/').replace(/\/+$/, '') + '/';
-    const k = this._config?.key || '';
-    return `${base}${path}${path.includes('?') ? '&' : '?'}key=${encodeURIComponent(k)}`;
+    try { const base = (this._config?.api_base_url || '/api/ha_data_store/').replace(/\/+$/, '') + '/'; const k = this._config?.key || ''; return `${base}${path}${path.includes('?') ? '&' : '?'}key=${encodeURIComponent(k)}`; } catch(e) { return ''; }
   }
 
   // ========================================
@@ -6619,19 +6264,18 @@ class SunXiaoaiCard extends LitElement {
 
   // 主入口：从"小爱语音"按钮点击触发
   showXiaoaiConversation(button) {
-    // 使用 xiaomiVoiceEntity 作为对话记录查询实体
-    const entityId = this.conversationEntity || this.xiaomiVoiceEntity || this.textDirectiveEntity;
-    if (!entityId) { this._showToast('请配置 xiaomi_voice_entity 或 conversation_entity', 'warning'); return; }
+    const entityId = this.conversationEntity || this.textDirectiveEntity;
+    if (!entityId) { this._showToast('请配置 conversation', 'warning'); return; }
 
     const cardConfig = {
       entity: entityId,
-      name: this._hass?.states[entityId]?.attributes?.friendly_name || '小爱语音对话',
+      name: this._hass?.states[entityId]?.attributes?.friendly_name || 'miot集成播放控制',
       conversation_page_days: 7,
       conversation_max_height: '65vh',
       conversation_width: '90%',
-      // 输入框：复用 text_directive_entity 发指令，配置 play_text_entity 则增加播报按钮
+      // 输入框：复用 execute_text_directive 发指令，配置 play_text 则增加播报按钮
       command_entity: this.textDirectiveEntity || '',
-      play_text_entity: this._config?.play_text_entity || '',
+      play_text: this._config?.play_text || '',
       quick_input: this._quickInput || [],
     };
     this._showConversationBubble(button, cardConfig, null);
@@ -6651,7 +6295,7 @@ class SunXiaoaiCard extends LitElement {
     const wCfg = cardConfig.conversation_width || '90%'; const width = typeof wCfg === 'number' ? wCfg + 'px' : wCfg;
     const userAvatarUrl = this._getCurrentUserAvatar();
     const commandEntity = cardConfig.command_entity || '';
-    const playTextEntity = cardConfig.play_text_entity || '';
+    const playTextEntity = cardConfig.play_text || '';
     const quickInputList = Array.isArray(cardConfig.quick_input)
       ? cardConfig.quick_input.map(s => (typeof s === 'string' ? s.trim() : '')).filter(Boolean) : [];
 
@@ -6723,7 +6367,7 @@ class SunXiaoaiCard extends LitElement {
       if (state2.scrollEl) requestAnimationFrame(() => { state2.scrollEl.scrollTop = state2.scrollEl.scrollHeight; });
     };
 
-    // 发送指令：优先用 command_entity，回退到 text_directive_entity
+    // 发送指令：优先用 command_entity，回退到 execute_text_directive
     const sendCommand = async (overrideText) => {
       const text = (typeof overrideText === 'string' ? overrideText : (inputEl.value || '')).trim();
       if (!text) return;
@@ -6731,18 +6375,17 @@ class SunXiaoaiCard extends LitElement {
       let targetEntity = commandEntity;
       if (!targetEntity) targetEntity = this.textDirectiveEntity || '';
       try {
-        if (!targetEntity) { this._showToast('请先配置 text_directive_entity 或 command_entity', 'warning'); return; }
+        if (!targetEntity) { this._showToast('请先配置 execute_text_directive 或 command_entity', 'warning'); return; }
         await this._hass.callService('text', 'set_value', { entity_id: targetEntity, value: text });
         appendLocalUserMessage(text);
         if (inputEl) inputEl.value = '';
         this._timers.setTimeout(() => { state2.allRows = []; state2.noMore = false; state2.startDate = null; state2.endDate = null; this._loadInitialConversation(state2, state2.scrollEl); }, 3000);
         this._saveConversationRecord(entityId, text, 'command');
       } catch(e) {
-        console.error('[sun-xiaoai-card] 发送失败:', e); if (targetEntity) this._showToast('发送失败', 'error'); else this._showToast('请先配置文本发送实体', 'warning');
       } finally { sendBtn.innerHTML = sendIconHtml; updateBtnState(); if (inputEl) inputEl.focus(); }
     };
 
-    // 播报文本：优先用 play_text_entity，回退到 text_directive_entity
+    // 播报文本：优先用 play_text，回退到 execute_text_directive
     const sendPlayText = async (overrideText) => {
       const text = (typeof overrideText === 'string' ? overrideText : (inputEl.value || '')).trim();
       if (!text) return;
@@ -6756,7 +6399,6 @@ class SunXiaoaiCard extends LitElement {
         if (inputEl) inputEl.value = '';
         this._saveConversationRecord(entityId, text, 'play_text').then(() => { state2.allRows = []; state2.noMore = false; state2.startDate = null; state2.endDate = null; this._loadInitialConversation(state2, state2.scrollEl); });
       } catch(e) {
-        console.error('[sun-xiaoai-card] 播报失败:', e); if (targetEntity) this._showToast('播报失败', 'error'); else this._showToast('请先配置播报实体或文本发送实体', 'warning');
       } finally { playBtn.innerHTML = playIconHtml; updateBtnState(); if (inputEl) inputEl.focus(); }
     };
 
@@ -6891,7 +6533,6 @@ class SunXiaoaiCard extends LitElement {
     if (this._maWs && this._maWsConnected) return;
     if (this._maWs && this._maWs.readyState === WebSocket.CLOSING) return;
     const wsUrl = this.maServerUrl.replace(/^http/, 'ws') + '/ws';
-    console.log('[sun-xiaoai-card] 🔌 连接 MA WebSocket:', wsUrl);
     if (this._maWs) { this._maWs.onclose = null; this._maWs.close(); this._maWs = null; }
     try {
       this._maWs = new WebSocket(wsUrl);
@@ -7052,26 +6693,9 @@ class SunXiaoaiCard extends LitElement {
         candidates.push({ entityId, score: 50, source: 'provider_attr' });
       }
     }
-    // 如果没有找到 MA 特征实体，尝试匹配 room_id 或 friendly_name 中的关键词
-    if (candidates.length === 0) {
-      const roomId = (this._config?.room_id || '').toLowerCase();
-      for (const [entityId, stateObj] of Object.entries(states)) {
-        if (!entityId.startsWith('media_player.')) continue;
-        if (entityId.includes('xiaomi') || entityId.includes('miot') || entityId.includes('home')) continue;
-        const fn = (stateObj.attributes?.friendly_name || '').toLowerCase();
-        if (fn.includes('mass') || fn.includes('ma ') || fn.includes('music assistant')) {
-          candidates.push({ entityId, score: 70, source: 'friendly_name' });
-        }
-        // 如果 entity_id 不含 xiaomi/miot/home 且不重复，纳入候选
-        if (roomId && fn.includes(roomId)) {
-          candidates.push({ entityId, score: 40, source: 'room_match' });
-        }
-      }
-    }
     // 分数最高的优先
     candidates.sort((a, b) => b.score - a.score);
     if (candidates.length > 0) {
-      console.log('[sun-xiaoai-card] 🔍 发现内部 MA 播放器实体:', candidates[0].entityId, '(来源:', candidates[0].source, ')');
       return candidates[0].entityId;
     }
     return '';
@@ -7190,7 +6814,7 @@ class SunXiaoaiCard extends LitElement {
       this.startSmoothProgressTimer();
     }
 
-    // ===== 来源特定增强（参照 sun-music-card.js）=====
+    // ===== 来源特定增强（参照 xiaoshi-music-card.js）=====
     // 仅在歌曲变化时检测来源并应用 UI 覆盖层。
     // ── 三通道：所有 overlay 写入 MA 通道（板块3：网易推荐/QQ音乐）──
     if (songChanged) {
@@ -7211,7 +6835,6 @@ class SunXiaoaiCard extends LitElement {
         this._activeOverlaySource = 'netease';
         this._overlayLyrics = [];
         try { localStorage.setItem(this._getLastSourceKey(), 'netease'); } catch(e) {}
-        console.log('[sun-xiaoai-card] netease源: 委托 _applyNeteaseOverlay 恢复...', trackName, trackArtist);
         await this._applyNeteaseOverlay();
         // 上报：只用 NCM 确认的数据
         this._reportNowPlayingData({
@@ -7259,7 +6882,6 @@ class SunXiaoaiCard extends LitElement {
           this._maOverlay.artist = this._maTrackArtist || '';
           if (this._maCoverUrl) this._maOverlay.coverUrl = this._maCoverUrl;
           if (this.lyrics.length > 0) this._overlayLyrics = this.lyrics;
-          console.log('[sun-xiaoai-card] QQ音乐覆盖: 使用MA WS数据(避免localStorage旧歌)');
         } else {
           await this._applyQQMusicOverlay();
         }
@@ -7307,20 +6929,17 @@ class SunXiaoaiCard extends LitElement {
           this._maOverlay.artist = this._maTrackArtist || '';
           this._maOverlay.coverUrl = this._maCoverUrl || this._maOverlay.coverUrl;
         }
-        console.log('[sun-xiaoai-card] MA 来源未识别，保留 MA WS 数据:', this._maTrackName);
       }
 
       if (source) {
-        console.log('[sun-xiaoai-card] MA源覆盖: source=', source, '标题=', this._overlayTitle || this._maTrackName);
       }
     }
 
     // ── 非歌曲变化时同步 MA WS 封面到 overlay（解决后续推送封面时 overlay 不更新的问题）──
-    // 参照 sun-music-card.js：MA WS 可能会在歌曲不变时推送新的封面数据（如图片延迟加载）
+    // 参照 xiaoshi-music-card.js：MA WS 可能会在歌曲不变时推送新的封面数据（如图片延迟加载）
     if (!songChanged && this._maCoverUrl && this._maOverlay.source && this._maOverlay.active) {
       if (this._maCoverUrl !== this._maOverlay.coverUrl) {
         this._maOverlay.coverUrl = this._maCoverUrl;
-        console.log('[sun-xiaoai-card] MA 封面延迟同步:', this._maCoverUrl);
       }
     }
 
@@ -7409,7 +7028,6 @@ class SunXiaoaiCard extends LitElement {
     // 如果按 content_id 检测会错误地返回 ma_search 而非 qqmusic/netease。
     // _maOverlay.source 是用户点击播放时设置的真实来源，比 HA 实体属性更可靠。
     if (maSource && ['netease','qqmusic','local','ma_search'].includes(maSource)) {
-      console.log('[sun-xiaoai-card] _detectActiveSource: 直接信任 overlay 来源=', maSource);
       return maSource;
     }
     if (!state || !state.attributes) return '';
@@ -7559,27 +7177,23 @@ class SunXiaoaiCard extends LitElement {
           clearPlaying(); return;
         }
       } catch (wsError) {
-        console.warn('[sun-xiaoai-card] MA WS 播放失败:', wsError);
       }
     }
 
     // 方案2: 通过 HA music_assistant 服务播放
     if (maEntity) {
       try {
-        console.log('[sun-xiaoai-card] MA 歌名播放:', track.name, '-', track.artists);
         await this._hass.callService('music_assistant', 'play_media', {
           media_id: track.name,
           media_type: 'track',
           artist: track.artists,
           enqueue: 'replace'
         }, { entity_id: maEntity });
-        console.log('[sun-xiaoai-card] MA 歌名播放成功:', track.name);
         const trackIndex = this._neteasePlaylistTracks.findIndex(t => t.id === track.id || t.name === track.name);
         if (trackIndex >= 0) { this._enqueueRemainingMaTracks(this._neteasePlaylistTracks, trackIndex, 'netease'); }
         clearPlaying(); return;
       } catch (maError) {
         const msg = (maError?.message || String(maError)).toLowerCase();
-        console.warn('[sun-xiaoai-card] MA 歌名播放失败:', msg);
         if (msg.includes('connect first')) {
           this._neteaseRecommendedError = 'Music Assistant 未连接，请检查 MA 加载项是否运行';
           this.requestUpdate(); clearPlaying(); return;
@@ -7618,9 +7232,7 @@ class SunXiaoaiCard extends LitElement {
         media_content_id: playUrl,
         media_content_type: 'music'
       });
-      console.log('[sun-xiaoai-card] media_player.play_media 回退成功');
     } catch (e) {
-      console.error('[sun-xiaoai-card] URL 播放也失败:', e);
       throw e;
     }
   }
@@ -7685,7 +7297,7 @@ class SunXiaoaiCard extends LitElement {
     }
     if (this._maOverlay.title) return;
 
-    // 阶段2：回退到 HA 实体属性（参照 sun-music-card.js 三路兜底）
+    // 阶段2：回退到 HA 实体属性（参照 xiaoshi-music-card.js 三路兜底）
     // 注意：必须用精确匹配，不能用 includes() —— 否则会误判真实歌曲名
     const MIOT_FAKE = new Set(['请欣赏', '请欣赏（音乐）', '暂无播放', '正在加载', 'QQ音乐', '无音乐播放']);
     // 2a. 尝试从 MIoT 实体获取（MA 可能通过 MIoT 实体播放）
@@ -7712,7 +7324,7 @@ class SunXiaoaiCard extends LitElement {
   }
 
   /**
-   * 本地音乐覆盖：参照 sun-music-card.js 的三阶段恢复（localStorage → 后端 API → MA WS/实体）。
+   * 本地音乐覆盖：参照 xiaoshi-music-card.js 的三阶段恢复（localStorage → 后端 API → MA WS/实体）。
    * 核心原则：绝不覆盖已有 overlay（来自 _playMediaItem 的数据），仅在空时补充。
    * 修复本地音乐刷新后显示"请欣赏（音乐）"和歌词丢失的问题。
    */
@@ -7735,34 +7347,6 @@ class SunXiaoaiCard extends LitElement {
         if (lsData.media_content_id) restoredMediaContentId = lsData.media_content_id;
         if (this._overlayTitle) {
           restoredFromBackend = true;
-          console.log('[sun-xiaoai-card] 📦 本地音乐 localStorage 恢复:', this._overlayTitle, this._overlayArtist);
-        }
-      }
-
-      // ---- 第2步：后端 API 补充（localStorage 无数据时）----
-      if (!restoredFromBackend) {
-        const cfg = this._localMusicPlayerCfg;
-        if (cfg) {
-          try {
-            const np = await this._fetchNowPlaying(cfg);
-            if (np && (np.song_id || np.title)) {
-              if (!this._overlayTitle && np.title) this._overlayTitle = np.title;
-              if (!this._overlayArtist && np.artist) this._overlayArtist = np.artist;
-              if (!this._overlayCoverUrl && np.cover_url) this._overlayCoverUrl = np.cover_url;
-              if (np.song_id) restoredSongId = np.song_id;
-              if (np.media_content_id) restoredMediaContentId = np.media_content_id;
-              if (this._overlayTitle) {
-                restoredFromBackend = true;
-                console.log('[sun-xiaoai-card] 🔄 本地音乐后端恢复:', this._overlayTitle, this._overlayArtist);
-              }
-              // 封面：后端未返回时用 song_cover_url
-              if (!this._overlayCoverUrl && np.song_id) {
-                this._overlayCoverUrl = this._songCoverUrl(np.song_id);
-              }
-            }
-          } catch (e) {
-            console.warn('[sun-xiaoai-card] 本地音乐后端 now_playing 恢复失败:', e);
-          }
         }
       }
     }
@@ -7781,7 +7365,6 @@ class SunXiaoaiCard extends LitElement {
             this._overlayLyrics = parsed;
             this.lyrics = parsed;
             if (this.showLyrics && this.isPlaying) this.startLyricsTimer();
-            console.log('[sun-xiaoai-card] 📝 本地音乐歌词恢复:', parsed.length, '行', '(song_id=', lyricsSongId, ')');
             this.requestUpdate();
           }
         }
@@ -7858,7 +7441,7 @@ class SunXiaoaiCard extends LitElement {
 
   /**
    * MA 搜索覆盖：MA WS 通常已提供完整数据，这里作为刷新页面恢复的兜底
-   * 参照 sun-music-card.js 的 _applyMASearchOverlay 实现
+   * 参照 xiaoshi-music-card.js 的 _applyMASearchOverlay 实现
    */
   async _applyMASearchOverlay() {
     // ===== 刷新页面恢复：优先 localStorage，其次后端 now_playing =====
@@ -7868,7 +7451,6 @@ class SunXiaoaiCard extends LitElement {
         if (lsData.title && !this._overlayTitle) this._overlayTitle = lsData.title;
         if (lsData.artist && !this._overlayArtist) this._overlayArtist = lsData.artist;
         if (lsData.cover_url && !this._overlayCoverUrl) this._overlayCoverUrl = lsData.cover_url;
-        console.log('[sun-xiaoai-card] 📦 MA搜索 localStorage恢复: ', this._overlayTitle, this._overlayArtist);
       }
       try {
         const np = await this._fetchNowPlaying(this._localMusicPlayerCfg || {});
@@ -7876,7 +7458,6 @@ class SunXiaoaiCard extends LitElement {
           if (!this._overlayTitle) this._overlayTitle = np.title;
           if (!this._overlayArtist && np.artist) this._overlayArtist = np.artist;
           if (!this._overlayCoverUrl && np.cover_url) this._overlayCoverUrl = np.cover_url;
-          console.log('[sun-xiaoai-card] 🔄 MA搜索后端恢复: ', this._overlayTitle, this._overlayArtist);
         }
       } catch (e) {}
       if (this._overlayTitle) {
@@ -7894,7 +7475,6 @@ class SunXiaoaiCard extends LitElement {
     if (this._overlayTitle) { this.requestUpdate(); return; }
 
     // MA WS 回退（仅在完全无数据时使用）
-    console.log('[sun-xiaoai-card] MA搜索覆盖: MA WS数据', 'track=', this._maTrackName, this._maTrackArtist);
     if (this._maTrackName) {
       this._overlayTitle = this._maTrackName;
       this._overlayArtist = this._maTrackArtist || '';
@@ -8077,23 +7657,18 @@ class SunXiaoaiCard extends LitElement {
         try {
           const msgId=this._maWsSend('play_media', { uri:playUri, media_type:'playlist', queue_option:'replace', player_id:this._maPlayerId });
           if (msgId) { await new Promise((resolve,reject)=>{ const t=setTimeout(()=>reject(new Error('超时')),10000); this._maWs._pending[msgId]={ resolve:(d)=>{clearTimeout(t);resolve(d);}, reject:(e)=>{clearTimeout(t);reject(e);} }; }); }
-          console.log('[sun-xiaoai-card] MA WS 播放歌单成功:', playlist.name);
           this._closeMaPanel(); return;
         } catch(e){
-          console.warn('[sun-xiaoai-card] MA WS 播放歌单失败:', e.message);
         }
       } else {
-        console.warn('[sun-xiaoai-card] MA WS 未就绪: connected=', !!this._maWsConnected, 'playerId=', !!this._maPlayerId);
       }
       // 方式2: HA music_assistant.play_media（必须使用 MA 播放器实体，不能用小爱实体）
       if (maTe) {
         try {
           await this._hass.callService('music_assistant','play_media',{ media_id:playUri, media_type:'playlist' },{ entity_id:maTe });
-          console.log('[sun-xiaoai-card] HA music_assistant 播放歌单成功:', playlist.name);
           this._closeMaPanel(); return;
         } catch(e2){
           const errMsg=(e2?.message||String(e2)).toLowerCase();
-          console.warn('[sun-xiaoai-card] HA music_assistant 播放歌单失败:', e2.message);
           if (errMsg.includes('connect first')) {
             this._maPlaylistsError = 'Music Assistant 未连接，请检查 MA 加载项是否运行';
             this.requestUpdate(); return;
@@ -8105,7 +7680,6 @@ class SunXiaoaiCard extends LitElement {
           }
         }
       } else {
-        console.warn('[sun-xiaoai-card] 未配置 ma_player_entity，跳过 HA music_assistant 服务调用');
       }
       // 方式3: MA HTTP /api/command（可能受 CORS 限制，作为最后手段）
       if (this.maServerUrl&&this.maServerToken) {
@@ -8113,12 +7687,9 @@ class SunXiaoaiCard extends LitElement {
         try {
           const r=await fetch(`${bu}/api/command`,{ method:'POST', headers:{ 'Authorization':`Bearer ${this.maServerToken}`,'Content-Type':'application/json' }, body:JSON.stringify({ uri:playUri }) });
           if (r.ok) {
-            console.log('[sun-xiaoai-card] MA HTTP 播放歌单成功:', playlist.name);
             this._closeMaPanel(); return;
           }
-          console.warn('[sun-xiaoai-card] MA HTTP 返回非 OK 状态:', r.status);
         } catch(e3){
-          console.warn('[sun-xiaoai-card] MA HTTP 播放失败 (可能 CORS 限制):', e3.message);
         }
       }
       throw new Error('所有方式均失败（建议配置 ma_player_entity 并确保 MA 连接正常）');
@@ -8162,15 +7733,12 @@ class SunXiaoaiCard extends LitElement {
           if (msgId) { await new Promise((resolve,reject)=>{ const t=setTimeout(()=>reject(new Error('超时')),8000); this._maWs._pending[msgId]={ resolve:(d)=>{clearTimeout(t);resolve(d);}, reject:(e)=>{clearTimeout(t);reject(e);} }; }); }
           const idx1=this._maPlaylistTracks.findIndex(t=>t.uri===track.uri||t.track_id===track.track_id);
           if (idx1>=0) this._enqueueRemainingMaTracks(this._maPlaylistTracks, idx1, 'ma');
-          console.log('[sun-xiaoai-card] MA WS 播放歌曲成功:', track.name);
           this._closeMaPanel(); return;
         } catch(e1){
           const msg=(e1?.message||String(e1)).toLowerCase();
-          console.warn('[sun-xiaoai-card] MA WS 播放歌曲失败:', e1.message);
           if (msg.includes('超时')) { this._maPlaylistsError = '播放请求超时，请检查 MA 连接'; this.requestUpdate(); }
         }
       } else {
-        console.warn('[sun-xiaoai-card] MA WS 未就绪: connected=', !!this._maWsConnected, 'playerId=', !!this._maPlayerId);
       }
       // 方式2: HA music_assistant.play_media（必须使用 MA 播放器实体）
       if (maTe) {
@@ -8178,11 +7746,9 @@ class SunXiaoaiCard extends LitElement {
           await this._hass.callService('music_assistant','play_media',{ media_id:mu, media_type:'track' },{ entity_id:maTe });
           const idx3=this._maPlaylistTracks.findIndex(t=>t.uri===track.uri||t.track_id===track.track_id);
           if (idx3>=0) this._enqueueRemainingMaTracks(this._maPlaylistTracks, idx3, 'ma');
-          console.log('[sun-xiaoai-card] HA music_assistant 播放歌曲成功:', track.name);
           this._closeMaPanel(); return;
         } catch(e3){
           const msg3=(e3?.message||String(e3)).toLowerCase();
-          console.warn('[sun-xiaoai-card] HA music_assistant 播放歌曲失败:', e3.message);
           if (msg3.includes('connect first')) {
             this._maPlaylistsError = 'Music Assistant 未连接，请检查 MA 加载项是否运行';
             this.requestUpdate(); return;
@@ -8193,7 +7759,6 @@ class SunXiaoaiCard extends LitElement {
           }
         }
       } else {
-        console.warn('[sun-xiaoai-card] 未配置 ma_player_entity，跳过 HA music_assistant 服务调用');
       }
       // 方式3: MA HTTP /api/command（可能受 CORS 限制，最后手段）
       if (this.maServerUrl && this.maServerToken && mu) {
@@ -8202,11 +7767,9 @@ class SunXiaoaiCard extends LitElement {
           if (r.ok) {
             const idx2=this._maPlaylistTracks.findIndex(t=>t.uri===track.uri||t.track_id===track.track_id);
             if (idx2>=0) this._enqueueRemainingMaTracks(this._maPlaylistTracks, idx2, 'ma');
-            console.log('[sun-xiaoai-card] MA HTTP 播放歌曲成功:', track.name);
             this._closeMaPanel(); return;
           }
         } catch(e2){
-          console.warn('[sun-xiaoai-card] MA HTTP 播放失败 (可能 CORS 限制):', e2.message);
         }
       }
       // 所有方式失败 — 给出明确诊断信息
@@ -8380,4 +7943,4 @@ class SunXiaoaiCard extends LitElement {
   }
 
 }
-customElements.define('sun-xiaoai-card', SunXiaoaiCard);
+customElements.define('xiaoshi-music-card', SunXiaoaiCard);
