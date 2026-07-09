@@ -10,7 +10,50 @@
       },
       "configure": {
         "title": "配置选择选项",
-        "description": "勾选以添加对应选项到选择实体（无）"
+        "description": "勾选以添加对应选项到选择实体（无）",
+        "data": {
+          "theme_phone_1_image": "主题手机1 - 图片选项",
+          "theme_phone_1_video": "主题手机1 - 视频选项",
+          "theme_phone_2_image": "主题手机2 - 图片选项",
+          "theme_phone_2_video": "主题手机2 - 视频选项",
+          "theme_phone_3_image": "主题手机3 - 图片选项",
+          "theme_phone_3_video": "主题手机3 - 视频选项",
+          "theme_phone_4_image": "主题手机4 - 图片选项",
+          "theme_phone_4_video": "主题手机4 - 视频选项",
+          "theme_phone_5_image": "主题手机5 - 图片选项",
+          "theme_phone_5_video": "主题手机5 - 视频选项",
+          "theme_phone_6_image": "主题手机6 - 图片选项",
+          "theme_phone_6_video": "主题手机6 - 视频选项",
+          "theme_phone_7_image": "主题手机7 - 图片选项",
+          "theme_phone_7_video": "主题手机7 - 视频选项",
+          "theme_phone_8_image": "主题手机8 - 图片选项",
+          "theme_phone_8_video": "主题手机8 - 视频选项",
+          "theme_phone_9_image": "主题手机9 - 图片选项",
+          "theme_phone_9_video": "主题手机9 - 视频选项",
+          "theme_phone_10_image": "主题手机10 - 图片选项",
+          "theme_phone_10_video": "主题手机10 - 视频选项"
+        }
+      },
+      "lyrics_enable": {
+        "title": "启用歌词API",
+        "description": "启用后将提供 /api/xiaoshi/lyrics 歌词查询接口",
+        "data": {
+          "lyrics_enabled": "启用歌词API"
+        }
+      },
+      "lyrics_source": {
+        "title": "配置歌词源",
+        "description": "选择歌词搜索优先来源",
+        "data": {
+          "lyrics_source": "歌词音乐源"
+        }
+      },
+      "ma_enable": {
+        "title": "启用MA播放器辅助",
+        "description": "提供MA歌单读写API（/api/xiaoshi/ma_playlist）",
+        "data": {
+          "ma_enabled": "启用MA播放器辅助API"
+        }
       }
     },
     "abort": {
@@ -28,7 +71,50 @@
       },
       "configure": {
         "title": "配置选择选项",
-        "description": "勾选以添加对应选项到选择实体始终包含）"
+        "description": "勾选以添加对应选项到选择实体始终包含）",
+        "data": {
+          "theme_phone_1_image": "主题手机1 - 图片选项",
+          "theme_phone_1_video": "主题手机1 - 视频选项",
+          "theme_phone_2_image": "主题手机2 - 图片选项",
+          "theme_phone_2_video": "主题手机2 - 视频选项",
+          "theme_phone_3_image": "主题手机3 - 图片选项",
+          "theme_phone_3_video": "主题手机3 - 视频选项",
+          "theme_phone_4_image": "主题手机4 - 图片选项",
+          "theme_phone_4_video": "主题手机4 - 视频选项",
+          "theme_phone_5_image": "主题手机5 - 图片选项",
+          "theme_phone_5_video": "主题手机5 - 视频选项",
+          "theme_phone_6_image": "主题手机6 - 图片选项",
+          "theme_phone_6_video": "主题手机6 - 视频选项",
+          "theme_phone_7_image": "主题手机7 - 图片选项",
+          "theme_phone_7_video": "主题手机7 - 视频选项",
+          "theme_phone_8_image": "主题手机8 - 图片选项",
+          "theme_phone_8_video": "主题手机8 - 视频选项",
+          "theme_phone_9_image": "主题手机9 - 图片选项",
+          "theme_phone_9_video": "主题手机9 - 视频选项",
+          "theme_phone_10_image": "主题手机10 - 图片选项",
+          "theme_phone_10_video": "主题手机10 - 视频选项"
+        }
+      },
+      "lyrics_enable": {
+        "title": "启用歌词API",
+        "description": "启用后将提供 /api/xiaoshi/lyrics 歌词查询接口",
+        "data": {
+          "lyrics_enabled": "启用歌词API"
+        }
+      },
+      "lyrics_source": {
+        "title": "配置歌词源",
+        "description": "选择歌词搜索优先来源",
+        "data": {
+          "lyrics_source": "歌词音乐源"
+        }
+      },
+      "ma_enable": {
+        "title": "启用MA播放器辅助",
+        "description": "提供MA歌单读写API（/api/xiaoshi/ma_playlist）",
+        "data": {
+          "ma_enabled": "启用MA播放器辅助API"
+        }
       }
     }
   }

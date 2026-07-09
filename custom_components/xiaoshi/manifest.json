@@ -5,6 +5,7 @@
   "config_flow": true,
   "documentation": "https://github.com/xiaoshi930/xiaoshi",
   "dependencies": ["switch", "select"],
+  "requirements": ["aiohttp"],
   "integration_type": "device",
-  "version": "2026.7.1.01"
+  "version": "2026.7.1.02"
 }

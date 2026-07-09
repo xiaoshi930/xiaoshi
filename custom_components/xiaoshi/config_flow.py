@@ -43,6 +43,7 @@ class XiaoshiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def __init__(self):
         self._select_count = _DEFAULT_COUNT
+        self._select_options = {}
 
     async def async_step_user(self, user_input=None):
         """初始添加 - 设置 select 数量"""
@@ -67,18 +68,84 @@ class XiaoshiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_configure(self, user_input=None):
         """配置每个 select 的选项"""
         if user_input is not None:
-            options = {"select_count": self._select_count}
+            self._select_options = {"select_count": self._select_count}
             for i in range(1, self._select_count + 1):
                 key = f"theme_phone_{i}"
-                options[f"{key}_image"] = user_input.get(f"{key}_image", False)
-                options[f"{key}_video"] = user_input.get(f"{key}_video", False)
-            return self.async_create_entry(
-                title="消逝汇总卡片", data={}, options=options
-            )
+                self._select_options[f"{key}_image"] = user_input.get(
+                    f"{key}_image", False
+                )
+                self._select_options[f"{key}_video"] = user_input.get(
+                    f"{key}_video", False
+                )
+            return await self.async_step_lyrics_enable()
 
         return self.async_show_form(
             step_id="configure",
             data_schema=_build_configure_schema(self._select_count),
+        )
+
+    async def async_step_lyrics_enable(self, user_input=None):
+        """第三步：是否启用歌词 API"""
+        from .lyrics import CONF_LYRICS_ENABLED
+
+        if user_input is not None:
+            self._select_options[CONF_LYRICS_ENABLED] = user_input.get(
+                CONF_LYRICS_ENABLED, True
+            )
+            if self._select_options[CONF_LYRICS_ENABLED]:
+                return await self.async_step_lyrics_source()
+            else:
+                return await self.async_step_ma_enable()
+
+        return self.async_show_form(
+            step_id="lyrics_enable",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_LYRICS_ENABLED, default=True): bool,
+                }
+            ),
+        )
+
+    async def async_step_lyrics_source(self, user_input=None):
+        """歌词源选择"""
+        from .lyrics import DEFAULT_SOURCE, SOURCES
+
+        if user_input is not None:
+            self._select_options["lyrics_source"] = user_input.get(
+                "lyrics_source", DEFAULT_SOURCE
+            )
+            return await self.async_step_ma_enable()
+
+        return self.async_show_form(
+            step_id="lyrics_source",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        "lyrics_source", default=DEFAULT_SOURCE
+                    ): vol.In(SOURCES),
+                }
+            ),
+        )
+
+    async def async_step_ma_enable(self, user_input=None):
+        """MA 音乐播放器辅助 API 开关"""
+        from .ma_api import CONF_MA_ENABLED
+
+        if user_input is not None:
+            self._select_options[CONF_MA_ENABLED] = user_input.get(
+                CONF_MA_ENABLED, True
+            )
+            return self.async_create_entry(
+                title="消逝汇总卡片", data={}, options=self._select_options
+            )
+
+        return self.async_show_form(
+            step_id="ma_enable",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_MA_ENABLED, default=True): bool,
+                }
+            ),
         )
 
     @staticmethod
@@ -95,6 +162,7 @@ class XiaoshiOptionsFlow(config_entries.OptionsFlow):
         self._select_count = config_entry.options.get(
             "select_count", _DEFAULT_COUNT
         )
+        self._select_options = {}
 
     async def async_step_init(self, user_input=None):
         """第一步：设置 select 数量"""
@@ -116,16 +184,91 @@ class XiaoshiOptionsFlow(config_entries.OptionsFlow):
     async def async_step_configure(self, user_input=None):
         """第二步：配置每个 select 的选项"""
         if user_input is not None:
-            options = {"select_count": self._select_count}
+            self._select_options = {"select_count": self._select_count}
             for i in range(1, self._select_count + 1):
                 key = f"theme_phone_{i}"
-                options[f"{key}_image"] = user_input.get(f"{key}_image", False)
-                options[f"{key}_video"] = user_input.get(f"{key}_video", False)
-            return self.async_create_entry(title="", data=options)
+                self._select_options[f"{key}_image"] = user_input.get(
+                    f"{key}_image", False
+                )
+                self._select_options[f"{key}_video"] = user_input.get(
+                    f"{key}_video", False
+                )
+            return await self.async_step_lyrics_enable()
 
         return self.async_show_form(
             step_id="configure",
             data_schema=_build_configure_schema(
                 self._select_count, self.config_entry.options
+            ),
+        )
+
+    async def async_step_lyrics_enable(self, user_input=None):
+        """第三步：是否启用歌词 API"""
+        from .lyrics import CONF_LYRICS_ENABLED
+
+        if user_input is not None:
+            self._select_options[CONF_LYRICS_ENABLED] = user_input.get(
+                CONF_LYRICS_ENABLED, False
+            )
+            if self._select_options[CONF_LYRICS_ENABLED]:
+                return await self.async_step_lyrics_source()
+            else:
+                return await self.async_step_ma_enable()
+
+        current_enabled = self.config_entry.options.get(
+            CONF_LYRICS_ENABLED, False
+        )
+        return self.async_show_form(
+            step_id="lyrics_enable",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_LYRICS_ENABLED, default=current_enabled
+                    ): bool,
+                }
+            ),
+        )
+
+    async def async_step_lyrics_source(self, user_input=None):
+        """歌词源选择"""
+        from .lyrics import DEFAULT_SOURCE, SOURCES
+
+        if user_input is not None:
+            self._select_options["lyrics_source"] = user_input.get(
+                "lyrics_source", DEFAULT_SOURCE
+            )
+            return await self.async_step_ma_enable()
+
+        current_source = self.config_entry.options.get(
+            "lyrics_source", DEFAULT_SOURCE
+        )
+        return self.async_show_form(
+            step_id="lyrics_source",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        "lyrics_source", default=current_source
+                    ): vol.In(SOURCES),
+                }
+            ),
+        )
+
+    async def async_step_ma_enable(self, user_input=None):
+        """MA 音乐播放器辅助 API 开关"""
+        from .ma_api import CONF_MA_ENABLED
+
+        if user_input is not None:
+            self._select_options[CONF_MA_ENABLED] = user_input.get(
+                CONF_MA_ENABLED, True
+            )
+            return self.async_create_entry(title="", data=self._select_options)
+
+        current_ma = self.config_entry.options.get(CONF_MA_ENABLED, True)
+        return self.async_show_form(
+            step_id="ma_enable",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_MA_ENABLED, default=current_ma): bool,
+                }
             ),
         )

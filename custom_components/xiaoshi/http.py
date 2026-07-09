@@ -123,5 +123,10 @@ class XiaoshiTimerListView(HomeAssistantView):
 
 def register_views(hass: HomeAssistant, timer_manager: TimerManager):
     """注册所有 HTTP 视图"""
+    from .lyrics import XiaoshiLyricsView
+    from .ma_api import register_ma_views
+
     hass.http.register_view(XiaoshiTimerView(timer_manager))
     hass.http.register_view(XiaoshiTimerListView(timer_manager))
+    hass.http.register_view(XiaoshiLyricsView(hass))
+    register_ma_views(hass)
