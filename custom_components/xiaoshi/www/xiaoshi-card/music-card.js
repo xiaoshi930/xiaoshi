@@ -139,7 +139,7 @@ class XiaoshiMusicCardEditor extends LitElement {
     `;
   }
 
-  _renderDeviceSearchPickers(devices, d, di, saveDevice) {
+  _renderDeviceSearchPickers(devices, d, di) {
     const searchPicker = (label, selfId, prefix) => {
       const selectedId = d[selfId] || '';
       const selPlatform = selectedId ? (this.hass.entities?.[selectedId]?.platform || '') : '';
@@ -219,7 +219,7 @@ class XiaoshiMusicCardEditor extends LitElement {
       <div class="form-group"><label>[MA] MA 播放器实体 (ma_player_entity)</label><select @change=${this._entityChanged} .value=${this.config.ma_player_entity || ''} name="ma_player_entity"><option value="">选择 MA 播放器实体</option>${Object.keys(this.hass.states).filter(e => e.startsWith('media_player.')).map(e => html`<option value="${e}" .selected=${e === this.config.ma_player_entity}>${this.hass.states[e].attributes.friendly_name || e}</option>`)}</select></div>
       <div class="form-group"><label>[MA] 手动歌单配置 (ma_playlists) — 每行一歌单: 名称|MA_URI</label><textarea @change=${this._entityChanged} .value=${this.config.ma_playlists || ''} name="ma_playlists" rows="4" placeholder="我的歌单|library://playlist/9&#10;BGM|library://playlist/12" class="editor-textarea"></textarea></div>
       <div class="form-group"><label>[MA] 我喜欢歌单 (选择歌单Infinite Mix (favorites)的url)</label><input @change=${this._entityChanged} .value=${this.config.ma_favorite_playlist || ''} name="ma_favorite_playlist" placeholder="library://playlist/8"></div>
-      <div class="form-group"><label>[MA] 空播放列表 (新建一个HA的空歌单的url)</label><input @change=${this._entityChanged} .value=${this.config.ma_empty_playlist || ''} name="ma_empty_playlist" placeholder="library://playlist/"></div>
+      <div class="form-group"><label>[MA] 播放列表 (新建一个HA的歌单url)</label><input @change=${this._entityChanged} .value=${this.config.ma_playlist || ''} name="ma_playlist" placeholder="library://playlist/"></div>
     `;
   }
 
@@ -234,7 +234,7 @@ class XiaoshiMusicCardEditor extends LitElement {
 
   _entityChanged(e) {
     const { name, value } = e.target;
-    if (!value && name !== 'theme' && name !== 'width' && name !== 'height' && name !== 'lyrics_height' && name !== 'local_music_path' && name !== 'ma_server_url' && name !== 'ma_server_token' && name !== 'ma_player_entity' && name !== 'ma_playlists' && name !== 'ma_favorite_playlist' && name !== 'ma_empty_playlist' && name !== 'devices') return;
+    if (!value && name !== 'theme' && name !== 'width' && name !== 'height' && name !== 'lyrics_height' && name !== 'local_music_path' && name !== 'ma_server_url' && name !== 'ma_server_token' && name !== 'ma_player_entity' && name !== 'ma_playlists' && name !== 'ma_favorite_playlist' && name !== 'ma_playlist' && name !== 'devices') return;
     let finalValue = value;
     if (name === 'width') { finalValue = value || '100%'; }
     else if (name === 'height') { finalValue = value || 'auto'; }
@@ -288,8 +288,8 @@ class XiaoshiMusicCard extends LitElement {
       .card-bg-overlay.off-overlay { background: var(--xiaoshi-overlay-off, rgba(15, 12, 8, 0.60)); }
       .card-bg-overlay.on-overlay { background: var(--xiaoshi-overlay-on, rgba(15, 12, 8, 0.35)); }
       .album-bg-layer { position: absolute; top: -10%; left: -10%; width: 120%; height: 120%; z-index: 0; background-size: cover; background-position: center; background-repeat: no-repeat; opacity: 0.5; pointer-events: none; }
-      .player-content { position: relative; z-index: 2; display: flex; flex-direction: row; align-items: flex-start; padding: 10px; gap: 12px; flex: 1; min-height: 0; }
-      .left-sidebar { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 70px; flex-shrink: 0; padding: 2px 0 0 0; }
+      .player-content { position: relative; z-index: 2; display: flex; flex-direction: row; align-items: flex-start; padding: 10px; gap: 8px; flex: 1; min-height: 0; }
+      .left-sidebar { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 65px; flex-shrink: 0; padding: 2px 0 0 0; }
       .device-info-block { background: var(--xiaoshi-btn-bg, rgba(255, 255, 255, 0.10)); border-radius: 12px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 60px; box-sizing: border-box; }
       .device-status-text { font-size: 9px; font-weight: 600; color: var(--xiaoshi-muted, rgba(255, 255, 255, 0.75)); text-align: center; text-shadow: var(--xiaoshi-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5)); white-space: nowrap; }
       .sidebar-device-avatar { width: 40px; height: 40px; border-radius: 50%; background-size: cover; background-position: center; background-color: rgba(60, 50, 40, 0.6); display: flex; align-items: center; justify-content: center; overflow: hidden; }
@@ -311,14 +311,14 @@ class XiaoshiMusicCard extends LitElement {
       .power-btn { background: var(--xiaoshi-btn-bg, rgba(255, 255, 255, 0.15)); border: none; border-radius: 8px; color: var(--xiaoshi-text, #fff); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; transition: background 0.2s; --mdc-ripple-press-opacity: 0; text-shadow: var(--xiaoshi-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5)); }
       .power-btn:active { background: var(--xiaoshi-btn-active, rgba(255, 255, 255, 0.3)); }
       .main-area { display: flex; align-items: flex-start; gap: 14px; flex: 0 0 auto; min-height: 0; }
-      .album-art { width: 120px; height: 120px; border-radius: 20px; background-size: cover; background-position: center; background-color: rgba(60, 50, 40, 0.6); flex-shrink: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35); }
+      .album-art { width: 100px; height: 100px; border-radius: 20px; background-size: cover; background-position: center; background-color: rgba(60, 50, 40, 0.6); flex-shrink: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35); }
       .album-art-placeholder { color: var(--xiaoshi-muted, rgba(255, 255, 255, 0.5)); text-shadow: var(--xiaoshi-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5)); }
       .song-info-area { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
       .song-title { font-size: 18px; font-weight: 700; color: var(--xiaoshi-text, #fff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: var(--xiaoshi-text-shadow, 0 2px 8px rgba(0, 0, 0, 0.8)); }
       .song-artist { font-size: 13px; font-weight: 400; color: var(--xiaoshi-muted, rgba(255, 255, 255, 0.75)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: var(--xiaoshi-text-shadow, 0 1px 6px rgba(0, 0, 0, 0.7)); }
       .song-source { font-size: 11px; color: var(--xiaoshi-muted, rgba(255, 255, 255, 0.45)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: var(--xiaoshi-text-shadow, 0 1px 4px rgba(0, 0, 0, 0.5)); }
       .action-buttons-row { display: flex; gap: 4px; margin-top: 8px; flex-wrap: nowrap; }
-      .action-btn { background: var(--xiaoshi-btn-bg, rgba(255, 255, 255, 0.12)); border: none; border-radius: 8px; color: var(--xiaoshi-text, #fff); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 5px 8px; font-size: 12px; transition: all 0.2s; --mdc-icon-size: 14px; --mdc-ripple-press-opacity: 0; }
+      .action-btn { background: var(--xiaoshi-btn-bg, rgba(255, 255, 255, 0.12)); border: none; border-radius: 8px; color: var(--xiaoshi-text, #fff); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 5px 6px; font-size: 12px; transition: all 0.2s; --mdc-icon-size: 14px; --mdc-ripple-press-opacity: 0; }
       .action-btn:hover { background: var(--xiaoshi-btn-hover, rgba(255, 255, 255, 0.22)); }
       .action-btn:active { background: var(--xiaoshi-btn-active, rgba(255, 255, 255, 0.3)); }
       .action-btn ha-icon { display: flex; align-items: center; justify-content: center; }
@@ -340,7 +340,7 @@ class XiaoshiMusicCard extends LitElement {
       .volume-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 2px; background: linear-gradient(to right, rgb(255, 160, 0), rgb(255, 205, 50)); }
       .volume-thumb { position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%; background: rgb(255, 205, 50); border: 2px solid #fff; transform: translate(-50%, -50%); cursor: pointer; touch-action: none; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
       .lyrics-area-inline { display: flex; align-items: stretch; justify-content: center; padding: 0; overflow: hidden; position: relative; width: 100%; flex: 1 1 auto; min-height: 0; }
-      .lyrics-container { height: 100%; width: calc(100% - 50px); overflow-y: auto; overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; position: relative; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%); }
+      .lyrics-container { height: 100%; width: calc(100% - 10px); overflow-y: auto; overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; position: relative; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%); }
       .lyrics-container::-webkit-scrollbar { display: none; }
       .lyrics-controls { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; padding: 10px 5px; position: absolute; right: 0; top: 50%; transform: translateY(-50%); flex-shrink: 0; width: 30px; }
       .lyrics-control-btn { background: rgba(200, 200, 200, 0.1); border: none; border-radius: 5px; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; font-size: 16px; font-weight: bold; transition: all 0.2s ease; --mdc-icon-size: 15px; }
@@ -450,6 +450,8 @@ class XiaoshiMusicCard extends LitElement {
     this.favoriteSongEntity = '';
     this.stopAlarmEntity = '';
     this._showHistory = false;
+    this._showPlaylist = false;
+    this._currentPlaylistData = null;
     this._historyData = [];
     this._historyLoading = false;
     this._historyFilterPeriod = 24;
@@ -468,9 +470,10 @@ class XiaoshiMusicCard extends LitElement {
     this.maPlayerEntity = '';
     this.maPlaylistsConfig = '';
     this.maFavoritePlaylist = '';
-    this.maEmptyPlaylist = '';
+    this.maPlaylist = '';
     this._maWs = null;
     this._maWsConnected = false;
+    this._maPlaylistAutoRefreshed = false;
     this._maAuthMsgId = null;
     this._maWsHeartbeatInterval = null;
     this._maPlayerId = '';
@@ -487,8 +490,20 @@ class XiaoshiMusicCard extends LitElement {
     this._maPlaylistsError = '';
     this._maPlaylistPlaying = '';
     this._maPlaylistDetail = null;
+    this._repeatMode = null;
+    this._repeatModeFetched = false;
     this._maPlaylistTracks = [];
     this._maPlaylistTracksLoading = false;
+    this._maPlayingIndex = -1;
+    this._localPlaylist = [];
+    this._localStatuses = [];
+    this._localCurrentIndex = -1;
+    this._localPlaylistSignature = '';
+    this._maPlayingIndex = -1;
+    this._localPlaylist = [];
+    this._localStatuses = [];
+    this._localCurrentIndex = -1;
+    this._localPlaylistSignature = '';
     this._favVisible = false;
     this._favTracks = [];
     this._favLoading = false;
@@ -788,7 +803,7 @@ class XiaoshiMusicCard extends LitElement {
     this._internalMaPlayerEntityCfg = (this._config.ma_internal_player_entity || '').trim();
     this.maPlaylistsConfig = this._config.ma_playlists || '';
     this.maFavoritePlaylist = (this._config.ma_favorite_playlist || '').trim();
-    this.maEmptyPlaylist = (this._config.ma_empty_playlist || '').trim();
+    this.maPlaylist = (this._config.ma_playlist || '').trim();
     this._layoutMode = 'full';
     if (this.maServerUrl && this.maServerToken && !this._maWsConnected) {
       this._connectMaWs();
@@ -798,6 +813,23 @@ class XiaoshiMusicCard extends LitElement {
 
   set hass(hass) {
     this._hass = hass;
+    // 全局歌词检查：任何实体有歌曲信息就加载歌词
+    if (this.showLyrics && hass) {
+      const entities = [this.xiaomiHomeEntity, this.xiaomiMiotEntity].filter(Boolean);
+      for (const eid of entities) {
+        const s = hass.states[eid];
+        if (s?.attributes?.media_title && s.attributes.media_artist && !this._isPseudoTitle(s.attributes.media_title)) {
+          this.loadLyricsForCurrentSong();
+          break;
+        }
+      }
+    }
+    if (!this._repeatModeFetched) {
+      this._repeatModeFetched = true;
+      this._fetchRepeatMode();
+
+      this._fetchViewMode();
+    }
     if (!this._activeChannel) {
       try {
         const saved = localStorage.getItem(this._getLastSourceKey());
@@ -848,8 +880,7 @@ class XiaoshiMusicCard extends LitElement {
     const activeState = usePrimaryEntity ? primaryState : backupState;
     const entityPlaying = activeState && ['playing', 'Playing', '播放', '播放中', '正在播放'].includes(activeState.state);
     const entityCurrentTitle = activeState?.attributes?.media_title || '';
-    const MIOT_FAKE_PRE = new Set(['请欣赏', '请欣赏（音乐）', '暂无播放', '正在加载', 'QQ音乐', '无音乐播放']);
-    const miotOverriding = entityPlaying && entityCurrentTitle && !MIOT_FAKE_PRE.has(entityCurrentTitle);
+    const miotOverriding = entityPlaying && entityCurrentTitle && !this._isPseudoTitle(entityCurrentTitle);
     const maWsActive = (this._activeChannel === 'ma' || (!this._activeChannel && !miotOverriding && this._maWsConnected && this._maTrackName && this._isMaSourceActive()));
     const maWsConnecting = (this._activeChannel === 'ma' || (!this._activeChannel && !miotOverriding && this._maWsConnected && !this._maTrackName));
     if (maWsActive) {
@@ -911,7 +942,6 @@ class XiaoshiMusicCard extends LitElement {
       if (this._activeChannel !== 'local' && this._activeChannel !== 'miot' && (!this._maOverlay.title || !this._maOverlay.source)) {
         this._restoreMaOverlayFromLocalStorage();
       }
-      const MIOT_PSEUDO_TITLES = ['请欣赏（音乐）', '请欣赏', '暂无播放', '暂未播放', 'QQ音乐', '正在加载', '加载中', '无音乐播放'];
       // 从3种实体中综合获取播放信息（哪个有就用哪个）
       const candidates = [];
       if (this.maPlayerEntity && hass.states[this.maPlayerEntity]) candidates.push({ state: hass.states[this.maPlayerEntity], channel: 'ma' });
@@ -924,7 +954,7 @@ class XiaoshiMusicCard extends LitElement {
         if (activeStates.includes(c.state.state)) {
           const a = c.state.attributes || {};
           const title = a.media_title || '';
-          if (title && !MIOT_PSEUDO_TITLES.some(p => title.includes(p))) {
+          if (title && !this._isPseudoTitle(title)) {
             bestActive = c; break; // 优先取有有效标题的
           } else if (!bestActive) {
             bestActive = c; // 退而求其次
@@ -932,7 +962,7 @@ class XiaoshiMusicCard extends LitElement {
         } else if (!bestActive && c.state.state !== 'unavailable' && c.state.state !== 'off') {
           const a = c.state.attributes || {};
           const title = a.media_title || '';
-          if (title && !MIOT_PSEUDO_TITLES.some(p => title.includes(p))) {
+          if (title && !this._isPseudoTitle(title)) {
             bestActive = c;
           }
         }
@@ -942,7 +972,7 @@ class XiaoshiMusicCard extends LitElement {
         for (const c of candidates) {
           const a = c.state.attributes || {};
           const title = a.media_title || '';
-          if (title && !MIOT_PSEUDO_TITLES.some(p => title.includes(p))) {
+          if (title && !this._isPseudoTitle(title)) {
             bestActive = c; break;
           }
         }
@@ -952,7 +982,7 @@ class XiaoshiMusicCard extends LitElement {
         const ch = bestActive.channel;
         if (ch === 'ma') this._setChannel('ma');
         const a = bestActive.state.attributes || {};
-        if (a.media_title && !MIOT_PSEUDO_TITLES.some(p => a.media_title.includes(p)) && !this._maOverlay.title) {
+        if (a.media_title && !this._isPseudoTitle(a.media_title) && !this._maOverlay.title) {
           this._maOverlay.title = a.media_title;
           this._maOverlay.artist = this._filterArtist(a.media_title, a.media_artist || a.artist || '');
           this._maOverlay.coverUrl = a.entity_picture || a.media_image_url || this._maOverlay.coverUrl;
@@ -960,6 +990,9 @@ class XiaoshiMusicCard extends LitElement {
           this._maLastSongArtist = this._filterArtist(a.media_title, a.media_artist || a.artist || '');
         }
         this.isPlaying = playingStates.includes(bestActive.state.state);
+        if (ch !== 'ma') {
+          this._checkSongChange(bestActive.state);
+        }
         if (!this.localVolumeUpdate && a.volume_level !== undefined) {
           this.volumeState = Math.round((a.volume_level || 0) * 100);
         }
@@ -1228,175 +1261,159 @@ class XiaoshiMusicCard extends LitElement {
   // 处理上一首
   handlePrevious() {
     this._handleClick();
-    if (this._localOverlay.source === 'local' && this._localMusicPlayerCfg && this._mediaPlayerState) {
-      const cfg = this._localMusicPlayerCfg;
-      const ms = this._mediaPlayerState;
-      const t = cfg.tabs[ms.activeTabIndex];
-      const p = t?.playlists?.[ms.activePlaylistIndex];
-      if (!p?.items?.length) return;
-      const ni = ms.activeItemIndex > 0 ? ms.activeItemIndex - 1 : p.items.length - 1;
-      ms.activeItemIndex = ni;
-      const item = p.items[ni];
-      this._pauseOtherChannels();
-      this._setChannel('local');
-      this._overlayTitle = item.title || item.name || '';
-      this._overlayArtist = item.artist || '';
-      this._overlayCoverUrl = item.cover; '';
-      this._activeOverlaySource = 'local';
-      this._localOverlay = { ...this._localOverlay, active: true };
-      const te = this.xiaomiMiotEntity || this.xiaomiHomeEntity || cfg.mediaEntity;
-      const playUrl = item.media_content_id || item.url || '';
-      if (playUrl)
-        this.callService('media_player.play_media', { entity_id: te, media_content_id: playUrl, media_content_type: item.media_type || 'music' });
-      if (this._mediaPlayerState) this._mediaPlayerState.currentItem = { title: item.title || '', artist: item.artist || '', album: item.album || '', duration: item.duration || 0, id: item.id || null, media_content_id: item.media_content_id || '' };
-      this.requestUpdate();
-      return;
-    }
-    if (this._maOverlay?.active) {
-      if (this._isMaWsReady() && this._maPlayerId) { this._maWsSend('player_queues/previous', { queue_id: this._maQueueId || this._maPlayerId }); }
-      else if (this.maPlayerEntity) { this._hass?.callService('media_player','media_previous_track',{entity_id:this.maPlayerEntity}); }
-      return;
-    }
-    const targetEntity = this._getActiveTargetEntity();
-    this.callService('media_player.media_previous_track', { entity_id: targetEntity });
+    this._routePrev();
+    this.requestUpdate();
   }
 
   // 处理播放/暂停
   handlePlayPause() {
     this._handleClick();
-    const targetEntity = this._getActiveTargetEntity();
-    const entState = this._hass?.states?.[targetEntity];
-    const isPlaying = entState?.state === 'playing';
-    if (this._localOverlay.source === 'local' && !isPlaying) {
-      this._pauseOtherChannels();
-      this._setChannel('local');
-      this._localOverlay = { ...this._localOverlay, source: 'local', active: true };
-      let url = this._mediaPlayerState?.currentItem?.media_content_id || '';
-      let mediaType = this._mediaPlayerState?.currentItem?.media_type || 'music';
-      if (!url) {
-        try {
-          const raw = localStorage.getItem(this._getNpKey('local'));
-          if (raw) {
-            const data = JSON.parse(raw);
-            url = data.media_content_id || '';
-            if (!mediaType || mediaType === 'music') mediaType = data.media_type || 'music';
-          }
-        } catch(e) {}
-      }
-      if (url) {
-        this.callService('media_player.play_media', { entity_id: targetEntity, media_content_id: url, media_content_type: mediaType });
-        return;
-      }
-    }
-    if (isPlaying) {
-      if (this._isMaWsReady() && this._maTrackName && this._isMaSourceActive() && this._maPlayerId) {
-        try { this._maWsSend('player_queues/stop', { queue_id: this._maQueueId || this._maPlayerId }); } catch(e) {}
-      }
-      this.callService('media_player.media_pause', { entity_id: targetEntity });
-    } else {
-      this.callService('media_player.media_play', { entity_id: targetEntity });
-    }
+    this._routePlayPause();
+    this.requestUpdate();
   }
 
   // 处理暂停
   handlePause() {
     this._handleClick();
+    const ch = this._activeChannel;
+    if (ch === 'ma') { this._maPause(); return; }
+    if (ch === 'local') { this._localPause(); return; }
     const targetEntity = this._getActiveTargetEntity();
-    this.callService('media_player.media_pause', {
-      entity_id: targetEntity
-    });
+    if (targetEntity) this.callService('media_player.media_pause', { entity_id: targetEntity });
   }
 
   // 处理下一首
   handleNext() {
     this._handleClick();
-    if (this._localOverlay.source === 'local' && this._localMusicPlayerCfg && this._mediaPlayerState) {
-      const cfg = this._localMusicPlayerCfg;
-      const ms = this._mediaPlayerState;
-      const t = cfg.tabs[ms.activeTabIndex];
-      const p = t?.playlists?.[ms.activePlaylistIndex];
-      if (!p?.items?.length) return;
-      const ni = ms.activeItemIndex < p.items.length - 1 ? ms.activeItemIndex + 1 : 0;
-      ms.activeItemIndex = ni;
-      const item = p.items[ni];
-      this._pauseOtherChannels();
-      this._setChannel('local');
-      this._overlayTitle = item.title || item.name || '';
-      this._overlayArtist = item.artist || '';
-      this._overlayCoverUrl = item.cover; '';
-      this._activeOverlaySource = 'local';
-      this._localOverlay = { ...this._localOverlay, active: true };
-      const te = this.xiaomiMiotEntity || this.xiaomiHomeEntity || cfg.mediaEntity;
-      const playUrl = item.media_content_id || item.url || '';
-      if (playUrl)
-        this.callService('media_player.play_media', { entity_id: te, media_content_id: playUrl, media_content_type: item.media_type || 'music' });
-      if (this._mediaPlayerState) this._mediaPlayerState.currentItem = { title: item.title || '', artist: item.artist || '', album: item.album || '', duration: item.duration || 0, id: item.id || null, media_content_id: item.media_content_id || '' };
-      this.requestUpdate();
-      return;
-    }
-    if (this._maOverlay?.active) {
-      if (this._isMaWsReady() && this._maPlayerId) { this._maWsSend('player_queues/next', { queue_id: this._maQueueId || this._maPlayerId }); }
-      else if (this.maPlayerEntity) { this._hass?.callService('media_player','media_next_track',{entity_id:this.maPlayerEntity}); }
-      return;
-    }
-    const targetEntity = this._getActiveTargetEntity();
-    this.callService('media_player.media_next_track', { entity_id: targetEntity });
+    this._routeNext();
+    this.requestUpdate();
   }
 
-  // 处理随机播放
+  // 处理随机播放（切换 random / sequential）
   handleShuffle() {
     this._handleClick();
     const targetEntity = (this._localOverlay.source === 'local' && this._localMusicPlayerCfg) ? this._localMusicPlayerCfg.mediaEntity : this._getActiveTargetEntity();
     if (!targetEntity) return;
+    const currentMode = this._repeatMode || 'sequential';
+    const newMode = currentMode === 'random' ? 'sequential' : 'random';
     if (this.textDirectiveEntity) {
-      const state = this._hass?.states[targetEntity];
-      const currentShuffle = state?.attributes?.shuffle || false;
-      const command = currentShuffle ? '顺序播放' : '随机播放';
+      const command = newMode === 'random' ? '随机播放' : '顺序播放';
       this.callNotify(command);
-      return;
     }
-    const state = this._hass?.states[targetEntity];
-    if (!state) return;
-    try {
-      const currentShuffle = state.attributes?.shuffle || false;
-      this.callService('media_player.shuffle_set', {
-        entity_id: targetEntity,
-        shuffle: !currentShuffle
-      });
-    } catch (e) {
-    }
+    this._updateRepeatMode(targetEntity, newMode);
   }
 
-  // 处理循环播放
+  // 处理循环播放（sequential ↔ repeat_one 来回切换，random 时回到 sequential）
   handleRepeat() {
     this._handleClick();
     const targetEntity = (this._localOverlay.source === 'local' && this._localMusicPlayerCfg) ? this._localMusicPlayerCfg.mediaEntity : this._getActiveTargetEntity();
     if (!targetEntity) return;
+    const currentMode = this._repeatMode || 'sequential';
+    let newMode;
+    if (currentMode === 'sequential') { newMode = 'repeat_one'; }
+    else if (currentMode === 'repeat_one') { newMode = 'sequential'; }
+    else { newMode = 'sequential'; }
     if (this.textDirectiveEntity) {
-      const state = this._hass?.states[targetEntity];
-      const currentRepeat = state?.attributes?.repeat || 'off';
-      let command = '循环播放';
-      if (currentRepeat === 'off') { command = '循环播放'; }
-      else if (currentRepeat === 'all') { command = '单曲循环'; }
-      else { command = '顺序播放'; }
+      let command = '顺序播放';
+      if (newMode === 'repeat_one') { command = '单曲循环'; }
       this.callNotify(command);
-      return;
     }
-    const state = this._hass?.states[targetEntity];
-    if (!state) return;
-    try {
-      const currentRepeat = state.attributes?.repeat || 'off';
-      let newRepeat = 'all';
-      if (currentRepeat === 'off') { newRepeat = 'all'; }
-      else if (currentRepeat === 'all') { newRepeat = 'one'; }
-      else { newRepeat = 'off'; }
-      this.callService('media_player.repeat_set', {
-        entity_id: targetEntity,
-        repeat: newRepeat
-      });
-    } catch (e) {
-    }
+    this._updateRepeatMode(targetEntity, newMode);
   }
+
+
+
+  // 获取当前播放模式（GET）
+  async _fetchRepeatMode() {
+    if (!this._hass?.auth?.data?.access_token) return;
+    try {
+      const targetEntity = this._getActiveTargetEntity();
+      if (!targetEntity) return;
+      const accessToken = this._hass.auth.data.access_token;
+      const response = await fetch(`/api/xiaoshi/ma/repeat_mode?media_player=${encodeURIComponent(targetEntity)}`, {
+        headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        credentials: 'same-origin'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.repeat_mode && ['sequential', 'random', 'repeat_one'].includes(data.repeat_mode)) {
+          this._repeatMode = data.repeat_mode;
+          this.requestUpdate();
+        }
+      }
+    } catch (e) {}
+    if (!this._repeatMode) this._repeatMode = 'sequential';
+  }
+
+
+
+  // 获取显示模式（GET）
+  async _fetchViewMode() {
+    if (!this.maPlayerEntity || !this._hass?.auth?.data?.access_token) return;
+    try {
+      const accessToken = this._hass.auth.data.access_token;
+      const response = await fetch(`/api/xiaoshi/ma/view?media_player=${encodeURIComponent(this.maPlayerEntity)}`, {
+        headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
+        credentials: 'same-origin'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.view === 'playlist') {
+          this._showPlaylist = true;
+          this.requestUpdate();
+        }
+      }
+    } catch (e) {}
+  }
+
+  // 更新显示模式（POST）
+  async _updateViewMode(view) {
+    if (!this.maPlayerEntity || !this._hass?.auth?.data?.access_token) return;
+    try {
+      const accessToken = this._hass.auth.data.access_token;
+      await fetch('/api/xiaoshi/ma/view', {
+        method: 'POST',
+        headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ media_player: this.maPlayerEntity, view: view })
+      });
+    } catch (e) {}
+  }
+
+  // 更新播放模式（POST）
+  async _updateRepeatMode(targetEntity, mode) {
+    if (!['sequential', 'random', 'repeat_one'].includes(mode)) return;
+    this._repeatMode = mode;
+    this.requestUpdate();
+    if (!this._hass?.auth?.data?.access_token) return;
+    try {
+      const accessToken = this._hass.auth.data.access_token;
+      await fetch('/api/xiaoshi/ma/repeat_mode', {
+        method: 'POST',
+        headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ media_player: targetEntity, repeat_mode: mode })
+      });
+    } catch (e) {}
+  }
+
+  // 假歌名判断（请欣赏、加载中等）
+  _isPseudoTitle(title) {
+    if (!title) return true;
+    if (/^请欣赏/.test(title)) return true;
+    const fakes = new Set(['暂无播放', '正在加载', 'QQ音乐', '无音乐播放', '加载中']);
+    return fakes.has(title);
+  }
+
+  // 假歌名判断（请欣赏、加载中等）
+  _isPseudoTitle(title) {
+    if (!title) return true;
+    if (/^请欣赏/.test(title)) return true;
+    const fakes = new Set(['暂无播放', '正在加载', 'QQ音乐', '无音乐播放', '加载中']);
+    return fakes.has(title);
+  }
+
+
 
   // 处理收藏当前歌曲
   handleFavoriteCurrentSong() {
@@ -1533,8 +1550,8 @@ class XiaoshiMusicCard extends LitElement {
   showPopup(options) {
     const {
       content, className, style, triggerButton, width, maxWidth, minWidth,
-      height, maxHeight, showOverlay, showBackground, popupPosition,
-      closeOnClickAway, closeOnTargetClick, overlayBlur, onClose, animation, gap, placement
+      height, maxHeight, showBackground, popupPosition,
+      overlayBlur, onClose
     } = options || {};
     const overlay = document.createElement('div');
     overlay.className = 'xiaoshi-popup-overlay';
@@ -1621,6 +1638,15 @@ class XiaoshiMusicCard extends LitElement {
     this._historyDeviceIndex = this._activeDeviceIndex || 0;
     this._showHistoryOverlay();
     this._fetchHistory(this._historyDeviceIndex);
+  }
+
+  // 切换歌词 / 播放列表显示
+  async _togglePlaylistView() {
+    this._handleClick();
+    this._showPlaylist = !this._showPlaylist;
+    const view = this._showPlaylist ? 'playlist' : 'lyrics';
+    this._updateViewMode(view);
+    this.requestUpdate();
   }
 
   // 获取历史记录
@@ -1815,7 +1841,7 @@ class XiaoshiMusicCard extends LitElement {
     }
     let html = '';
     for (const entityData of this._historyData) {
-      const { entityId, name, entries } = entityData;
+      const { name, entries } = entityData;
       let playingMs = 0, pausedMs = 0, idleMs = 0, otherMs = 0;
       const dedupedEntries = [];
       for (const entry of entries) {
@@ -1895,6 +1921,8 @@ class XiaoshiMusicCard extends LitElement {
       this._historyTimeChipsEl = null;
     }
     this._showHistory = false;
+    this._showPlaylist = false;
+    this._currentPlaylistData = null;
     this._historyData = [];
     this._historyLoading = false;
     this._historyFilterPeriod = 24;
@@ -2119,7 +2147,7 @@ class XiaoshiMusicCard extends LitElement {
   }
 
   // 显示对话历史面板
-  _showConversationBubble(targetEl, cardConfig, clickPoint) {
+  _showConversationBubble(targetEl, cardConfig) {
     if (this._currentConversationBubbleRef) {
       const prev = this._currentConversationBubbleRef;
       this._currentConversationBubbleRef = null;
@@ -2304,7 +2332,7 @@ class XiaoshiMusicCard extends LitElement {
   }
 
   // 通过设置实体状态记录对话
-  async _saveConversationRecord(entityId, userText, recordType) {
+  async _saveConversationRecord(entityId, userText) {
     try {
       await this._hass.callService('text', 'set_value', { entity_id: entityId, value: userText });
       return true;
@@ -2346,9 +2374,24 @@ class XiaoshiMusicCard extends LitElement {
       this._showToast('请先配置小米电台实体 play_radio', 'warning');
       return;
     }
+    // 小米电台模式：清空本地播放 api 记录
+    if (this._localPlaylist && this._localPlaylist.length) {
+      this._clearLocalPlaylist(this._localMediaEntity());
+      this._localPlaylist = [];
+      this._localStatuses = [];
+      this._localCurrentIndex = -1;
+      this._localPlaylistSignature = '';
+    }
+    // 清空 ma_playlist 列表
+    this._clearLocalMaPlaylistTracks();
+    this._maPlayingIndex = -1;
+    // 更新播放列表显示（电台不显示列表）
+    this._currentPlaylistData = null;
+    this._showPlaylist = false;
     this._pauseOtherChannelsForMiot();
     this._setChannel('miot');
     this._miotOverlay = { title: '', artist: '', coverUrl: '', source: 'miot', active: true };
+    this._syncOtherEntityStatus('miot');
     this.callService('button.press', { entity_id: this.sidebarRadioEntity });
   }
 
@@ -2399,7 +2442,7 @@ class XiaoshiMusicCard extends LitElement {
   }
 
   // 主入口：打开本地音乐弹窗
-  showLocalMusicPopup(group, button) {
+  showLocalMusicPopup(group) {
     const playerCfg = this._parsePlayerConfig(group || {});
     if (!playerCfg) { this._showToast('请配置 media_entity', 'warning'); return; }
     this._localMusicPlayerCfg = playerCfg;
@@ -2486,7 +2529,7 @@ class XiaoshiMusicCard extends LitElement {
   }
 
   // 样式化音量滑块
-  _styleVolumeThumb(slider) {
+  _styleVolumeThumb() {
     if (!document.getElementById('_sunPlayerVolStyle')) {
       const s = document.createElement('style'); s.id = '_sunPlayerVolStyle';
       s.textContent = '.media-player-volume-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--b-accent,#3498db);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.2);cursor:pointer;}.media-player-volume-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--b-accent,#3498db);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.2);cursor:pointer;}';
@@ -2525,7 +2568,7 @@ class XiaoshiMusicCard extends LitElement {
   _saveMediaPlayerState(state) { if (this._mediaPlayerState) { this._mediaPlayerState.activeTabIndex = state.activeTabIndex; this._mediaPlayerState.activePlaylistIndex = state.activePlaylistIndex; this._mediaPlayerState.activeItemIndex = state.activeItemIndex; } }
 
   // 保存当前播放项
-  _saveCurrentPlayingItem(item, cfg, state) {
+  _saveCurrentPlayingItem(item) {
     if (item && this._mediaPlayerState) {
       this._mediaPlayerState.currentItem = { title: item.title || '', artist: item.artist || '', album: item.album || '', duration: item.duration || 0, id: item.id || null, media_content_id: item.media_content_id || item.url || '', media_type: item.media_type || 'music' };
       // 触发主卡片 re-render 以更新右侧显示
@@ -2549,8 +2592,21 @@ class XiaoshiMusicCard extends LitElement {
   }
 
   // 播放媒体项
-  _playMediaItem(item, cfg, state, container) {
+  async _playMediaItem(item, cfg, state) {
     if (!this._hass) return;
+    // 本地播放列表：同步到后端 API（写入播放列表 / 更新播放状态）
+    const tb = cfg?.tabs?.[state?.activeTabIndex];
+    const pl = tb?.playlists?.[state?.activePlaylistIndex];
+    const list = pl?.items || null;
+    const idx = (state && list) ? state.activeItemIndex : -1;
+    if (list && list.length) {
+      const sig = list.map(it => it.media_content_id || it.uri || it.url || '').join('|');
+      if (sig !== this._localPlaylistSignature) {
+        await this._localEnterPlaylist(list, idx);
+        this._localPlaylistSignature = sig;
+      }
+      await this._localPlayIndex(idx, cfg, state, false);
+    }
     this._pauseOtherChannels();
     const te = this.xiaomiMiotEntity || this.xiaomiHomeEntity || cfg.mediaEntity;
     const playUrl = item.media_content_id || item.url || '';
@@ -2568,39 +2624,467 @@ class XiaoshiMusicCard extends LitElement {
     if (state._closePopup) { state._closePopup(); }
   }
 
-  _prevTrack(cfg, state, c) { const t = cfg.tabs[state.activeTabIndex]; const p = t?.playlists?.[state.activePlaylistIndex]; if (!p?.items?.length) return; const ni = state.activeItemIndex > 0 ? state.activeItemIndex - 1 : p.items.length - 1; state.activeItemIndex = ni; this._playMediaItem(p.items[ni], cfg, state, c); }
+  _prevTrack(cfg, state, c) {
+    this._routePrev();
+    this.requestUpdate();
+  }
 
-  _nextTrack(cfg, state, c) { const t = cfg.tabs[state.activeTabIndex]; const p = t?.playlists?.[state.activePlaylistIndex]; if (!p?.items?.length) return; const ni = state.activeItemIndex < p.items.length - 1 ? state.activeItemIndex + 1 : 0; state.activeItemIndex = ni; this._playMediaItem(p.items[ni], cfg, state, c); }
+  _nextTrack(cfg, state, c) {
+    this._routeNext();
+    this.requestUpdate();
+  }
 
   _togglePlayPause(entity) {
-    if (!this._hass || !entity) return;
-    const s = this._hass.states[entity];
-    if (!s) { this._hass.callService('media_player', 'media_play', { entity_id: entity }).catch(() => {}); return; }
-    const isPlaying = s.state === 'playing';
-    if (isPlaying) {
-      this._hass.callService('media_player', 'media_pause', { entity_id: entity }).catch(() => {});
-    } else {
-      // 暂停后恢复播放：本地音乐需要重新发送 play_media（小爱 MIoT 实体可能忘记 URL）
-      const ci = this._mediaPlayerState?.currentItem;
-      if (ci?.media_content_id) {
-        const playUrl = ci.media_content_id || '';
-        if (playUrl) {
-          this._hass.callService('media_player', 'play_media', {
-            entity_id: entity,
-            media_content_id: playUrl,
-            media_content_type: ci.media_type || 'music'
-          }).catch(() => {});
-        }
-      } else {
-        this._hass.callService('media_player', 'media_play', { entity_id: entity }).catch(() => {});
-      }
-    }
+    this._routePlayPause();
+    this.requestUpdate();
   }
 
   // 停止播放
-  _stopMedia(entity) { if (!this._hass || !entity) return; this._hass.callService('media_player', 'media_pause', { entity_id: entity }).catch(() => {}); }
+  _stopMedia(entity) {
+    if (this._isLocalActive() && this._localCurrentIndex >= 0) { this._localPause(); return; }
+    if (!this._hass || !entity) return; this._hass.callService('media_player', 'media_pause', { entity_id: entity }).catch(() => {});
+  }
 
   _setVolume(entity, level) { if (!this._hass || !entity) return; this._hass.callService('media_player', 'volume_set', { entity_id: entity, volume_level: Math.max(0, Math.min(1, level)) }).catch(() => {}); }
+
+  // ═══════════════════════════════════════════
+  // 本地播放 — 后端 API 同步 & 播放状态机
+  // 播放状态：unplayed(未播放) / played(已播放) / playing(正在播放) / paused(暂停播放)
+  // ═══════════════════════════════════════════
+
+  // 本地播放媒体实体
+  _localMediaEntity() {
+    return (this._localMusicPlayerCfg && this._localMusicPlayerCfg.mediaEntity)
+      || this.xiaomiMiotEntity || this.xiaomiHomeEntity || null;
+  }
+
+  // 本地播放是否激活（当前通道为本地）
+  _isLocalActive() {
+    return this._activeChannel === 'local';
+  }
+
+  // 本地播放 API 通用请求
+  async _localApiCall(path, method, body) {
+    const token = this._hass?.auth?.data?.access_token || '';
+    if (!token) return null;
+    try {
+      const opts = {
+        method: method || 'GET',
+        headers: { Accept: 'application/json', Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+      };
+      if (body) opts.body = JSON.stringify(body);
+      const r = await fetch(`/api/xiaoshi/ma${path}`, opts);
+      if (r.ok) return await r.json();
+    } catch (e) {}
+    return null;
+  }
+
+  async _fetchLocalPlaylist(mp) { return this._localApiCall(`/local_playlist?media_player=${encodeURIComponent(mp || '')}`, 'GET'); }
+  async _setLocalPlaylist(mp, items) { return this._localApiCall('/local_playlist', 'POST', { media_player: mp, playlist: items }); }
+  async _clearLocalPlaylist(mp) { return this._localApiCall('/local_playlist/clear', 'POST', { media_player: mp }); }
+  async _updateLocalStatus(mp, currentIndex, statuses) {
+    const body = { media_player: mp };
+    if (currentIndex !== undefined && currentIndex !== null) body.current_index = currentIndex;
+    if (statuses) body.statuses = statuses;
+    return this._localApiCall('/local_status', 'POST', body);
+  }
+
+  // 清空 MA 空播放列表（best-effort，仅 WS 可用时）
+  async _clearLocalMaPlaylistTracks() {
+    if (!this.maPlaylist || !this._isMaWsReady()) return;
+    try {
+      if (this.maPlayerEntity && this._hass) {
+        try { await this._hass.callService('media_player', 'media_stop', { entity_id: this.maPlayerEntity }); } catch (e) {}
+      }
+      const plId = (this.maPlaylist.match(/(\d+)$/) || [])[0] || this.maPlaylist;
+      const existing = await this._maWsSendAndWait('music/playlists/playlist_tracks', { item_id: String(plId), provider_instance_id_or_domain: 'library', force_refresh: false, allow_dynamic_tracks: false });
+      const oldTracks = Array.isArray(existing) ? existing : (existing?.items || []);
+      if (oldTracks.length > 0) {
+        await this._maWsSendAndWait('music/playlists/remove_playlist_tracks', { db_playlist_id: String(plId), positions_to_remove: oldTracks.map((_, i) => i) });
+      }
+    } catch (e) {}
+  }
+
+  // 进入本地播放列表：清空主播放列表 + 清空 MA 列表 + 写入 API
+  async _localEnterPlaylist(items, index) {
+    const mp = this._localMediaEntity();
+    // 1、2：清空主播放列表 / MA 列表
+    this._currentPlaylistData = null;
+    await this._clearLocalMaPlaylistTracks();
+    // 3：将本地播放内容写入 API
+    const norm = (items || []).map(it => ({
+      name: it.title || it.name || '',
+      artist: it.artist || '',
+      uri: it.media_content_id || it.uri || it.url || '',
+      duration: it.duration || 0,
+      image_url: it.cover_url || it.cover || it.image_url || '',
+      media_type: it.media_type || 'music',
+    })).filter(it => it.uri);
+    this._localPlaylist = norm;
+    this._localStatuses = norm.map(() => 'unplayed');
+    this._localCurrentIndex = -1;
+    if (norm.length) {
+      await this._setLocalPlaylist(mp, norm);
+    } else {
+      await this._clearLocalPlaylist(mp);
+    }
+    if (index >= 0 && index < norm.length) {
+      this._localStatuses[index] = 'playing';
+      this._localCurrentIndex = index;
+      await this._updateLocalStatus(mp, index, { [index]: 'playing' });
+    }
+    this.requestUpdate();
+  }
+
+  // 全部重置为未播放（内存 + 后端）
+  _localResetStatuses() {
+    if (!this._localStatuses) return;
+    this._localStatuses = this._localStatuses.map(() => 'unplayed');
+    const mp = this._localMediaEntity();
+    if (mp) {
+      const s = {};
+      this._localStatuses.forEach((_, i) => { s[i] = 'unplayed'; });
+      this._updateLocalStatus(mp, undefined, s);
+    }
+  }
+
+  // 计算下一首索引（应用重置规则）
+  _localNextIndex() {
+    const len = (this._localPlaylist || []).length;
+    if (len === 0) return -1;
+    const statuses = this._localStatuses || [];
+    const allUnplayed = statuses.length === len && statuses.every(s => s === 'unplayed');
+    if (allUnplayed) return 0;
+    const cur = this._localCurrentIndex;
+    let next = (cur < 0 ? -1 : cur) + 1;
+    if (next >= len) {
+      const allPlayed = statuses.length === len && statuses.every(s => s === 'played' || s === 'playing');
+      if (allPlayed) { this._localResetStatuses(); return 0; }
+      next = 0;
+    }
+    return next;
+  }
+
+  _localPrevIndex() {
+    const len = (this._localPlaylist || []).length;
+    if (len === 0) return -1;
+    const statuses = this._localStatuses || [];
+    const allUnplayed = statuses.length === len && statuses.every(s => s === 'unplayed');
+    if (allUnplayed) return 0;
+    const cur = this._localCurrentIndex;
+    let prev = (cur < 0 ? 0 : cur) - 1;
+    if (prev < 0) {
+      const allPlayed = statuses.length === len && statuses.every(s => s === 'played' || s === 'playing');
+      if (allPlayed) { this._localResetStatuses(); return len - 1; }
+      prev = len - 1;
+    }
+    return prev;
+  }
+
+  // 切换/播放指定索引（doPlay=true 时实际调用 HA play_media）
+  async _localPlayIndex(index, cfg, state, doPlay) {
+    const len = (this._localPlaylist || []).length;
+    if (index < 0 || index >= len) return;
+    const mp = this._localMediaEntity();
+    const statuses = {};
+    if (this._localCurrentIndex >= 0 && this._localCurrentIndex !== index) {
+      statuses[this._localCurrentIndex] = 'played';
+      this._localStatuses[this._localCurrentIndex] = 'played';
+    }
+    this._localStatuses[index] = 'playing';
+    this._localCurrentIndex = index;
+    statuses[index] = 'playing';
+    await this._updateLocalStatus(mp, index, statuses);
+    if (doPlay) {
+      const item = this._localPlaylist[index];
+      this._pauseOtherChannels();
+      const te = this._localMediaEntity();
+      if (te && item && item.uri && this._hass) {
+        this._hass.callService('media_player', 'play_media', { entity_id: te, media_content_id: item.uri, media_content_type: item.media_type || 'music' }).catch(() => {});
+      }
+      this._setChannel('local');
+      this._lastPlaySource = 'local';
+      try { localStorage.setItem(this._getLastSourceKey(), 'local'); } catch (e) {}
+      // 本地通过 mito 实体播放，同步到 home 实体
+      this._syncOtherEntityStatus('local');
+    }
+    if (state) state.activeItemIndex = index;
+    this.requestUpdate();
+  }
+
+  async _localNext(cfg, state, container) {
+    if (!this._isLocalActive() || !(this._localPlaylist || []).length) return false;
+    const idx = this._localNextIndex();
+    if (idx < 0) return false;
+    await this._localPlayIndex(idx, cfg, state, true);
+    return true;
+  }
+
+  async _localPrev(cfg, state, container) {
+    if (!this._isLocalActive() || !(this._localPlaylist || []).length) return false;
+    const idx = this._localPrevIndex();
+    if (idx < 0) return false;
+    await this._localPlayIndex(idx, cfg, state, true);
+    return true;
+  }
+
+  // 暂停：暂停播放，保留状态供下次继续
+  async _localPause() {
+    const mp = this._localMediaEntity();
+    const idx = this._localCurrentIndex;
+    if (idx >= 0) {
+      this._localStatuses[idx] = 'paused';
+      await this._updateLocalStatus(mp, undefined, { [idx]: 'paused' });
+    }
+    const te = this._localMediaEntity();
+    if (te && this._hass) this._hass.callService('media_player', 'media_pause', { entity_id: te }).catch(() => {});
+    this.requestUpdate();
+  }
+
+  // 继续：恢复正在/暂停播放
+  async _localResume() {
+    const mp = this._localMediaEntity();
+    const idx = this._localCurrentIndex;
+    if (idx < 0) return;
+    const item = this._localPlaylist[idx];
+    this._localStatuses[idx] = 'playing';
+    await this._updateLocalStatus(mp, idx, { [idx]: 'playing' });
+    const te = this._localMediaEntity();
+    if (te && item && item.uri && this._hass) {
+      this._hass.callService('media_player', 'play_media', { entity_id: te, media_content_id: item.uri, media_content_type: item.media_type || 'music' }).catch(() => {});
+    }
+    this._setChannel('local');
+    this._syncOtherEntityStatus('local');
+    this.requestUpdate();
+  }
+
+  // 点击本地播放列表中的曲目
+  async _playLocalPlaylistTrack(track) {
+    const uri = track?.uri || track?.track_id || track?.media_content_id || '';
+    const idx = (this._localPlaylist || []).findIndex(t => (t.uri || '') === uri);
+    if (idx < 0) return;
+    await this._localPlayIndex(idx, null, null, true);
+  }
+
+  // 本地播放 播放/暂停 切换
+  async _localTogglePlayPause() {
+    const te = this._localMediaEntity();
+    const s = this._hass?.states?.[te];
+    const playing = s?.state === 'playing';
+    if (playing) await this._localPause();
+    else await this._localResume();
+  }
+
+  // ═══════════════════════════════════════════
+  // MA 播放 — 后端 WS 推送 & 播放状态机
+  // ═══════════════════════════════════════════
+
+  // 当前 MA 播放列表（来自 _currentPlaylistData.playlist，即 ma_playlist 内容）
+  _maTracks() {
+    return (this._currentPlaylistData && this._currentPlaylistData.playlist) || [];
+  }
+
+  // 确保 MA WS / 队列已就绪
+  async _ensureMaReady() {
+    if (!this._isMaWsReady()) {
+      this._connectMaWs();
+      for (let w = 0; w < 50 && !this._isMaWsReady(); w++) await new Promise(r => setTimeout(r, 100));
+    }
+    if (this._isMaWsReady() && !this._maQueueId) {
+      this._subscribeMaQueue();
+      for (let w = 0; w < 20 && !this._maQueueId; w++) await new Promise(r => setTimeout(r, 200));
+    }
+    return this._isMaWsReady() && !!this._maQueueId;
+  }
+
+  // 推送到 MA 播放服务：播放指定索引的曲目（替换队列并立即播放）
+  async _maPlayIndex(idx) {
+    const tracks = this._maTracks();
+    if (idx < 0 || idx >= tracks.length) return false;
+    const t = tracks[idx];
+    const uri = t.uri || t.track_id || '';
+    if (!uri) return false;
+    // 立即从列表数据填充当前曲目信息（不等 WS 回传，避免 miot/home 实体短暂显示旧信息）
+    this._maTrackName = t.name || t.title || t.track_name || '';
+    this._maTrackArtist = t.artist || '';
+    this._maCoverUrl = t.image_url || t.cover || t.image || '';
+    this._maDuration = parseFloat(t.duration || 0) || 0;
+    if (!(await this._ensureMaReady())) return false;
+    try {
+      this._maWsSend('player_queues/play', { queue_id: this._maQueueId, uri, enqueue_option: 'play' });
+      this._maPlayingIndex = idx;
+      this._syncOtherEntityStatus('ma');
+      this.requestUpdate();
+      return true;
+    } catch (e) { return false; }
+  }
+
+  async _maNext() {
+    const tracks = this._maTracks();
+    if (!tracks.length) return false;
+    let next = this._maPlayingIndex + 1;
+    if (next >= tracks.length) next = 0;
+    return this._maPlayIndex(next);
+  }
+
+  async _maPrev() {
+    const tracks = this._maTracks();
+    if (!tracks.length) return false;
+    let prev = this._maPlayingIndex - 1;
+    if (prev < 0) prev = tracks.length - 1;
+    return this._maPlayIndex(prev);
+  }
+
+  // MA 暂停：暂停 MA 队列播放（保留进度，供继续）
+  async _maPause() {
+    if (this._isMaWsReady() && this._maQueueId) {
+      try { this._maWsSend('player_queues/pause', { queue_id: this._maQueueId }); } catch (e) {}
+    }
+    this.requestUpdate();
+  }
+
+  // MA 继续：重新推送当前曲目到 MA 播放服务
+  async _maResume() {
+    const idx = this._maPlayingIndex >= 0 ? this._maPlayingIndex : 0;
+    return this._maPlayIndex(idx);
+  }
+
+  async _maTogglePlayPause() {
+    const playing = this._hass?.states?.[this.maPlayerEntity]?.state === 'playing' || this.isPlaying;
+    if (playing) await this._maPause();
+    else await this._maResume();
+  }
+
+  // ═══════════════════════════════════════════
+  // 统一 3 模式路由：上一首 / 下一首 / 播放暂停
+  // 通道：'ma' = MA播放，'local' = 本地播放，'miot' = 小米电台
+  // ═══════════════════════════════════════════
+
+  async _routePrev() {
+    const ch = this._activeChannel;
+    if (ch === 'ma') { await this._maPrev(); return; }
+    if (ch === 'local') { await this._localPrev(); return; }
+    if (ch === 'miot') {
+      const te = this.xiaomiHomeEntity || this.xiaomiMiotEntity;
+      if (te && this._hass) this._hass.callService('media_player', 'media_previous_track', { entity_id: te }).catch(() => {});
+      return;
+    }
+    const te = this._getActiveTargetEntity();
+    if (te && this._hass) this._hass.callService('media_player', 'media_previous_track', { entity_id: te }).catch(() => {});
+  }
+
+  async _routeNext() {
+    const ch = this._activeChannel;
+    if (ch === 'ma') { await this._maNext(); return; }
+    if (ch === 'local') { await this._localNext(); return; }
+    if (ch === 'miot') {
+      const te = this.xiaomiHomeEntity || this.xiaomiMiotEntity;
+      if (te && this._hass) this._hass.callService('media_player', 'media_next_track', { entity_id: te }).catch(() => {});
+      return;
+    }
+    const te = this._getActiveTargetEntity();
+    if (te && this._hass) this._hass.callService('media_player', 'media_next_track', { entity_id: te }).catch(() => {});
+  }
+
+  async _routePlayPause() {
+    const ch = this._activeChannel;
+    if (ch === 'ma') { await this._maTogglePlayPause(); return; }
+    if (ch === 'local') { await this._localTogglePlayPause(); return; }
+    if (ch === 'miot') {
+      const te = this.xiaomiHomeEntity || this.xiaomiMiotEntity;
+      if (te && this._hass) {
+        const s = this._hass.states[te];
+        if (s?.state === 'playing') this._hass.callService('media_player', 'media_pause', { entity_id: te }).catch(() => {});
+        else this._hass.callService('media_player', 'media_play', { entity_id: te }).catch(() => {});
+      }
+      return;
+    }
+    // 默认（无明确通道）：按当前活动实体原生 播放/暂停
+    const te = this._getActiveTargetEntity();
+    const s = this._hass?.states?.[te];
+    if (!te) return;
+    if (s?.state === 'playing') {
+      if (this._isMaWsReady() && this._maTrackName && this._isMaSourceActive() && this._maPlayerId) {
+        try { this._maWsSend('player_queues/stop', { queue_id: this._maQueueId || this._maPlayerId }); } catch (e) {}
+      }
+      this._hass.callService('media_player', 'media_pause', { entity_id: te }).catch(() => {});
+    } else {
+      this._hass.callService('media_player', 'media_play', { entity_id: te }).catch(() => {});
+    }
+  }
+
+  // 进入某模式后，把当前曲目信息镜像写入"另一个"实体（mito/home），
+  // 解决：MA 播放时 ma 实体信息正确，但 mito/home 实体仍显示旧的
+  // 错误信息（如"心灵之谜"）。
+  // 模式 -> 需要同步的目标实体：
+  //   ma    -> 更新 mito 实体 & home 实体（两者都不是 MA 播放目标）
+  //   local -> 更新 home 实体（本地通过 mito 实体播放，home 是另一个）
+  //   miot  -> 更新 mito 实体（电台通过 home 实体播放，mito 是另一个）
+  _syncOtherEntityStatus(mode) {
+    const targets = [];
+    if (mode === 'ma') {
+      if (this.xiaomiMiotEntity) targets.push(this.xiaomiMiotEntity);
+      if (this.xiaomiHomeEntity) targets.push(this.xiaomiHomeEntity);
+    } else if (mode === 'local') {
+      // 本地通过 mito 实体播放，更新 home 实体；若没有 home 则更新 mito
+      if (this.xiaomiHomeEntity) targets.push(this.xiaomiHomeEntity);
+      else if (this.xiaomiMiotEntity) targets.push(this.xiaomiMiotEntity);
+    } else if (mode === 'miot') {
+      // 电台通过 home 实体播放，更新 mito 实体；若没有 mito 则更新 home
+      if (this.xiaomiMiotEntity) targets.push(this.xiaomiMiotEntity);
+      else if (this.xiaomiHomeEntity) targets.push(this.xiaomiHomeEntity);
+    }
+    if (!targets.length) { this.requestUpdate(); return; }
+    const info = this._currentNowPlayingInfo(mode);
+    if (!info || (!info.title && !info.artist)) { this.requestUpdate(); return; }
+    for (const t of targets) this._syncEntityNowPlaying(t, info);
+    this.requestUpdate();
+  }
+
+  // 收集当前模式下正在播放的曲目信息
+  _currentNowPlayingInfo(mode) {
+    if (mode === 'ma') {
+      return {
+        title: this._maTrackName || '',
+        artist: this._maTrackArtist || '',
+        cover: this._maCoverUrl || '',
+        duration: this._maDuration || 0,
+      };
+    }
+    if (mode === 'local') {
+      const item = (this._localPlaylist || [])[this._localCurrentIndex];
+      const ci = this._mediaPlayerState?.currentItem || null;
+      return {
+        title: (item?.name || item?.title || ci?.title || '') + '',
+        artist: (item?.artist || ci?.artist || '') + '',
+        cover: (item?.image_url || item?.cover || ci?.cover || '') + '',
+        duration: parseFloat(item?.duration || ci?.duration || 0) || 0,
+      };
+    }
+    if (mode === 'miot') {
+      const ov = this._miotOverlay || {};
+      return {
+        title: ov.title || '',
+        artist: ov.artist || '',
+        cover: ov.coverUrl || '',
+        duration: 0,
+      };
+    }
+    return null;
+  }
+
+  // 调用后端端点，把正在播放信息写入目标实体
+  _syncEntityNowPlaying(entityId, info) {
+    if (!entityId) return;
+    this._localApiCall('/sync_now_playing', 'POST', {
+      entity_id: entityId,
+      media_title: info.title || '',
+      media_artist: info.artist || '',
+      entity_picture: info.cover || '',
+      media_duration: info.duration || 0,
+    }).catch(() => {});
+  }
 
   // 刷新播放器 UI
   _refreshPlayerUI(container, cfg, state) {
@@ -2650,7 +3134,7 @@ class XiaoshiMusicCard extends LitElement {
   }
 
   // 解析封面 URL
-  _resolveCoverUrl(cfg, state, currentItem, entityState) { return ''; }
+  _resolveCoverUrl() { return ''; }
 
   // 解析歌词
   _parseLrcLyrics(raw) {
@@ -2670,7 +3154,7 @@ class XiaoshiMusicCard extends LitElement {
   }
 
   // 获取播放列表
-  async _fetchPlaylists(userName) { try { const paths = (this._config?.local_music_path || '').split('\n').map(p => p.trim()).filter(p => p); if (paths.length === 0) { const pls = []; await this._collectPlaylists('', pls); return pls.filter(p => p.items.length > 0); } const all = []; for (const path of paths) { const pls = []; await this._collectPlaylists(path, pls); all.push(pls.filter(p => p.items.length > 0)); } return all.flat(); } catch(e) { return []; } }
+  async _fetchPlaylists() { try { const paths = (this._config?.local_music_path || '').split('\n').map(p => p.trim()).filter(p => p); if (paths.length === 0) { const pls = []; await this._collectPlaylists('', pls); return pls.filter(p => p.items.length > 0); } const all = []; for (const path of paths) { const pls = []; await this._collectPlaylists(path, pls); all.push(pls.filter(p => p.items.length > 0)); } return all.flat(); } catch(e) { return []; } }
 
   // 收集播放列表
   async _collectPlaylists(mediaContentId, pls) {
@@ -2897,7 +3381,7 @@ class XiaoshiMusicCard extends LitElement {
       if (posEl) posEl.textContent = this._formatMediaTime(targetPos);
       if (this._hass && cfg.mediaEntity && duration > 0) {
         if (supportsSeek) {
-          this._hass.callService('media_player', 'media_seek', { entity_id: cfg.mediaEntity, seek_position: targetPos }).catch((e) => {});
+          this._hass.callService('media_player', 'media_seek', { entity_id: cfg.mediaEntity, seek_position: targetPos }).catch(() => {});
         }
         state._localPosition = targetPos;
       }
@@ -3015,7 +3499,7 @@ class XiaoshiMusicCard extends LitElement {
   }
 
   // 渲染单个播放列表项（可展开的卡片 + 歌曲列表 + 播放列表按钮）
-  _renderPlaylistItem(container, pl, plIdx, cfg, state, popupContainer) {
+  _renderPlaylistItem(container, pl, plIdx, cfg, state) {
     const items = Array.isArray(pl.items) ? pl.items : [];
     const card = document.createElement('div'); card.className = 'media-player-playlist-header'; card.dataset.playlistIndex = plIdx; card.style.cursor = 'pointer'; card.style.userSelect = 'none';
     card.addEventListener('click', (e) => { if (e.target.closest('button') || e.target.closest('.media-player-item')) return; const newIdx = plIdx === state.activePlaylistIndex ? -1 : plIdx; state.activePlaylistIndex = newIdx; state.activeItemIndex = -1; this._saveMediaPlayerState(state); if (state._popupContainer) { this._rerenderCurrentView(state._popupContainer, cfg, state); if (this.requestUpdate) this.requestUpdate(); } });
@@ -3175,7 +3659,7 @@ class XiaoshiMusicCard extends LitElement {
       this._maWs.onmessage = (event) => { try { this._handleMaWsMessage(JSON.parse(event.data)); } catch(e) {} };
       this._maWs.onerror = () => { this._maWsConnected = false; };
       this._maWs.onclose = () => {
-        this._maWsConnected = false; this._stopMaWsHeartbeat();
+        this._maWsConnected = false; this._maPlaylistAutoRefreshed = false; this._stopMaWsHeartbeat();
         this._maTrackName = ''; this._maTrackArtist = ''; this._maCoverUrl = '';
         this._maDuration = 0; this._maElapsedTime = 0;
         this.requestUpdate(); setTimeout(() => this._connectMaWs(), 5000);
@@ -3186,7 +3670,9 @@ class XiaoshiMusicCard extends LitElement {
   // 发送MA WebSocket消息
   _maWsSend(command, args = {}) {
     if (!this._maWs || this._maWs.readyState !== WebSocket.OPEN) return null;
-    const msgId = ++this._maWs._msgId;
+    // 未鉴权前只允许发送 auth，避免命令被服务端拒绝（与文档：auth 必须是首条命令）
+    if (command !== 'auth' && !this._maWsConnected) return null;
+    const msgId = 'ma-' + (++this._maWs._msgId);
     this._maWs.send(JSON.stringify({ command, message_id: msgId, args }));
     return msgId;
   }
@@ -3204,8 +3690,17 @@ class XiaoshiMusicCard extends LitElement {
   // 处理MA WebSocket消息
   _handleMaWsMessage(msg) {
     if (this._maAuthMsgId && msg.message_id === this._maAuthMsgId) {
-      if (!msg.error) { this._maWsConnected = true; this._maWsSend('subscribe_events', {}); this._subscribeMaQueue(); }
-      else { this._maWsConnected = false; }
+      // 严格按文档判定：需 result.authenticated 为真
+      if (!msg.error && msg.result && msg.result.authenticated !== false) {
+        this._maWsConnected = true;
+        this._maWsSend('subscribe_events', { event_filter: ['player_updated', 'queue_updated', 'queue_items_updated', 'queue_time_updated'] });
+        this._subscribeMaQueue();
+        this._tryAutoRefreshPlaylist();
+      } else {
+        this._maWsConnected = false;
+        // token 失效/鉴权失败：主动关闭以触发自动重连
+        try { this._maWs && this._maWs.close(); } catch(e) {}
+      }
       this._maAuthMsgId = null; return;
     }
     if (msg.type === 'server_info') return;
@@ -3221,7 +3716,7 @@ class XiaoshiMusicCard extends LitElement {
     if (msg.message_id && msg.result !== undefined) { this._handleMaWsResult(msg); return; }
     if (msg.type === 'error') return;
     if (msg.event) {
-      if (!this._maWsConnected) { this._maWsConnected = true; this._maAuthMsgId = null; this._maWsSend('subscribe_events', {}); this._subscribeMaQueue(); }
+      if (!this._maWsConnected) { this._maWsConnected = true; this._maAuthMsgId = null; this._maWsSend('subscribe_events', { event_filter: ['player_updated', 'queue_updated', 'queue_items_updated', 'queue_time_updated'] }); this._subscribeMaQueue(); this._tryAutoRefreshPlaylist(); }
       const et = msg.event;
       if (et === 'queue_updated' || et === 'queue_items_updated') this._handleMaQueueEvent(msg.object_id || this._maQueueId);
       else if (et === 'queue_time_updated') {
@@ -3265,7 +3760,7 @@ class XiaoshiMusicCard extends LitElement {
     if (!this._isMaWsReady()) return;
     const playerEntity = this.maPlayerEntity || this.xiaomiMiotEntity || this.xiaomiHomeEntity;
     if (!playerEntity) return;
-    const msgId = this._maWsSend('players/get_all');
+    const msgId = this._maWsSend('players/all') || this._maWsSend('players/get_all');
     if (msgId && this._maWs) {
       this._maWs._pending[msgId] = {
         resolve: (players) => {
@@ -3292,7 +3787,7 @@ class XiaoshiMusicCard extends LitElement {
           this._maWsSend('player_queues/get', { queue_id: this._maQueueId });
           this._startMaWsHeartbeat();
         },
-        reject: (err) => {
+        reject: () => {
           const entityId = playerEntity.replace(/^media_player\./, '');
           this._maPlayerId = entityId;
           this._maQueueId = entityId;
@@ -3567,35 +4062,12 @@ class XiaoshiMusicCard extends LitElement {
     return maSource;
   }
 
-  // 将剩余的 MA 播放队列追加到当前播放器实体
-  async _enqueueRemainingMaTracks(tracks, idx, mode) {
-    if (!tracks || !Array.isArray(tracks) || idx < 0 || idx >= tracks.length - 1) return;
-    const te = this.maPlayerEntity || this.xiaomiMiotEntity || this.xiaomiHomeEntity;
-    if (!te || !this._hass) return;
-    for (let i = idx + 1; i < tracks.length; i++) {
-      const t = tracks[i];
-      try {
-        let mid = ''; let artist = '';
-        if (mode === 'ma') { mid = t.uri || t.track_id || ''; }
-        else if (mode === 'local') { mid = t.media_content_id || t.url || t.uri || ''; }
-        else { mid = t.name || ''; artist = t.artists || ''; }
-        if (!mid) continue;
-        const sd = { entity_id: te, media_id: mid, media_type: 'track', enqueue: 'add' };
-        if (artist) sd.artist = artist;
-        await this._hass.callService('music_assistant', 'play_media', sd);
-        await new Promise(r => setTimeout(r, 150));
-      } catch(e) {}
-    }
-  }
-
   // 获取当前播放的实体
   _getActiveTargetEntity() {
     const maWsActive = this._isMaWsReady() && (this._maTrackName || this._maOverlay?.active) && this._isMaSourceActive();
     if (maWsActive && this.maPlayerEntity) return this.maPlayerEntity;
     return this.xiaomiMiotEntity || this.xiaomiHomeEntity;
   }
-
-
 
   // QQ 音乐覆盖层
   async _applyQQMusicOverlay() {
@@ -3646,9 +4118,7 @@ class XiaoshiMusicCard extends LitElement {
         }
       }
     }
-    const localSongId = this._activeChannel === 'local' && this._mediaPlayerState?.currentItem?.id
-      ? this._mediaPlayerState.currentItem.id
-      : null;
+
     if (restoredFromBackend) {
       this._localOverlay = {
         title: this._overlayTitle || '',
@@ -3814,7 +4284,7 @@ class XiaoshiMusicCard extends LitElement {
   }
 
   // 递归收集 MA WebSocket music/browse 返回的播放列表
-  async _collectMaWsBrowseItems(items, results, parentName, depth) {
+  async _collectMaWsBrowseItems(items, results, _parentName, depth) {
     if (depth > 5 || !items || !items.length) return;
     for (const item of items) {
       const name = item.name || item.title || '';
@@ -3901,8 +4371,7 @@ class XiaoshiMusicCard extends LitElement {
     }
     this._maExpandedId = plId;
     this._maPlaylistDetail=playlist; this._maPlaylistTracks=[]; this._maPlaylistTracksLoading=true; this._maUpdate?.();
-    const te=this.maPlayerEntity||this.xiaomiMiotEntity||this.xiaomiHomeEntity;
-    const ru=playlist._rawMaUri||''; const su=playlist.uri||playlist.item_id||'';
+    const ru=playlist._rawMaUri||'';
     try {
       if (this._maWs && this._maWs.readyState === WebSocket.OPEN) {
         try {
@@ -3921,45 +4390,39 @@ class XiaoshiMusicCard extends LitElement {
                     if (bResult) {
               const items=Array.isArray(bResult)?bResult:[bResult];
                         const tracks=items.filter(it=>!!(it?.name||it?.uri||it?.item_id)&&!(it?.media_type==='folder'||it?.media_type==='playlist'));
-                        if (tracks.length>0) this._maPlaylistTracks=tracks.map(t=>({ uri:t.uri||t.item_id||'', name:t.name||t.title||'未知', artist:this._extractArtist(t), album:t.album?.name||'', duration:t.duration||0, image_url:this._extractImage(t), track_id:t.item_id||t.uri||'', provider:this._extractProvider(t,playlist.provider) }));
+                        if (tracks.length>0) this._maPlaylistTracks=tracks.map(t=>({ uri:t.uri||t.item_id||'', name:t.name||t.title||'未知', artist:this._extractArtist(t), album:this._extractAlbum(t), duration:t.duration||0, image_url:this._extractImage(t), track_id:t.item_id||t.uri||'', provider:this._extractProvider(t,playlist.provider) }));
             }
           }
         } catch(e){}
-      }
-      if (this._maPlaylistTracks.length===0) {
-            const libMatch = (ru||'').match(/^library(?:\/\/playlist)?\/(\d+)$/);
-        if (this.maServerUrl && this.maServerToken && libMatch) {
-          const plId=libMatch[1]; const bu=this.maServerUrl.replace(/\/+$/,'');
-          for (const ep of [`${bu}/api/library/playlists/${plId}/tracks`,`${bu}/api/library/playlists/${plId}`]) {
-            try {
-              const r=await fetch(ep,{ headers:{ 'Authorization':`Bearer ${this.maServerToken}` } });
-                        if (r.ok) { const d=await r.json(); const items=Array.isArray(d)?d:(d?.tracks||d?.items||[]); if (items.length>0) { this._maPlaylistTracks=items.map(t=>({ uri:t.uri||'', name:t.name||t.title||'未知', artist:this._extractArtist(t), album:t.album?.name||'', duration:t.duration||0, image_url:this._extractImage(t), track_id:t.item_id||t.track_id||t.uri||'', provider:t.provider||playlist.provider })); break; } }
-              if (r.ok) { const d=await r.json(); const items=Array.isArray(d)?d:(d?.tracks||d?.items||[]); if (items.length>0) { this._maPlaylistTracks=items.map(t=>({ uri:t.uri||'', name:t.name||t.title||'未知', artist:this._extractArtist(t), album:t.album?.name||'', duration:t.duration||0, image_url:this._extractImage(t), track_id:t.item_id||t.track_id||t.uri||'', provider:t.provider||playlist.provider })); break; } }
-            } catch(e){}
-          }
-        }
-        if (this._maPlaylistTracks.length===0 && this.maServerUrl && this.maServerToken && ru && !/^library(?:\/\/playlist)?\/\d+$/.test(ru)) {
-          const bu=this.maServerUrl.replace(/\/+$/,'');
-          for (const ep of [`${bu}/api/playlists/${encodeURIComponent(ru)}/tracks`,`${bu}/api/playlists/${encodeURIComponent(su)}/tracks`]) {
-            try {
-              const r=await fetch(ep,{ headers:{ 'Authorization':`Bearer ${this.maServerToken}` } });
-              if (r.ok) { const d=await r.json(); const items=Array.isArray(d)?d:(d?.tracks||d?.items||[]); if (items.length>0) { this._maPlaylistTracks=items.map(t=>({ uri:t.uri||'', name:t.name||t.title||'未知', artist:this._extractArtist(t), album:t.album?.name||'', duration:t.duration||0, image_url:this._extractImage(t), track_id:t.item_id||t.track_id||'', provider:t.provider||playlist.provider })); break; } }
-            } catch(e){}
-          }
-        }
       }
     } catch(e){}
     if (this._maPlaylistTracks.length > 0) playlist.track_count = this._maPlaylistTracks.length;
     this._maPlaylistTracksLoading=false; this._maUpdate?.();
   }
 
-  // 统一播放入口：清空空播放列表 → 添加内容 → 播放
+  async _stopMaPlayback() {
+    // 停止 MA 当前播放：先停 WS 队列，再停 MA 播放器实体
+    if (this._isMaWsReady() && this._maQueueId) {
+      try { this._maWsSend('player_queues/stop', { queue_id: this._maQueueId || this._maPlayerId }); } catch (e) {}
+    }
+    if (this.maPlayerEntity && this._hass) {
+      try { await this._hass.callService('media_player', 'media_stop', { entity_id: this.maPlayerEntity }); } catch (e) {}
+    }
+  }
+
   async _playViaEmptyPlaylist(uri, mediaType, closePopupFn) {
-    if (!this.maEmptyPlaylist) return false;
-    if (this._isMaWsReady() && !this._maPlayerId) { this._subscribeMaQueue(); for (let w=0; w<20 && !this._maPlayerId; w++) await new Promise(r=>setTimeout(r,200)); }
-    if (!this._isMaWsReady() || !this._maPlayerId) return false;
+    if (!this.maPlaylist) { console.log('[Xiaoshi] 未配置 ma_playlist'); return false; }
+    // WS 断了就重连
+    if (!this._maWsConnected) {
+      this._connectMaWs();
+      for (let w = 0; w < 50 && !this._maWsConnected; w++) await new Promise(r => setTimeout(r, 100));
+    }
+    if (this._isMaWsReady() && !this._maPlayerId) { this._subscribeMaQueue(); for (let w = 0; w < 20 && !this._maPlayerId; w++) await new Promise(r => setTimeout(r, 200)); }
+    if (!this._isMaWsReady() || !this._maPlayerId) { console.log('[Xiaoshi] MA WS 未就绪'); return false; }
     try {
-      const plId = (this.maEmptyPlaylist.match(/(\d+)$/)||[])[0] || this.maEmptyPlaylist;
+      // 任何 MA 播放行为前，先停止当前播放内容，避免 play_media 与残留队列冲突报错
+      await this._stopMaPlayback();
+      const plId = (this.maPlaylist.match(/(\d+)$/)||[])[0] || this.maPlaylist;
       // 清空现有曲目
       const existing = await this._maWsSendAndWait('music/playlists/playlist_tracks', { item_id: String(plId), provider_instance_id_or_domain: 'library', force_refresh: false, allow_dynamic_tracks: false });
       const oldTracks = Array.isArray(existing) ? existing : (existing?.items || []);
@@ -3976,53 +4439,128 @@ class XiaoshiMusicCard extends LitElement {
           try {
             const result = await this._maWsSendAndWait('music/playlists/playlist_tracks', { item_id: digits[1], provider_instance_id_or_domain: providerDomain, force_refresh: false, allow_dynamic_tracks: false });
             const items = Array.isArray(result) ? result : (result?.items || []);
-            const trackUris = items.filter(it => !!(it?.name||it?.uri||it?.item_id) && !(it?.media_type==='folder'||it?.media_type==='playlist')).map(it => it.uri||it.item_id||'').filter(Boolean);
+            const filtered = items.filter(it => !!(it?.name||it?.uri||it?.item_id) && !(it?.media_type==='folder'||it?.media_type==='playlist'));
+            const trackUris = filtered.map(it => it.uri||it.item_id||'').filter(Boolean);
             if (trackUris.length > 0) uris = trackUris;
           } catch(e) {}
         }
       }
       // 批量添加到空播放列表
       await this._maWsSendAndWait('music/playlists/add_playlist_tracks', { db_playlist_id: String(plId), uris });
-      // 播放空列表
-      if (this.maPlayerEntity && this._hass) {
-        try { await this._hass.callService('music_assistant','play_media',{ entity_id:this.maPlayerEntity, media_id:this.maEmptyPlaylist, media_type:'playlist' }); } catch(e) {}
+      // 真正推送到 MA 播放服务：把刚写入 ma_playlist 的内容加载进播放队列并播放
+      if (!this._maQueueId) {
+        this._subscribeMaQueue();
+        for (let w = 0; w < 20 && !this._maQueueId; w++) await new Promise(r => setTimeout(r, 200));
+      }
+      const playlistUri = `library://playlist/${plId}`;
+      if (this._isMaWsReady() && this._maQueueId) {
+        this._maWsSend('player_queues/play', { queue_id: this._maQueueId, uri: playlistUri, enqueue_option: 'play' });
+        this._maPlayingIndex = 0;
       }
       if (closePopupFn) closePopupFn();
+      // 关闭弹窗后立马刷新主卡片"播放列表"视图，实时显示刚添加的内容
+      this._showPlaylist = true;
+      this._setChannel('ma');
+      this._maOverlay.source = 'qqmusic';
+      this._maOverlay.active = true;
+      this._activeOverlaySource = 'qqmusic';
+      await this._refreshMaPlaylistView();
+      // 整张歌单播放：从刷新后的列表取第一首填充当前曲目信息，再同步到 miot/home 实体
+      const firstTrack = this._maTracks()[0];
+      if (firstTrack) {
+        this._maTrackName = firstTrack.name || firstTrack.title || firstTrack.track_name || '';
+        this._maTrackArtist = firstTrack.artist || '';
+        this._maCoverUrl = firstTrack.image_url || firstTrack.cover || firstTrack.image || '';
+        this._maDuration = parseFloat(firstTrack.duration || 0) || 0;
+      }
+      this._syncOtherEntityStatus('ma');
       return true;
-    } catch(e) {}
+    } catch(e) {
+      console.log('[Xiaoshi] _playViaEmptyPlaylist 出错:', e?.message || e);
+    }
     return false;
   }
 
+  // 首次打开卡片 / 重连成功后，自动刷新播放列表视图（只触发一次，断连后重置）
+  _tryAutoRefreshPlaylist() {
+    if (this._maPlaylistAutoRefreshed) return;
+    if (!this.maPlaylist) return;
+    this._maPlaylistAutoRefreshed = true;
+    this._refreshMaPlaylistView(false);
+  }
+
+  // 播放列表实时显示：抓取 ma_playlist 当前内容并刷新主卡片"播放列表"视图
+  // switchView=true 时自动切到播放列表视图（播放后调用）；false 时仅后台刷新数据（首次打开调用）
+  async _refreshMaPlaylistView(switchView = true) {
+    if (!this.maPlaylist) return;
+    if (!this._isMaWsReady()) {
+      this._connectMaWs();
+      for (let w = 0; w < 50 && !this._isMaWsReady(); w++) await new Promise(r => setTimeout(r, 100));
+    }
+    if (!this._isMaWsReady()) { this.requestUpdate(); return; }
+    try {
+      const plId = (this.maPlaylist.match(/(\d+)$/)||[])[0] || this.maPlaylist;
+      const result = await this._maWsSendAndWait('music/playlists/playlist_tracks', { item_id: String(plId), provider_instance_id_or_domain: 'library', force_refresh: false, allow_dynamic_tracks: false });
+      const items = Array.isArray(result) ? result : (result?.items || []);
+      const tracks = items
+        .filter(it => !!(it?.name||it?.uri||it?.item_id) && !(it?.media_type==='folder'||it?.media_type==='playlist'))
+        .map(it => ({ name: it.name||it.title||'未知', artist: this._extractArtist?.(it)||'', album: this._extractAlbum?.(it)||'', uri: it.uri||it.item_id||'', track_id: it.item_id||it.uri||'' }));
+      this._currentPlaylistData = { playlist: tracks, repeat_mode: '' };
+      if (switchView) this._showPlaylist = true;
+      this.requestUpdate();
+    } catch(e) {
+      console.log('[Xiaoshi] _refreshMaPlaylistView 出错:', e?.message || e);
+      this.requestUpdate();
+    }
+  }
 
   // 播放整个歌单（统一通过空播放列表）
   async handleMaPlaylistPlay(playlist) {
-    const ru=playlist._rawMaUri||''; const su=playlist.uri||playlist.item_id||'';
-    const playUri=su||ru;
-    if (!playUri) { this._maPlaylistsError='播放失败: 歌单 URI 为空'; this._maUpdate?.(); return; }
+    const ru = playlist._rawMaUri || ''; const su = playlist.uri || playlist.item_id || '';
+    const playUri = su || ru;
+    if (!playUri) { this._maPlaylistsError = '播放失败: 歌单 URI 为空'; this._maUpdate?.(); return; }
+    // 清空本地播放 api 记录（MA 模式下本地列表不显示）
+    if (this._localPlaylist && this._localPlaylist.length) {
+      await this._clearLocalPlaylist(this._localMediaEntity());
+      this._localPlaylist = [];
+      this._localStatuses = [];
+      this._localCurrentIndex = -1;
+      this._localPlaylistSignature = '';
+    }
+    this._maPlayingIndex = -1;
     this._setChannel('ma');
     this._pauseOtherChannelsForMa();
-    if (!this.maEmptyPlaylist) { this._maPlaylistsError = '请先配置空播放列表参数 (ma_empty_playlist)'; this._maUpdate?.(); return; }
+    if (!this.maPlaylist) { this._maPlaylistsError = '请先配置播放列表参数 (ma_playlist)'; this._maUpdate?.(); return; }
     this._maOverlay.source = 'qqmusic';
     this._maOverlay.active = true;
     this._activeOverlaySource = 'qqmusic';
-    this._maPlaylistPlaying=playUri; this._maUpdate?.();
+    this._maPlaylistPlaying = playUri; this._maUpdate?.();
     try {
-      if (await this._playViaEmptyPlaylist(playUri, 'playlist', ()=>this._maPopupClose?.())) return;
+      if (await this._playViaEmptyPlaylist(playUri, 'playlist', () => this._maPopupClose?.())) return;
       throw new Error('播放失败');
-    } catch(e){ this._maPlaylistsError='播放失败: '+e.message; }
-    finally { this._maPlaylistPlaying=''; this._maUpdate?.(); }
+    } catch (e) { this._maPlaylistsError = '播放失败: ' + e.message; }
+    finally { this._maPlaylistPlaying = ''; this._maUpdate?.(); }
   }
 
   // 播放歌单中的单曲
   async handleMaPlaylistTrackPlay(track) {
-    const mu=track.uri||track.track_id||'';
+    const mu = track.uri || track.track_id || '';
     if (!mu) { this._maPlaylistsError = '播放失败: 歌曲 URI 为空'; this._maUpdate?.(); return; }
+    // 清空本地播放 api 记录（MA 模式下本地列表不显示）
+    if (this._localPlaylist && this._localPlaylist.length) {
+      await this._clearLocalPlaylist(this._localMediaEntity());
+      this._localPlaylist = [];
+      this._localStatuses = [];
+      this._localCurrentIndex = -1;
+      this._localPlaylistSignature = '';
+    }
+    this._maPlayingIndex = -1;
     this._setChannel('ma');
     this._pauseOtherChannelsForMa();
-    this._lastPlaySource='qqmusic'; try { localStorage.setItem(this._getLastSourceKey(),'qqmusic'); } catch(e) {}
-    if (!this.maEmptyPlaylist) { this._maPlaylistsError = '请先配置空播放列表参数 (ma_empty_playlist)'; this._maUpdate?.(); return; }
-    this._maPlaylistPlaying=mu; this._maUpdate?.();
-    this._activeOverlaySource='qqmusic';
+    this._lastPlaySource = 'qqmusic'; try { localStorage.setItem(this._getLastSourceKey(), 'qqmusic'); } catch (e) {}
+    if (!this.maPlaylist) { this._maPlaylistsError = '请先配置播放列表参数 (ma_playlist)'; this._maUpdate?.(); return; }
+    this._maPlaylistPlaying = mu; this._maUpdate?.();
+    this._activeOverlaySource = 'qqmusic';
     const MIOT_FAKE_TRACKS3 = new Set(['请欣赏', '请欣赏（音乐）', '暂无播放', '正在加载', 'QQ音乐', '无音乐播放']);
     const isPlaylistTrackFake = !track.name || MIOT_FAKE_TRACKS3.has(track.name);
     if (!isPlaylistTrackFake) {
@@ -4035,14 +4573,30 @@ class XiaoshiMusicCard extends LitElement {
       }, 'ma');
     }
     try {
-      if (await this._playViaEmptyPlaylist(mu, 'track', ()=>this._maPopupClose?.())) return;
+      if (await this._playViaEmptyPlaylist(mu, 'track', () => this._maPopupClose?.())) return;
       throw new Error('播放失败');
-    } catch(e){ this._maPlaylistsError='播放失败: '+e.message; }
-    finally { this._maPlaylistPlaying=''; this._maUpdate?.(); }
+    } catch (e) { this._maPlaylistsError = '播放失败: ' + e.message; }
+    finally { this._maPlaylistPlaying = ''; this._maUpdate?.(); }
   }
 
   // 工具函数：提取歌曲属性
-  _extractArtist(t) { return t?.artist?.name || t?.artist || ''; }
+  _extractArtist(t) {
+    if (!t) return '';
+    if (typeof t.artist === 'string' && t.artist) return t.artist;
+    if (t.artist?.name) return t.artist.name;
+    if (Array.isArray(t.artists) && t.artists.length) {
+      return t.artists.map(a => a?.name || a?.display_name || a || '').filter(Boolean).join(', ');
+    }
+    if (t.display_artist) return t.display_artist;
+    return '';
+  }
+
+  _extractAlbum(t) {
+    if (!t) return '';
+    if (typeof t.album === 'string' && t.album) return t.album;
+    if (t.album?.name) return t.album.name;
+    return '';
+  }
 
   _extractImage(t) { return t?.image_url || t?.artwork_url || t?.metadata?.artwork_url || ''; }
 
@@ -4064,7 +4618,7 @@ class XiaoshiMusicCard extends LitElement {
     });
   }
 
-  // 从 MA 获取我喜欢歌单的曲目列表（WS + HTTP 回退）
+  // 从 MA 获取我喜欢歌单的曲目列表（仅 WS）
   async _fetchFavoriteTracks(uri) {
     const ru = uri;
     try {
@@ -4082,26 +4636,6 @@ class XiaoshiMusicCard extends LitElement {
           } catch (e) {}
         }
       }
-      // HTTP 回退
-      if (this._favTracks.length === 0 && this.maServerUrl && this.maServerToken) {
-        const libMatch = ru.match(/^library(?:\/\/playlist)?\/(\d+)$/);
-        if (libMatch) {
-          const bu = this.maServerUrl.replace(/\/+$/, '');
-          for (const ep of [`${bu}/api/library/playlists/${libMatch[1]}/tracks`, `${bu}/api/library/playlists/${libMatch[1]}`]) {
-            try {
-              const r = await fetch(ep, { headers: { Authorization: `Bearer ${this.maServerToken}` } });
-              if (r.ok) {
-                const d = await r.json();
-                const items = Array.isArray(d) ? d : (d?.tracks || d?.items || []);
-                if (items.length > 0) {
-                  this._favTracks = items.map(t => ({ uri: t.uri || '', name: t.name || t.title || '未知', artist: this._extractArtist(t), album: t.album?.name || '', duration: t.duration || 0, image_url: this._extractImage(t), track_id: t.item_id || t.track_id || t.uri || '', provider: t.provider || 'library' }));
-                  break;
-                }
-              }
-            } catch (e) {}
-          }
-        }
-      }
       if (this._favTracks.length === 0) this._favError = '获取曲目失败，请检查 MA 连接';
     } catch (e) { this._favError = '出错: ' + (e.message || e); }
     finally { this._favLoading = false; this._favUpdate?.(); }
@@ -4115,14 +4649,14 @@ class XiaoshiMusicCard extends LitElement {
     const maTe = this.maPlayerEntity;
     const te = maTe || this.xiaomiMiotEntity || this.xiaomiHomeEntity;
     if (!this._hass || !te) return;
-    if (!this.maEmptyPlaylist) return;
+    if (!this.maPlaylist) return;
     this._setChannel('ma'); this._pauseOtherChannelsForMa();
     this._maOverlay.source = 'qqmusic'; this._maOverlay.active = true; this._activeOverlaySource = 'qqmusic';
     this._favUpdate?.();
     this.requestUpdate();
     try {
-      await this._playViaEmptyPlaylist(fav, 'playlist', ()=>this._favPopupClose?.());
-    } catch(e){} finally { this._favPlaying = ''; this._favUpdate?.(); this.requestUpdate(); }
+      await this._playViaEmptyPlaylist(fav, 'playlist', () => this._favPopupClose?.());
+    } catch (e) {} finally { this._favPlaying = ''; this._favUpdate?.(); this.requestUpdate(); }
   }
 
   // 播放我喜欢中的单曲
@@ -4133,12 +4667,12 @@ class XiaoshiMusicCard extends LitElement {
     const maTe = this.maPlayerEntity;
     const te = maTe || this.xiaomiMiotEntity || this.xiaomiHomeEntity;
     if (!this._hass || !te) return;
-    if (!this.maEmptyPlaylist) return;
+    if (!this.maPlaylist) return;
     this._setChannel('ma'); this._pauseOtherChannelsForMa();
     this._maOverlay.source = 'qqmusic'; this._maOverlay.active = true; this._activeOverlaySource = 'qqmusic';
     this._favUpdate?.();
     try {
-      await this._playViaEmptyPlaylist(mu, 'track', ()=>this._favPopupClose?.());
+      await this._playViaEmptyPlaylist(mu, 'track', () => this._favPopupClose?.());
     } catch (e) {}
     finally { this._favPlaying = ''; this._favUpdate?.(); this.requestUpdate(); }
   }
@@ -4195,7 +4729,7 @@ class XiaoshiMusicCard extends LitElement {
   }
 
   // 过滤艺术家
-  _isPseudoArtist(title, artist) {
+  _isPseudoArtist(_title, artist) {
     if (!artist) return false;
     if (artist.includes('心灵之谜')) return true;
     return false;
@@ -4333,11 +4867,14 @@ class XiaoshiMusicCard extends LitElement {
   // 检查歌曲是否有变化
   _checkSongChange(state) {
     if (!state || !state.attributes) return false;
-    const entityPlaying = ['playing', 'Playing', '播放', '播放中', '正在播放'].includes(state.state);
     const entityTitle = state.attributes.media_title || '';
     const entityArtist = state.attributes.media_artist || '';
-    const MIOT_FAKE = new Set(['请欣赏', '请欣赏（音乐）', '暂无播放', '正在加载', 'QQ音乐', '无音乐播放']);
-    const isEntityFake = !entityTitle || MIOT_FAKE.has(entityTitle);
+    // 有歌曲信息就加载歌词，不区分播放状态
+    if (this.showLyrics && entityTitle && entityArtist && !this._isPseudoTitle(entityTitle)) {
+      this.loadLyricsForCurrentSong();
+    }
+    const entityPlaying = ['playing', 'Playing', '播放', '播放中', '正在播放'].includes(state.state);
+    const isEntityFake = !entityTitle || this._isPseudoTitle(entityTitle);
     const hasRealEntityData = entityPlaying && !isEntityFake && entityTitle;
     const miotWantsToTakeover = hasRealEntityData;
     if (this._activeChannel === 'local') {
@@ -4426,7 +4963,8 @@ class XiaoshiMusicCard extends LitElement {
       }
     }
     if (this._isMaWsReady() && !miotWantsToTakeover) {
-      return false;
+      // miot 有真实播放数据时，继续走 miot 歌词加载
+      if (!miotWantsToTakeover) return false;
     }
     if (!this._miotOverlay.source && !this._localOverlay.source && !this._maOverlay.source) {
       const miotRestored = this._restoreNowPlayingFromLocalStorage('miot');
@@ -4466,6 +5004,7 @@ class XiaoshiMusicCard extends LitElement {
     if (currentTitle !== this._miotLastSongTitle || currentArtist !== this._miotLastSongArtist) {
       this._miotLastSongTitle = currentTitle;
       this._miotLastSongArtist = currentArtist;
+      const MIOT_FAKE = new Set(['请欣赏', '请欣赏（音乐）', '暂无播放', '正在加载', 'QQ音乐', '无音乐播放']);
       const isCurrentFake = !currentTitle || MIOT_FAKE.has(currentTitle);
       if (currentTitle && currentArtist && !isCurrentFake) {
         this._miotOverlay.title = currentTitle;
@@ -4547,23 +5086,29 @@ class XiaoshiMusicCard extends LitElement {
   async loadLyricsForCurrentSong() {
     this._lyricsLoading = true;
     try {
-      const primaryState = this.xiaomiHomeState || this.xiaomiMiotState;
-      if (!primaryState || !primaryState.attributes) {
-        const si = this._mediaPlayerState?.currentItem;
-        if (si?.title && si?.artist) {
-          try { await this.searchAndFetchLyrics(si.title, si.artist); } catch(e) { this._localLyricsFallbackOrNoLyrics(); }
-          return;
+      // 优先从 hass 实时状态读取，再 fallback 到缓存
+      let title, artist;
+      for (const eid of [this.xiaomiHomeEntity, this.xiaomiMiotEntity].filter(Boolean)) {
+        const s = this._hass?.states?.[eid];
+        if (s?.attributes?.media_title && s.attributes.media_artist) {
+          if (!this._isPseudoTitle(s.attributes.media_title)) {
+            title = s.attributes.media_title;
+            artist = s.attributes.media_artist;
+            break;
+          }
         }
-        this.loadNoLyrics();
-        return;
       }
-      const savedItem = this._mediaPlayerState?.currentItem;
-      let title = this._overlayTitle || savedItem?.title || primaryState.attributes.media_title;
-      let artist = this._overlayArtist || savedItem?.artist || primaryState.attributes.media_artist;
+      if (!title) {
+        const primaryState = this.xiaomiHomeState || this.xiaomiMiotState;
+        const savedItem = this._mediaPlayerState?.currentItem;
+        title = this._overlayTitle || savedItem?.title || primaryState?.attributes?.media_title;
+        artist = this._overlayArtist || savedItem?.artist || primaryState?.attributes?.media_artist;
+      }
 
       if (!title || !artist) {
+        const primaryState = this.xiaomiHomeState || this.xiaomiMiotState;
         const backupState = primaryState === this.xiaomiHomeState ? this.xiaomiMiotState : this.xiaomiHomeState;
-        if (backupState && backupState.attributes) {
+        if (backupState?.attributes) {
           const bTitle = backupState.attributes.media_title;
           const bArtist = backupState.attributes.media_artist;
           if (bTitle && bArtist) { title = bTitle; artist = bArtist; }
@@ -5111,7 +5656,7 @@ class XiaoshiMusicCard extends LitElement {
       this._restoreAllChannelsOnRefresh(miotOv, localOv, maOv);
       requestAnimationFrame(() => this.requestUpdate());
     }
-    const { isMiotSource, isLocalSource, isMaSource } = this;
+
     const ch = this._activeChannel;
     const isMiot = ch === 'miot', isLocal = ch === 'local', isMa = ch === 'ma';
     let activeTitle = '', activeArtist = '', activeCoverUrl = '';
@@ -5255,6 +5800,18 @@ class XiaoshiMusicCard extends LitElement {
 
   // 渲染右侧播放主体
   _renderPlayerMain(themeColors, activeTitle, activeArtist, attributes, finalCover, currentTimeStr, totalTimeStr, progressPercentage) {
+    if (this._showPlaylist) {
+      return html`
+        <div class="player-main">
+          ${this._renderMainArea(themeColors, activeTitle, activeArtist, attributes, finalCover)}
+          ${this._renderPlaylistHeader()}
+          ${this._renderPlaylistArea()}
+          ${this._renderProgressBar(currentTimeStr, totalTimeStr, progressPercentage)}
+          ${this._renderPlaybackControls(themeColors)}
+          ${this._renderVolumeControl()}
+        </div>
+      `;
+    }
     return html`
       <div class="player-main">
         ${this._renderMainArea(themeColors, activeTitle, activeArtist, attributes, finalCover)}
@@ -5264,6 +5821,15 @@ class XiaoshiMusicCard extends LitElement {
         ${this._renderVolumeControl()}
       </div>
     `;
+  }
+
+  // 渲染播放列表标题（独立显示，不在滚动范围内，位于 action-buttons-row 下方）
+  _renderPlaylistHeader() {
+    const data = this._currentPlaylistData;
+    const playlist = data?.playlist;
+    if (!this.maPlaylist || !playlist?.length) return html``;
+    const repeatLabel = data?.repeat_mode ? ' · ' + ({sequential:'顺序播放',random:'随机播放',repeat_one:'单曲循环'}[data.repeat_mode] || data.repeat_mode) : '';
+    return html`<div style="padding: 4px 8px; font-size: 12px; color: rgba(255,255,255,0.4); text-align: center;">MA播放列表 · 共 ${playlist.length} 首${repeatLabel}</div>`;
   }
 
   // 渲染主内容区（专辑封面 + 歌曲信息）
@@ -5312,6 +5878,15 @@ class XiaoshiMusicCard extends LitElement {
         <button class="action-btn" style="background: ${themeColors.bg}; ${hasDevice ? '' : 'opacity: 0.4;'}" @click=${this._toggleHistory} title="播放历史记录">
           <ha-icon icon="mdi:chart-box-outline"></ha-icon>
         </button>
+        <button class="action-btn" style="background: ${themeColors.bg};" @click=${() => { this._handleClick(); this._showPlaylist = false; this._updateViewMode('lyrics'); this.requestUpdate(); }} title="歌词">
+          <ha-icon icon="mdi:microphone-variant" style="${this._showPlaylist ? 'opacity: 0.35;' : ''}"></ha-icon>
+        </button>
+        <button class="action-btn" style="background: ${themeColors.bg};" @click=${() => { this._handleClick(); this._showPlaylist = true; this._updateViewMode('playlist'); this.requestUpdate(); }} title="播放列表">
+          <ha-icon icon="mdi:playlist-music" style="${this._showPlaylist ? '' : 'opacity: 0.35;'}"></ha-icon>
+        </button>
+        ${this._showPlaylist ? html`<button class="action-btn" style="background: ${themeColors.bg};" @click=${this._clearPlaylist} title="清空播放列表">
+          <ha-icon icon="mdi:playlist-remove"></ha-icon>
+        </button>` : ''}
       </div>
     `;
   }
@@ -5349,6 +5924,158 @@ class XiaoshiMusicCard extends LitElement {
     `;
   }
 
+  // 点击播放列表中的曲目（直接播放，不改空播放列表）
+  async _playPlaylistTrack(track) {
+    this._handleClick();
+    // 本地播放列表优先
+    if (this._localPlaylist && this._localPlaylist.length) { await this._playLocalPlaylistTrack(track); return; }
+    // MA 播放列表曲目点击 → 推送到 MA 播放服务
+    const trackUri = track?.uri || track?.track_id;
+    if (!trackUri) return;
+    this._setChannel('ma');
+    this._pauseOtherChannelsForMa();
+    await this._stopMaPlayback();
+    if (!(await this._ensureMaReady())) return;
+    this._maWsSend('player_queues/play', { queue_id: this._maQueueId, uri: trackUri, enqueue_option: 'play' });
+    const tracks = this._maTracks();
+    const idx = tracks.findIndex(t => (t.uri || t.track_id || '') === trackUri);
+    this._maPlayingIndex = idx >= 0 ? idx : this._maPlayingIndex;
+    const tk = idx >= 0 ? tracks[idx] : null;
+    if (tk) {
+      this._maTrackName = tk.name || tk.title || tk.track_name || '';
+      this._maTrackArtist = tk.artist || '';
+      this._maCoverUrl = tk.image_url || tk.cover || tk.image || '';
+      this._maDuration = parseFloat(tk.duration || 0) || 0;
+    }
+    this._syncOtherEntityStatus('ma');
+    this.requestUpdate();
+  }
+
+  // 清空播放列表
+  async _clearPlaylist() {
+    this._handleClick();
+    // 清空本地播放列表（API + 内存）
+    if (this._localPlaylist && this._localPlaylist.length) {
+      await this._clearLocalPlaylist(this._localMediaEntity());
+      this._localPlaylist = [];
+      this._localStatuses = [];
+      this._localCurrentIndex = -1;
+      this._localPlaylistSignature = '';
+    }
+    // 暂停播放
+    const targetEntity = this._getActiveTargetEntity();
+    if (targetEntity) {
+      this.callService('media_player.media_pause', { entity_id: targetEntity });
+    }
+    // 先清空 MA 空播放列表（在 WS 仍连接时执行，避免残留曲目）
+    if (this.maPlaylist) {
+      try {
+        // 停止 MA 播放器，清理队列，避免播放中删除曲目报错
+        if (this.maPlayerEntity && this._hass) {
+          try { await this._hass.callService('media_player', 'media_stop', { entity_id: this.maPlayerEntity }); } catch(e) {}
+        }
+        if (!this._maWsConnected) {
+          this._connectMaWs();
+          for (let w = 0; w < 50 && !this._maWsConnected; w++) await new Promise(r => setTimeout(r, 100));
+        }
+        if (this._isMaWsReady()) {
+          const plId = (this.maPlaylist.match(/(\d+)$/)||[])[0] || this.maPlaylist;
+          const existing = await this._maWsSendAndWait('music/playlists/playlist_tracks', { item_id: String(plId), provider_instance_id_or_domain: 'library', force_refresh: false, allow_dynamic_tracks: false });
+          const oldTracks = Array.isArray(existing) ? existing : (existing?.items || []);
+          if (oldTracks.length > 0) {
+            await this._maWsSendAndWait('music/playlists/remove_playlist_tracks', { db_playlist_id: String(plId), positions_to_remove: oldTracks.map((_, i) => i) });
+          }
+        }
+      } catch(e) {}
+    }
+    // 断开 MA WebSocket
+    if (this._maWs) {
+      try { this._maWs.close(); } catch(e) {}
+      this._maWs = null;
+      this._maWsConnected = false;
+      this._maTrackName = '';
+      this._maTrackArtist = '';
+    }
+    // 清除播放状态
+    this.isPlaying = false;
+    this._maOverlay = { title: '', artist: '', coverUrl: '', source: '', active: false };
+    this._maTrackName = '';
+    this._maTrackArtist = '';
+    this._activeChannel = '';
+    this.showLyrics = true;
+    this._miotLastSongTitle = '';
+    this._miotLastSongArtist = '';
+    this._localLastSongTitle = '';
+    this._localLastSongArtist = '';
+    // 清除本地数据
+    this._currentPlaylistData = null;
+    this._showPlaylist = false;
+    // 立即刷新 UI
+    this.requestUpdate();
+    if (this.maPlayerEntity && this._hass?.auth?.data?.access_token) {
+      this._updateViewMode('lyrics');
+    }
+  }
+
+  // 渲染播放列表区域
+  _renderPlaylistArea() {
+    // 本地播放列表（含每首播放状态）
+    if (this._localPlaylist && this._localPlaylist.length) {
+      const playlist = this._localPlaylist;
+      const statuses = this._localStatuses || [];
+      const curIdx = this._localCurrentIndex;
+      const badge = {
+        unplayed: ['未播放', 'rgba(255,255,255,0.3)'],
+        played: ['已播放', 'rgba(255,255,255,0.15)'],
+        playing: ['正在播放', '#5dade2'],
+        paused: ['暂停播放', '#f39c12'],
+      };
+      return html`
+        <div class="lyrics-area-inline" style="height: ${this.lyricsHeight};">
+          <div class="lyrics-container" style="mask-image:none;-webkit-mask-image:none;">
+            ${playlist.map((track, i) => {
+              const st = statuses[i] || 'unplayed';
+              const b = badge[st] || badge.unplayed;
+              const isCur = i === curIdx;
+              return html`
+                <div class="playlist-track-row" style="display:flex;align-items:center;gap:6px;padding:4px 0;border-radius:6px;cursor:pointer;${isCur ? 'background:rgba(255,255,255,0.1);' : ''}" @click=${() => this._playLocalPlaylistTrack(track)}>
+                  <span style="width:24px;text-align:center;font-size:11px;color:${isCur ? '#5dade2' : 'rgba(255,255,255,0.3)'};flex-shrink:0;">${isCur ? '▶' : (i + 1)}</span>
+                  <span style="max-width:48%;flex:0 1 auto;font-size:12px;color:${isCur ? '#fff' : (st === 'played' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)')};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${track.name || '未知曲目'}</span>
+                  <span style="flex:1;text-align:right;font-size:10px;color:rgba(255,255,255,0.3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;">${track.artist || ''}</span>
+                  <span style="width:52px;text-align:right;font-size:10px;color:${b[1]};flex-shrink:0;">${b[0]}</span>
+                </div>`;
+            })}
+          </div>
+        </div>`;
+    }
+    // 小米电台模式：不显示播放列表
+    if (this._activeChannel === 'miot') {
+      return html`<div class="lyrics-area-inline" style="height: ${this.lyricsHeight};"><div class="lyrics-container" style="mask-image:none;-webkit-mask-image:none;"><div class="lyric" style="color:rgba(255,255,255,0.5);">小米电台播放中，不显示播放列表</div></div></div>`;
+    }
+    const data = this._currentPlaylistData;
+    const playlist = data?.playlist;
+    if (!playlist?.length) {
+      if (!this.maPlaylist) {
+        return html`<div class="lyrics-area-inline" style="height: ${this.lyricsHeight};"><div class="lyrics-container" style="mask-image:none;-webkit-mask-image:none;"><div class="lyric" style="color:rgba(255,255,255,0.5);">请先配置播放列表参数 (ma_playlist)</div></div></div>`;
+      }
+      return html`<div class="lyrics-area-inline" style="height: ${this.lyricsHeight};"><div class="lyrics-container" style="mask-image:none;-webkit-mask-image:none;"><div class="lyric">暂无播放列表数据</div></div></div>`;
+    }
+    const currentName = this._maTrackName || '';
+    return html`
+      <div class="lyrics-area-inline" style="height: ${this.lyricsHeight};">
+        <div class="lyrics-container" style="mask-image:none;-webkit-mask-image:none;">
+          ${playlist.map((track, i) => html`
+            <div class="playlist-track-row" style="display:flex;align-items:center;gap:6px;padding:4px 0;border-radius:6px;cursor:pointer;${track.name === currentName ? 'background:rgba(255,255,255,0.1);' : ''}" @click=${() => this._playPlaylistTrack(track)}>
+              <span style="width:24px;text-align:center;font-size:11px;color:${track.status === 'last' ? '#5dade2' : track.status === 'played' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.3)'};flex-shrink:0;">${track.status === 'last' ? '▶' : i + 1}</span>
+              <span style="max-width:66%;flex:0 1 auto;font-size:12px;color:${track.name === currentName ? '#fff' : track.status === 'played' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${track.name || '未知曲目'}</span>
+              <span style="flex:1;text-align:right;font-size:10px;color:rgba(255,255,255,0.3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;">${track.artist || ''}</span>
+            </div>
+          `)}
+        </div>
+      </div>
+    `;
+  }
+
   // 渲染进度条
   _renderProgressBar(currentTimeStr, totalTimeStr, progressPercentage) {
     return html`
@@ -5364,10 +6091,25 @@ class XiaoshiMusicCard extends LitElement {
 
   // 渲染播放控制按钮
   _renderPlaybackControls(themeColors) {
+    const currentMode = this._repeatMode || 'sequential';
+    // 随机播放按钮：默认关闭 → mdi:shuffle-variant(灰)，开启 → mdi:shuffle-disabled(正常)
+    const shuffleActive = currentMode === 'random';
+    const shuffleIcon = shuffleActive ? 'mdi:shuffle-variant' : 'mdi:repeat';
+    const shuffleColor = shuffleActive ? themeColors.fg : themeColors.muted;
+    // 循环模式按钮：sequential → mdi:repeat(正常), random → mdi:repeat-off(灰), repeat_one → mdi:repeat-once(正常)
+    let repeatIcon = 'mdi:repeat';
+    let repeatActive = true;
+    if (currentMode === 'random') {
+      repeatIcon = 'mdi:repeat-off';
+      repeatActive = false;
+    } else if (currentMode === 'repeat_one') {
+      repeatIcon = 'mdi:repeat-once';
+    }
+    const repeatColor = repeatActive ? themeColors.fg : themeColors.muted;
     return html`
       <div class="controls-area">
-        <button class="control-btn" style="background: ${themeColors.bg};" @click=${this.handleShuffle} title="随机播放">
-          <ha-icon icon="mdi:shuffle-variant"></ha-icon>
+        <button class="control-btn" style="background: ${themeColors.bg}; color: ${shuffleColor};" @click=${this.handleShuffle} title="${shuffleActive ? '随机播放' : '顺序播放'}">
+          <ha-icon icon="${shuffleIcon}"></ha-icon>
         </button>
         <button class="control-btn" style="background: ${themeColors.bg};" @click=${this.handlePrevious}>
           <ha-icon icon="mdi:skip-previous"></ha-icon>
@@ -5378,8 +6120,8 @@ class XiaoshiMusicCard extends LitElement {
         <button class="control-btn" style="background: ${themeColors.bg};" @click=${this.handleNext}>
           <ha-icon icon="mdi:skip-next"></ha-icon>
         </button>
-        <button class="control-btn" style="background: ${themeColors.bg};" @click=${this.handleRepeat} title="循环模式">
-          <ha-icon icon="mdi:repeat"></ha-icon>
+        <button class="control-btn" style="background: ${themeColors.bg}; color: ${repeatColor};" @click=${this.handleRepeat} title="${currentMode === 'sequential' ? '顺序播放' : currentMode === 'random' ? '顺序播放' : '单曲循环'}">
+          <ha-icon icon="${repeatIcon}"></ha-icon>
         </button>
       </div>
     `;
@@ -5569,7 +6311,7 @@ class XiaoshiMusicCard extends LitElement {
   }
 
   // 本地音乐弹窗顶部标题栏
-  _renderPlayerTopBar(cfg, state) {
+  _renderPlayerTopBar() {
     const bar = document.createElement('div'); bar.className = 'media-player-top-bar'; bar.style.cssText = 'display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--b-divider,rgba(0,0,0,0.06));flex-shrink:0;';
     bar.innerHTML = '<div style="display:flex;align-items:center;gap:8px;"><ha-icon icon="mdi:music" style="--mdc-icon-size:20px;color:var(--b-accent,#3498db);"></ha-icon><span style="font-size:15px;font-weight:600;color:var(--b-fg,#212121);">本地音乐</span></div>';
     return bar;
@@ -5767,6 +6509,11 @@ class XiaoshiMusicCard extends LitElement {
     this._maPlaylistDetail = null;
     this._maPlaylistTracks = [];
     this._maPlaylistTracksLoading = false;
+    this._maPlayingIndex = -1;
+    this._localPlaylist = [];
+    this._localStatuses = [];
+    this._localCurrentIndex = -1;
+    this._localPlaylistSignature = '';
     this._maExpandedId = null;
     this._maPlaylistsError = '';
     this._maPlaylistsLoading = true;
