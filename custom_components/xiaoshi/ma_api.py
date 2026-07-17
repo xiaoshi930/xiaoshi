@@ -8,11 +8,20 @@ DOMAIN = "xiaoshi"
 CONF_MA_ENABLED = "ma_enabled"
 REPEAT_MODES = ["sequential", "random", "repeat_one"]
 VIEW_MODES = ["lyrics", "playlist"]
+LOCAL_STATUS_MODES = ["unplayed", "played", "playing", "paused"]
 
 _LOGGER = logging.getLogger(__name__)
 
 # 数据存储在 hass.data 中的 key
 _KEY_MA_PLAYLIST = "ma_playlist_data"
+_KEY_LOCAL_PLAYLIST = "local_playlist_data"
+
+
+def _get_local_data(hass: HomeAssistant) -> dict:
+    """获取本地播放列表数据存储（按 media_player 为 key）"""
+    if _KEY_LOCAL_PLAYLIST not in hass.data.setdefault(DOMAIN, {}):
+        hass.data[DOMAIN][_KEY_LOCAL_PLAYLIST] = {}
+    return hass.data[DOMAIN][_KEY_LOCAL_PLAYLIST]
 
 
 def _get_data(hass: HomeAssistant) -> dict:
@@ -30,132 +39,6 @@ def _is_enabled(hass: HomeAssistant) -> bool:
             entry.data.get(CONF_MA_ENABLED, True),
         )
     return False
-
-
-# ================================================================
-# 歌单轨道数据模型（与 music-card.js 第 3924 行对齐）
-# ================================================================
-TRACK_SCHEMA_KEYS = [
-    "uri", "name", "artist", "album", "duration", "image_url", "track_id", "provider", "status"
-]
-PLAY_STATUSES = ["unplayed", "played", "last"]
-
-
-def _normalize_track(track: dict) -> dict:
-    """标准化单首歌曲数据"""
-    status = track.get("status", "unplayed")
-    if status not in PLAY_STATUSES:
-        status = "unplayed"
-    return {
-        "uri": str(track.get("uri", "")),
-        "name": str(track.get("name", "未知")),
-        "artist": str(track.get("artist", "")),
-        "album": str(track.get("album", "")),
-        "duration": int(track.get("duration", 0)),
-        "image_url": str(track.get("image_url", "")),
-        "track_id": str(track.get("track_id", "")),
-        "provider": str(track.get("provider", "")),
-        "status": status,
-    }
-
-
-def _normalize_group(group: dict) -> dict:
-    """标准化单个分组数据"""
-    return {
-        "media_player": str(group.get("media_player", "")),
-        "repeat_mode": (
-            group["repeat_mode"] if group.get("repeat_mode") in REPEAT_MODES
-            else "sequential"
-        ),
-        "playlist": [_normalize_track(t) for t in group.get("playlist", [])],
-    }
-
-
-# ================================================================
-# 歌单 CRUD 主视图
-# ================================================================
-class XiaoshiMaPlaylistView(HomeAssistantView):
-    """MA 歌单读写接口
-
-    GET    /api/xiaoshi/ma/playlist                       获取全部歌单组
-    GET    /api/xiaoshi/ma/playlist?media_player=xxx      获取指定播放器的歌单
-    POST   /api/xiaoshi/ma/playlist                       批量写入/更新歌单组
-    DELETE /api/xiaoshi/ma/playlist?media_player=xxx      删除指定播放器的歌单
-    """
-
-    url = "/api/xiaoshi/ma/playlist"
-    name = "api:xiaoshi:ma:playlist"
-    requires_auth = True
-
-    def __init__(self, hass: HomeAssistant):
-        self.hass = hass
-
-    # ---- GET ----
-    async def get(self, request):
-        if not _is_enabled(self.hass):
-            return self.json_message("MA API is not enabled", status_code=400)
-
-        media_player = request.query.get("media_player", "")
-        store = _get_data(self.hass)
-
-        if media_player:
-            group = store.get(media_player)
-            if group is None:
-                return self.json_message(
-                    f"No data for {media_player}", status_code=404
-                )
-            return self.json(group)
-
-        return self.json({"groups": list(store.values())})
-
-    # ---- POST ----
-    async def post(self, request):
-        if not _is_enabled(self.hass):
-            return self.json_message("MA API is not enabled", status_code=400)
-
-        try:
-            data = await request.json()
-        except Exception:
-            return self.json_message("Invalid JSON", status_code=400)
-
-        groups = data.get("groups")
-        if not isinstance(groups, list):
-            return self.json_message(
-                "Body must contain 'groups' array", status_code=400
-            )
-
-        store = _get_data(self.hass)
-        updated = 0
-
-        for g in groups:
-            if not isinstance(g, dict):
-                continue
-            mp = str(g.get("media_player", "")).strip()
-            if not mp:
-                continue
-            store[mp] = _normalize_group(g)
-            updated += 1
-
-        _LOGGER.info("MA playlist updated: %d groups", updated)
-        return self.json({"result": f"{updated} groups updated"})
-
-    # ---- DELETE ----
-    async def delete(self, request):
-        if not _is_enabled(self.hass):
-            return self.json_message("MA API is not enabled", status_code=400)
-
-        media_player = request.query.get("media_player", "")
-        if not media_player:
-            return self.json_message("media_player is required", status_code=400)
-
-        store = _get_data(self.hass)
-        if media_player in store:
-            del store[media_player]
-            return self.json({"result": f"Deleted group for {media_player}"})
-
-        return self.json_message(
-            f"No data for {media_player}", status_code=404
-        )
 
 
 # ================================================================
@@ -305,8 +188,253 @@ class XiaoshiMaViewView(HomeAssistantView):
         })
 
 
+# ================================================================
+# 本地播放列表读写视图
+# ================================================================
+class XiaoshiLocalPlaylistView(HomeAssistantView):
+    """本地播放列表读写接口
+
+    GET  /api/xiaoshi/ma/local_playlist?media_player=xxx   读取本地播放列表
+    POST /api/xiaoshi/ma/local_playlist                    写入/替换本地播放列表
+          Body: {"media_player": "xxx", "playlist": [{"name","artist","uri","duration","image_url","media_type"}]}
+    """
+
+    url = "/api/xiaoshi/ma/local_playlist"
+    name = "api:xiaoshi:ma:local_playlist"
+    requires_auth = True
+
+    def __init__(self, hass: HomeAssistant):
+        self.hass = hass
+
+    async def get(self, request):
+        if not _is_enabled(self.hass):
+            return self.json_message("MA API is not enabled", status_code=400)
+        media_player = request.query.get("media_player", "")
+        if not media_player:
+            return self.json_message("media_player is required", status_code=400)
+        store = _get_local_data(self.hass)
+        group = store.get(media_player)
+        if not group:
+            return self.json({"media_player": media_player, "playlist": [], "current_index": -1})
+        return self.json({
+            "media_player": media_player,
+            "playlist": group.get("playlist", []),
+            "current_index": group.get("current_index", -1),
+        })
+
+    async def post(self, request):
+        if not _is_enabled(self.hass):
+            return self.json_message("MA API is not enabled", status_code=400)
+        try:
+            data = await request.json()
+        except Exception:
+            return self.json_message("Invalid JSON", status_code=400)
+        media_player = str(data.get("media_player", "")).strip()
+        if not media_player:
+            return self.json_message("media_player is required", status_code=400)
+        raw_items = data.get("playlist", [])
+        if not isinstance(raw_items, list):
+            return self.json_message("playlist must be a list", status_code=400)
+        playlist = []
+        for it in raw_items:
+            if not isinstance(it, dict):
+                continue
+            uri = str(it.get("uri") or it.get("media_content_id") or "").strip()
+            if not uri:
+                continue
+            playlist.append({
+                "name": str(it.get("name") or it.get("title") or "").strip(),
+                "artist": str(it.get("artist") or "").strip(),
+                "uri": uri,
+                "duration": int(it.get("duration") or 0) or 0,
+                "image_url": str(it.get("image_url") or it.get("cover_url") or "").strip(),
+                "media_type": str(it.get("media_type") or "music").strip(),
+                "status": "unplayed",
+            })
+        store = _get_local_data(self.hass)
+        store[media_player] = {
+            "media_player": media_player,
+            "playlist": playlist,
+            "current_index": -1,
+        }
+        _LOGGER.info("Local playlist set: %s (%d tracks)", media_player, len(playlist))
+        return self.json({
+            "media_player": media_player,
+            "playlist": playlist,
+            "current_index": -1,
+        })
+
+
+# ================================================================
+# 本地播放列表清空视图
+# ================================================================
+class XiaoshiLocalPlaylistClearView(HomeAssistantView):
+    """清空本地播放列表
+
+    POST /api/xiaoshi/ma/local_playlist/clear
+         Body: {"media_player": "xxx"}
+    """
+
+    url = "/api/xiaoshi/ma/local_playlist/clear"
+    name = "api:xiaoshi:ma:local_playlist_clear"
+    requires_auth = True
+
+    def __init__(self, hass: HomeAssistant):
+        self.hass = hass
+
+    async def post(self, request):
+        if not _is_enabled(self.hass):
+            return self.json_message("MA API is not enabled", status_code=400)
+        try:
+            data = await request.json()
+        except Exception:
+            return self.json_message("Invalid JSON", status_code=400)
+        media_player = str(data.get("media_player", "")).strip()
+        if not media_player:
+            return self.json_message("media_player is required", status_code=400)
+        store = _get_local_data(self.hass)
+        store[media_player] = {
+            "media_player": media_player,
+            "playlist": [],
+            "current_index": -1,
+        }
+        _LOGGER.info("Local playlist cleared: %s", media_player)
+        return self.json({"media_player": media_player, "playlist": [], "current_index": -1})
+
+
+# ================================================================
+# 本地播放状态（播放模式）读写视图
+# ================================================================
+class XiaoshiLocalStatusView(HomeAssistantView):
+    """本地播放状态读写接口
+
+    更新当前曲目索引与每首播放状态（unplayed/played/playing/paused）
+    POST /api/xiaoshi/ma/local_status
+         Body: {"media_player": "xxx", "current_index": 2, "statuses": {"0": "played", "2": "playing"}}
+    """
+
+    url = "/api/xiaoshi/ma/local_status"
+    name = "api:xiaoshi:ma:local_status"
+    requires_auth = True
+
+    def __init__(self, hass: HomeAssistant):
+        self.hass = hass
+
+    async def post(self, request):
+        if not _is_enabled(self.hass):
+            return self.json_message("MA API is not enabled", status_code=400)
+        try:
+            data = await request.json()
+        except Exception:
+            return self.json_message("Invalid JSON", status_code=400)
+        media_player = str(data.get("media_player", "")).strip()
+        if not media_player:
+            return self.json_message("media_player is required", status_code=400)
+        store = _get_local_data(self.hass)
+        group = store.get(media_player)
+        if not group:
+            group = {"media_player": media_player, "playlist": [], "current_index": -1}
+            store[media_player] = group
+        if "current_index" in data:
+            ci = data["current_index"]
+            if isinstance(ci, int):
+                group["current_index"] = ci
+        statuses = data.get("statuses")
+        if isinstance(statuses, dict):
+            for k, v in statuses.items():
+                try:
+                    idx = int(k)
+                except (ValueError, TypeError):
+                    continue
+                if v not in LOCAL_STATUS_MODES:
+                    continue
+                if 0 <= idx < len(group["playlist"]):
+                    group["playlist"][idx]["status"] = v
+        _LOGGER.info("Local status updated: %s idx=%s", media_player, group.get("current_index"))
+        return self.json({
+            "media_player": media_player,
+            "playlist": group.get("playlist", []),
+            "current_index": group.get("current_index", -1),
+        })
+
+
+# ================================================================
+# 镜像"正在播放"信息到其它实体（mito/home）
+# 解决：MA 播放时 ma 实体信息正确，但 mito/home 实体仍显示旧的
+# 错误信息（如"心灵之谜"），需要把当前曲目标题/演唱者同步过去
+# ================================================================
+class XiaoshiSyncNowPlayingView(HomeAssistantView):
+    """将当前播放信息镜像写入其它 media_player 实体
+
+    POST /api/xiaoshi/ma/sync_now_playing
+         Body: {
+           "entity_id": "media_player.xxx",
+           "media_title": "歌曲名",
+           "media_artist": "演唱者",
+           "entity_picture": "http://...cover",
+           "media_duration": 213
+         }
+    仅更新传入的属性，并保留实体原有状态与其它属性。
+    """
+
+    url = "/api/xiaoshi/ma/sync_now_playing"
+    name = "api:xiaoshi:ma:sync_now_playing"
+    requires_auth = True
+
+    def __init__(self, hass: HomeAssistant):
+        self.hass = hass
+
+    async def post(self, request):
+        if not _is_enabled(self.hass):
+            return self.json_message("MA API is not enabled", status_code=400)
+        try:
+            data = await request.json()
+        except Exception:
+            return self.json_message("Invalid JSON", status_code=400)
+
+        entity_id = str(data.get("entity_id", "")).strip()
+        if not entity_id:
+            return self.json_message("entity_id is required", status_code=400)
+
+        cur = self.hass.states.get(entity_id)
+        if cur is None:
+            return self.json_message(f"entity {entity_id} not found", status_code=404)
+
+        # 保留实体原有全部属性，仅覆盖传入的播放信息字段
+        new_attrs = dict(cur.attributes)
+        if "media_title" in data:
+            new_attrs["media_title"] = str(data["media_title"] or "")
+        if "media_artist" in data:
+            new_attrs["media_artist"] = str(data["media_artist"] or "")
+        if "entity_picture" in data:
+            new_attrs["entity_picture"] = str(data["entity_picture"] or "")
+        if "media_duration" in data:
+            try:
+                new_attrs["media_duration"] = float(data["media_duration"])
+            except (ValueError, TypeError):
+                pass
+
+        # 播放状态：默认沿用实体当前状态，避免误把"off"改为"playing"
+        new_state = data.get("state", cur.state)
+
+        try:
+            await self.hass.states.async_set(entity_id, new_state, new_attrs)
+        except Exception as e:  # noqa: BLE001
+            _LOGGER.warning("同步正在播放信息失败 %s: %s", entity_id, e)
+            return self.json_message(f"sync failed: {e}", status_code=500)
+
+        return self.json({
+            "entity_id": entity_id,
+            "media_title": new_attrs.get("media_title"),
+            "media_artist": new_attrs.get("media_artist"),
+        })
+
+
 def register_ma_views(hass: HomeAssistant):
     """注册 MA 辅助 API 视图"""
-    hass.http.register_view(XiaoshiMaPlaylistView(hass))
     hass.http.register_view(XiaoshiMaRepeatModeView(hass))
     hass.http.register_view(XiaoshiMaViewView(hass))
+    hass.http.register_view(XiaoshiLocalPlaylistView(hass))
+    hass.http.register_view(XiaoshiLocalPlaylistClearView(hass))
+    hass.http.register_view(XiaoshiLocalStatusView(hass))
+    hass.http.register_view(XiaoshiSyncNowPlayingView(hass))
