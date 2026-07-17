@@ -61,21 +61,17 @@ class XiaoshiPlayerStateView(HomeAssistantView):
         self.hass = hass
 
     def _derive_mode(self, media_player: str) -> str:
-        store = self.hass.data.setdefault(DOMAIN, {})
-        # 1) 显式写入的模式优先（由卡片在各触发点持久化）
-        state_store = store.get(_KEY_PLAYER_STATE, {})
-        explicit = state_store.get(media_player, {}).get("mode")
-        if explicit in _PLAYER_MODES:
-            return explicit
-        # 2) 本地播放列表有曲目 → 本地模式
-        lp = _get_local_data(self.hass).get(media_player, {})
-        if isinstance(lp, dict) and len(lp.get("playlist", [])) > 0:
-            return "local"
-        # 3) MA 歌单有曲目 → MA 模式
+        # 纯内容推导，MA / 本地 两者互斥：
+        #   1) MA 歌单有曲目        → ma   （MA 音乐模式）
+        #   2) 本地播放列表有曲目    → local（本地音乐模式）
+        #   3) 两者都为空           → miot （小米电台模式）
+        # MA 与本地互斥，列表中有歌的一方即决定当前模式。
         mp = _get_data(self.hass).get(media_player, {})
         if isinstance(mp, dict) and len(mp.get("playlist", [])) > 0:
             return "ma"
-        # 4) 都为空 → 小米电台模式
+        lp = _get_local_data(self.hass).get(media_player, {})
+        if isinstance(lp, dict) and len(lp.get("playlist", [])) > 0:
+            return "local"
         return "miot"
 
     async def get(self, request):
@@ -275,6 +271,75 @@ class XiaoshiMaViewView(HomeAssistantView):
             "media_player": media_player,
             "view": view,
         })
+
+
+class XiaoshiMaPlaylistView(HomeAssistantView):
+    """MA 播放列表(曲目)读写接口
+
+    用于模式推导：ma_playlist 有曲目 → MA 音乐模式。
+    GET  /api/xiaoshi/ma/playlist?media_player=xxx   读取 MA 曲目列表
+    POST /api/xiaoshi/ma/playlist                    写入/替换 MA 曲目列表
+         Body: {"media_player": "xxx", "playlist": [{name, artist, uri, duration, image_url}]}
+    """
+
+    url = "/api/xiaoshi/ma/playlist"
+    name = "api:xiaoshi:ma:playlist"
+    requires_auth = True
+
+    def __init__(self, hass: HomeAssistant):
+        self.hass = hass
+
+    async def get(self, request):
+        if not _is_enabled(self.hass):
+            return self.json_message("MA API is not enabled", status_code=400)
+        media_player = request.query.get("media_player", "")
+        if not media_player:
+            return self.json_message("media_player is required", status_code=400)
+        store = _get_data(self.hass)
+        group = store.get(media_player)
+        if not group:
+            return self.json({"media_player": media_player, "playlist": []})
+        return self.json({
+            "media_player": media_player,
+            "playlist": group.get("playlist", []),
+        })
+
+    async def post(self, request):
+        if not _is_enabled(self.hass):
+            return self.json_message("MA API is not enabled", status_code=400)
+        try:
+            data = await request.json()
+        except Exception:
+            return self.json_message("Invalid JSON", status_code=400)
+        media_player = str(data.get("media_player", "")).strip()
+        if not media_player:
+            return self.json_message("media_player is required", status_code=400)
+        raw_items = data.get("playlist", [])
+        if not isinstance(raw_items, list):
+            return self.json_message("playlist must be a list", status_code=400)
+        playlist = []
+        for it in raw_items:
+            if not isinstance(it, dict):
+                continue
+            uri = str(it.get("uri") or it.get("track_id") or it.get("media_content_id") or "").strip()
+            if not uri:
+                continue
+            playlist.append({
+                "name": str(it.get("name") or it.get("title") or "").strip(),
+                "artist": str(it.get("artist") or "").strip(),
+                "uri": uri,
+                "duration": int(it.get("duration") or 0) or 0,
+                "image_url": str(it.get("image_url") or it.get("cover_url") or "").strip(),
+            })
+        store = _get_data(self.hass)
+        group = store.get(media_player) or {}
+        group["media_player"] = media_player
+        group["playlist"] = playlist
+        group.setdefault("repeat_mode", "sequential")
+        group.setdefault("view", "lyrics")
+        store[media_player] = group
+        _LOGGER.info("MA playlist set: %s (%d tracks)", media_player, len(playlist))
+        return self.json({"media_player": media_player, "playlist": playlist})
 
 
 # ================================================================
@@ -523,6 +588,7 @@ def register_ma_views(hass: HomeAssistant):
     """注册 MA 辅助 API 视图"""
     hass.http.register_view(XiaoshiMaRepeatModeView(hass))
     hass.http.register_view(XiaoshiMaViewView(hass))
+    hass.http.register_view(XiaoshiMaPlaylistView(hass))
     hass.http.register_view(XiaoshiLocalPlaylistView(hass))
     hass.http.register_view(XiaoshiLocalPlaylistClearView(hass))
     hass.http.register_view(XiaoshiLocalStatusView(hass))
