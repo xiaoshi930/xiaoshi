@@ -49,10 +49,10 @@ class XiaoshiLyricsView(HomeAssistantView):
                     "Lyrics API is not enabled", status_code=400
                 )
 
-            title = request.query.get("title", "")
-            artist = request.query.get("artist", "")
-            if not title or not artist:
-                return self.json_message("Missing title or artist", status_code=400)
+            title = request.query.get("title", "").strip()
+            artist = request.query.get("artist", "").strip()
+            if not title:
+                return self.json_message("Missing title", status_code=400)
 
             # 从 xiaoshi 配置中读取歌词源
             source = DEFAULT_SOURCE

@@ -31,6 +31,95 @@ def _get_data(hass: HomeAssistant) -> dict:
     return hass.data[DOMAIN][_KEY_MA_PLAYLIST]
 
 
+# 当前播放器状态（模式）存储 key（按 media_player 为 key）
+_KEY_PLAYER_STATE = "player_state_data"
+# 播放器模式（通道）合法值
+_PLAYER_MODES = ("local", "ma", "miot")
+
+
+# ================================================================
+# 当前播放器状态（模式）读写视图
+# ================================================================
+class XiaoshiPlayerStateView(HomeAssistantView):
+    """当前播放器状态（模式）读写接口
+
+    模式由"已加载的内容"决定：
+      - 本地播放列表有曲目        → local  （本地音乐模式）
+      - MA 歌单(含"我喜欢")有曲目 → ma     （MA 音乐模式）
+      - 两者都为空                → miot   （小米电台模式）
+
+    GET  /api/xiaoshi/ma/player_state?media_player=xxx   读取当前模式
+    POST /api/xiaoshi/ma/player_state                    写入模式
+         Body: {"media_player": "xxx", "mode": "local|ma|miot"}
+    """
+
+    url = "/api/xiaoshi/ma/player_state"
+    name = "api:xiaoshi:ma:player_state"
+    requires_auth = True
+
+    def __init__(self, hass: HomeAssistant):
+        self.hass = hass
+
+    def _derive_mode(self, media_player: str) -> str:
+        store = self.hass.data.setdefault(DOMAIN, {})
+        # 1) 显式写入的模式优先（由卡片在各触发点持久化）
+        state_store = store.get(_KEY_PLAYER_STATE, {})
+        explicit = state_store.get(media_player, {}).get("mode")
+        if explicit in _PLAYER_MODES:
+            return explicit
+        # 2) 本地播放列表有曲目 → 本地模式
+        lp = _get_local_data(self.hass).get(media_player, {})
+        if isinstance(lp, dict) and len(lp.get("playlist", [])) > 0:
+            return "local"
+        # 3) MA 歌单有曲目 → MA 模式
+        mp = _get_data(self.hass).get(media_player, {})
+        if isinstance(mp, dict) and len(mp.get("playlist", [])) > 0:
+            return "ma"
+        # 4) 都为空 → 小米电台模式
+        return "miot"
+
+    async def get(self, request):
+        if not _is_enabled(self.hass):
+            return self.json_message("MA API is not enabled", status_code=400)
+        media_player = request.query.get("media_player", "")
+        if not media_player:
+            return self.json_message("media_player is required", status_code=400)
+        local_store = _get_local_data(self.hass).get(media_player, {})
+        ma_store = _get_data(self.hass).get(media_player, {})
+        local_count = len(local_store.get("playlist", [])) if isinstance(local_store, dict) else 0
+        ma_count = len(ma_store.get("playlist", [])) if isinstance(ma_store, dict) else 0
+        mode = self._derive_mode(media_player)
+        return self.json({
+            "media_player": media_player,
+            "mode": mode,
+            "local_count": local_count,
+            "ma_count": ma_count,
+        })
+
+    async def post(self, request):
+        if not _is_enabled(self.hass):
+            return self.json_message("MA API is not enabled", status_code=400)
+        try:
+            data = await request.json()
+        except Exception:
+            return self.json_message("Invalid JSON", status_code=400)
+
+        media_player = str(data.get("media_player", "")).strip()
+        if not media_player:
+            return self.json_message("media_player is required", status_code=400)
+
+        mode = data.get("mode", "")
+        if mode not in _PLAYER_MODES:
+            return self.json_message(
+                f"mode must be one of: {_PLAYER_MODES}", status_code=400
+            )
+
+        store = self.hass.data.setdefault(DOMAIN, {})
+        store.setdefault(_KEY_PLAYER_STATE, {})[media_player] = {"mode": mode}
+        _LOGGER.info("Player state updated: %s -> %s", media_player, mode)
+        return self.json({"media_player": media_player, "mode": mode})
+
+
 def _is_enabled(hass: HomeAssistant) -> bool:
     """检查 MA API 是否启用"""
     for entry in hass.config_entries.async_entries(DOMAIN):
@@ -438,3 +527,4 @@ def register_ma_views(hass: HomeAssistant):
     hass.http.register_view(XiaoshiLocalPlaylistClearView(hass))
     hass.http.register_view(XiaoshiLocalStatusView(hass))
     hass.http.register_view(XiaoshiSyncNowPlayingView(hass))
+    hass.http.register_view(XiaoshiPlayerStateView(hass))
