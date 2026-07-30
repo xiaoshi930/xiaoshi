@@ -1266,7 +1266,6 @@ class XiaoshiMusicCard extends LitElement {
 
   // 处理上一首
   handlePrevious() {
-    console.log('[xiaoshi][prev] handlePrevious 主卡上一首点击', { channel: this._activeChannel, localLen: (this._localPlaylist || []).length });
     this._handleClick();
     this._routePrev();
     this.requestUpdate();
@@ -1292,7 +1291,6 @@ class XiaoshiMusicCard extends LitElement {
 
   // 处理下一首
   handleNext() {
-    console.log('[xiaoshi][next] handleNext 主卡下一首点击', { channel: this._activeChannel, localLen: (this._localPlaylist || []).length });
     this._handleClick();
     this._routeNext();
     this.requestUpdate();
@@ -2407,11 +2405,6 @@ class XiaoshiMusicCard extends LitElement {
     // 立即给出可见反馈：界面切到电台通道并显示"正在连接电台"，证明 UI 已响应
     this._miotOverlay = { title: '正在连接电台…', artist: '', coverUrl: '', source: 'miot', active: true };
     this.requestUpdate();
-    const miotSt = this._hass && this.xiaomiMiotEntity ? this._hass.states[this.xiaomiMiotEntity] : null;
-    console.log('[xiaoshi] 电台按下:', {
-      radio: this.sidebarRadioEntity,
-      miot: this.xiaomiMiotEntity, miotState: miotSt?.state, miotTitle: miotSt?.attributes?.media_title,
-    });
     this.callService('button.press', { entity_id: this.sidebarRadioEntity });
     // 电台歌名/封面由实体异步上报：依次尝试 miot实体，谁先给出有效信息就用谁
     [300, 800, 1500, 2500, 5000, 7500, 10000].forEach(delay => setTimeout(() => {
@@ -2423,7 +2416,6 @@ class XiaoshiMusicCard extends LitElement {
         if (!a) return null;
         const MIOT_FAKE = new Set(['请欣赏', '请欣赏（音乐）', '暂无播放', '正在加载', 'QQ音乐', '无音乐播放']);
         const mt = a.media_title || '';
-        console.log(`[xiaoshi] 轮询 ${delay}ms ${label}:`, { state: st.state, title: mt, artist: a.media_artist, cover: a.entity_picture || a.media_image_url });
         // 仅在实体确在播放且有有效标题时，才采用其信息（避免采用 paused 的旧歌名）
         if (st.state === 'playing' && mt && !MIOT_FAKE.has(mt)) {
           return { title: mt, artist: a.media_artist || '', cover: a.entity_picture || a.media_image_url || '' };
@@ -2434,9 +2426,7 @@ class XiaoshiMusicCard extends LitElement {
       const picked = m;
       if (picked) {
         this._miotOverlay = { title: picked.title, artist: picked.artist, coverUrl: picked.cover, source: 'miot', active: true };
-        console.log(`[xiaoshi] 轮询 ${delay}ms 采用电台信息:`, picked.title);
       } else {
-        console.log(`[xiaoshi] 轮询 ${delay}ms: miot 未在播放或无可读电台名`);
       }
       this.requestUpdate();
     }, delay));
@@ -2597,8 +2587,8 @@ class XiaoshiMusicCard extends LitElement {
     const items = container.querySelectorAll('.media-player-item');
     items.forEach((itEl) => { itEl.addEventListener('click', () => { const iIdx = parseInt(itEl.dataset.itemIndex); const tb = cfg.tabs[state.activeTabIndex]; const pl = tb?.playlists?.[state.activePlaylistIndex]; if (!pl?.items?.[iIdx]) return; state.activeItemIndex = iIdx; this._playMediaItem(pl.items[iIdx], cfg, state, container); }); });
     const playBtn = container.querySelector('[data-action="play-pause"]'); if (playBtn) playBtn.addEventListener('click', () => { this._togglePlayPause(cfg.mediaEntity); });
-    const prevBtn = container.querySelector('[data-action="prev"]'); if (prevBtn) prevBtn.addEventListener('click', () => { console.log('[xiaoshi][prev] 弹窗上一首按钮点击'); this._prevTrack(cfg, state, container); });
-    const nextBtn = container.querySelector('[data-action="next"]'); if (nextBtn) nextBtn.addEventListener('click', () => { console.log('[xiaoshi][next] 弹窗下一首按钮点击'); this._nextTrack(cfg, state, container); });
+    const prevBtn = container.querySelector('[data-action="prev"]'); if (prevBtn) prevBtn.addEventListener('click', () => { this._prevTrack(cfg, state, container); });
+    const nextBtn = container.querySelector('[data-action="next"]'); if (nextBtn) nextBtn.addEventListener('click', () => { this._nextTrack(cfg, state, container); });
     const stopBtn = container.querySelector('[data-action="stop"]'); if (stopBtn) stopBtn.addEventListener('click', () => { this._stopMedia(cfg.mediaEntity); this._clearNowPlaying(cfg); });
     const volSlider = container.querySelector('[data-action="volume"]');
     if (volSlider) { volSlider.addEventListener('input', (e) => { const val = parseInt(e.target.value); this._setVolume(cfg.mediaEntity, val/100); const lb = container.querySelector('[data-volume-label]'); if (lb) lb.textContent = val + '%'; e.target.style.background = 'linear-gradient(to right,var(--b-accent,#3498db) 0%,var(--b-accent,#3498db) ' + val + '%,var(--b-slider,rgba(0,0,0,0.08)) ' + val + '%,var(--b-slider,rgba(0,0,0,0.08)) 100%)'; const vi = container.querySelector('[data-mute-toggle]'); if (vi) { vi.setAttribute('icon', val === 0 ? 'mdi:volume-off' : val < 50 ? 'mdi:volume-low' : 'mdi:volume-high'); if (val > 0) vi.dataset.prevVolume = String(val); } }); }
@@ -2689,13 +2679,11 @@ class XiaoshiMusicCard extends LitElement {
   }
 
   _prevTrack(cfg, state, c) {
-    console.log('[xiaoshi][prev] _prevTrack 点击 → 进入路由', { channel: this._activeChannel, localLen: (this._localPlaylist || []).length, curIdx: this._localCurrentIndex });
     this._routePrev();
     this.requestUpdate();
   }
 
   _nextTrack(cfg, state, c) {
-    console.log('[xiaoshi][next] _nextTrack 点击 → 进入路由', { channel: this._activeChannel, localLen: (this._localPlaylist || []).length, curIdx: this._localCurrentIndex });
     this._routeNext();
     this.requestUpdate();
   }
@@ -2979,9 +2967,8 @@ class XiaoshiMusicCard extends LitElement {
   // 切换/播放指定索引（doPlay=true 时实际调用 HA play_media）
   async _localPlayIndex(index, cfg, state, doPlay) {
     const len = (this._localPlaylist || []).length;
-    if (index < 0 || index >= len) { console.log('[xiaoshi][play] _localPlayIndex 越界退出', { index, len }); return; }
+    if (index < 0 || index >= len) { return; }
     const mp = this._localMediaEntity();
-    console.log('[xiaoshi][play] _localPlayIndex', { index, len, doPlay, mediaEntity: mp, uri: this._localPlaylist[index]?.uri });
     const statuses = {};
     if (this._localCurrentIndex >= 0 && this._localCurrentIndex !== index) {
       statuses[this._localCurrentIndex] = 'played';
@@ -3009,24 +2996,18 @@ class XiaoshiMusicCard extends LitElement {
   }
 
   async _localNext(cfg, state, container) {
-    console.log('[xiaoshi][next] _localNext 入口', { isLocalActive: this._isLocalActive(), localLen: (this._localPlaylist || []).length, playIndex: this._localCurrentIndex });
-    if (!this._isLocalActive() || !(this._localPlaylist || []).length) { console.log('[xiaoshi][next] _localNext 退出：非本地或无列表'); return false; }
+    if (!this._isLocalActive() || !(this._localPlaylist || []).length) { return false; }
     const idx = this._localNextIndex();
-    console.log('[xiaoshi][next] _localNext 计算目标 idx =', idx);
-    if (idx < 0) { console.log('[xiaoshi][next] _localNext 退出：idx<0'); return false; }
+    if (idx < 0) { return false; }
     await this._localPlayIndex(idx, cfg, state, true);
-    console.log('[xiaoshi][next] _localNext 完成');
     return true;
   }
 
   async _localPrev(cfg, state, container) {
-    console.log('[xiaoshi][prev] _localPrev 入口', { isLocalActive: this._isLocalActive(), localLen: (this._localPlaylist || []).length, playIndex: this._localCurrentIndex });
-    if (!this._isLocalActive() || !(this._localPlaylist || []).length) { console.log('[xiaoshi][prev] _localPrev 退出：非本地或无列表'); return false; }
+    if (!this._isLocalActive() || !(this._localPlaylist || []).length) { return false; }
     const idx = this._localPrevIndex();
-    console.log('[xiaoshi][prev] _localPrev 计算目标 idx =', idx);
-    if (idx < 0) { console.log('[xiaoshi][prev] _localPrev 退出：idx<0'); return false; }
+    if (idx < 0) { return false; }
     await this._localPlayIndex(idx, cfg, state, true);
-    console.log('[xiaoshi][prev] _localPrev 完成');
     return true;
   }
 
@@ -3285,21 +3266,17 @@ class XiaoshiMusicCard extends LitElement {
 
   async _routePrev() {
     const ch = this._getEffectiveChannel();
-    console.log('[xiaoshi][prev] _routePrev', { channel: ch, localLen: (this._localPlaylist || []).length, maPlaylist: !!this.maPlaylist });
     // 本地音乐模式：直接通过本地播放列表计算上一首并播放，绝不调用 HA 的 media_previous_track 服务
     if (ch === 'local') {
-      console.log('[xiaoshi][prev] → 走本地 _localPrev');
       await this._localPrev();
       return;
     }
     // MA 模式：走 MA 自身队列控制上一首
     if (ch === 'ma') {
-      console.log('[xiaoshi][prev] → 走 MA _maPrev');
       await this._maPrev();
       return;
     }
     // 小米电台模式：调用 HA media_previous_track 服务作用于 miot 实体
-    console.log('[xiaoshi][prev] → 小米电台模式 media_previous_track');
     const te = this.xiaomiMiotEntity;
     if (te) this._hass.callService('media_player', 'media_previous_track', { entity_id: te }).catch(() => {});
     this._refreshMiotNowPlaying();
@@ -3307,21 +3284,17 @@ class XiaoshiMusicCard extends LitElement {
 
   async _routeNext() {
     const ch = this._getEffectiveChannel();
-    console.log('[xiaoshi][next] _routeNext', { channel: ch, localLen: (this._localPlaylist || []).length, maPlaylist: !!this.maPlaylist });
     // 本地音乐模式：直接通过本地播放列表计算下一首并播放，绝不调用 HA 的 media_next_track 服务
     if (ch === 'local') {
-      console.log('[xiaoshi][next] → 走本地 _localNext');
       await this._localNext();
       return;
     }
     // MA 模式：走 MA 自身队列控制下一首
     if (ch === 'ma') {
-      console.log('[xiaoshi][next] → 走 MA _maNext');
       await this._maNext();
       return;
     }
     // 小米电台模式：调用 HA media_next_track 服务作用于 miot 实体
-    console.log('[xiaoshi][next] → 小米电台模式 media_next_track');
     const te = this.xiaomiMiotEntity;
     if (te) this._hass.callService('media_player', 'media_next_track', { entity_id: te }).catch(() => {});
     this._refreshMiotNowPlaying();
@@ -4020,12 +3993,10 @@ class XiaoshiMusicCard extends LitElement {
   // 发送MA WebSocket消息
   _maWsSend(command, args = {}) {
     if (!this._maWs || this._maWs.readyState !== WebSocket.OPEN) {
-      console.log('[Xiaoshi][ws] _maWsSend 未发送(' + command + '): WS不可用, readyState=', this._maWs ? this._maWs.readyState : 'null');
       return null;
     }
     // 未鉴权前只允许发送 auth，避免命令被服务端拒绝（与文档：auth 必须是首条命令）
     if (command !== 'auth' && !this._maWsConnected) {
-      console.log('[Xiaoshi][ws] _maWsSend 未发送(' + command + '): 尚未鉴权(_maWsConnected=false)');
       return null;
     }
     const msgId = 'ma-' + (++this._maWs._msgId);
@@ -4037,8 +4008,8 @@ class XiaoshiMusicCard extends LitElement {
   _maWsSendAndWait(command, args) {
     return new Promise((resolve, reject) => {
       const msgId = this._maWsSend(command, args);
-      if (!msgId) { console.log('[Xiaoshi][ws] _maWsSendAndWait 失败(' + command + '): WS未连接/未鉴权'); reject(new Error('WS未连接')); return; }
-      const t = setTimeout(() => { delete this._maWs._pending[msgId]; console.log('[Xiaoshi][ws] _maWsSendAndWait 超时(' + command + ') msgId=' + msgId); reject(new Error('超时')); }, 15000);
+      if (!msgId) { reject(new Error('WS未连接')); return; }
+      const t = setTimeout(() => { delete this._maWs._pending[msgId]; reject(new Error('超时')); }, 15000);
       this._maWs._pending[msgId] = { resolve: (d) => { clearTimeout(t); resolve(d); }, reject: (e) => { clearTimeout(t); reject(e); } };
     });
   }
@@ -4049,13 +4020,11 @@ class XiaoshiMusicCard extends LitElement {
       // 严格按文档判定：需 result.authenticated 为真
       if (!msg.error && msg.result && msg.result.authenticated !== false) {
         this._maWsConnected = true;
-        console.log('[Xiaoshi][ws] MA WS 鉴权成功');
         this._maWsSend('subscribe_events', { event_filter: ['player_updated', 'queue_updated', 'queue_items_updated', 'queue_time_updated'] });
         this._subscribeMaQueue();
         this._tryAutoRefreshPlaylist();
       } else {
         this._maWsConnected = false;
-        console.log('[Xiaoshi][ws] MA WS 鉴权失败:', JSON.stringify(msg.error || msg.result || msg));
         // token 失效/鉴权失败：主动关闭以触发自动重连
         try { this._maWs && this._maWs.close(); } catch(e) {}
       }
@@ -4066,7 +4035,6 @@ class XiaoshiMusicCard extends LitElement {
       const pending = this._maWs?._pending?.[msg.message_id];
       if (pending) {
         if (msg.error || msg.type === 'error' || msg.error_code) {
-          console.log('[Xiaoshi][ws] 收到错误响应 message_id=' + msg.message_id + ':', JSON.stringify(msg));
           pending.reject(msg.error || msg);
         }
         else pending.resolve(msg.result !== undefined ? msg.result : msg);
@@ -4133,8 +4101,6 @@ class XiaoshiMusicCard extends LitElement {
             const vals = Object.values(players);
             playerList = vals.filter(v => v && (v.player_id || v.name));
           }
-          console.log('[Xiaoshi][ws] 订阅队列: players原始返回=', JSON.stringify(players));
-          console.log('[Xiaoshi][ws] 订阅队列: players归一化(', playerList.length, ')=', JSON.stringify(playerList.map(p => ({ player_id: p.player_id, name: p.name, provider: p.provider }))));
           // 候选匹配：去掉尾部的 _ma / 通用后缀，子串互含，均尝试
           const entityCandidates = [entityId, entityId.replace(/_ma$/, ''), entityId.replace(/_ma_?/i, ''), entityId.replace(/[\s_]/g, '')];
           let matchedPlayer = playerList.find(p => entityCandidates.includes(p.player_id) || entityCandidates.includes((p.name || '').replace(/[\s_]/g, '_')));
@@ -4146,16 +4112,13 @@ class XiaoshiMusicCard extends LitElement {
           // 兜底：未匹配但系统内只有 1 个播放器，直接选用（常见单音箱场景）
           if (!matchedPlayer && playerList.length === 1) {
             matchedPlayer = playerList[0];
-            console.log('[Xiaoshi][ws] 订阅队列: 未匹配但仅有1个播放器，自动选用 player_id=', matchedPlayer.player_id);
           }
           if (matchedPlayer) {
             this._maPlayerId = matchedPlayer.player_id;
             this._maQueueId = matchedPlayer.player_id;
-            console.log('[Xiaoshi][ws] 订阅队列: 匹配到播放器 player_id=', matchedPlayer.player_id, 'name=', matchedPlayer.name);
           } else {
             this._maPlayerId = entityId;
             this._maQueueId = entityId;
-            console.log('[Xiaoshi][ws] 订阅队列: 未匹配到播放器，退回 entityId=', entityId, '(playerEntity=', playerEntity, ')');
           }
           this._maWsSend('player_queues/get', { queue_id: this._maQueueId });
           this._startMaWsHeartbeat();
@@ -4805,7 +4768,7 @@ class XiaoshiMusicCard extends LitElement {
   }
 
   async _playViaEmptyPlaylist(uri, mediaType, closePopupFn, trackMeta, knownTracks) {
-    if (!this.maPlaylist) { console.log('[Xiaoshi] 未配置 ma_playlist'); return false; }
+    if (!this.maPlaylist) { return false; }
     // ★ 0 延迟显示播放列表：已知曲目（knownTracks / trackMeta）可直接构造，
     //   无需等待下面 WS 连接/订阅（那可能耗时 5-8 秒）。playlist 分支无已知曲目，
     //   仍需 WS 展开后在下方 4786 处设置。
@@ -4828,7 +4791,7 @@ class XiaoshiMusicCard extends LitElement {
       for (let w = 0; w < 50 && !this._maWsConnected; w++) await new Promise(r => setTimeout(r, 100));
     }
     if (this._isMaWsReady() && !this._maPlayerId) { this._subscribeMaQueue(); for (let w = 0; w < 20 && !this._maPlayerId; w++) await new Promise(r => setTimeout(r, 200)); }
-    if (!this._isMaWsReady() || !this._maPlayerId) { console.log('[Xiaoshi] MA WS 未就绪'); return false; }
+    if (!this._isMaWsReady() || !this._maPlayerId) { return false; }
     try {
       // 任何 MA 播放行为前，先停止当前播放内容，避免 play_media 与残留队列冲突报错
       await this._stopMaPlayback();
@@ -4892,11 +4855,11 @@ class XiaoshiMusicCard extends LitElement {
       this._maOverlay.source = 'qqmusic';
       this._maOverlay.active = true;
       this._activeOverlaySource = 'qqmusic';
-      const firstOk = await this._maPlayIndex(0);
-      if (!firstOk) console.log('[Xiaoshi][play] 第一首推送失败（WS未就绪/无_queue_id?）');
+      await this._maPlayIndex(0);
+
       return true;
     } catch(e) {
-      console.log('[Xiaoshi] _playViaEmptyPlaylist 出错:', e?.message || e);
+
     }
     return false;
   }
@@ -4963,7 +4926,7 @@ class XiaoshiMusicCard extends LitElement {
       if (switchView) this._showPlaylist = true;
       this.requestUpdate();
     } catch (e) {
-      console.log('[Xiaoshi] _refreshMaPlaylistView 出错:', e?.message || e);
+
       this.requestUpdate();
     }
   }
@@ -6414,7 +6377,7 @@ class XiaoshiMusicCard extends LitElement {
     this._setChannel('ma');
     this._pauseOtherChannelsForMa();
     const res = await this._maControlApi('select', idx);
-    if (!res || res.current_index < 0) { console.log('[Xiaoshi][play] 指定曲目切歌失败'); return; }
+    if (!res || res.current_index < 0) { return; }
     await this._maApplyControlled(res);
   }
 
