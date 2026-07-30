@@ -1,5 +1,8 @@
 """MA 音乐播放器辅助 API — 歌单读写接口"""
+import json
 import logging
+import random
+from datetime import datetime, date
 
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
@@ -124,6 +127,30 @@ def _is_enabled(hass: HomeAssistant) -> bool:
             entry.data.get(CONF_MA_ENABLED, True),
         )
     return False
+
+
+def _sanitize_attrs(attrs: dict) -> dict:
+    """确保属性值均为 JSON 可序列化类型。
+
+    media_player 等实体的 attributes 中可能含有 datetime（如
+    media_position_updated_at）等非 JSON 原生类型；直接调用
+    hass.states.async_set 序列化时会抛 TypeError → 500。这里统一转成字符串。
+    """
+    safe: dict = {}
+    for k, v in (attrs or {}).items():
+        if isinstance(v, (str, int, float, bool)) or v is None:
+            safe[k] = v
+        elif isinstance(v, (datetime, date)):
+            safe[k] = v.isoformat()
+        elif isinstance(v, (list, dict)):
+            try:
+                json.dumps(v)
+                safe[k] = v
+            except (TypeError, ValueError):
+                safe[k] = str(v)
+        else:
+            safe[k] = str(v)
+    return safe
 
 
 # ================================================================
@@ -298,10 +325,13 @@ class XiaoshiMaPlaylistView(HomeAssistantView):
         store = _get_data(self.hass)
         group = store.get(media_player)
         if not group:
-            return self.json({"media_player": media_player, "playlist": []})
+            return self.json({"media_player": media_player, "playlist": [], "current_index": -1})
         return self.json({
             "media_player": media_player,
             "playlist": group.get("playlist", []),
+            "current_index": group.get("current_index", -1),
+            "repeat_mode": group.get("repeat_mode", "sequential"),
+            "view": group.get("view", "lyrics"),
         })
 
     async def post(self, request):
@@ -337,9 +367,25 @@ class XiaoshiMaPlaylistView(HomeAssistantView):
         group["playlist"] = playlist
         group.setdefault("repeat_mode", "sequential")
         group.setdefault("view", "lyrics")
+        # 当前播放索引（由前端在"推送第一首"时写入）
+        if "current_index" in data and isinstance(data["current_index"], int):
+            ci = data["current_index"]
+            group["current_index"] = ci if 0 <= ci < len(playlist) else -1
+        # 逐曲播放状态：支持外部传入，否则按 current_index 初始化（当前=playing，其余=unplayed）
+        if isinstance(data.get("statuses"), list) and len(data["statuses"]) == len(playlist):
+            valid = ("unplayed", "played", "playing", "paused")
+            group["statuses"] = [s if s in valid else "unplayed" for s in data["statuses"]]
+        else:
+            group["statuses"] = ["unplayed"] * len(playlist)
+            if group.get("current_index", -1) >= 0:
+                group["statuses"][group["current_index"]] = "playing"
         store[media_player] = group
-        _LOGGER.info("MA playlist set: %s (%d tracks)", media_player, len(playlist))
-        return self.json({"media_player": media_player, "playlist": playlist})
+        _LOGGER.info("MA playlist set: %s (%d tracks, idx=%s)", media_player, len(playlist), group.get("current_index", -1))
+        return self.json({
+            "media_player": media_player,
+            "playlist": playlist,
+            "current_index": group.get("current_index", -1),
+        })
 
 
 # ================================================================
@@ -566,16 +612,20 @@ class XiaoshiSyncNowPlayingView(HomeAssistantView):
             try:
                 new_attrs["media_duration"] = float(data["media_duration"])
             except (ValueError, TypeError):
-                pass
+                new_attrs.pop("media_duration", None)
+
+        # 净化属性：media_player 实体可能带 datetime 等非 JSON 原生属性，
+        # 直接 async_set 会抛 TypeError → 500，这里统一转成可序列化类型
+        new_attrs = _sanitize_attrs(new_attrs)
 
         # 播放状态：默认沿用实体当前状态，避免误把"off"改为"playing"
-        new_state = data.get("state", cur.state)
+        new_state = str(data.get("state", cur.state) or cur.state)[:255]
 
         try:
             await self.hass.states.async_set(entity_id, new_state, new_attrs)
         except Exception as e:  # noqa: BLE001
-            _LOGGER.warning("同步正在播放信息失败 %s: %s", entity_id, e)
-            return self.json_message(f"sync failed: {e}", status_code=500)
+            _LOGGER.exception("同步正在播放信息失败 %s: %s", entity_id, e)
+            return self.json({"success": False, "error": str(e)}, status_code=200)
 
         return self.json({
             "entity_id": entity_id,
@@ -584,11 +634,130 @@ class XiaoshiSyncNowPlayingView(HomeAssistantView):
         })
 
 
+# ================================================================
+# MA 播放列表切歌控制视图
+# 由后端作为"播放位置"的唯一数据源：前端每次播放/切歌只推送单首到 MA，
+# 下一首/上一首/指定曲目均由本接口计算并返回下一首信息（含 current_index）。
+# ================================================================
+def _ensure_statuses(group: dict) -> None:
+    """保证 store 的 statuses 数组长度与 playlist 一致。"""
+    pl = group.get("playlist", []) or []
+    st = group.get("statuses")
+    if not isinstance(st, list) or len(st) != len(pl):
+        group["statuses"] = ["unplayed"] * len(pl)
+
+
+class XiaoshiMaPlaylistControlView(HomeAssistantView):
+    """MA 切歌控制：返回下一首/上一首/指定曲目信息并更新 current_index。
+
+    POST /api/xiaoshi/ma/playlist/control
+         Body: {"media_player": "xxx", "action": "next"|"prev"|"select", "index": 0}
+    返回: {"media_player", "current_index", "track"}
+    """
+
+    url = "/api/xiaoshi/ma/playlist/control"
+    name = "api:xiaoshi:ma:playlist_control"
+    requires_auth = True
+
+    def __init__(self, hass: HomeAssistant):
+        self.hass = hass
+
+    async def post(self, request):
+        if not _is_enabled(self.hass):
+            return self.json_message("MA API is not enabled", status_code=400)
+        try:
+            data = await request.json()
+        except Exception:
+            return self.json_message("Invalid JSON", status_code=400)
+        media_player = str(data.get("media_player", "")).strip()
+        if not media_player:
+            return self.json_message("media_player is required", status_code=400)
+        action = str(data.get("action", "")).strip()
+        if action not in ("next", "prev", "select"):
+            return self.json_message(
+                "action must be one of: next, prev, select", status_code=400
+            )
+
+        store = _get_data(self.hass)
+        group = store.get(media_player)
+        if not group or not isinstance(group.get("playlist"), list) or len(group["playlist"]) == 0:
+            return self.json({"media_player": media_player, "current_index": -1, "track": None})
+
+        playlist = group["playlist"]
+        n = len(playlist)
+        _ensure_statuses(group)
+        statuses = group["statuses"]
+        repeat_mode = group.get("repeat_mode", "sequential")
+        cur = group.get("current_index", -1)
+        if not isinstance(cur, int) or cur < 0 or cur >= n:
+            cur = -1
+
+        if action == "select":
+            try:
+                idx = int(data.get("index"))
+            except (TypeError, ValueError):
+                return self.json_message("index required for select", status_code=400)
+            if idx < 0 or idx >= n:
+                return self.json_message("index out of range", status_code=400)
+        elif action == "next":
+            if repeat_mode == "repeat_one":
+                idx = cur if cur >= 0 else 0
+            elif repeat_mode == "random":
+                unplayed = [i for i in range(n) if statuses[i] == "unplayed"]
+                if not unplayed:
+                    group["statuses"] = ["unplayed"] * n
+                    idx = random.randrange(n)
+                else:
+                    idx = random.choice(unplayed)
+            else:  # sequential
+                if cur < 0:
+                    idx = 0
+                else:
+                    nxt = cur + 1
+                    if nxt >= n:
+                        if all(s in ("played", "playing") for s in statuses):
+                            group["statuses"] = ["unplayed"] * n
+                            nxt = (cur + 1) % n
+                        else:
+                            nxt = 0
+                    idx = nxt
+        else:  # prev
+            if repeat_mode == "repeat_one":
+                idx = cur if cur >= 0 else 0
+            elif repeat_mode == "random":
+                idx = random.randrange(n)
+            else:
+                if cur < 0:
+                    idx = n - 1
+                else:
+                    prv = cur - 1
+                    if prv < 0:
+                        if all(s in ("played", "playing") for s in statuses):
+                            group["statuses"] = ["unplayed"] * n
+                            prv = (cur - 1 + n) % n
+                        else:
+                            prv = n - 1
+                    idx = prv
+
+        # 维护状态：上一首置为已播放，当前置为播放中
+        if 0 <= cur < n:
+            statuses[cur] = "played"
+        statuses[idx] = "playing"
+        group["current_index"] = idx
+        _LOGGER.info("MA playlist control %s %s -> idx=%s", media_player, action, idx)
+        return self.json({
+            "media_player": media_player,
+            "current_index": idx,
+            "track": playlist[idx],
+        })
+
+
 def register_ma_views(hass: HomeAssistant):
     """注册 MA 辅助 API 视图"""
     hass.http.register_view(XiaoshiMaRepeatModeView(hass))
     hass.http.register_view(XiaoshiMaViewView(hass))
     hass.http.register_view(XiaoshiMaPlaylistView(hass))
+    hass.http.register_view(XiaoshiMaPlaylistControlView(hass))
     hass.http.register_view(XiaoshiLocalPlaylistView(hass))
     hass.http.register_view(XiaoshiLocalPlaylistClearView(hass))
     hass.http.register_view(XiaoshiLocalStatusView(hass))
