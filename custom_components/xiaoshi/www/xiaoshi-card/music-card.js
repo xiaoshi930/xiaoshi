@@ -480,11 +480,13 @@ class XiaoshiMusicCard extends LitElement {
     this._maPlaylistTracks = [];
     this._maPlaylistTracksLoading = false;
     this._maPlayingIndex = -1;
+    this._maExpectingEnd = false; // 已推送单首到 MA：曲终时由前端向后端取下一首再推送
     this._localPlaylist = [];
     this._localStatuses = [];
     this._localCurrentIndex = -1;
     this._localPlaylistSignature = '';
     this._maPlayingIndex = -1;
+    this._maExpectingEnd = false;
     this._localPlaylist = [];
     this._localStatuses = [];
     this._localCurrentIndex = -1;
@@ -2786,7 +2788,11 @@ class XiaoshiMusicCard extends LitElement {
   async _setLocalPlaylist(mp, items) { return this._localApiCall('/local_playlist', 'POST', { media_player: mp, playlist: items }); }
   async _clearLocalPlaylist(mp) { return this._localApiCall('/local_playlist/clear', 'POST', { media_player: mp }); }
   // MA 播放列表写入/清空（同步到后端 ma_playlist_data，供模式推导使用）
-  async _setMaPlaylistApi(mp, items) { return this._localApiCall('/playlist', 'POST', { media_player: mp, playlist: items || [] }); }
+  async _setMaPlaylistApi(mp, items, currentIndex) {
+    const body = { media_player: mp, playlist: items || [] };
+    if (typeof currentIndex === 'number') body.current_index = currentIndex;
+    return this._localApiCall('/playlist', 'POST', body);
+  }
   async _clearMaPlaylistApi(mp) { return this._localApiCall('/playlist', 'POST', { media_player: mp, playlist: [] }); }
   async _updateLocalStatus(mp, currentIndex, statuses) {
     const body = { media_player: mp };
@@ -3098,6 +3104,7 @@ class XiaoshiMusicCard extends LitElement {
     try {
       this._maWsSend('player_queues/play', { queue_id: this._maQueueId, uri, enqueue_option: 'play' });
       this._maPlayingIndex = idx;
+      this._maExpectingEnd = true; // 已推送单首：曲终时由前端向后端取下一首再推送
       this._maStatuses[idx] = 'playing';
       this._syncOtherEntityStatus('ma');
       this.requestUpdate();
@@ -3130,42 +3137,55 @@ class XiaoshiMusicCard extends LitElement {
     this._maStatuses = Array(len).fill('unplayed');
   }
 
-  async _maNext() {
-    const tracks = this._maTracks();
-    if (!tracks.length) return false;
-    let next;
-    if (this._repeatMode === 'random') {
-      next = this._maRandomIndex();
-    } else if (this._repeatMode === 'repeat_one') {
-      next = this._maPlayingIndex >= 0 ? this._maPlayingIndex : 0;
-    } else {
-      const cur = this._maPlayingIndex;
-      next = cur + 1;
-      if (next >= tracks.length) {
-        if (this._maAllPlayed()) { this._maResetStatuses(); next = (cur + 1) % tracks.length; }
-        else next = 0;
+  // 调用后端切歌控制接口，由后端计算下一首/上一首/指定曲目并返回 track + current_index
+  async _maControlApi(action, index) {
+    const mp = this._localMediaEntity();
+    if (!mp) return null;
+    try {
+      const body = { media_player: mp, action };
+      if (typeof index === 'number') body.index = index;
+      const data = await this._localApiCall('/playlist/control', 'POST', body);
+      if (data && typeof data.current_index === 'number' && data.current_index >= 0 && data.track) {
+        return { current_index: data.current_index, track: data.track };
       }
+      return { current_index: -1, track: null };
+    } catch (e) { return null; }
+  }
+
+  // 把后端返回的曲目应用到内存播放列表并单首推送到 MA
+  async _maApplyControlled(res) {
+    const idx = res.current_index;
+    const t = res.track;
+    if (t && this._currentPlaylistData && Array.isArray(this._currentPlaylistData.playlist) && this._currentPlaylistData.playlist[idx]) {
+      const p = this._currentPlaylistData.playlist;
+      p[idx] = {
+        name: t.name || t.title || '',
+        artist: t.artist || '',
+        uri: t.uri || '',
+        album: t.album || '',
+        image_url: t.image_url || t.cover || '',
+        track_id: t.track_id || t.uri || '',
+        duration: t.duration || 0,
+      };
     }
-    return this._maPlayIndex(next);
+    return this._maPlayIndex(idx);
+  }
+
+  async _maNext() {
+    const res = await this._maControlApi('next');
+    if (!res || res.current_index < 0) { this._maPlayingIndex = -1; this._maExpectingEnd = false; return false; }
+    return this._maApplyControlled(res);
   }
 
   async _maPrev() {
-    const tracks = this._maTracks();
-    if (!tracks.length) return false;
-    let prev;
-    if (this._repeatMode === 'random') {
-      prev = this._maRandomIndex();
-    } else if (this._repeatMode === 'repeat_one') {
-      prev = this._maPlayingIndex >= 0 ? this._maPlayingIndex : 0;
-    } else {
-      const cur = this._maPlayingIndex;
-      prev = cur - 1;
-      if (prev < 0) {
-        if (this._maAllPlayed()) { this._maResetStatuses(); prev = (cur - 1 + tracks.length) % tracks.length; }
-        else prev = tracks.length - 1;
-      }
-    }
-    return this._maPlayIndex(prev);
+    const res = await this._maControlApi('prev');
+    if (!res || res.current_index < 0) { this._maPlayingIndex = -1; this._maExpectingEnd = false; return false; }
+    return this._maApplyControlled(res);
+  }
+
+  // 曲终自动切下一首（来源：MA 队列 current_item 变空）
+  async _maAutoNext() {
+    try { await this._maNext(); } catch (e) {}
   }
 
   // MA 暂停：暂停 MA 队列播放（保留进度，供继续）
@@ -3981,9 +4001,15 @@ class XiaoshiMusicCard extends LitElement {
 
   // 发送MA WebSocket消息
   _maWsSend(command, args = {}) {
-    if (!this._maWs || this._maWs.readyState !== WebSocket.OPEN) return null;
+    if (!this._maWs || this._maWs.readyState !== WebSocket.OPEN) {
+      console.log('[Xiaoshi][ws] _maWsSend 未发送(' + command + '): WS不可用, readyState=', this._maWs ? this._maWs.readyState : 'null');
+      return null;
+    }
     // 未鉴权前只允许发送 auth，避免命令被服务端拒绝（与文档：auth 必须是首条命令）
-    if (command !== 'auth' && !this._maWsConnected) return null;
+    if (command !== 'auth' && !this._maWsConnected) {
+      console.log('[Xiaoshi][ws] _maWsSend 未发送(' + command + '): 尚未鉴权(_maWsConnected=false)');
+      return null;
+    }
     const msgId = 'ma-' + (++this._maWs._msgId);
     this._maWs.send(JSON.stringify({ command, message_id: msgId, args }));
     return msgId;
@@ -3993,8 +4019,8 @@ class XiaoshiMusicCard extends LitElement {
   _maWsSendAndWait(command, args) {
     return new Promise((resolve, reject) => {
       const msgId = this._maWsSend(command, args);
-      if (!msgId) { reject(new Error('WS未连接')); return; }
-      const t = setTimeout(() => { delete this._maWs._pending[msgId]; reject(new Error('超时')); }, 15000);
+      if (!msgId) { console.log('[Xiaoshi][ws] _maWsSendAndWait 失败(' + command + '): WS未连接/未鉴权'); reject(new Error('WS未连接')); return; }
+      const t = setTimeout(() => { delete this._maWs._pending[msgId]; console.log('[Xiaoshi][ws] _maWsSendAndWait 超时(' + command + ') msgId=' + msgId); reject(new Error('超时')); }, 15000);
       this._maWs._pending[msgId] = { resolve: (d) => { clearTimeout(t); resolve(d); }, reject: (e) => { clearTimeout(t); reject(e); } };
     });
   }
@@ -4005,11 +4031,13 @@ class XiaoshiMusicCard extends LitElement {
       // 严格按文档判定：需 result.authenticated 为真
       if (!msg.error && msg.result && msg.result.authenticated !== false) {
         this._maWsConnected = true;
+        console.log('[Xiaoshi][ws] MA WS 鉴权成功');
         this._maWsSend('subscribe_events', { event_filter: ['player_updated', 'queue_updated', 'queue_items_updated', 'queue_time_updated'] });
         this._subscribeMaQueue();
         this._tryAutoRefreshPlaylist();
       } else {
         this._maWsConnected = false;
+        console.log('[Xiaoshi][ws] MA WS 鉴权失败:', JSON.stringify(msg.error || msg.result || msg));
         // token 失效/鉴权失败：主动关闭以触发自动重连
         try { this._maWs && this._maWs.close(); } catch(e) {}
       }
@@ -4019,7 +4047,10 @@ class XiaoshiMusicCard extends LitElement {
     if (msg.message_id) {
       const pending = this._maWs?._pending?.[msg.message_id];
       if (pending) {
-        if (msg.error || msg.type === 'error' || msg.error_code) pending.reject(msg.error || {});
+        if (msg.error || msg.type === 'error' || msg.error_code) {
+          console.log('[Xiaoshi][ws] 收到错误响应 message_id=' + msg.message_id + ':', JSON.stringify(msg));
+          pending.reject(msg.error || msg);
+        }
         else pending.resolve(msg.result !== undefined ? msg.result : msg);
         delete this._maWs._pending[msg.message_id];
         this._handleMaWsResult(msg); return;
@@ -4077,24 +4108,36 @@ class XiaoshiMusicCard extends LitElement {
       this._maWs._pending[msgId] = {
         resolve: (players) => {
           const entityId = playerEntity.replace(/^media_player\./, '');
-          let matchedPlayer = null;
-          if (Array.isArray(players)) {
-            matchedPlayer = players.find(p => p.player_id === entityId);
-            if (!matchedPlayer) {
-              matchedPlayer = players.find(p =>
-                p.player_id === entityId ||
-                p.name === entityId ||
-                p.name?.replace(/[\s_]/g, '_') === entityId ||
-                p.player_id?.endsWith(entityId)
-              );
-            }
+          // 归一化：兼容数组或字典两种返回格式
+          let playerList = [];
+          if (Array.isArray(players)) playerList = players;
+          else if (players && typeof players === 'object') {
+            const vals = Object.values(players);
+            playerList = vals.filter(v => v && (v.player_id || v.name));
+          }
+          console.log('[Xiaoshi][ws] 订阅队列: players原始返回=', JSON.stringify(players));
+          console.log('[Xiaoshi][ws] 订阅队列: players归一化(', playerList.length, ')=', JSON.stringify(playerList.map(p => ({ player_id: p.player_id, name: p.name, provider: p.provider }))));
+          // 候选匹配：去掉尾部的 _ma / 通用后缀，子串互含，均尝试
+          const entityCandidates = [entityId, entityId.replace(/_ma$/, ''), entityId.replace(/_ma_?/i, ''), entityId.replace(/[\s_]/g, '')];
+          let matchedPlayer = playerList.find(p => entityCandidates.includes(p.player_id) || entityCandidates.includes((p.name || '').replace(/[\s_]/g, '_')));
+          if (!matchedPlayer) {
+            matchedPlayer = playerList.find(p =>
+              entityCandidates.some(c => (p.player_id || '').includes(c) || (p.name || '').replace(/[\s_]/g, '_').includes(c) || c.includes(p.player_id || ''))
+            );
+          }
+          // 兜底：未匹配但系统内只有 1 个播放器，直接选用（常见单音箱场景）
+          if (!matchedPlayer && playerList.length === 1) {
+            matchedPlayer = playerList[0];
+            console.log('[Xiaoshi][ws] 订阅队列: 未匹配但仅有1个播放器，自动选用 player_id=', matchedPlayer.player_id);
           }
           if (matchedPlayer) {
             this._maPlayerId = matchedPlayer.player_id;
             this._maQueueId = matchedPlayer.player_id;
+            console.log('[Xiaoshi][ws] 订阅队列: 匹配到播放器 player_id=', matchedPlayer.player_id, 'name=', matchedPlayer.name);
           } else {
             this._maPlayerId = entityId;
             this._maQueueId = entityId;
+            console.log('[Xiaoshi][ws] 订阅队列: 未匹配到播放器，退回 entityId=', entityId, '(playerEntity=', playerEntity, ')');
           }
           this._maWsSend('player_queues/get', { queue_id: this._maQueueId });
           this._startMaWsHeartbeat();
@@ -4152,7 +4195,16 @@ class XiaoshiMusicCard extends LitElement {
   // 处理 MA 队列数据
   async _handleMaQueueData(queueData) {
     const currentItem = queueData.current_item;
-    if (!currentItem) { this.isPlaying = false; this.requestUpdate(); return; }
+    if (!currentItem) {
+      this.isPlaying = false;
+      // 单首播放模式：本曲播完（队列空）时，向后端取下一首再推送到 MA
+      if (this._maExpectingEnd && this._maPlayingIndex >= 0 && this._getEffectiveChannel() === 'ma') {
+        this._maExpectingEnd = false; // 先关标志，避免新曲加载前队列短暂为空触发重复切歌
+        this._maAutoNext();
+      }
+      this.requestUpdate();
+      return;
+    }
     if (queueData.state === 'playing') this.isPlaying = true;
     let elapsed = queueData.elapsed_time || 0;
     const lastUpdated = queueData.elapsed_time_last_updated || 0;
@@ -4725,6 +4777,7 @@ class XiaoshiMusicCard extends LitElement {
 
   async _stopMaPlayback() {
     // 停止 MA 当前播放：先停 WS 队列，再停 MA 播放器实体
+    this._maExpectingEnd = false; // 用户主动停止，不再自动切下一首
     if (this._isMaWsReady() && this._maQueueId) {
       try { this._maWsSend('player_queues/stop', { queue_id: this._maQueueId || this._maPlayerId }); } catch (e) {}
     }
@@ -4733,8 +4786,24 @@ class XiaoshiMusicCard extends LitElement {
     }
   }
 
-  async _playViaEmptyPlaylist(uri, mediaType, closePopupFn) {
+  async _playViaEmptyPlaylist(uri, mediaType, closePopupFn, trackMeta, knownTracks) {
     if (!this.maPlaylist) { console.log('[Xiaoshi] 未配置 ma_playlist'); return false; }
+    // ★ 0 延迟显示播放列表：已知曲目（knownTracks / trackMeta）可直接构造，
+    //   无需等待下面 WS 连接/订阅（那可能耗时 5-8 秒）。playlist 分支无已知曲目，
+    //   仍需 WS 展开后在下方 4786 处设置。
+    {
+      let preTracks = [];
+      if (knownTracks && knownTracks.length) {
+        preTracks = knownTracks;
+      } else if (mediaType === 'track' && trackMeta && (trackMeta.uri || trackMeta.track_id || trackMeta.name)) {
+        preTracks = [trackMeta];
+      }
+      if (preTracks.length) {
+        this._currentPlaylistData = { playlist: preTracks.map(it => ({ name: it.name || it.title || '未知', artist: this._extractArtist?.(it) || '', album: this._extractAlbum?.(it) || '', uri: it.uri || it.track_id || it.item_id || '', track_id: it.track_id || it.item_id || it.uri || '' })), repeat_mode: '' };
+        this._showPlaylist = true;
+        this.requestUpdate();
+      }
+    }
     // WS 断了就重连
     if (!this._maWsConnected) {
       this._connectMaWs();
@@ -4745,16 +4814,17 @@ class XiaoshiMusicCard extends LitElement {
     try {
       // 任何 MA 播放行为前，先停止当前播放内容，避免 play_media 与残留队列冲突报错
       await this._stopMaPlayback();
-      const plId = (this.maPlaylist.match(/(\d+)$/)||[])[0] || this.maPlaylist;
-      // 清空现有曲目
-      const existing = await this._maWsSendAndWait('music/playlists/playlist_tracks', { item_id: String(plId), provider_instance_id_or_domain: 'library', force_refresh: false, allow_dynamic_tracks: false });
-      const oldTracks = Array.isArray(existing) ? existing : (existing?.items || []);
-      if (oldTracks.length > 0) {
-        await this._maWsSendAndWait('music/playlists/remove_playlist_tracks', { db_playlist_id: String(plId), positions_to_remove: oldTracks.map((_, i) => i) });
-      }
-      // 获取要添加的所有曲目 URI（歌单则展开所有曲目）
+      // （新模型：不再写入/清空 MA 的 db 歌单；整张列表同步到后端 API，
+      //  仅把第一首推送到 MA，后续切歌由前端→后端取下一首再推送。）
+      // 计算要添加的全部曲目与即时展示用的曲目列表
       let uris = [uri];
-      if (mediaType === 'playlist') {
+      let addedTracks = [];
+      if (knownTracks && knownTracks.length) {
+        // 已有完整曲目（如“我喜欢”弹窗已加载的列表）：直接复用，跳过 WS 展开，列表可立即显示
+        addedTracks = knownTracks;
+        uris = knownTracks.map(it => it.uri || it.track_id || it.item_id || '').filter(Boolean);
+        if (!uris.length) uris = [uri];
+      } else if (mediaType === 'playlist') {
         const plUriLower = (uri||'').toLowerCase();
         let providerDomain = 'library'; if (plUriLower.includes('qqmusic')) providerDomain = 'qqmusic';
         const digits = String(uri).match(/(\d+)$/);
@@ -4764,40 +4834,48 @@ class XiaoshiMusicCard extends LitElement {
             const items = Array.isArray(result) ? result : (result?.items || []);
             const filtered = items.filter(it => !!(it?.name||it?.uri||it?.item_id) && !(it?.media_type==='folder'||it?.media_type==='playlist'));
             const trackUris = filtered.map(it => it.uri||it.item_id||'').filter(Boolean);
-            if (trackUris.length > 0) uris = trackUris;
+            if (trackUris.length > 0) { uris = trackUris; addedTracks = filtered; }
           } catch(e) {}
         }
+      } else if (mediaType === 'track') {
+        // 单曲：优先用调用方传入的曲目元数据，保证播放列表区立即显示歌名
+        if (trackMeta && (trackMeta.uri || trackMeta.track_id || trackMeta.name)) {
+          addedTracks = [trackMeta];
+        } else {
+          addedTracks = [{ name: '', uri: uri, track_id: uri }];
+        }
       }
-      // 批量添加到空播放列表
-      await this._maWsSendAndWait('music/playlists/add_playlist_tracks', { db_playlist_id: String(plId), uris });
-      // 写入 ma_playlist 后立即刷新播放列表区域（保证主卡播放列表区实时显示刚添加的内容）
-      await this._refreshMaPlaylistView(false);
-      // 真正推送到 MA 播放服务：把刚写入 ma_playlist 的内容加载进播放队列并播放
-      if (!this._maQueueId) {
-        this._subscribeMaQueue();
-        for (let w = 0; w < 20 && !this._maQueueId; w++) await new Promise(r => setTimeout(r, 200));
+      // ★ 立即用即将播放的曲目刷新播放列表区（在写入 MA 队列之前），
+      //   保证点击播放后列表瞬间出现，不必等 WS 添加/重读完成
+      if (addedTracks.length) {
+        this._currentPlaylistData = { playlist: addedTracks.map(it => ({ name: it.name || it.title || '未知', artist: this._extractArtist?.(it) || '', album: this._extractAlbum?.(it) || '', uri: it.uri || it.track_id || it.item_id || '', track_id: it.track_id || it.item_id || it.uri || '' })), repeat_mode: '' };
+        this._showPlaylist = true;
+        this.requestUpdate();
       }
-      const playlistUri = `library://playlist/${plId}`;
-      if (this._isMaWsReady() && this._maQueueId) {
-        this._maWsSend('player_queues/play', { queue_id: this._maQueueId, uri: playlistUri, enqueue_option: 'play' });
-        this._maPlayingIndex = 0;
-        this._maStatuses = []; // 进入新列表：清空逐曲播放状态，下一首时按当前列表长度重新初始化
+      // ===== 新播放模型：整张列表同步到后端 API，仅把第一首推送到 MA =====
+      // 1) 整张列表写入后端 ma_playlist（current_index=0），作为播放位置唯一数据源
+      this._maStatuses = addedTracks.map(() => 'unplayed');
+      this._maPlayingIndex = -1;
+      const mp = this._localMediaEntity();
+      if (mp && addedTracks.length) {
+        this._setMaPlaylistApi(mp, addedTracks.map(it => ({
+          name: it.name || it.title || '',
+          artist: this._extractArtist?.(it) || '',
+          uri: it.uri || it.track_id || it.item_id || '',
+          duration: it.duration || 0,
+          image_url: it.image_url || it.cover || it.image || '',
+        })), 0).catch(() => {});
       }
+      // 2) 仅推送第一首到 MA 播放。后续 下一首/上一首/曲终自动切歌 都改走后端取下一首再推送，
+      //    不再把整张歌单灌进 MA 队列由它自驱。
       if (closePopupFn) closePopupFn();
       this._showPlaylist = true;
       this._setChannel('ma');
       this._maOverlay.source = 'qqmusic';
       this._maOverlay.active = true;
       this._activeOverlaySource = 'qqmusic';
-      // 整张歌单播放：从刷新后的列表取第一首填充当前曲目信息，再同步到 miot实体
-      const firstTrack = this._maTracks()[0];
-      if (firstTrack) {
-        this._maTrackName = firstTrack.name || firstTrack.title || firstTrack.track_name || '';
-        this._maTrackArtist = firstTrack.artist || '';
-        this._maCoverUrl = firstTrack.image_url || firstTrack.cover || firstTrack.image || '';
-        this._maDuration = parseFloat(firstTrack.duration || 0) || 0;
-      }
-      this._syncOtherEntityStatus('ma');
+      const firstOk = await this._maPlayIndex(0);
+      if (!firstOk) console.log('[Xiaoshi][play] 第一首推送失败（WS未就绪/无_queue_id?）');
       return true;
     } catch(e) {
       console.log('[Xiaoshi] _playViaEmptyPlaylist 出错:', e?.message || e);
@@ -4846,32 +4924,35 @@ class XiaoshiMusicCard extends LitElement {
     } catch (e) {}
   }
 
-  // 播放列表实时显示：抓取 ma_playlist 当前内容并刷新主卡片"播放列表"视图
-  // switchView=true 时自动切到播放列表视图（播放后调用）；false 时仅后台刷新数据（首次打开调用）
+  // 播放列表实时显示：从后端 API 抓取 ma_playlist（含 current_index）并刷新主卡片视图
+  // 新模型下后端是播放位置唯一数据源；switchView=true 时切到播放列表视图
   async _refreshMaPlaylistView(switchView = true) {
-    if (!this.maPlaylist) return;
-    if (!this._isMaWsReady()) {
-      this._connectMaWs();
-      for (let w = 0; w < 50 && !this._isMaWsReady(); w++) await new Promise(r => setTimeout(r, 100));
-    }
-    if (!this._isMaWsReady()) { this.requestUpdate(); return; }
+    const mp = this._localMediaEntity();
+    if (!mp) return;
     try {
-      const plId = (this.maPlaylist.match(/(\d+)$/)||[])[0] || this.maPlaylist;
-      const result = await this._maWsSendAndWait('music/playlists/playlist_tracks', { item_id: String(plId), provider_instance_id_or_domain: 'library', force_refresh: false, allow_dynamic_tracks: false });
-      const items = Array.isArray(result) ? result : (result?.items || []);
-      const tracks = items
-        .filter(it => !!(it?.name||it?.uri||it?.item_id) && !(it?.media_type==='folder'||it?.media_type==='playlist'))
-        .map(it => ({ name: it.name||it.title||'未知', artist: this._extractArtist?.(it)||'', album: this._extractAlbum?.(it)||'', uri: it.uri||it.item_id||'', track_id: it.item_id||it.uri||'' }));
-      this._currentPlaylistData = { playlist: tracks, repeat_mode: '' };
-      // 把加载到的 MA 歌单同步到后端，供模式推导（ma_playlist 有歌 → MA 模式）
-      const mp = this._localMediaEntity();
-      if (mp && tracks.length) { this._setMaPlaylistApi(mp, tracks).catch(() => {}); }
+      const data = await this._fetchMaPlaylist(mp);
+      const raw = (data && data.playlist) || [];
+      const tracks = raw
+        .filter(it => !!(it?.name || it?.uri) && !(it?.media_type === 'folder' || it?.media_type === 'playlist'))
+        .map(it => ({ name: it.name || it.title || '未知', artist: it.artist || '', album: it.album || '', uri: it.uri || '', track_id: it.track_id || it.uri || '', image_url: it.image_url || '' }));
+      const curLen = this._currentPlaylistData?.playlist?.length || 0;
+      // 仅在读到“不少于当前列表”的曲目时覆盖，避免回写成旧数据
+      if (tracks.length >= curLen) {
+        this._currentPlaylistData = { playlist: tracks, repeat_mode: '' };
+        const ci = data?.current_index;
+        if (typeof ci === 'number' && ci >= 0 && ci < tracks.length) this._maPlayingIndex = ci;
+      }
       if (switchView) this._showPlaylist = true;
       this.requestUpdate();
-    } catch(e) {
+    } catch (e) {
       console.log('[Xiaoshi] _refreshMaPlaylistView 出错:', e?.message || e);
       this.requestUpdate();
     }
+  }
+
+  // 从后端读取 MA 播放列表（含 current_index）
+  async _fetchMaPlaylist(mp) {
+    return this._localApiCall(`/playlist?media_player=${encodeURIComponent(mp || '')}`, 'GET');
   }
 
   // 播放整个歌单（统一通过空播放列表）
@@ -4937,7 +5018,7 @@ class XiaoshiMusicCard extends LitElement {
       }, 'ma');
     }
     try {
-      if (await this._playViaEmptyPlaylist(mu, 'track', () => this._maPopupClose?.())) return;
+      if (await this._playViaEmptyPlaylist(mu, 'track', () => this._maPopupClose?.(), track)) return;
       throw new Error('播放失败');
     } catch (e) { this._maPlaylistsError = '播放失败: ' + e.message; }
     finally { this._maPlaylistPlaying = ''; this._maUpdate?.(); }
@@ -5014,12 +5095,27 @@ class XiaoshiMusicCard extends LitElement {
     const te = maTe || this.xiaomiMiotEntity;
     if (!this._hass || !te) return;
     if (!this.maPlaylist) return;
+    // 清空本地播放 api 记录（MA 模式下本地列表不显示）
+    if (this._localPlaylist && this._localPlaylist.length) {
+      await this._clearLocalPlaylist(this._localMediaEntity());
+      this._localPlaylist = [];
+      this._localStatuses = [];
+      this._localCurrentIndex = -1;
+      this._localPlaylistSignature = '';
+    }
     this._setChannel('ma'); this._pauseOtherChannelsForMa();
+    // 把当前“我喜欢”曲目显式写后端 ma_playlist_data（不依赖 _playViaEmptyPlaylist 内部展开，避免展开失败写空）
+    { const mp = this._localMediaEntity(); if (mp && this._favTracks.length) { this._setMaPlaylistApi(mp, this._favTracks).catch(() => {}); } }
     this._maOverlay.source = 'qqmusic'; this._maOverlay.active = true; this._activeOverlaySource = 'qqmusic';
+    // 立即显示“我喜欢”播放列表（弹窗已加载好的曲目），无需等待 WS，列表瞬间出现
+    if (this._favTracks.length) {
+      this._currentPlaylistData = { playlist: this._favTracks.map(it => ({ name: it.name || '未知', artist: it.artist || '', album: it.album || '', uri: it.uri || it.track_id || '', track_id: it.track_id || it.uri || '' })), repeat_mode: '' };
+      this._showPlaylist = true;
+    }
     this._favUpdate?.();
     this.requestUpdate();
     try {
-      await this._playViaEmptyPlaylist(fav, 'playlist', () => this._favPopupClose?.());
+      await this._playViaEmptyPlaylist(fav, 'playlist', () => this._favPopupClose?.(), null, this._favTracks);
     } catch (e) {} finally { this._favPlaying = ''; this._favUpdate?.(); this.requestUpdate(); }
   }
 
@@ -5032,11 +5128,21 @@ class XiaoshiMusicCard extends LitElement {
     const te = maTe || this.xiaomiMiotEntity;
     if (!this._hass || !te) return;
     if (!this.maPlaylist) return;
+    // 清空本地播放 api 记录（MA 模式下本地列表不显示）
+    if (this._localPlaylist && this._localPlaylist.length) {
+      await this._clearLocalPlaylist(this._localMediaEntity());
+      this._localPlaylist = [];
+      this._localStatuses = [];
+      this._localCurrentIndex = -1;
+      this._localPlaylistSignature = '';
+    }
     this._setChannel('ma'); this._pauseOtherChannelsForMa();
+    // 把单曲显式写后端 ma_playlist_data（ma 有曲目 → MA 模式）
+    { const mp = this._localMediaEntity(); if (mp) { this._setMaPlaylistApi(mp, [{ name: track.name || '', artist: track.artist || '', uri: mu, duration: track.duration || 0, image_url: track.image_url || track.artwork_url || '' }]).catch(() => {}); } }
     this._maOverlay.source = 'qqmusic'; this._maOverlay.active = true; this._activeOverlaySource = 'qqmusic';
     this._favUpdate?.();
     try {
-      await this._playViaEmptyPlaylist(mu, 'track', () => this._favPopupClose?.());
+      await this._playViaEmptyPlaylist(mu, 'track', () => this._favPopupClose?.(), track);
     } catch (e) {}
     finally { this._favPlaying = ''; this._favUpdate?.(); this.requestUpdate(); }
   }
@@ -6231,14 +6337,14 @@ class XiaoshiMusicCard extends LitElement {
           <ha-icon icon="mdi:chart-box-outline"></ha-icon>
         </button>
         <button class="action-btn" style="background: ${themeColors.bg};" @click=${() => { this._handleClick(); this._showPlaylist = false; this._updateViewMode('lyrics'); this.requestUpdate(); }} title="歌词">
-          <ha-icon icon="mdi:microphone-variant" style="${this._showPlaylist ? 'opacity: 0.35;' : ''}"></ha-icon>
+          <span class="action-btn-label" style="${this._showPlaylist ? 'opacity: 0.35;' : ''}">词</span>
         </button>
         <button class="action-btn" style="background: ${themeColors.bg};" @click=${() => { this._handleClick(); this._showPlaylist = true; this._updateViewMode('playlist'); this.requestUpdate(); }} title="播放列表">
-          <ha-icon icon="mdi:playlist-music" style="${this._showPlaylist ? '' : 'opacity: 0.35;'}"></ha-icon>
+          <span class="action-btn-label" style="${this._showPlaylist ? '' : 'opacity: 0.35;'}">列表</span>
         </button>
-        ${this._showPlaylist ? html`<button class="action-btn" style="background: ${themeColors.bg};" @click=${this._clearPlaylist} title="清空播放列表">
-          <ha-icon icon="mdi:playlist-remove"></ha-icon>
-        </button>` : ''}
+        <button class="action-btn" style="background: ${themeColors.bg};" @click=${this._clearPlaylist} title="清空播放列表">
+          <ha-icon icon="mdi:close" style="color:#e74c3c;"></ha-icon>
+        </button>
       </div>
     `;
   }
@@ -6281,51 +6387,46 @@ class XiaoshiMusicCard extends LitElement {
     this._handleClick();
     // 本地播放列表优先
     if (this._localPlaylist && this._localPlaylist.length) { await this._playLocalPlaylistTrack(track); return; }
-    // MA 播放列表曲目点击 → 推送到 MA 播放服务
+    // MA 播放列表曲目点击 → 走后端切歌控制（更新 current_index），再单首推送
+    const tracks = this._maTracks();
     const trackUri = track?.uri || track?.track_id;
     if (!trackUri) return;
+    const idx = tracks.findIndex(t => (t.uri || t.track_id || '') === trackUri);
+    if (idx < 0) return;
     this._setChannel('ma');
     this._pauseOtherChannelsForMa();
-    await this._stopMaPlayback();
-    if (!(await this._ensureMaReady())) return;
-    this._maWsSend('player_queues/play', { queue_id: this._maQueueId, uri: trackUri, enqueue_option: 'play' });
-    const tracks = this._maTracks();
-    const idx = tracks.findIndex(t => (t.uri || t.track_id || '') === trackUri);
-    this._maPlayingIndex = idx >= 0 ? idx : this._maPlayingIndex;
-    const tk = idx >= 0 ? tracks[idx] : null;
-    if (tk) {
-      this._maTrackName = tk.name || tk.title || tk.track_name || '';
-      this._maTrackArtist = tk.artist || '';
-      this._maCoverUrl = tk.image_url || tk.cover || tk.image || '';
-      this._maDuration = parseFloat(tk.duration || 0) || 0;
-    }
-    this._syncOtherEntityStatus('ma');
-    this.requestUpdate();
+    const res = await this._maControlApi('select', idx);
+    if (!res || res.current_index < 0) { console.log('[Xiaoshi][play] 指定曲目切歌失败'); return; }
+    await this._maApplyControlled(res);
   }
 
-  // 清空播放列表
+  // 清空播放列表：清空所有前端播放列表 + 后端 api 列表 + 终止播放
   async _clearPlaylist() {
     this._handleClick();
-    // 清空本地播放列表（API + 内存）
-    if (this._localPlaylist && this._localPlaylist.length) {
-      await this._clearLocalPlaylist(this._localMediaEntity());
-      this._localPlaylist = [];
-      this._localStatuses = [];
-      this._localCurrentIndex = -1;
-      this._localPlaylistSignature = '';
-    }
-    // 暂停播放
+    const mp = this._localMediaEntity();
+    // 1、清空所有前端播放列表（内存）
+    this._localPlaylist = [];
+    this._localStatuses = [];
+    this._localCurrentIndex = -1;
+    this._localPlaylistSignature = '';
+    this._maPlaylistTracks = [];
+    this._maPlaylistDetail = null;
+    this._maPlaylistPlaying = '';
+    this._maPlaylistTracksLoading = false;
+    this._favTracks = [];
+    this._currentPlaylistData = null;
+    // 2、清空后端 api 列表（本地 + MA，两者都空 → 小米电台模式）
+    if (mp) { try { await this._clearLocalPlaylist(mp); } catch (e) {} }
+    if (mp) { try { await this._clearMaPlaylistApi(mp); } catch (e) {} }
+    // 3、终止播放（不论当前是哪个通道）
     const targetEntity = this._getActiveTargetEntity();
-    if (targetEntity) {
-      this.callService('media_player.media_pause', { entity_id: targetEntity });
+    if (targetEntity && this._hass) {
+      try { await this._hass.callService('media_player', 'media_stop', { entity_id: targetEntity }); } catch (e) {}
     }
+    try { await this._stopMaPlayback(); } catch (e) {}
     // 先清空 MA 空播放列表（在 WS 仍连接时执行，避免残留曲目）
     if (this.maPlaylist) {
       try {
-        // 停止 MA 播放器，清理队列，避免播放中删除曲目报错
-        if (this.maPlayerEntity && this._hass) {
-          try { await this._hass.callService('media_player', 'media_stop', { entity_id: this.maPlayerEntity }); } catch(e) {}
-        }
         if (!this._maWsConnected) {
           this._connectMaWs();
           for (let w = 0; w < 50 && !this._maWsConnected; w++) await new Promise(r => setTimeout(r, 100));
@@ -6345,19 +6446,12 @@ class XiaoshiMusicCard extends LitElement {
       try { this._maWs.close(); } catch(e) {}
       this._maWs = null;
       this._maWsConnected = false;
-      this._maTrackName = '';
-      this._maTrackArtist = '';
     }
     // 清除播放状态
     this.isPlaying = false;
     this._maOverlay = { title: '', artist: '', coverUrl: '', source: '', active: false };
     this._maTrackName = '';
     this._maTrackArtist = '';
-    // 清空 MA 播放列表（前端显示）
-    this._maPlaylistTracks = [];
-    this._maPlaylistDetail = null;
-    this._maPlaylistPlaying = '';
-    this._maPlaylistTracksLoading = false;
     // 清空列表 → 模式设为小米电台(miot)（覆盖了 _activeChannel 残留）
     this._setChannel('miot');
     this.showLyrics = true;
@@ -6365,8 +6459,6 @@ class XiaoshiMusicCard extends LitElement {
     this._miotLastSongArtist = '';
     this._localLastSongTitle = '';
     this._localLastSongArtist = '';
-    // 清除本地数据
-    this._currentPlaylistData = null;
     this._showPlaylist = false;
     // 立即刷新 UI
     this.requestUpdate();
