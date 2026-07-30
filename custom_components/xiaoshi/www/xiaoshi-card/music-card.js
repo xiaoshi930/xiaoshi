@@ -1173,6 +1173,18 @@ class XiaoshiMusicCard extends LitElement {
     this._maElapsedTime = 0;
     this.smoothCurrentTime = 0;
     this._maQueueId = '';
+    // 切换音箱：清空内存中旧音箱的播放列表，并用新音箱实体重新拉取各自的列表
+    // （后端按 media_player 区分：MA 用 maPlayerEntity，本地用本地播放器实体）
+    this._currentPlaylistData = { playlist: [], repeat_mode: '' };
+    this._maPlayingIndex = -1;
+    this._maStatuses = [];
+    this._maExpectingEnd = false;
+    this._localPlaylist = [];
+    this._localStatuses = [];
+    this._localCurrentIndex = -1;
+    this._localPlaylistSignature = '';
+    if (this.maPlaylist) this._refreshMaPlaylistView(false).catch(() => {});
+    this._loadLocalPlaylistFromApi(true).catch(() => {});
     this.isPlaying = false;
     this.xiaomiMiotState = null;
     this._mediaPlayerState = { activeTabIndex: 0, activePlaylistIndex: -1, activeItemIndex: -1 };
@@ -2712,6 +2724,12 @@ class XiaoshiMusicCard extends LitElement {
       || this.xiaomiMiotEntity || null;
   }
 
+  // MA 播放媒体实体（当前激活的 MA 音箱）。后端 ma_playlist / 切歌控制按此逐音箱区分，
+  // 避免多音箱共用同一份播放列表。
+  _maMediaEntity() {
+    return this.maPlayerEntity || this._localMediaEntity() || null;
+  }
+
   // 从本地音乐 uri 中提取文件名（去掉目录与后缀），如 "歌曲.mp3" → "歌曲"
   _localFileName(uri) {
     if (!uri) return '';
@@ -2804,7 +2822,7 @@ class XiaoshiMusicCard extends LitElement {
   // 清空 MA 空播放列表（best-effort，仅 WS 可用时）
   async _clearLocalMaPlaylistTracks() {
     // 同步清空后端 ma_playlist_data（与本地 api 列表互斥：两者都空 → 小米电台模式）
-    const mp = this._localMediaEntity();
+    const mp = this._maMediaEntity();
     if (mp) { try { await this._clearMaPlaylistApi(mp); } catch (e) {} }
     if (!this.maPlaylist || !this._isMaWsReady()) return;
     try {
@@ -3139,7 +3157,7 @@ class XiaoshiMusicCard extends LitElement {
 
   // 调用后端切歌控制接口，由后端计算下一首/上一首/指定曲目并返回 track + current_index
   async _maControlApi(action, index) {
-    const mp = this._localMediaEntity();
+    const mp = this._maMediaEntity();
     if (!mp) return null;
     try {
       const body = { media_player: mp, action };
@@ -4769,8 +4787,8 @@ class XiaoshiMusicCard extends LitElement {
       }
     } catch(e){}
     if (this._maPlaylistTracks.length > 0) playlist.track_count = this._maPlaylistTracks.length;
-    // 展开子歌单时也同步到后端 ma_playlist_data
-    const mp = this._localMediaEntity();
+    // 展开子歌单时也同步到后端 ma_playlist_data（按 MA 音箱实体区分）
+    const mp = this._maMediaEntity();
     if (mp && this._maPlaylistTracks.length) { this._setMaPlaylistApi(mp, this._maPlaylistTracks).catch(() => {}); }
     this._maPlaylistTracksLoading=false; this._maUpdate?.();
   }
@@ -4856,7 +4874,7 @@ class XiaoshiMusicCard extends LitElement {
       // 1) 整张列表写入后端 ma_playlist（current_index=0），作为播放位置唯一数据源
       this._maStatuses = addedTracks.map(() => 'unplayed');
       this._maPlayingIndex = -1;
-      const mp = this._localMediaEntity();
+      const mp = this._maMediaEntity();
       if (mp && addedTracks.length) {
         this._setMaPlaylistApi(mp, addedTracks.map(it => ({
           name: it.name || it.title || '',
@@ -4927,7 +4945,7 @@ class XiaoshiMusicCard extends LitElement {
   // 播放列表实时显示：从后端 API 抓取 ma_playlist（含 current_index）并刷新主卡片视图
   // 新模型下后端是播放位置唯一数据源；switchView=true 时切到播放列表视图
   async _refreshMaPlaylistView(switchView = true) {
-    const mp = this._localMediaEntity();
+    const mp = this._maMediaEntity();
     if (!mp) return;
     try {
       const data = await this._fetchMaPlaylist(mp);
@@ -4972,7 +4990,7 @@ class XiaoshiMusicCard extends LitElement {
     this._setChannel('ma');
     this._pauseOtherChannelsForMa();
     // 播放单个歌单即写后端 ma_playlist_data，供模式推导（ma 有曲目 → MA 模式）
-    { const mp = this._localMediaEntity(); if (mp) { this._setMaPlaylistApi(mp, [{ name: playlist.name || playlist.title || '', artist: playlist.artist || '', uri: playUri, duration: 0, image_url: playlist.image_url || playlist.artwork_url || '' }]).catch(() => {}); } }
+    { const mp = this._maMediaEntity(); if (mp) { this._setMaPlaylistApi(mp, [{ name: playlist.name || playlist.title || '', artist: playlist.artist || '', uri: playUri, duration: 0, image_url: playlist.image_url || playlist.artwork_url || '' }]).catch(() => {}); } }
     if (!this.maPlaylist) { this._maPlaylistsError = '请先配置播放列表参数 (ma_playlist)'; this._maUpdate?.(); return; }
     this._maOverlay.source = 'qqmusic';
     this._maOverlay.active = true;
@@ -5002,7 +5020,7 @@ class XiaoshiMusicCard extends LitElement {
     this._pauseOtherChannelsForMa();
     this._lastPlaySource = 'qqmusic'; try { localStorage.setItem(this._getLastSourceKey(), 'qqmusic'); } catch (e) {}
     // 播放单首即写后端 ma_playlist_data，供模式推导（ma 有曲目 → MA 模式）
-    { const mp = this._localMediaEntity(); if (mp) { this._setMaPlaylistApi(mp, [{ name: track.name || '', artist: track.artist || '', uri: mu, duration: track.duration || 0, image_url: track.image_url || track.artwork_url || '' }]).catch(() => {}); } }
+    { const mp = this._maMediaEntity(); if (mp) { this._setMaPlaylistApi(mp, [{ name: track.name || '', artist: track.artist || '', uri: mu, duration: track.duration || 0, image_url: track.image_url || track.artwork_url || '' }]).catch(() => {}); } }
     if (!this.maPlaylist) { this._maPlaylistsError = '请先配置播放列表参数 (ma_playlist)'; this._maUpdate?.(); return; }
     this._maPlaylistPlaying = mu; this._maUpdate?.();
     this._activeOverlaySource = 'qqmusic';
@@ -5105,7 +5123,7 @@ class XiaoshiMusicCard extends LitElement {
     }
     this._setChannel('ma'); this._pauseOtherChannelsForMa();
     // 把当前“我喜欢”曲目显式写后端 ma_playlist_data（不依赖 _playViaEmptyPlaylist 内部展开，避免展开失败写空）
-    { const mp = this._localMediaEntity(); if (mp && this._favTracks.length) { this._setMaPlaylistApi(mp, this._favTracks).catch(() => {}); } }
+    { const mp = this._maMediaEntity(); if (mp && this._favTracks.length) { this._setMaPlaylistApi(mp, this._favTracks).catch(() => {}); } }
     this._maOverlay.source = 'qqmusic'; this._maOverlay.active = true; this._activeOverlaySource = 'qqmusic';
     // 立即显示“我喜欢”播放列表（弹窗已加载好的曲目），无需等待 WS，列表瞬间出现
     if (this._favTracks.length) {
@@ -5138,7 +5156,7 @@ class XiaoshiMusicCard extends LitElement {
     }
     this._setChannel('ma'); this._pauseOtherChannelsForMa();
     // 把单曲显式写后端 ma_playlist_data（ma 有曲目 → MA 模式）
-    { const mp = this._localMediaEntity(); if (mp) { this._setMaPlaylistApi(mp, [{ name: track.name || '', artist: track.artist || '', uri: mu, duration: track.duration || 0, image_url: track.image_url || track.artwork_url || '' }]).catch(() => {}); } }
+    { const mp = this._maMediaEntity(); if (mp) { this._setMaPlaylistApi(mp, [{ name: track.name || '', artist: track.artist || '', uri: mu, duration: track.duration || 0, image_url: track.image_url || track.artwork_url || '' }]).catch(() => {}); } }
     this._maOverlay.source = 'qqmusic'; this._maOverlay.active = true; this._activeOverlaySource = 'qqmusic';
     this._favUpdate?.();
     try {
@@ -6403,7 +6421,8 @@ class XiaoshiMusicCard extends LitElement {
   // 清空播放列表：清空所有前端播放列表 + 后端 api 列表 + 终止播放
   async _clearPlaylist() {
     this._handleClick();
-    const mp = this._localMediaEntity();
+    const localMp = this._localMediaEntity();
+    const maMp = this._maMediaEntity();
     // 1、清空所有前端播放列表（内存）
     this._localPlaylist = [];
     this._localStatuses = [];
@@ -6415,9 +6434,9 @@ class XiaoshiMusicCard extends LitElement {
     this._maPlaylistTracksLoading = false;
     this._favTracks = [];
     this._currentPlaylistData = null;
-    // 2、清空后端 api 列表（本地 + MA，两者都空 → 小米电台模式）
-    if (mp) { try { await this._clearLocalPlaylist(mp); } catch (e) {} }
-    if (mp) { try { await this._clearMaPlaylistApi(mp); } catch (e) {} }
+    // 2、清空后端 api 列表（本地 + MA，两者都空 → 小米电台模式；注意两者 key 不同：本地=本地播放器，MA=MA音箱）
+    if (localMp) { try { await this._clearLocalPlaylist(localMp); } catch (e) {} }
+    if (maMp) { try { await this._clearMaPlaylistApi(maMp); } catch (e) {} }
     // 3、终止播放（不论当前是哪个通道）
     const targetEntity = this._getActiveTargetEntity();
     if (targetEntity && this._hass) {
