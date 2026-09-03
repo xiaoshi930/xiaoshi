@@ -7,5 +7,5 @@
   "dependencies": ["switch", "select"],
   "requirements": ["aiohttp"],
   "integration_type": "device",
-  "version": "2026.7.4.02"
+  "version": "2026.8.3.01"
 }
