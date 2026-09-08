@@ -301,6 +301,14 @@ class XiaoshiPhoneCardEditor extends LitElement {
                         <option value="media" .selected="${c.background && c.background.type === 'media'}">图片/视频</option>
                     </select>
                 </div>
+                <div class="form-row">
+                    <label>顶部空白空间</label>
+                    <input type="text" name="top_space" .value="${c.top_space || '0vh'}" @change="${this._valueChanged}" placeholder="0vh"></input>
+                </div>
+                <div class="form-row">
+                    <label>卡片高度</label>
+                    <input type="text" name="card_height" .value="${c.card_height || '100vh'}" @change="${this._valueChanged}" placeholder="100vh"></input>
+                </div>
                 ${c.background && c.background.type && c.background.type !== 'none' ? html`
                 <div class="card-section">
                     <div class="card-section-title">用户绑定</div>
@@ -371,21 +379,22 @@ class XiaoshiPhoneCard extends LitElement {
 
     static get styles() {
         return css`            :host { display: block; width: 100vw; height: 100vh; overflow: visible; max-width: 500px; }
-            .phone-container { width: 100%; height: 100%; display: flex; flex-direction: column; box-sizing: border-box; position: relative; }
+            .phone-container { width: 100%; height: 100%; display: flex; flex-direction: column; box-sizing: border-box; position: relative; --top-space: 0vh; --card-height: 100vh; --scale: calc((var(--card-height) - var(--top-space)) / 100vh); }
             .bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; }
             .bg-layer img, .bg-layer video { width: 100%; height: 100%; object-fit: cover; }
-            .content-layer { position: relative; z-index: 1; display: flex; flex-direction: column; width: 100%; height: 100%; box-sizing: border-box; }
-            .top-row { display: flex; width: 100%; height: 14vh; flex-shrink: 0; overflow: visible; }
-            .avatar-area { padding: 1vh min(4vw, 20px) 1vh min(7.5vw, 37.5px); width: 20vw; max-width: 90px; height: 14vh; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-sizing: border-box; overflow: visible; }
-            .header-info-area { padding: 1vh min(2vw, 10px) 1vh min(2.5vw, 12.5px); width: 80vw; max-width: 400px; height: 14vh; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr); gap: 1vh min(2vw, 10px); box-sizing: border-box; overflow: visible; align-items: center; justify-items: center; flex-shrink: 1; min-width: 0; }
-            .dynamic-row { display: flex; width: 100vw; max-width: 500px; height: 5vh; flex-shrink: 0; }
-            .dynamic-area { width: 80vw; max-width: 400px; height: 5vh; display: flex; align-items: center; justify-content: flex-start; flex-shrink: 0; }
-            .btn-area { width: 20vw; max-width: 100px; height: 5vh; display: flex; align-items: center; justify-content: flex-end; padding-right: min(2.5vw, 12.5px); box-sizing: border-box; flex-shrink: 0; gap: min(1vw, 5px); }
+            .content-layer { position: relative; z-index: 1; display: flex; flex-direction: column; width: 100%; height: 100%; box-sizing: border-box; overflow: hidden; }
+            .top-space { width: 100%; height: var(--top-space); flex-shrink: 0; background: transparent; }
+            .top-row { display: flex; width: 100%; height: calc(14vh * var(--scale)); flex-shrink: 0; overflow: visible; }
+            .avatar-area { padding: 1vh min(4vw, 20px) 1vh min(7.5vw, 37.5px); width: 20vw; max-width: 90px; height: calc(14vh * var(--scale)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-sizing: border-box; overflow: visible; }
+            .header-info-area { padding: 1vh min(2vw, 10px) 1vh min(2.5vw, 12.5px); width: 80vw; max-width: 400px; height: calc(14vh * var(--scale)); display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr); gap: 1vh min(2vw, 10px); box-sizing: border-box; overflow: visible; align-items: center; justify-items: center; flex-shrink: 1; min-width: 0; }
+            .dynamic-row { display: flex; width: 100vw; max-width: 500px; height: calc(5vh * var(--scale)); flex-shrink: 0; }
+            .dynamic-area { width: 80vw; max-width: 400px; height: calc(5vh * var(--scale)); display: flex; align-items: center; justify-content: flex-start; flex-shrink: 0; }
+            .btn-area { width: 20vw; max-width: 100px; height: calc(5vh * var(--scale)); display: flex; align-items: center; justify-content: flex-end; padding-right: min(2.5vw, 12.5px); box-sizing: border-box; flex-shrink: 0; gap: min(1vw, 5px); }
             .fullscreen-btn, .media-toggle-btn { width: 3.2vh; height: 3.2vh; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: none; border: none; background: var(--btn-bg, transparent); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border-radius: 4px; font-size: 18px; padding: 0; opacity: 0.6; transition: opacity 0.2s; border-radius: 8px; }
             .media-toggle-btn ha-icon { --mdi-icon-size: 1.8vh; display: inline-flex; width: 1.8vh; height: 1.8vh; margin-top: -0.7vh; margin-left: 0vh; }
             .fullscreen-btn:active ha-icon, .media-toggle-btn:active ha-icon { box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); transform: scale(0.95); }
-            .room-area { width: 100vw; max-width: 500px; height: 77vh; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1vh min(3vw, 15px); padding: 0 min(2.5vw, 12.5px); box-sizing: border-box; align-items: start; align-content: start; justify-items: center; overflow-y: auto; flex-shrink: 0; }
-            .footer-area { width: 100vw; max-width: 500px; height: 4vh; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+            .room-area { width: 100vw; max-width: 500px; height: calc(77vh * var(--scale)); display: grid; grid-template-columns: repeat(2, 1fr); gap: 1vh min(3vw, 15px); padding: 0 min(2.5vw, 12.5px); box-sizing: border-box; align-items: start; align-content: start; justify-items: center; overflow-y: auto; }
+            .footer-area { width: 100vw; max-width: 500px; height: calc(4vh * var(--scale)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
             .footer-area .card-slot { width: auto; height: 100%; display: flex; align-items: center; justify-content: center; }
             .card-slot { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: visible; }
             .header-info-area .card-slot { max-width: 100%; max-height: 100%; }
@@ -932,9 +941,10 @@ class XiaoshiPhoneCard extends LitElement {
         }
 
         return html`
-            <div class="phone-container" style="background-color: ${bgColor}">
+            <div class="phone-container" style="background-color: ${bgColor}; --top-space: ${c.top_space || '0vh'}; --card-height: ${c.card_height || '100vh'}">
                 ${bgLayer}
                 <div class="content-layer">
+                    <div class="top-space"></div>
                     <div class="top-row">
                         <div class="avatar-area">
                             ${avatarCards.map(el => html`<div class="card-slot">${el}</div>`)}
