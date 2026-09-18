@@ -301,14 +301,6 @@ class XiaoshiPhoneCardEditor extends LitElement {
                         <option value="media" .selected="${c.background && c.background.type === 'media'}">图片/视频</option>
                     </select>
                 </div>
-                <div class="form-row">
-                    <label>顶部空白空间</label>
-                    <input type="text" name="top_space" .value="${c.top_space || '0vh'}" @change="${this._valueChanged}" placeholder="0vh"></input>
-                </div>
-                <div class="form-row">
-                    <label>卡片高度</label>
-                    <input type="text" name="card_height" .value="${c.card_height || '100vh'}" @change="${this._valueChanged}" placeholder="100vh"></input>
-                </div>
                 ${c.background && c.background.type && c.background.type !== 'none' ? html`
                 <div class="card-section">
                     <div class="card-section-title">用户绑定</div>
@@ -379,22 +371,29 @@ class XiaoshiPhoneCard extends LitElement {
 
     static get styles() {
         return css`            :host { display: block; width: 100vw; height: 100vh; overflow: visible; max-width: 500px; }
-            .phone-container { width: 100%; height: 100%; display: flex; flex-direction: column; box-sizing: border-box; position: relative; --top-space: 0vh; --card-height: 100vh; --scale: calc((var(--card-height) - var(--top-space)) / 100vh); }
+            .phone-container { width: 100%; height: 100%; display: flex; flex-direction: column; box-sizing: border-box; position: relative; }
             .bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; }
             .bg-layer img, .bg-layer video { width: 100%; height: 100%; object-fit: cover; }
-            .content-layer { position: relative; z-index: 1; display: flex; flex-direction: column; width: 100%; height: 100%; box-sizing: border-box; overflow: hidden; }
-            .top-space { width: 100%; height: var(--top-space); flex-shrink: 0; background: transparent; }
-            .top-row { display: flex; width: 100%; height: calc(14vh * var(--scale)); flex-shrink: 0; overflow: visible; }
-            .avatar-area { padding: 1vh min(4vw, 20px) 1vh min(7.5vw, 37.5px); width: 20vw; max-width: 90px; height: calc(14vh * var(--scale)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-sizing: border-box; overflow: visible; }
-            .header-info-area { padding: 1vh min(2vw, 10px) 1vh min(2.5vw, 12.5px); width: 80vw; max-width: 400px; height: calc(14vh * var(--scale)); display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr); gap: 1vh min(2vw, 10px); box-sizing: border-box; overflow: visible; align-items: center; justify-items: center; flex-shrink: 1; min-width: 0; }
-            .dynamic-row { display: flex; width: 100vw; max-width: 500px; height: calc(5vh * var(--scale)); flex-shrink: 0; }
-            .dynamic-area { width: 80vw; max-width: 400px; height: calc(5vh * var(--scale)); display: flex; align-items: center; justify-content: flex-start; flex-shrink: 0; }
-            .btn-area { width: 20vw; max-width: 100px; height: calc(5vh * var(--scale)); display: flex; align-items: center; justify-content: flex-end; padding-right: min(2.5vw, 12.5px); box-sizing: border-box; flex-shrink: 0; gap: min(1vw, 5px); }
+            /* 安全区（iOS 刘海 / 状态栏 / Home 指示条）由卡片自己承担：
+               --kiosk-safe-*-auto 由 render() 在全屏时写入（基于 env() 与 HA 变量取最大值），
+               若主题里定义了 --kiosk-safe-top / --kiosk-safe-bottom，则以主题值为准（手动兜底入口）。
+               非全屏时两个变量都是 0px，布局与原来完全一致。 */
+            .content-layer { position: relative; z-index: 1; display: flex; flex-direction: column; width: 100%; height: 100%; box-sizing: border-box;
+                padding-top: var(--kiosk-safe-top, var(--kiosk-safe-top-auto, 0px));
+                padding-bottom: var(--kiosk-safe-bottom, var(--kiosk-safe-bottom-auto, 0px)); }
+            /* 行高统一用百分比（相对 .content-layer 的内容盒），
+               这样内容盒被安全区内边距压缩后，各行按比例收缩，不会溢出到状态栏/Home 指示条下面 */
+            .top-row { display: flex; width: 100%; height: 14%; flex-shrink: 0; overflow: visible; }
+            .avatar-area { padding: 1vh min(4vw, 20px) 1vh min(7.5vw, 37.5px); width: 20vw; max-width: 90px; height: 100%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-sizing: border-box; overflow: visible; }
+            .header-info-area { padding: 1vh min(2vw, 10px) 1vh min(2.5vw, 12.5px); width: 80vw; max-width: 400px; height: 100%; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr); gap: 1vh min(2vw, 10px); box-sizing: border-box; overflow: visible; align-items: center; justify-items: center; flex-shrink: 1; min-width: 0; }
+            .dynamic-row { display: flex; width: 100vw; max-width: 500px; height: 5%; flex-shrink: 0; }
+            .dynamic-area { width: 80vw; max-width: 400px; height: 100%; display: flex; align-items: center; justify-content: flex-start; flex-shrink: 0; }
+            .btn-area { width: 20vw; max-width: 100px; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: min(2.5vw, 12.5px); box-sizing: border-box; flex-shrink: 0; gap: min(1vw, 5px); }
             .fullscreen-btn, .media-toggle-btn { width: 3.2vh; height: 3.2vh; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: none; border: none; background: var(--btn-bg, transparent); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border-radius: 4px; font-size: 18px; padding: 0; opacity: 0.6; transition: opacity 0.2s; border-radius: 8px; }
             .media-toggle-btn ha-icon { --mdi-icon-size: 1.8vh; display: inline-flex; width: 1.8vh; height: 1.8vh; margin-top: -0.7vh; margin-left: 0vh; }
             .fullscreen-btn:active ha-icon, .media-toggle-btn:active ha-icon { box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); transform: scale(0.95); }
-            .room-area { width: 100vw; max-width: 500px; height: calc(77vh * var(--scale)); display: grid; grid-template-columns: repeat(2, 1fr); gap: 1vh min(3vw, 15px); padding: 0 min(2.5vw, 12.5px); box-sizing: border-box; align-items: start; align-content: start; justify-items: center; overflow-y: auto; }
-            .footer-area { width: 100vw; max-width: 500px; height: calc(4vh * var(--scale)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+            .room-area { width: 100vw; max-width: 500px; height: 77%; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1vh min(3vw, 15px); padding: 0 min(2.5vw, 12.5px); box-sizing: border-box; align-items: start; align-content: start; justify-items: center; overflow-y: auto; flex-shrink: 0; }
+            .footer-area { width: 100vw; max-width: 500px; height: 4%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
             .footer-area .card-slot { width: auto; height: 100%; display: flex; align-items: center; justify-content: center; }
             .card-slot { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: visible; }
             .header-info-area .card-slot { max-width: 100%; max-height: 100%; }
@@ -430,68 +429,108 @@ class XiaoshiPhoneCard extends LitElement {
         if (isKiosk !== this._kioskWasOn) {
             this._kioskWasOn = isKiosk;
             this._applyKioskMode(isKiosk);
+            return;
         }
+        // 兜底：HA 重建 hui-root（切换面板 / 主题重载 / 视图重渲染）后注入的样式会全部丢失，
+        // 而 _kioskWasOn 仍为 true，会造成「全屏看起来开着但实际没生效」→ 检测到缺失就补注入
+        if (isKiosk && this._kioskStyleMissing()) {
+            this._applyKioskMode(true);
+        }
+    }
+
+    /* 定位 kiosk 相关节点（全部可选链，任一环节缺失都不会抛错） */
+    _findKioskNodes() {
+        const ha = document.querySelector('home-assistant');
+        const main = ha?.shadowRoot?.querySelector('home-assistant-main');
+        const drawer = main?.shadowRoot?.querySelector('ha-drawer');
+        const panel = drawer?.querySelector('ha-panel-lovelace');
+        const huiRoot = panel?.shadowRoot?.querySelector('hui-root');
+        return {
+            ha,
+            main,
+            drawer,
+            drawerSR: drawer?.shadowRoot || null,
+            huiRootSR: huiRoot?.shadowRoot || null
+        };
+    }
+
+    _kioskStyleMissing() {
+        const { main, huiRootSR } = this._findKioskNodes();
+        if (!huiRootSR || !main) return false;
+        if (!huiRootSR.querySelector('#xiaoshi-kiosk-header-style')) return true;
+        if (!document.head.querySelector('#xiaoshi-kiosk-global-style')) return true;
+        const toolbar = huiRootSR.querySelector('.toolbar');
+        if (toolbar && !toolbar.querySelector('#xiaoshi-kiosk-menubutton-style')) return true;
+        return false;
+    }
+
+    /* 向 shadow root / head 幂等写入样式（内容不变则不动 DOM） */
+    _setStyleIn(root, id, text) {
+        if (!root) return;
+        let el = root.querySelector('#' + id);
+        if (!el) {
+            el = document.createElement('style');
+            el.id = id;
+            root.appendChild(el);
+        }
+        if (el.textContent !== text) el.textContent = text;
     }
 
     _applyKioskMode(on) {
         try {
-            const ha = document.querySelector('home-assistant');
-            if (!ha?.shadowRoot) return;
-
-            const main = ha.shadowRoot.querySelector('home-assistant-main');
-            if (!main?.shadowRoot) return;
-
-            const drawer = main.shadowRoot.querySelector('ha-drawer');
-            const drawerSR = drawer?.shadowRoot;
-            const panel = drawer?.querySelector('ha-panel-lovelace');
-            const huiRoot = panel?.shadowRoot?.querySelector('hui-root');
-            const huiRootSR = huiRoot?.shadowRoot;
+            const { main, drawerSR, huiRootSR } = this._findKioskNodes();
 
             if (on) {
-                // === Hide Header (in hui-root shadow root) ===
-                if (huiRootSR && !huiRootSR.querySelector('#xiaoshi-kiosk-header-style')) {
-                    const style = document.createElement('style');
-                    style.id = 'xiaoshi-kiosk-header-style';
-                    style.textContent = `
-                        .header { display: none !important; }
-                        #view {
-                            min-height: 100vh !important;
-                            --kiosk-header-height: 0px;
-                            padding-top: calc(var(--kiosk-header-height) + var(--safe-area-inset-top)) !important;
-                        }
-                    `;
-                    huiRootSR.appendChild(style);
-                }
+                // === 隐藏 header + 清零视图容器内边距 ===
+                // 说明：原来这里是 padding-top: calc(var(--kiosk-header-height) + var(--safe-area-inset-top))。
+                // 问题 1：--safe-area-inset-top 在 HA 里的定义是
+                //         var(--app-safe-area-inset-top, env(safe-area-inset-top, 0px))，
+                //         原生 App（iOS/Android Companion）注入的 --app-safe-area-inset-* 优先级高于 env()，
+                //         它一旦是 0px，env() 兜底就被吃掉 → 整条 padding-top 变成 0，内容直接顶进状态栏。
+                //         变量未定义时整条 calc 也会在计算值阶段失效（回落到 padding: 0），同样顶上去。
+                // 问题 2：容器留出安全区内边距、而卡片自身是 height: 100vh，
+                //         两者相加会让文档比视口高出一个刘海的高度 → iOS 页面变成可滚动/可橡皮筋回弹，
+                //         一滑动内容就钻到状态栏下面。
+                // 所以这里改为「容器彻底全屏零内边距 + 卡片内部自己加安全区内边距」：
+                // 背景图/视频仍然满屏铺到状态栏与 Home 指示条，内容却严格落在安全区内，且页面不再可滚动。
+                this._setStyleIn(huiRootSR, 'xiaoshi-kiosk-header-style', `
+                    .header { display: none !important; }
+                    #view,
+                    hui-view-container,
+                    hui-view-container.has-tab-bar {
+                        box-sizing: border-box !important;
+                        min-height: 100vh !important;
+                        padding: 0 !important;
+                        --view-container-padding-top: 0px !important;
+                        --view-container-padding-bottom: 0px !important;
+                    }
+                `);
+
+                // 禁止 iOS 橡皮筋回弹把内容拖到状态栏底下（仅全屏期间生效）
+                this._setStyleIn(document.head, 'xiaoshi-kiosk-global-style', `
+                    html, body { overscroll-behavior: none !important; }
+                `);
 
                 // === Hide Sidebar (in ha-drawer shadow root) ===
-                if (drawerSR && !drawerSR.querySelector('#xiaoshi-kiosk-sidebar-style')) {
-                    const style = document.createElement('style');
-                    style.id = 'xiaoshi-kiosk-sidebar-style';
-                    style.textContent = `
-                        :host {
-                            --ha-sidebar-width: 0px !important;
-                            --kiosk-sidebar-width: 0px !important;
-                        }
-                        ha-sidebar { display: none !important; }
-                        wa-drawer, .sidebar-shell { display: none !important; }
-                        partial-panel-resolver { --mdc-top-app-bar-width: 100% !important; }
-                    `;
-                    drawerSR.appendChild(style);
-                }
+                this._setStyleIn(drawerSR, 'xiaoshi-kiosk-sidebar-style', `
+                    :host {
+                        --ha-sidebar-width: 0px !important;
+                        --kiosk-sidebar-width: 0px !important;
+                    }
+                    ha-sidebar { display: none !important; }
+                    wa-drawer, .sidebar-shell { display: none !important; }
+                    partial-panel-resolver { --mdc-top-app-bar-width: 100% !important; }
+                `);
 
                 // === Hide menu burger button in toolbar ===
-                const toolbar = huiRootSR?.querySelector('.toolbar');
-                if (toolbar && !toolbar.querySelector('#xiaoshi-kiosk-menubutton-style')) {
-                    const style = document.createElement('style');
-                    style.id = 'xiaoshi-kiosk-menubutton-style';
-                    style.textContent = `
-                        ha-menu-button { display: none !important; }
-                    `;
-                    toolbar.appendChild(style);
-                }
+                this._setStyleIn(
+                    huiRootSR?.querySelector('.toolbar'),
+                    'xiaoshi-kiosk-menubutton-style',
+                    'ha-menu-button { display: none !important; }'
+                );
 
                 // === Block toggle menu event ===
-                if (!this._blockToggleMenu) {
+                if (!this._blockToggleMenu && main) {
                     this._blockToggleMenu = (e) => { e.preventDefault(); e.stopImmediatePropagation(); };
                     main.addEventListener('hass-toggle-menu', this._blockToggleMenu, true);
                 }
@@ -499,12 +538,12 @@ class XiaoshiPhoneCard extends LitElement {
                 // === Remove all injected kiosk styles ===
                 huiRootSR?.querySelector('#xiaoshi-kiosk-header-style')?.remove();
                 drawerSR?.querySelector('#xiaoshi-kiosk-sidebar-style')?.remove();
-                const toolbar = huiRootSR?.querySelector('.toolbar');
-                toolbar?.querySelector('#xiaoshi-kiosk-menubutton-style')?.remove();
+                huiRootSR?.querySelector('.toolbar')?.querySelector('#xiaoshi-kiosk-menubutton-style')?.remove();
+                document.head.querySelector('#xiaoshi-kiosk-global-style')?.remove();
 
                 // === Remove toggle menu blocker ===
                 if (this._blockToggleMenu) {
-                    main.removeEventListener('hass-toggle-menu', this._blockToggleMenu, true);
+                    main?.removeEventListener('hass-toggle-menu', this._blockToggleMenu, true);
                     this._blockToggleMenu = null;
                 }
             }
@@ -909,6 +948,16 @@ class XiaoshiPhoneCard extends LitElement {
     render() {
         const theme = this._evaluateTheme();
         const bgColor = theme === 'dark' ? 'rgb(0,0,0)' : 'rgb(230,230,230)';
+        // 全屏（kiosk）时才注入安全区；非全屏保持 0px，不影响原有布局。
+        // 取 max(HA变量, env()) 的原因：HA 的 --safe-area-inset-top 可能是被 App 覆盖掉的 0px，
+        // 而 env() 才是 iOS 硬件真实的刘海/状态栏高度，两者取大值才不会漏掉状态栏。
+        const kiosk = this._isKioskOn();
+        const safeTopAuto = kiosk
+            ? 'max(var(--safe-area-inset-top, 0px), env(safe-area-inset-top, 0px))'
+            : '0px';
+        const safeBottomAuto = kiosk
+            ? 'max(var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px))'
+            : '0px';
         const c = this.config || {};
         const roomCards = this._cardElements.room || [];
         const roomRows = Math.max(4, Math.ceil(roomCards.length / 2));
@@ -941,10 +990,9 @@ class XiaoshiPhoneCard extends LitElement {
         }
 
         return html`
-            <div class="phone-container" style="background-color: ${bgColor}; --top-space: ${c.top_space || '0vh'}; --card-height: ${c.card_height || '100vh'}">
+            <div class="phone-container" style="background-color: ${bgColor}; --kiosk-safe-top-auto: ${safeTopAuto}; --kiosk-safe-bottom-auto: ${safeBottomAuto}">
                 ${bgLayer}
                 <div class="content-layer">
-                    <div class="top-space"></div>
                     <div class="top-row">
                         <div class="avatar-area">
                             ${avatarCards.map(el => html`<div class="card-slot">${el}</div>`)}
