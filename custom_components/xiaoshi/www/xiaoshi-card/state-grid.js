@@ -1925,7 +1925,10 @@ class  XiaoshiStateGridInfo extends LitElement {
       .balance-icon { width: 80px; height: 80px; margin-bottom: 12px; margin-top: 10px; border-radius: 6px; }
       .balance-time { font-size: 10px; opacity: 0.8; margin-top: -7px; margin-bottom: 4px; text-align: center; }
       .balance-controls-container { display: flex; flex-direction: column; gap: 6px; width: 100%; }
-      .balance-info { border-radius: 6px; text-align: center; flex: 0 0 auto; width: 100%; height: 40px; line-height: 20px; }
+      .balance-info { border-radius: 6px; text-align: center; flex: 0 0 auto; width: 100%; height: 40px; line-height: 20px; cursor: pointer; transition: all 0.2s ease; }
+      .balance-info.active { background: rgba(0, 160, 160, 0.8) !important; color: #00ffff; font-weight: bold; }
+      .balance-info:hover { background: rgba(160, 160, 160, 0.6) !important; }
+      .balance-info.active:hover { background: rgba(0, 160, 160, 0.6) !important; }
       .balance-amount { font-size: 15px; font-weight: bold; margin-top: 1px; white-space: nowrap; }
       .balance-amount .currency { font-size: 10px; }
       .balance-label { font-size: 10px; margin-top: -1px; opacity: 0.9; }
@@ -3367,6 +3370,13 @@ class  XiaoshiStateGridInfo extends LitElement {
     this._handleClick();
   }
 
+  /*按钮功能函数 - 充值记录*/
+  showRecharge() {
+    this.showPanel = this.showPanel === 'recharge' ? '' : 'recharge';
+    this.requestUpdate();
+    this._handleClick();
+  }
+
   _handleClick(){
     const hapticEvent = new Event('haptic', {
       bubbles: true,
@@ -4021,7 +4031,7 @@ class  XiaoshiStateGridInfo extends LitElement {
               <div class="spacer"></div>
               
               <div class="balance-controls-container">
-                <div class="balance-info" style="background: ${BgColor2}">
+                <div class="balance-info ${this.showPanel === 'recharge' ? 'active' : ''}" style="background: ${BgColor2}; cursor: pointer;" @click="${() => this.showRecharge()}">
                   ${(() => {
                     // 明细预警优先级最高
                     let isWarning = false;
@@ -4090,6 +4100,47 @@ class  XiaoshiStateGridInfo extends LitElement {
     `;
   }  
 
+  /*渲染充值记录列表*/
+  renderRecharge() {
+    const selectedEntityId = this._selectedBalanceEntity;
+    if (!selectedEntityId || !this.hass || !this.hass.states[selectedEntityId]) {
+      return html`<div style="padding: 20px; text-align: center;">请选择有效的实体</div>`;
+    }
+    const selectedEntity = this.hass.states[selectedEntityId];
+    // 兼容两种属性命名（state_grid_info 暴露 rechargelist，部分来源可能为 rechargeList）
+    const rechargeList = selectedEntity.attributes?.rechargelist
+      || selectedEntity.attributes?.rechargeList
+      || [];
+    const isLight = this._evaluateTheme() === 'light';
+    const bgColor = isLight ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    const fgColor = isLight ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const subColor = isLight ? 'rgb(120, 120, 120)' : 'rgb(170, 170, 170)';
+
+    if (!rechargeList.length) {
+      return html`<div style="padding: 20px; text-align: center; color: ${fgColor}">暂无充值记录</div>`;
+    }
+
+    const rowStyle = 'display: flex; align-items: center; padding: 6px 8px; font-size: 13px;';
+    return html`
+      <div style="background: ${bgColor}; color: ${fgColor}; border-radius: 8px; overflow: hidden;">
+        <div style="${rowStyle} font-weight: 600; border-bottom: 1px solid ${subColor};">
+          <span style="flex: 1.8; white-space: nowrap;">日期</span>
+          <span style="flex: 1; text-align: right;">金额</span>
+          <span style="flex: 2.4; text-align: right;">渠道</span>
+        </div>
+        ${rechargeList.map(item => html`
+          <div style="border-bottom: 1px solid ${isLight ? 'rgb(240,240,240)' : 'rgb(70,70,70)'};">
+            <div style="${rowStyle}">
+              <span style="flex: 1.8; white-space: nowrap;">${item.pay_date || ''}</span>
+              <span style="flex: 1; text-align: right; color: #f30660; font-weight: 600;">￥${item.amount != null ? item.amount : ''}</span>
+              <span style="flex: 2.4; text-align: right;">${item.channel || ''}</span>
+            </div>
+          </div>
+        `)}
+      </div>
+    `;
+  }
+
   /*渲染整个卡片的主方法*/
   render() {
     return html`
@@ -4113,6 +4164,12 @@ class  XiaoshiStateGridInfo extends LitElement {
         ${this.showPanel === 'monthUsage' ? html`
           <div class="panel-section" >
             ${this.renderChartMonth()}
+          </div>
+        ` : ''}
+
+        ${this.showPanel === 'recharge' ? html`
+          <div class="panel-section" >
+            ${this.renderRecharge()}
           </div>
         ` : ''}
       </div>
