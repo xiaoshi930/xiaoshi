@@ -1,54 +1,71 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="水费">
   <defs>
-    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0091ea"/>
-      <stop offset="50%" stop-color="#00b0ff"/>
-      <stop offset="100%" stop-color="#40c4ff"/>
+    <linearGradient id="waterTile" x1="12%" y1="0%" x2="88%" y2="100%">
+      <stop offset="0%" stop-color="#A5F0FF"/>
+      <stop offset="30%" stop-color="#3FC1F5"/>
+      <stop offset="68%" stop-color="#1976D2"/>
+      <stop offset="100%" stop-color="#0B3C91"/>
     </linearGradient>
-    <linearGradient id="blueDark" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0064b7"/>
-      <stop offset="100%" stop-color="#0091ea"/>
+    <linearGradient id="waterVig" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="38%" stop-color="#04225C" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#04225C" stop-opacity="0.34"/>
     </linearGradient>
-    <radialGradient id="blueGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#80d8ff" stop-opacity="0.3"/>
-      <stop offset="100%" stop-color="#0091ea" stop-opacity="0"/>
+    <radialGradient id="waterGloss" cx="26%" cy="8%" r="82%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.50"/>
+      <stop offset="45%" stop-color="#FFFFFF" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
-    <filter id="glowBlue">
-      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-      <feMerge>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
+    <linearGradient id="waterSheen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="45%" stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="waterHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.26"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="waterGlyph" x1="28%" y1="0%" x2="62%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="58%" stop-color="#F4FBFF"/>
+      <stop offset="100%" stop-color="#D4E9FF"/>
+    </linearGradient>
+    <!-- 水滴右侧内阴影，做出体积 -->
+    <linearGradient id="waterShade" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="48%" stop-color="#1E6FBF" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#1E6FBF" stop-opacity="0.32"/>
+    </linearGradient>
+    <filter id="waterShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4.5" flood-color="#052B63" flood-opacity="0.40"/>
     </filter>
+    <clipPath id="waterClip"><rect x="0" y="0" width="200" height="200" rx="44"/></clipPath>
+    <clipPath id="waterDropClip">
+      <path d="M100 50 C100 50 142 104 142 124 A42 42 0 0 1 58 124 C58 104 100 50 100 50 Z"/>
+    </clipPath>
   </defs>
 
-  <!-- 外圆环 -->
-  <circle cx="100" cy="100" r="95" fill="none" stroke="url(#blueDark)" stroke-width="4" opacity="0.9"/>
-  <circle cx="100" cy="100" r="90" fill="none" stroke="url(#blueGrad)" stroke-width="1.5" opacity="0.6"/>
+  <g clip-path="url(#waterClip)">
+    <rect width="200" height="200" fill="url(#waterTile)"/>
+    <rect width="200" height="200" fill="url(#waterVig)"/>
+    <rect width="200" height="200" fill="url(#waterGloss)"/>
+    <rect x="-60" y="50" width="320" height="56" transform="rotate(-26 100 100)" fill="url(#waterSheen)"/>
 
-  <!-- 背景球体 -->
-  <circle cx="100" cy="100" r="82" fill="url(#blueGlow)"/>
+    <circle cx="100" cy="106" r="60" fill="url(#waterHalo)"/>
 
-  <!-- 波浪经纬线 -->
-  <path d="M18 100 Q60 80 100 100 Q140 120 182 100" fill="none" stroke="url(#blueGrad)" stroke-width="1.2" opacity="0.5"/>
-  <path d="M18 100 Q60 120 100 100 Q140 80 182 100" fill="none" stroke="url(#blueGrad)" stroke-width="1" opacity="0.4"/>
-  <path d="M18 75 Q60 55 100 75 Q140 95 182 75" fill="none" stroke="url(#blueGrad)" stroke-width="1" opacity="0.35"/>
-  <path d="M18 125 Q60 145 100 125 Q140 105 182 125" fill="none" stroke="url(#blueGrad)" stroke-width="1" opacity="0.35"/>
-  <ellipse cx="100" cy="100" rx="40" ry="82" fill="none" stroke="url(#blueGrad)" stroke-width="1" opacity="0.4"/>
-  <ellipse cx="100" cy="100" rx="70" ry="82" fill="none" stroke="url(#blueGrad)" stroke-width="1" opacity="0.4"/>
+    <g filter="url(#waterShadow)">
+      <path d="M100 50 C100 50 142 104 142 124 A42 42 0 0 1 58 124 C58 104 100 50 100 50 Z"
+            fill="url(#waterGlyph)"/>
+    </g>
 
-  <!-- 中心水滴 -->
-  <g filter="url(#glowBlue)">
-    <path d="M100 52 C100 52 72 90 72 112 C72 127 84 139 100 139 C116 139 128 127 128 112 C128 90 100 52 100 52 Z" fill="url(#blueGrad)"/>
-    <path d="M100 52 C100 52 72 90 72 112 C72 127 84 139 100 139 C116 139 128 127 128 112 C128 90 100 52 100 52 Z" fill="none" stroke="#fff" stroke-width="0.8" opacity="0.4"/>
-    <ellipse cx="92" cy="106" rx="6" ry="10" fill="#fff" opacity="0.25"/>
+    <g clip-path="url(#waterDropClip)">
+      <rect x="50" y="40" width="100" height="136" fill="url(#waterShade)"/>
+      <path d="M30 134 Q65 121 100 134 T170 134 L170 200 L30 200 Z" fill="#2E9BF0" opacity="0.60"/>
+      <path d="M30 148 Q65 135 100 148 T170 148 L170 200 L30 200 Z" fill="#0B57A4" opacity="0.52"/>
+    </g>
+
+    <path d="M100 50 C100 50 142 104 142 124 A42 42 0 0 1 58 124 C58 104 100 50 100 50 Z"
+          fill="none" stroke="#FFFFFF" stroke-opacity="0.72" stroke-width="1.6" stroke-linejoin="round"/>
+
+    <rect x="1.6" y="1.6" width="196.8" height="196.8" rx="42.4" fill="none"
+          stroke="#FFFFFF" stroke-opacity="0.28" stroke-width="2"/>
   </g>
-
-  <!-- 内部小圆环 -->
-  <circle cx="100" cy="100" r="38" fill="none" stroke="url(#blueGrad)" stroke-width="1.5" opacity="0.7"/>
-
-  <!-- 顶部中文标签 -->
-  <text x="100" y="42" text-anchor="middle" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif" font-size="30" font-weight="bold" fill="#0091ea" letter-spacing="4">水费</text>
-  <!-- 底部英文标签 -->
-  <text x="100" y="192" text-anchor="middle" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif" font-size="20" fill="#00b0ff" letter-spacing="2" opacity="0.8">WATER</text>
 </svg>

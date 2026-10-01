@@ -1,61 +1,89 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="燃气费">
   <defs>
-    <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#d50000"/>
-      <stop offset="50%" stop-color="#ff1744"/>
-      <stop offset="100%" stop-color="#ff5252"/>
+    <linearGradient id="gasTile" x1="12%" y1="0%" x2="88%" y2="100%">
+      <stop offset="0%" stop-color="#FFD3A8"/>
+      <stop offset="28%" stop-color="#FF9A62"/>
+      <stop offset="64%" stop-color="#EF4438"/>
+      <stop offset="100%" stop-color="#A81C2E"/>
     </linearGradient>
-    <linearGradient id="redDark" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#9b0000"/>
-      <stop offset="100%" stop-color="#d50000"/>
+    <linearGradient id="gasVig" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="38%" stop-color="#580712" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#580712" stop-opacity="0.32"/>
     </linearGradient>
-    <linearGradient id="orangeGrad" x1="0%" y1="100%" x2="0%" y2="0%">
-      <stop offset="0%" stop-color="#ff3d00"/>
-      <stop offset="50%" stop-color="#ff9100"/>
-      <stop offset="100%" stop-color="#ffc400"/>
-    </linearGradient>
-    <radialGradient id="redGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ff8a80" stop-opacity="0.3"/>
-      <stop offset="100%" stop-color="#d50000" stop-opacity="0"/>
+    <radialGradient id="gasGloss" cx="26%" cy="8%" r="82%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.50"/>
+      <stop offset="45%" stop-color="#FFFFFF" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
-    <filter id="glowRed">
-      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-      <feMerge>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
+    <linearGradient id="gasSheen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="45%" stop-color="#FFFFFF" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="gasHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gasGlyph" x1="26%" y1="0%" x2="74%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="55%" stop-color="#FFFCF7"/>
+      <stop offset="100%" stop-color="#FFE3CB"/>
+    </linearGradient>
+    <linearGradient id="gasCore" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#FF9A6B"/>
+      <stop offset="52%" stop-color="#EE3A31"/>
+      <stop offset="100%" stop-color="#A8121E"/>
+    </linearGradient>
+    <filter id="gasShadow" x="-45%" y="-45%" width="190%" height="190%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4.5" flood-color="#4E0510" flood-opacity="0.40"/>
     </filter>
+    <clipPath id="gasClip"><rect x="0" y="0" width="200" height="200" rx="44"/></clipPath>
   </defs>
 
-  <!-- 外圆环 -->
-  <circle cx="100" cy="100" r="95" fill="none" stroke="url(#redDark)" stroke-width="4" opacity="0.9"/>
-  <circle cx="100" cy="100" r="90" fill="none" stroke="url(#redGrad)" stroke-width="1.5" opacity="0.6"/>
+  <g clip-path="url(#gasClip)">
+    <rect width="200" height="200" fill="url(#gasTile)"/>
+    <rect width="200" height="200" fill="url(#gasVig)"/>
+    <rect width="200" height="200" fill="url(#gasGloss)"/>
+    <rect x="-60" y="50" width="320" height="56" transform="rotate(-26 100 100)" fill="url(#gasSheen)"/>
 
-  <!-- 背景球体 -->
-  <circle cx="100" cy="100" r="82" fill="url(#redGlow)"/>
+    <circle cx="100" cy="108" r="62" fill="url(#gasHalo)"/>
 
-  <!-- 经纬线 -->
-  <ellipse cx="100" cy="100" rx="82" ry="30" fill="none" stroke="url(#redGrad)" stroke-width="1.2" opacity="0.5"/>
-  <ellipse cx="100" cy="100" rx="82" ry="55" fill="none" stroke="url(#redGrad)" stroke-width="1" opacity="0.4"/>
-  <ellipse cx="100" cy="100" rx="40" ry="82" fill="none" stroke="url(#redGrad)" stroke-width="1" opacity="0.4"/>
-  <ellipse cx="100" cy="100" rx="65" ry="82" fill="none" stroke="url(#redGrad)" stroke-width="1" opacity="0.4"/>
-  <line x1="18" y1="100" x2="182" y2="100" stroke="url(#redGrad)" stroke-width="1.5" opacity="0.6"/>
+    <g transform="translate(100 104) scale(0.90) translate(-100 -104)">
+      <g filter="url(#gasShadow)">
+        <!-- 外焰：宽底 + 偏向右侧的尖，左侧带内卷舌 -->
+        <path d="M112 30
+                 C120 56 132 74 142 92
+                 C152 110 156 124 152 138
+                 C146 160 126 172 100 172
+                 C74 172 54 160 48 138
+                 C44 124 48 110 58 92
+                 C66 78 74 62 80 44
+                 C84 60 92 70 100 66
+                 C106 60 110 46 112 30 Z"
+              fill="url(#gasGlyph)"/>
+        <!-- 内焰 -->
+        <path d="M100 104
+                 C100 104 112 122 118 132
+                 C124 142 123 150 119 155
+                 C114 165 108 170 100 170
+                 C92 170 86 165 81 155
+                 C77 150 76 142 82 132
+                 C88 122 100 104 100 104 Z"
+              fill="url(#gasCore)"/>
+      </g>
+      <path d="M112 30
+               C120 56 132 74 142 92
+               C152 110 156 124 152 138
+               C146 160 126 172 100 172
+               C74 172 54 160 48 138
+               C44 124 48 110 58 92
+               C66 78 74 62 80 44
+               C84 60 92 70 100 66
+               C106 60 110 46 112 30 Z"
+            fill="none" stroke="#FFFFFF" stroke-opacity="0.72" stroke-width="1.8" stroke-linejoin="round"/>
+    </g>
 
-  <!-- 中心火焰 -->
-  <g filter="url(#glowRed)">
-    <!-- 外焰 -->
-    <path d="M100 148 C85 148 72 135 72 118 C72 100 85 85 95 70 C98 65 100 55 100 55 C100 55 102 65 105 70 C115 85 128 100 128 118 C128 135 115 148 100 148 Z" fill="url(#redGrad)"/>
-    <!-- 内焰 -->
-    <path d="M100 140 C90 140 82 130 82 118 C82 108 90 98 96 88 C98 84 100 78 100 78 C100 78 102 84 104 88 C110 98 118 108 118 118 C118 130 110 140 100 140 Z" fill="url(#orangeGrad)"/>
-    <!-- 焰心 -->
-    <path d="M100 132 C94 132 90 126 90 118 C90 112 94 106 98 100 C99 97 100 94 100 94 C100 94 101 97 102 100 C106 106 110 112 110 118 C110 126 106 132 100 132 Z" fill="#fff9c4" opacity="0.7"/>
+    <rect x="1.6" y="1.6" width="196.8" height="196.8" rx="42.4" fill="none"
+          stroke="#FFFFFF" stroke-opacity="0.28" stroke-width="2"/>
   </g>
-
-  <!-- 内部小圆环 -->
-  <circle cx="100" cy="100" r="38" fill="none" stroke="url(#redGrad)" stroke-width="1.5" opacity="0.7"/>
-
-  <!-- 顶部中文标签 -->
-  <text x="100" y="42" text-anchor="middle" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif" font-size="30" font-weight="bold" fill="#d50000" letter-spacing="4">燃气</text>
-  <!-- 底部英文标签 -->
-  <text x="100" y="192" text-anchor="middle" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif" font-size="20" fill="#ff1744" letter-spacing="2" opacity="0.8">GAS</text>
 </svg>
