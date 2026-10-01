@@ -32,7 +32,6 @@ class LunarCalendarPhone extends LitElement {
       lunar: config?.lunar || 'sensor.lunar_calendar',
       theme: config?.theme || 'system',
       width: config?.width || '99.5%',
-      height: config?.height || '88.4vh',
       date: config?.date || 'date.lunar_tap_date',
       ...config
     };
@@ -419,7 +418,9 @@ class LunarCalendarPhoneDate extends LitElement {
       if (e.target === overlay) this._closePopup();
     });
 
-    // 创建弹窗容器（从顶部开始排布，垂直位置由 popup_top 控制）
+    // 创建弹窗容器
+    // 注意：这里不再加 padding —— 容器是透明的，padding 会让「卡片实际位置 = popup_top + padding」，
+    // 参数就对不上肉眼看到的位置了。去掉后 popup_top 直接等于卡片距屏幕顶部的距离。
     const anim = this.config.popup_animation || 'center';
     const animNameMap = { bottom: 'xiaoshiPhonePopupBottom', top: 'xiaoshiPhonePopupTop', center: 'xiaoshiPhonePopupCenter' };
     const animName = animNameMap[anim] || 'xiaoshiPhonePopupBottom';
@@ -431,9 +432,7 @@ class LunarCalendarPhoneDate extends LitElement {
       transform: translateX(-50%);
       z-index: 1005;
       background: transparent;
-      padding: 20px 0;
       width: 96vw;
-      height: 88.4vh;
       overflow: hidden;
       animation: ${animName} 0.5s ease-out;
     `;
