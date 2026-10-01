@@ -17,6 +17,24 @@ window.customCards.push({
     description: ''
 });
 
+// ==================== 弹窗高度预算 ====================
+// 弹窗顶部距离：支持 px / vh / % / calc() 等任意 CSS 长度，纯数字按 px；留空用默认。
+// 弹窗（负责定位）和卡片（负责算可用高度）两处共用，避免两套解析逻辑跑偏。
+const POPUP_DEFAULT_TOP = '20px';
+// 底部固定留白（px）
+const POPUP_BOTTOM_GAP = 20;
+// 卡片原设计的总高度单位：head 6.5 + 日历 30 + body 6.5×7 + 间距 0.8×8 = 88.4（即原来的 88.4vh）
+const CARD_DESIGN_UNITS = 88.4;
+// 卡片内部 9 个区块各自 padding:2px 与 margin-bottom:-3px 的净差：9×(4-3) = 9px。
+// 算可用高度时先扣掉，卡片才不会比预算高出一截、把底部 20px 挤掉。
+const CARD_INNER_EXTRA = 9;
+
+function resolvePopupTop(raw) {
+  if (raw === undefined || raw === null || String(raw).trim() === '') return POPUP_DEFAULT_TOP;
+  const value = String(raw).trim();
+  return /^-?\d+(\.\d+)?$/.test(value) ? `${value}px` : value;
+}
+
 class LunarCalendarPhone extends LitElement {
   static get properties() {
     return {
@@ -41,17 +59,32 @@ class LunarCalendarPhone extends LitElement {
       .card-container { display: flex; flex-direction: column; gap: 0.8vh; }`;
   }
 
+  // 弹窗内的高度预算：顶部 = popup_top，底部固定 20px，中间全部给卡片主体。
+  // 各段原本写死 6.5 / 30 / 6.5vh（合计 88.4vh），屏幕其实用不满、底部空一大块，
+  // popup_top 一大还会被挤出可视区；这里把可用高度按原比例切给各段 —— 只动高度、不动字号。
+  _popupLayout() {
+    const top = resolvePopupTop(this.config.popup_top);
+    // % 在 height 的 calc 里是按父元素高度算的，和容器 top 的 % 含义不同，统一换成 vh
+    const topForCalc = /^-?\d+(\.\d+)?%$/.test(top) ? `${parseFloat(top)}vh` : top;
+    const avail = `(100dvh - ${topForCalc} - ${POPUP_BOTTOM_GAP + CARD_INNER_EXTRA}px)`;
+    const part = (unit) => `calc(${avail} * ${(unit / CARD_DESIGN_UNITS).toFixed(6)})`;
+    return { head: part(6.5), calendar: part(30), body: part(6.5), gap: part(0.8) };
+  }
+
   render() {
     if (!this.hass) {
       return html`<div>Loading...</div>`;
     }
     const totalHeight = this.config.height;
-    const headHeight = '6.5vh'; 
-    const calendarHeight = '30vh';
-    const bodyHeight = '6.5vh';
+    // 弹窗内按可用空间分配高度；普通卡片（仪表盘上）沿用原来的固定 vh
+    const layout = this.config.in_popup ? this._popupLayout() : null;
+    const headHeight = layout ? layout.head : '6.5vh'; 
+    const calendarHeight = layout ? layout.calendar : '30vh';
+    const bodyHeight = layout ? layout.body : '6.5vh';
+    const containerStyle = `width: ${this.config.width};` + (layout ? ` gap: ${layout.gap};` : '');
     
     return html`
-      <div class="card-container"\n style="width: ${this.config.width};">
+      <div class="card-container"\n style="${containerStyle}">
         <xiaoshi-lunar-calendar-head \n
           .hass=${this.hass}\n
           .config=${this.config}\n
@@ -347,10 +380,7 @@ class LunarCalendarPhoneDate extends LitElement {
   // 支持 vh / px / % / calc() 等任意 CSS 长度，纯数字按 px 处理
   //（方便直接填 0 / 20 / -10）；留空则用默认 20px。
   _resolvePopupTop() {
-    const raw = this.config ? this.config.popup_top : undefined;
-    if (raw === undefined || raw === null || String(raw).trim() === '') return '20px';
-    const value = String(raw).trim();
-    return /^-?\d+(\.\d+)?$/.test(value) ? `${value}px` : value;
+    return resolvePopupTop(this.config ? this.config.popup_top : undefined);
   }
 
   _handleClick(){
@@ -433,7 +463,6 @@ class LunarCalendarPhoneDate extends LitElement {
       z-index: 1005;
       background: transparent;
       width: 96vw;
-      overflow: hidden;
       animation: ${animName} 0.5s ease-out;
     `;
 
@@ -444,9 +473,12 @@ class LunarCalendarPhoneDate extends LitElement {
     this._popupElement = popup;
 
     // 创建卡片
+    // in_popup + popup_top：让卡片按「顶部 = popup_top、底部固定 20px」的剩余空间分配高度
     const cardConfig = {
       type: 'custom:xiaoshi-lunar-calendar-phone',
-      theme: theme
+      theme: theme,
+      in_popup: true,
+      popup_top: popupTop
     };
     this._createPopupCard(popup, cardConfig, hassObj);
 
