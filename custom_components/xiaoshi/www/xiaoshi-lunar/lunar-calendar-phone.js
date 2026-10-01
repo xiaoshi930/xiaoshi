@@ -204,13 +204,26 @@ class LunarCalendarPhoneDateEditor extends LitElement {
             <option value="top">由上往下</option>
           </select>
         </div>
+
+        <div class="form-group">
+          <label>弹窗位置</label>
+          <input
+            type="text"
+            .value=${this.config.popup_top !== undefined ? String(this.config.popup_top) : ''}
+            @change=${this._valueChanged}
+            name="popup_top"
+            placeholder="20px（默认）"
+          />
+          <span style="font-size:12px;color:#888;">弹窗距屏幕顶部的距离，从顶部往下排布（不垂直居中）。可填 20px / 5vh / 10%，纯数字按 px；留空恢复默认 20px。</span>
+        </div>
       </div>
     `;
   }
 
   _valueChanged(e) {
     const { name, value } = e.target;
-    if (!value) return;
+    // popup_top 允许清空（清空 = 恢复默认 20px），其余字段沿用旧行为
+    if (!value && name !== 'popup_top') return;
 
     let processedValue = value;
     if (name === 'simplified') {
@@ -331,6 +344,16 @@ class LunarCalendarPhoneDate extends LitElement {
       }
   } 
 
+  // 弹窗距屏幕顶部的距离（弹窗从顶部开始排布，不做垂直居中）：
+  // 支持 vh / px / % / calc() 等任意 CSS 长度，纯数字按 px 处理
+  //（方便直接填 0 / 20 / -10）；留空则用默认 20px。
+  _resolvePopupTop() {
+    const raw = this.config ? this.config.popup_top : undefined;
+    if (raw === undefined || raw === null || String(raw).trim() === '') return '20px';
+    const value = String(raw).trim();
+    return /^-?\d+(\.\d+)?$/.test(value) ? `${value}px` : value;
+  }
+
   _handleClick(){
     const hapticEvent = new Event('haptic', {
       bubbles: true,
@@ -396,14 +419,15 @@ class LunarCalendarPhoneDate extends LitElement {
       if (e.target === overlay) this._closePopup();
     });
 
-    // 创建弹窗容器
+    // 创建弹窗容器（从顶部开始排布，垂直位置由 popup_top 控制）
     const anim = this.config.popup_animation || 'center';
     const animNameMap = { bottom: 'xiaoshiPhonePopupBottom', top: 'xiaoshiPhonePopupTop', center: 'xiaoshiPhonePopupCenter' };
     const animName = animNameMap[anim] || 'xiaoshiPhonePopupBottom';
+    const popupTop = this._resolvePopupTop();
     const popup = document.createElement('div');
     popup.style.cssText = `
       position: fixed;
-      top: 0px; left: 50%;
+      top: ${popupTop}; left: 50%;
       transform: translateX(-50%);
       z-index: 1005;
       background: transparent;
