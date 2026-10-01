@@ -1645,38 +1645,11 @@ customElements.define('xiaoshi-state-grid-editor',  XiaoshiStateGridEditor);
 /* ==========================================================================
  * XsCanvasChart —— 纯 Canvas 自绘柱状 / 折线混合图表（零依赖）
  *
- * 用于替代 ApexCharts，专门解决在 Home Assistant Shadow DOM 中使用 ApexCharts
- * 时出现的以下问题：
- *   1. annotations / markers 标记错位（Apex 用绝对定位 SVG + JS 计算像素偏移）
- *   2. 柱宽异常变细（Apex 依据渲染瞬间的容器宽度计算 columnWidth，容器宽度为 0
- *      或中途变化时会算出极小值）
- *   3. 切换视图前图表空白（容器 display:none 时宽度为 0，Apex 直接渲染失败）
- *
- * 本实现的所有几何坐标都在绘制那一刻由容器实际像素尺寸算出来，并且自带
- * ResizeObserver，容器从隐形变为可见、或尺寸变化时会自动重绘，因此不存在
- * 上述三类问题。
- *
- * 数据模型（model）：
- * {
- *   theme: 'light' | 'dark',            // 决定条纹/网格/前景色
- *   fg: 'rgb(0,0,0)',                   // 文字与轴线颜色
- *   yMax: 123,                          // 可选，Y 轴上限（会自动取整为整齐刻度）
- *   yTicks: 5,                           // 可选，Y 轴分段数，默认 5
- *   slotCount: 30,                       // 类目数量
- *   slotLabel: (i) => '1' | '',          // 可选，X 轴标签，返回空串表示不显示
- *   barWidthRatio: 0.62,                 // 可选，柱带占类目宽度比例
- *   groups: [                            // 一个 group = 类目内一根柱（堆叠）
- *     { series: [ { name, color, values: [], pointColors?: [] } ] }
- *   ],
- *   lines: [                             // 折线
- *     { name, color, values: [], pointColors?: [], groupIndex: 0, markers: true }
- *   ],
- *   marker: {                            // 可选，最高值标注
- *     slot, value, text, color, groupIndex
- *   },
- *   legend: true,                        // 可选，是否显示图例，默认 true
- *   tooltip: (index) => 'html string'    // 可选，自定义浮层内容
- * }
+ * model: theme / fg / yMax / yTicks / slotCount / slotLabel / sidePad /
+ *        barWidthRatio / groups[{series:[{name,color,values,pointColors}]}] /
+ *        lines[{name,color,values,groupIndex,markers,pointColors}] /
+ *        marker{slot,value,text,color,groupIndex} / legend / tooltip /
+ *        animation / animationDuration / animationStagger / animKey
  * ========================================================================== */
 
 const XS_CHART_FONT_FAMILY = '"Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif';
@@ -1740,7 +1713,16 @@ class XsCanvasChart {
 
     this._model = null;
     this._geo = null;
+    this._geoModel = null;
+    this._geoKey = null;
     this._hover = -1;
+
+    /* 入场动画状态 */
+    this._animP = 1;          // 当前进度 0~1
+    this._animRaf = 0;        // rAF 句柄
+    this._animPending = 0;    // 待启动的动画时长（毫秒），等容器真正可绘制时才开始计时
+    this._animKey = undefined;// 已动画过的数据指纹
+    this._animDur = 0;
 
     this._onMove = (e) => this._handleMove(e);
     this._onLeave = () => this._leaveTip();
@@ -1763,6 +1745,7 @@ class XsCanvasChart {
   }
 
   destroy() {
+    this._stopAnim();
     if (this._ro) {
       try { this._ro.disconnect(); } catch (e) { /* ignore */ }
       this._ro = null;
@@ -1776,12 +1759,41 @@ class XsCanvasChart {
     if (this.tip.parentNode) this.tip.parentNode.removeChild(this.tip);
     this._model = null;
     this._geo = null;
+    this._geoModel = null;
   }
 
   render(model) {
     this._model = model;
     this._hover = -1;
     this._hideTip();
+
+    /*
+     * 入场动画：
+     * - 传了 model.animKey（数据指纹）时，指纹变了才重播；
+     * - 没传指纹时，只在实例的首次绘制播一次。
+     * 这样 hass 刷新 / 容器尺寸变化都不会把动画反复重启。
+     */
+    const dur = this._animDuration(model);
+    const hasKey = !!(model && model.animKey !== undefined && model.animKey !== null);
+    let changed;
+    if (hasKey) {
+      const key = String(model.animKey);
+      changed = key !== this._animKey;
+      this._animKey = key;
+    } else {
+      changed = this._animKey === undefined;
+      if (this._animKey === undefined) this._animKey = '__once__';
+    }
+
+    if (dur > 0 && changed && !this._reducedMotion()) {
+      this._stopAnim();
+      this._animP = 0;
+      this._animPending = dur;   // 真正的计时在 _draw() 里第一次能画出来时才开始
+    } else {
+      this._stopAnim();
+      this._animP = 1;
+    }
+
     this._draw();
     // 再补一帧：卡片刚插入 DOM 时首个绘制时机可能还没完成布局，下一帧重画一次即可
     if (typeof requestAnimationFrame === 'function') {
@@ -1792,11 +1804,57 @@ class XsCanvasChart {
   }
 
   clear() {
+    this._stopAnim();
     this._model = null;
     this._geo = null;
+    this._geoModel = null;
     this._hover = -1;
+    this._animP = 1;
     this._hideTip();
     this._draw();
+  }
+
+  /* -------------------------------------------------------------- 动画 */
+
+  _animDuration(model) {
+    if (!model || model.animation === false) return 0;
+    const d = model.animationDuration === undefined ? 900 : +model.animationDuration;
+    return Number.isFinite(d) && d > 0 ? d : 0;
+  }
+
+  _reducedMotion() {
+    return typeof matchMedia === 'function'
+      && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  _now() {
+    return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  }
+
+  _stopAnim() {
+    this._animPending = 0;
+    if (this._animRaf) {
+      if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(this._animRaf);
+      this._animRaf = 0;
+    }
+  }
+
+  _runAnim(dur) {
+    this._animDur = dur;
+    const t0 = this._now();
+    const tick = () => {
+      const raw = Math.min(1, (this._now() - t0) / dur);
+      // easeOutCubic：起步快、收尾稳，比线性更接近原生观感
+      this._animP = raw >= 1 ? 1 : 1 - Math.pow(1 - raw, 3);
+      this._draw();
+      if (raw < 1) {
+        this._animRaf = requestAnimationFrame(tick);
+      } else {
+        this._animRaf = 0;
+        this._animP = 1;
+      }
+    };
+    this._animRaf = requestAnimationFrame(tick);
   }
 
   /* ------------------------------------------------------------------ 绘制 */
@@ -1813,10 +1871,14 @@ class XsCanvasChart {
     if (cssW < 20 || cssH < 20) return;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
-    canvas.width = Math.round(cssW * dpr);
-    canvas.height = Math.round(cssH * dpr);
-    canvas.style.width = cssW + 'px';
-    canvas.style.height = cssH + 'px';
+    const pxW = Math.round(cssW * dpr);
+    const pxH = Math.round(cssH * dpr);
+    if (canvas.width !== pxW || canvas.height !== pxH) {
+      canvas.width = pxW;
+      canvas.height = pxH;
+      canvas.style.width = cssW + 'px';
+      canvas.style.height = cssH + 'px';
+    }
 
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1824,11 +1886,26 @@ class XsCanvasChart {
 
     if (!model) {
       this._geo = null;
+      this._geoModel = null;
       return;
     }
 
-    this._geo = this._compute(ctx, model, cssW, cssH);
+    // 几何只在「换模型」或「尺寸变化」时重算；动画每帧重绘不至于反复量文字
+    const sizeKey = cssW + 'x' + cssH;
+    if (this._geoModel !== model || this._geoKey !== sizeKey || !this._geo) {
+      this._geo = this._compute(ctx, model, cssW, cssH);
+      this._geoModel = model;
+      this._geoKey = sizeKey;
+    }
+
     this._paint(ctx, model, this._geo);
+
+    // 容器此时才真正可绘制 —— 动画从这一帧开始计时，避免面板刚展开就空掉一半
+    if (this._animPending) {
+      const dur = this._animPending;
+      this._animPending = 0;
+      this._runAnim(dur);
+    }
   }
 
   _legendItems(model) {
@@ -1959,6 +2036,22 @@ class XsCanvasChart {
     const max = geo.scale.max;
     const toY = (v) => plot.y + plot.h - (Math.min(xsNum(v), max) / max) * plot.h;
 
+    /* 入场动画进度：1 表示静止（无动画） */
+    const p = (typeof this._animP === 'number' && this._animP < 1) ? Math.max(0, this._animP) : 1;
+    // 逐槽位错开，形成从左往右"长出来"的波次
+    const stagger = (p >= 1 || model.animationStagger === false)
+      ? 0
+      : Math.max(0, Math.min(0.7, model.animationStagger === undefined ? 0.35 : +model.animationStagger));
+    const slotProgress = (i) => {
+      if (p >= 1 || stagger <= 0) return 1;
+      const n = geo.slotCount;
+      const delay = n > 1 ? stagger * (i / (n - 1)) : 0;
+      const span = 1 - stagger;
+      const lp = span > 0 ? (p - delay) / span : 1;
+      return lp <= 0 ? 0 : (lp >= 1 ? 1 : lp);
+    };
+    const revealX = plot.x + plot.w * p;   // 折线展开到的横坐标
+
     /* ---- 背景条纹 + 悬停高亮 ---- */
     for (let i = 0; i < geo.slotCount; i++) {
       const left = plot.x + i * geo.slotW;
@@ -1990,6 +2083,8 @@ class XsCanvasChart {
     (model.groups || []).forEach((group, gi) => {
       const series = group.series || [];
       for (let i = 0; i < geo.slotCount; i++) {
+        const lp = slotProgress(i);
+        if (lp <= 0) continue;                       // 还没长到这一格
         const x0 = this._groupLeft(geo, i, gi);
         const left = Math.round(x0);
         const width = Math.max(1, Math.round(x0 + geo.barW) - left);
@@ -1998,8 +2093,9 @@ class XsCanvasChart {
           const s = series[k];
           const v = xsNum(s.values[i]);
           if (v <= 0) continue;
-          const top = Math.round(toY(acc + v));
-          const bottom = Math.round(toY(acc));
+          // 整段堆叠按 lp 从基线往上长
+          const top = Math.round(toY((acc + v) * lp));
+          const bottom = Math.round(toY(acc * lp));
           ctx.fillStyle = xsColor((s.pointColors && s.pointColors[i]) || s.color);
           ctx.fillRect(left, top, width, Math.max(1, bottom - top));
           acc += v;
@@ -2027,18 +2123,29 @@ class XsCanvasChart {
       ctx.lineCap = 'round';
       ctx.beginPath();
       let started = false;
-      points.forEach((p) => {
-        if (!p) { started = false; return; }
-        if (!started) { ctx.moveTo(p.x, p.y); started = true; } else { ctx.lineTo(p.x, p.y); }
-      });
+      let prev = null;
+      for (const pt of points) {
+        if (!pt) { started = false; prev = null; continue; }
+        if (pt.x > revealX) {
+          // 动画进行中：把最后一段截断在 revealX 上，形成"画出来"的效果
+          if (started && prev) {
+            const k = (revealX - prev.x) / (pt.x - prev.x);
+            ctx.lineTo(revealX, prev.y + (pt.y - prev.y) * k);
+          }
+          started = false;
+          break;
+        }
+        if (!started) { ctx.moveTo(pt.x, pt.y); started = true; } else { ctx.lineTo(pt.x, pt.y); }
+        prev = pt;
+      }
       ctx.stroke();
 
       if (line.markers !== false) {
-        points.forEach((p) => {
-          if (!p) return;
+        points.forEach((pt) => {
+          if (!pt || pt.x > revealX) return;
           ctx.beginPath();
-          ctx.arc(p.x, p.y, 2.4, 0, Math.PI * 2);
-          ctx.fillStyle = p.color || lineColor;
+          ctx.arc(pt.x, pt.y, 2.4, 0, Math.PI * 2);
+          ctx.fillStyle = pt.color || lineColor;
           ctx.fill();
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 1;
@@ -2049,19 +2156,26 @@ class XsCanvasChart {
 
     /* ---- 最高值标注 ---- */
     const mk = model.marker;
-    if (mk && mk.text !== undefined) {
+    // 峰值标注最后登场：动画尾段淡入，避免柱子还没长到位它就先飘在上面
+    const mkP = p >= 1 ? 1 : Math.max(0, Math.min(1, (p - 0.68) / 0.32));
+    if (mk && mk.text !== undefined && mkP > 0) {
       const i = Math.max(0, Math.min(geo.slotCount - 1, xsNum(mk.slot)));
       const x = this._groupCenter(geo, i, mk.groupIndex || 0);
       const y = toY(mk.value);
+      ctx.save();
+      ctx.globalAlpha = mkP;
       ctx.beginPath();
-      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.arc(x, y, 4 * mkP, 0, Math.PI * 2);
       ctx.fillStyle = '#ffffff';
       ctx.fill();
-      ctx.strokeStyle = xsColor(mk.color || fg);
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
+      if (mkP > 0.35) {
+        ctx.strokeStyle = xsColor(mk.color || fg);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
 
       if (mk.text) {
+        ctx.globalAlpha = mkP;
         ctx.font = xsFont(11, 'bold');
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
@@ -2070,6 +2184,7 @@ class XsCanvasChart {
         let tx = Math.min(Math.max(x, plot.x + tw / 2), plot.x + plot.w - tw / 2);
         ctx.fillText(mk.text, tx, y - 7);
       }
+      ctx.restore();
     }
 
     /* ---- Y 轴刻度 ---- */
@@ -2231,6 +2346,7 @@ class  XiaoshiStateGridInfo extends LitElement {
     this.dayData = [];
     this.activeNav = '';
     this.monthData = null;
+    this.yearData = null;
     this.colorNum = '#07d2ff';
     this.colorCost = '#f30660';
     this.showPanel = ''; // 初始不显示任何面板
@@ -2530,25 +2646,41 @@ class  XiaoshiStateGridInfo extends LitElement {
     /*
      * 日历部分  *
      *          */
-      .calendar-grid { border: 0; border-radius: 10px; display: grid; grid-template-areas: "yearlast year yearnext today monthlast month monthnext" "week1 week2 week3 week4 week5 week6 week7" "id1 id2 id3 id4 id5 id6 id7" "id8 id9 id10 id11 id12 id13 id14" "id15 id16 id17 id18 id19 id20 id21" "id22 id23 id24 id25 id26 id27 id28" "id29 id30 id31 id32 id33 id34 id35" "id36 id37 id98 id98 id99 id99 id99"; grid-template-columns: repeat(7, 1fr); grid-template-rows: 1fr 0.6fr 1fr 1fr 1fr 1fr 1fr 1fr; gap: 0px; padding: 10px 4px; margin-top: 5px; }
+      /* 高度不再写死：导航行 30px + 星期行 30px + 6 个日期行由内容自适应 */
+      /* 日历外框：把网格和下方的月/年统计包在同一个背景容器里 */
+      .calendar-wrap { border-radius: 10px; margin-top: 5px; }
+      .calendar-grid { border: 0; display: grid; grid-template-areas: "yearlast year yearnext today monthlast month monthnext" "week1 week2 week3 week4 week5 week6 week7" "id1 id2 id3 id4 id5 id6 id7" "id8 id9 id10 id11 id12 id13 id14" "id15 id16 id17 id18 id19 id20 id21" "id22 id23 id24 id25 id26 id27 id28" "id29 id30 id31 id32 id33 id34 id35" "id36 id37 id38 id39 id40 id41 id42"; grid-template-columns: repeat(7, 1fr); grid-template-rows: 30px 30px repeat(6, auto); gap: 0px; padding: 10px 8px; }
       .celltotal { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; cursor: default; font-size: 15px; font-weight: 600; white-space: nowrap; }
-      .cell { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; cursor: default; font-size: 12px; line-height: 12px; font-weight: 500; }
-      .month-cell { border-bottom: 0.5px solid rgb(150,150,150,0.8); border-right: 0.5px solid rgb(150,150,150,0.8); }
-      .month-cell-left { border-left: 0.5px solid rgb(150,150,150,0.8); }
-      .month-cell-top { border-top: 0.5px solid rgb(150,150,150,0.8); }
-      .month-cell-right { border-right: 0.5px solid rgb(150,150,150,0.8); }
-      .month-cell-bottom { border-bottom: 0.5px solid rgb(150,150,150,0.8); }
+      /* box-sizing: border-box 很关键：否则 .month-day 的上下 padding 会加在 min-height 之外，单格会高 22px */
+      /* 单格高度 = 10(顶部给日期圆) + 13 + 1 + 13 + 2(底部) + 边框 ≈ 41px（取 41 保证有/无日期的行等高） */
+      .cell { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; cursor: default; font-size: 12px; line-height: 12px; font-weight: 500; min-height: 41px; box-sizing: border-box; }
+      /* 整张日历画表格线：星期行 + 所有日期格（含没有日期的空格）
+         nth-child(n+8) 跳过第 1 行的年份/月份导航；nth-child(7n+1) 是每行首列 */
+      .calendar-grid > *:nth-child(n+8) { border-right: 0.5px solid rgb(150,150,150,0.8); border-bottom: 0.5px solid rgb(150,150,150,0.8); }
+      .calendar-grid > *:nth-child(n+8):nth-child(-n+14) { border-top: 0.5px solid rgb(150,150,150,0.8); }
+      .calendar-grid > *:nth-child(7n+1):nth-child(n+8) { border-left: 0.5px solid rgb(150,150,150,0.8); }
       .nav-button { cursor: pointer; user-select: none; font-size: 12px; transition: all 0.2s ease; border-radius: 10px; }
       .nav-button:active { transform: scale(0.95); opacity: 0.8; }
       .active-nav { background-color: rgba(0, 160, 160, 0.2); border-radius: 4px; }
       .today-button { cursor: pointer; user-select: none; }
-      .weekday { }
-      .month-day { cursor: pointer; }
-      .electricity-num { font-size: 12px; line-height: 12px; }
-      .electricity-cost { font-size: 12px; line-height: 12px; }
+      .weekday { font-size: 13px; }
+      .month-day { cursor: pointer; min-width: 0; position: relative; justify-content: flex-start; padding: 10px 2px 2px; box-sizing: border-box; }
+      /* 日期数字：右上角圆形浅灰底（半透明；贴顶摆放，避免压到下方用量标签的文字） */
+      .month-day > .day-num { position: absolute; top: 0; right: 2px; width: 14px; height: 14px; border-radius: 50%;
+        background-color: rgba(150, 150, 150, 0.3); display: flex; align-items: center; justify-content: center;
+        font-size: 10px; line-height: 1; font-weight: 500; }
+      /* 日历格子里的用量 / 费用：等宽圆角标签（宽度 = 格子宽 - 左右各 3px），底色用原本的文字色，文字改用主题色 */
+      .electricity-num { font-size: 12px; line-height: 13px; width: calc(100% - 2px); text-align: center; border-radius: 3px; white-space: nowrap; overflow: hidden; margin-top: 0; box-sizing: border-box; }
+      .electricity-cost { font-size: 12px; line-height: 13px; width: calc(100% - 2px); text-align: center; border-radius: 3px; white-space: nowrap; overflow: hidden; margin-top: 1px; box-sizing: border-box; }
       .min-usage { background-color: rgba(0, 255, 0, 0.2); }
       .max-usage { background-color: rgba(255, 0, 0, 0.2); }
       .summary-info { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; font-size: 13px; line-height: 16px; font-weight: 500; padding: 0 0 0 30px; white-space: nowrap; }
+      /* 日历下方的月/年统计：标签文字在色块外，数值带底色标签，横向一排；月用量靠左、年用量靠右 */
+      .calendar-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 0 8px 10px; font-size: 12px; font-weight: 600; }
+      .calendar-summary .summary-group { display: inline-flex; align-items: center; gap: 4px; }
+      .calendar-summary .summary-group.right { margin-left: auto; }
+      .calendar-summary .summary-key { white-space: nowrap; opacity: 0.85; }
+      .calendar-summary .summary-pill { flex: 0 0 auto; min-width: 0; padding: 0 5px; line-height: 19px; border-radius: 3px; white-space: nowrap; overflow: hidden; font-size: 12px; }
       /* 表头信息 */
       .card-container { display: flex; flex-direction: column; gap: 5px; }
       .balance-card { width: 100%; background: var(--bg-color, #fff); border-radius: 12px; }
@@ -2937,7 +3069,9 @@ class  XiaoshiStateGridInfo extends LitElement {
       chart.clear();
       return;
     }
-    chart.render(this._buildDayChartModel(data));
+    const model = this._buildDayChartModel(data);
+    model.animKey = key;   // 指纹变了才重播入场动画
+    chart.render(model);
   }
 
   _renderMonthChart(force) {
@@ -2951,7 +3085,9 @@ class  XiaoshiStateGridInfo extends LitElement {
       chart.clear();
       return;
     }
-    chart.render(this._buildMonthChartModel(data));
+    const model = this._buildMonthChartModel(data);
+    model.animKey = key;   // 指纹变了才重播入场动画
+    chart.render(model);
   }
 
   _loadData() {
@@ -3665,13 +3801,26 @@ class  XiaoshiStateGridInfo extends LitElement {
         const monthlistSource = buildMonthlistFromSummary(entityObj.attributes, uc);
         if (monthlistSource && monthlistSource.length > 0) {
           const monthStr = `${this.year}-${this.month.toString().padStart(2, '0')}`;
-          this.monthData = monthlistSource.find(item => item.month === monthStr);
+          this.monthData = monthlistSource.find(item => item.month === monthStr) || null;
+          // 年统计：按当前日历年份汇总
+          const yearStr = String(this.year);
+          const yearMonths = monthlistSource.filter(it => it.month && it.month.substring(0, 4) === yearStr);
+          if (yearMonths.length > 0) {
+            this.yearData = {
+              yearEleNum: yearMonths.reduce((sum, it) => sum + (Number(it.monthEleNum) || 0), 0),
+              yearEleCost: yearMonths.reduce((sum, it) => sum + (Number(it.monthEleCost) || 0), 0),
+            };
+          } else {
+            this.yearData = null;
+          }
         } else {
           this.monthData = null;
+          this.yearData = null;
         }
       } else {
         this.dayData = [];
         this.monthData = null;
+        this.yearData = null;
       }
     }
   }
@@ -3907,12 +4056,15 @@ class  XiaoshiStateGridInfo extends LitElement {
     const transparentBg = this.config.transparent_bg === true;
     const bgColor = transparentBg ? 'transparent' : theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
     const fgColor = lockWhiteFg ? 'rgb(255, 255, 255)' : theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const uc = this._getUC();
+    const unitText = uc.usageUnit === '度' ? '°' : uc.usageUnit;
+    const fmt = (v) => (Number(v) || 0).toFixed(2);
     const daysInMonth = this.getDaysInMonth(this.year, this.month);
     const firstDayOfMonth = new Date(this.year, this.month - 1, 1).getDay();
     const adjustedFirstDay = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
     const { minDays, maxDays } = this.getMinMaxUsageDays();
     const days = [];
-    const weekdayNames = ['一', '二', '三', '四', '五', '六', '日'];
+    const weekdayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
     const yearMonthRow = html` 
       <div class="celltotal nav-button ${this.activeNav === 'yearlast' ? 'active-nav' : ''}" 
            style="grid-area: yearlast;" 
@@ -3950,12 +4102,7 @@ class  XiaoshiStateGridInfo extends LitElement {
       html`<div class="celltotal weekday" style="grid-area: week${index + 1};">${day}</div>`
     );
     for (let i = 0; i < adjustedFirstDay; i++) {
-      if (i==adjustedFirstDay-1){
-        days.push(html`<div class="cell month-cell-bottom month-cell-right" style="grid-area: id${i + 1};"></div>`);
-      }
-      else{
-        days.push(html`<div class="cell month-cell-bottom" style="grid-area: id${i + 1};"></div>`);
-      }
+      days.push(html`<div class="cell" style="grid-area: id${i + 1};"></div>`);
     }
     for (let i = 1; i <= daysInMonth; i++) {
       const dayData = this.getDayData(this.year, this.month, i);
@@ -3963,68 +4110,42 @@ class  XiaoshiStateGridInfo extends LitElement {
       const isMaxDay = maxDays.includes(i.toString());
       const dayClass = isMinDay ? 'min-usage' : isMaxDay ? 'max-usage' : '';
       const dayContent = html`
-        <div>${i}</div>
+        <div class="day-num">${i}</div>
         ${dayData ? html`
-          <div class="electricity-num" style="color: ${this.colorNum}">${dayData.dayEleNum}${this._getUC().usageUnit === '度' ? '°' : this._getUC().usageUnit}</div>
-          <div class="electricity-cost" style="color: ${this.colorCost}">￥${dayData.dayEleCost}</div>
+          <div class="electricity-num" style="background-color: ${this.colorNum}; color: ${fgColor}">${dayData.dayEleNum}${this._getUC().usageUnit === '度' ? '°' : this._getUC().usageUnit}</div>
+          <div class="electricity-cost" style="background-color: ${this.colorCost}; color: ${fgColor}">￥${dayData.dayEleCost}</div>
         ` : ''}
       `;
-      if(adjustedFirstDay>0 && i>=1 && i<=7-adjustedFirstDay){
-        days.push(html`
-        <div class="cell month-cell month-cell-top month-day ${dayClass}" 
-          style="grid-area: id${i + adjustedFirstDay};">
+      days.push(html`
+        <div class="cell month-day ${dayClass}" style="grid-area: id${i + adjustedFirstDay};">
           ${dayContent}
         </div>
-        `);
-      }
-      else if(adjustedFirstDay==0 && i==1){
-        days.push(html`
-        <div class="cell month-cell month-cell-top month-cell-left month-day ${dayClass}"\nstyle="grid-area: id${i + adjustedFirstDay};">
-          ${dayContent}
-        </div>
-        `);
-      }
-      else if(adjustedFirstDay==0 && i>1 && i<=7-adjustedFirstDay){
-        days.push(html`
-        <div class="cell month-cell month-cell-top month-day ${dayClass}" style="grid-area: id${i + adjustedFirstDay};">
-          ${dayContent}
-        </div>
-        `);
-      }
-      else if(i==8-adjustedFirstDay || i==15-adjustedFirstDay || i==22-adjustedFirstDay || i==29-adjustedFirstDay || i==36-adjustedFirstDay){
-        days.push(html`
-        <div class="cell month-cell month-cell-left month-day ${dayClass}" style="grid-area: id${i + adjustedFirstDay};">
-          ${dayContent}
-        </div>
-        `);
-      }
-      else{
-        days.push(html`
-        <div class="cell month-cell month-day ${dayClass}" style="grid-area: id${i + adjustedFirstDay};">
-          ${dayContent}
-        </div>
-        `);
-      }
+      `);
     }
-    const totalCells = 37;
+    // 补齐到 6 行 x 7 列 = 42 格，保证没有任何缺口、表格线完整
+    const totalCells = 42;
     for (let i = daysInMonth + adjustedFirstDay + 1; i <= totalCells; i++) {
       days.push(html`<div class="cell" style="grid-area: id${i};"></div>`);
     }
-    const bottomRow = html`
-      <div class="cell" style="grid-area: id98;"></div>
-      <div class="cell summary-info" style="grid-area: id99;">
-        ${this.monthData ? html`
-          <div><span  style="color: ${this.colorNum}">月${this._getUC().usageLabel.replace('用', '').replace('量', '')}量: ${this.monthData.monthEleNum}${this._getUC().usageUnit}</span></div>
-          <div><span  style="color: ${this.colorCost}">月${this._getUC().typeLabel}: ${this.monthData.monthEleCost}元</span></div>
-        ` : html`<div></div>`}
-      </div>
-    `;
     return html`
-      <div class="calendar-grid"  style="height: 300px; background-color: ${bgColor}; color: ${fgColor}; ">
-        ${yearMonthRow}
-        ${weekdaysRow}
-        ${days}
-        ${bottomRow}
+      <div class="calendar-wrap" style="background-color: ${bgColor};">
+        <div class="calendar-grid" style="color: ${fgColor};">
+          ${yearMonthRow}
+          ${weekdaysRow}
+          ${days}
+        </div>
+        <div class="calendar-summary" style="color: ${fgColor};">
+          <span class="summary-group">
+          <span class="summary-key">月用量：</span>
+          <span class="summary-pill" style="background-color: ${this.colorNum}; color: ${fgColor};">${this.monthData ? fmt(this.monthData.monthEleNum) : '--'}${unitText}</span>
+          <span class="summary-pill" style="background-color: ${this.colorCost}; color: ${fgColor};">${this.monthData ? fmt(this.monthData.monthEleCost) : '--'}元</span>
+          </span>
+          <span class="summary-group right">
+          <span class="summary-key">年用量：</span>
+          <span class="summary-pill" style="background-color: ${this.colorNum}; color: ${fgColor};">${this.yearData ? fmt(this.yearData.yearEleNum) : '--'}${unitText}</span>
+          <span class="summary-pill" style="background-color: ${this.colorCost}; color: ${fgColor};">${this.yearData ? fmt(this.yearData.yearEleCost) : '--'}元</span>
+          </span>
+          </div>
       </div>
     `;
   }
