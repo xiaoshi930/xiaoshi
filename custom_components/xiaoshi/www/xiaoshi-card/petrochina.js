@@ -103,7 +103,7 @@ const cardCommonStyles = css`  :host { display: block; max-width: 500px; margin:
   .history-row { display: flex; align-items: center; padding: 3px; font-size: 10px; color: var(--fg-color, #000); }
   .history-date { width: 50px; flex-shrink: 0; color: var(--fg-color, #000); }
   .history-type { width: 36px; flex-shrink: 0; font-weight: 500; }
-  .history-price { flex: 1; min-width: 0; }`;
+  .history-price { flex: 1; min-width: 0; white-space: nowrap; }`;
 
 // ==================== 编辑器混入（Mixin） ====================
 
@@ -610,31 +610,26 @@ class XiaoshiPetroChinaCard extends PetroChinaBaseMixin(LitElement) {
       let type = '';
       let typeColor = 'var(--fg-color, #000)';
       let price = '';
-      let icon = '';
       if (typeof value === 'string') {
         if (value.includes('上调')) {
           type = '上调';
           typeColor = '#F44336';
           price = value.replace(/上调/, '').replace(/💖/g, '').trim();
-          icon = '💖';
         } else if (value.includes('下调')) {
           type = '下调';
           typeColor = '#4CAF50';
           price = value.replace(/下调/, '').replace(/💚/g, '').trim();
-          icon = '💚';
         } else if (value.includes('不作调整') || value.includes('不调')) {
           type = '不调';
           typeColor = 'var(--fg-color, #000)';
           price = '';
-          icon = '';
         } else {
           type = '';
           price = value;
-          icon = '';
         }
       }
       const dateDisplay = date.substring(5).replace('-', '/');
-      return { dateDisplay, type, typeColor, price, icon };
+      return { dateDisplay, type, typeColor, price };
     });
 
     // 分双列
@@ -652,7 +647,7 @@ class XiaoshiPetroChinaCard extends PetroChinaBaseMixin(LitElement) {
             <div class="history-row">
               <span class="history-date">${row.dateDisplay}</span>
               <span class="history-type" style="color: ${row.typeColor}">${row.type}</span>
-              <span class="history-price">${row.price}${row.icon}</span>
+              <span class="history-price">${row.price}</span>
             </div>
           `)}
         </div>
@@ -661,7 +656,7 @@ class XiaoshiPetroChinaCard extends PetroChinaBaseMixin(LitElement) {
             <div class="history-row">
               <span class="history-date">${row.dateDisplay}</span>
               <span class="history-type" style="color: ${row.typeColor}">${row.type}</span>
-              <span class="history-price">${row.price}${row.icon}</span>
+              <span class="history-price">${row.price}</span>
             </div>
           `)}
         </div>
