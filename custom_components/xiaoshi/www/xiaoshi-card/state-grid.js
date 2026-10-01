@@ -1641,6 +1641,541 @@ class XiaoshiStateGridEditor extends LitElement {
 }
 customElements.define('xiaoshi-state-grid-editor',  XiaoshiStateGridEditor);
 
+
+/* ==========================================================================
+ * XsCanvasChart —— 纯 Canvas 自绘柱状 / 折线混合图表（零依赖）
+ *
+ * 用于替代 ApexCharts，专门解决在 Home Assistant Shadow DOM 中使用 ApexCharts
+ * 时出现的以下问题：
+ *   1. annotations / markers 标记错位（Apex 用绝对定位 SVG + JS 计算像素偏移）
+ *   2. 柱宽异常变细（Apex 依据渲染瞬间的容器宽度计算 columnWidth，容器宽度为 0
+ *      或中途变化时会算出极小值）
+ *   3. 切换视图前图表空白（容器 display:none 时宽度为 0，Apex 直接渲染失败）
+ *
+ * 本实现的所有几何坐标都在绘制那一刻由容器实际像素尺寸算出来，并且自带
+ * ResizeObserver，容器从隐形变为可见、或尺寸变化时会自动重绘，因此不存在
+ * 上述三类问题。
+ *
+ * 数据模型（model）：
+ * {
+ *   theme: 'light' | 'dark',            // 决定条纹/网格/前景色
+ *   fg: 'rgb(0,0,0)',                   // 文字与轴线颜色
+ *   yMax: 123,                          // 可选，Y 轴上限（会自动取整为整齐刻度）
+ *   yTicks: 5,                           // 可选，Y 轴分段数，默认 5
+ *   slotCount: 30,                       // 类目数量
+ *   slotLabel: (i) => '1' | '',          // 可选，X 轴标签，返回空串表示不显示
+ *   barWidthRatio: 0.62,                 // 可选，柱带占类目宽度比例
+ *   groups: [                            // 一个 group = 类目内一根柱（堆叠）
+ *     { series: [ { name, color, values: [], pointColors?: [] } ] }
+ *   ],
+ *   lines: [                             // 折线
+ *     { name, color, values: [], pointColors?: [], groupIndex: 0, markers: true }
+ *   ],
+ *   marker: {                            // 可选，最高值标注
+ *     slot, value, text, color, groupIndex
+ *   },
+ *   legend: true,                        // 可选，是否显示图例，默认 true
+ *   tooltip: (index) => 'html string'    // 可选，自定义浮层内容
+ * }
+ * ========================================================================== */
+
+const XS_CHART_FONT_FAMILY = '"Helvetica Neue", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif';
+
+function xsFont(size, weight) {
+  return `${weight ? weight + ' ' : ''}${size}px ${XS_CHART_FONT_FAMILY}`;
+}
+
+/* 把 #RRGGBBAA 转成 rgba()，兼容性比 8 位 hex 更好 */
+function xsColor(color) {
+  if (typeof color !== 'string') return color || '#888888';
+  const t = color.trim();
+  if (/^#[0-9a-f]{8}$/i.test(t)) {
+    const r = parseInt(t.slice(1, 3), 16);
+    const g = parseInt(t.slice(3, 5), 16);
+    const b = parseInt(t.slice(5, 7), 16);
+    const a = parseInt(t.slice(7, 9), 16) / 255;
+    return `rgba(${r},${g},${b},${a.toFixed(3)})`;
+  }
+  return t;
+}
+
+function xsNum(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/* 计算"整齐"的 Y 轴刻度，避免出现 3.3 / 6.6 这种刻度值 */
+function xsNiceScale(maxValue, targetTicks) {
+  const ticks = targetTicks || 5;
+  if (!(maxValue > 0)) return { max: ticks, step: 1, count: ticks };
+  const raw = maxValue / ticks;
+  const mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
+  const norm = raw / mag;
+  let step;
+  if (norm <= 1) step = 1;
+  else if (norm <= 2) step = 2;
+  else if (norm <= 2.5) step = 2.5;
+  else if (norm <= 5) step = 5;
+  else step = 10;
+  step *= mag;
+  const count = Math.max(1, Math.ceil(maxValue / step - 1e-9));
+  return { max: step * count, step, count };
+}
+
+function xsTickLabel(value, step) {
+  if (step >= 1) return String(Math.round(value));
+  const digits = step >= 0.1 ? 1 : 2;
+  return (Math.round(value * 1000) / 1000).toFixed(digits);
+}
+
+class XsCanvasChart {
+  constructor(container) {
+    this.container = container;
+    this.canvas = document.createElement('canvas');
+    this.canvas.style.cssText = 'display:block;width:100%;height:100%;';
+    this.tip = document.createElement('div');
+    this.tip.style.cssText = 'position:absolute;left:0;top:0;z-index:9;display:none;pointer-events:none;max-width:92%;';
+    container.appendChild(this.canvas);
+    container.appendChild(this.tip);
+
+    this._model = null;
+    this._geo = null;
+    this._hover = -1;
+
+    this._onMove = (e) => this._handleMove(e);
+    this._onLeave = () => this._leaveTip();
+    this.canvas.addEventListener('mousemove', this._onMove);
+    this.canvas.addEventListener('mouseleave', this._onLeave);
+    this.canvas.addEventListener('touchstart', this._onMove, { passive: true });
+    this.canvas.addEventListener('touchmove', this._onMove, { passive: true });
+    this.canvas.addEventListener('touchend', this._onLeave, { passive: true });
+
+    this._ro = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      this._ro = new ResizeObserver(() => this._draw());
+      this._ro.observe(container);
+    }
+
+    // 字体加载完成后重绘一次，避免首帧文字宽度测量不准
+    if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+      document.fonts.ready.then(() => { if (this._model) this._draw(); }).catch(() => {});
+    }
+  }
+
+  destroy() {
+    if (this._ro) {
+      try { this._ro.disconnect(); } catch (e) { /* ignore */ }
+      this._ro = null;
+    }
+    this.canvas.removeEventListener('mousemove', this._onMove);
+    this.canvas.removeEventListener('mouseleave', this._onLeave);
+    this.canvas.removeEventListener('touchstart', this._onMove);
+    this.canvas.removeEventListener('touchmove', this._onMove);
+    this.canvas.removeEventListener('touchend', this._onLeave);
+    if (this.canvas.parentNode) this.canvas.parentNode.removeChild(this.canvas);
+    if (this.tip.parentNode) this.tip.parentNode.removeChild(this.tip);
+    this._model = null;
+    this._geo = null;
+  }
+
+  render(model) {
+    this._model = model;
+    this._hover = -1;
+    this._hideTip();
+    this._draw();
+    // 再补一帧：卡片刚插入 DOM 时首个绘制时机可能还没完成布局，下一帧重画一次即可
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        if (this._model === model) this._draw();
+      });
+    }
+  }
+
+  clear() {
+    this._model = null;
+    this._geo = null;
+    this._hover = -1;
+    this._hideTip();
+    this._draw();
+  }
+
+  /* ------------------------------------------------------------------ 绘制 */
+
+  _draw() {
+    const canvas = this.canvas;
+    if (!canvas || !canvas.isConnected) return;
+
+    const cssW = this.container.clientWidth;
+    const cssH = this.container.clientHeight;
+    const model = this._model;
+
+    // 容器不可见（display:none / 未布局）时不绘制，等 ResizeObserver 再次触发
+    if (cssW < 20 || cssH < 20) return;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    canvas.style.width = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    if (!model) {
+      this._geo = null;
+      return;
+    }
+
+    this._geo = this._compute(ctx, model, cssW, cssH);
+    this._paint(ctx, model, this._geo);
+  }
+
+  _legendItems(model) {
+    const items = [];
+    const push = (name, color, values) => {
+      if (!name) return;
+      if (values && !values.some((v) => xsNum(v) > 0)) return;
+      if (items.some((it) => it.name === name)) return;
+      items.push({ name: name, color: xsColor(color), _w: 0 });
+    };
+    (model.groups || []).forEach((g) => (g.series || []).forEach((s) => push(s.name, s.color, s.values)));
+    (model.lines || []).forEach((l) => push(l.name, l.color, l.values));
+    return items;
+  }
+
+  _compute(ctx, model, cssW, cssH) {
+    const slotCount = Math.max(1, model.slotCount || 1);
+    const groups = model.groups || [];
+    const gCount = Math.max(1, groups.length);
+
+    /* 1. 图例布局 */
+    const legendItems = model.legend === false ? [] : this._legendItems(model);
+    const legendRows = [];
+    if (legendItems.length) {
+      ctx.font = xsFont(11);
+      const maxRowW = Math.max(60, cssW - 8);
+      let row = [];
+      let rowW = 0;
+      legendItems.forEach((it) => {
+        const w = ctx.measureText(it.name).width + 26;
+        it._w = w;
+        if (row.length && rowW + w > maxRowW) {
+          legendRows.push({ items: row, width: rowW });
+          row = [];
+          rowW = 0;
+        }
+        row.push(it);
+        rowW += w;
+      });
+      if (row.length) legendRows.push({ items: row, width: rowW });
+    }
+    const legendH = legendRows.length ? legendRows.length * 15 + 4 : 0;
+
+    /* 2. Y 轴刻度 */
+    let maxRaw = xsNum(model.yMax);
+    if (!(maxRaw > 0)) {
+      (model.groups || []).forEach((g) => {
+        for (let i = 0; i < slotCount; i++) {
+          let sum = 0;
+          (g.series || []).forEach((s) => { sum += xsNum(s.values[i]); });
+          if (sum > maxRaw) maxRaw = sum;
+        }
+      });
+      (model.lines || []).forEach((l) => l.values.forEach((v) => {
+        const n = xsNum(v);
+        if (n > maxRaw) maxRaw = n;
+      }));
+      maxRaw *= 1.12;
+    }
+    const scale = xsNiceScale(maxRaw, model.yTicks || 5);
+
+    /* 3. 轴标签宽度决定左边距 */
+    ctx.font = xsFont(10);
+    let yLabelW = 0;
+    for (let i = 0; i <= scale.count; i++) {
+      const w = ctx.measureText(xsTickLabel(scale.step * i, scale.step)).width;
+      if (w > yLabelW) yLabelW = w;
+    }
+    /* 图表区左右各留一段外边距，避免贴边 */
+    const sidePad = Number.isFinite(+model.sidePad) ? Math.max(0, +model.sidePad) : 14;
+    const padLeft = Math.min(Math.max(yLabelW + 7, 22), cssW * 0.3) + sidePad;
+    const padRight = sidePad;
+
+    const padTop = 18;
+    const slotLabelH = model.slotLabel ? 15 : 2;
+    const plot = {
+      x: padLeft,
+      y: padTop,
+      w: Math.max(10, cssW - padLeft - padRight),
+      h: Math.max(10, cssH - padTop - slotLabelH - legendH - 4)
+    };
+
+    const slotW = plot.w / slotCount;
+    const ratio = model.barWidthRatio === undefined ? (gCount > 1 ? 0.68 : 0.62) : model.barWidthRatio;
+    const bandW = Math.max(1, Math.min(slotW * ratio, slotW - 1));
+    const gapW = gCount > 1 ? Math.min(2, bandW * 0.08) : 0;
+    const barW = Math.max(1, (bandW - gapW * (gCount - 1)) / gCount);
+
+    /* 4. X 轴标签防重叠：宽度不够时自动抽稀，保证任何时候都不糊成一团 */
+    const labels = [];
+    if (model.slotLabel) {
+      ctx.font = xsFont(10);
+      let lastRight = -Infinity;
+      for (let i = 0; i < slotCount; i++) {
+        const text = model.slotLabel(i);
+        if (!text) continue;
+        const half = ctx.measureText(String(text)).width / 2 + 3;
+        const cx = plot.x + slotW * (i + 0.5);
+        if (cx - half < lastRight) continue;
+        labels.push({ x: cx, text: String(text) });
+        lastRight = cx + half;
+      }
+    }
+
+    return {
+      cssW, cssH, plot, slotCount, slotW, bandW, barW, gapW, gCount,
+      scale, legendRows, legendH, slotLabelH, labels
+    };
+  }
+
+  _groupLeft(geo, slotIndex, groupIndex) {
+    const bandLeft = geo.plot.x + geo.slotW * slotIndex + (geo.slotW - geo.bandW) / 2;
+    return bandLeft + groupIndex * (geo.barW + geo.gapW);
+  }
+
+  _groupCenter(geo, slotIndex, groupIndex) {
+    return this._groupLeft(geo, slotIndex, groupIndex) + geo.barW / 2;
+  }
+
+  _paint(ctx, model, geo) {
+    const fg = model.fg || (model.theme === 'dark' ? 'rgb(255,255,255)' : 'rgb(0,0,0)');
+    const dark = model.theme === 'dark';
+    const stripeColor = dark ? 'rgba(255,255,255,0.055)' : 'rgba(0,0,0,0.045)';
+    const hoverColor = dark ? 'rgba(255,255,255,0.13)' : 'rgba(0,0,0,0.075)';
+    const gridColor = dark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.16)';
+
+    const plot = geo.plot;
+    const max = geo.scale.max;
+    const toY = (v) => plot.y + plot.h - (Math.min(xsNum(v), max) / max) * plot.h;
+
+    /* ---- 背景条纹 + 悬停高亮 ---- */
+    for (let i = 0; i < geo.slotCount; i++) {
+      const left = plot.x + i * geo.slotW;
+      if (i % 2 === 1) {
+        ctx.fillStyle = stripeColor;
+        ctx.fillRect(Math.round(left), plot.y, Math.ceil(geo.slotW), plot.h);
+      }
+      if (i === this._hover) {
+        ctx.fillStyle = hoverColor;
+        ctx.fillRect(Math.round(left), plot.y, Math.ceil(geo.slotW), plot.h);
+      }
+    }
+
+    /* ---- 网格线 ---- */
+    ctx.save();
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i <= geo.scale.count; i++) {
+      const y = Math.round(toY(geo.scale.step * i)) + 0.5;
+      ctx.moveTo(plot.x, y);
+      ctx.lineTo(plot.x + plot.w, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    /* ---- 柱子（堆叠） ---- */
+    (model.groups || []).forEach((group, gi) => {
+      const series = group.series || [];
+      for (let i = 0; i < geo.slotCount; i++) {
+        const x0 = this._groupLeft(geo, i, gi);
+        const left = Math.round(x0);
+        const width = Math.max(1, Math.round(x0 + geo.barW) - left);
+        let acc = 0;
+        for (let k = 0; k < series.length; k++) {
+          const s = series[k];
+          const v = xsNum(s.values[i]);
+          if (v <= 0) continue;
+          const top = Math.round(toY(acc + v));
+          const bottom = Math.round(toY(acc));
+          ctx.fillStyle = xsColor((s.pointColors && s.pointColors[i]) || s.color);
+          ctx.fillRect(left, top, width, Math.max(1, bottom - top));
+          acc += v;
+        }
+      }
+    });
+
+    /* ---- 折线 ---- */
+    (model.lines || []).forEach((line) => {
+      const gi = line.groupIndex || 0;
+      const lineColor = xsColor(line.color);
+      const points = [];
+      for (let i = 0; i < geo.slotCount; i++) {
+        const raw = line.values[i];
+        if (raw === null || raw === undefined || raw === '') { points.push(null); continue; }
+        points.push({
+          x: this._groupCenter(geo, i, gi),
+          y: toY(raw),
+          color: line.pointColors && line.pointColors[i] ? xsColor(line.pointColors[i]) : null
+        });
+      }
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = line.width || 2;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      let started = false;
+      points.forEach((p) => {
+        if (!p) { started = false; return; }
+        if (!started) { ctx.moveTo(p.x, p.y); started = true; } else { ctx.lineTo(p.x, p.y); }
+      });
+      ctx.stroke();
+
+      if (line.markers !== false) {
+        points.forEach((p) => {
+          if (!p) return;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 2.4, 0, Math.PI * 2);
+          ctx.fillStyle = p.color || lineColor;
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        });
+      }
+    });
+
+    /* ---- 最高值标注 ---- */
+    const mk = model.marker;
+    if (mk && mk.text !== undefined) {
+      const i = Math.max(0, Math.min(geo.slotCount - 1, xsNum(mk.slot)));
+      const x = this._groupCenter(geo, i, mk.groupIndex || 0);
+      const y = toY(mk.value);
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.strokeStyle = xsColor(mk.color || fg);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      if (mk.text) {
+        ctx.font = xsFont(11, 'bold');
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillStyle = mk.textColor ? xsColor(mk.textColor) : fg;
+        const tw = ctx.measureText(mk.text).width;
+        let tx = Math.min(Math.max(x, plot.x + tw / 2), plot.x + plot.w - tw / 2);
+        ctx.fillText(mk.text, tx, y - 7);
+      }
+    }
+
+    /* ---- Y 轴刻度 ---- */
+    ctx.font = xsFont(10);
+    ctx.fillStyle = fg;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i <= geo.scale.count; i++) {
+      ctx.fillText(xsTickLabel(geo.scale.step * i, geo.scale.step), plot.x - 5, toY(geo.scale.step * i));
+    }
+
+    /* ---- X 轴标签 ---- */
+    if (geo.labels.length) {
+      ctx.font = xsFont(10);
+      ctx.fillStyle = fg;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      geo.labels.forEach((lb) => ctx.fillText(lb.text, lb.x, plot.y + plot.h + 4));
+    }
+
+    /* ---- 图例 ---- */
+    if (geo.legendRows.length) {
+      ctx.font = xsFont(11);
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+      let y = plot.y + plot.h + geo.slotLabelH + 7;
+      geo.legendRows.forEach((row) => {
+        let x = Math.max(4, (geo.cssW - row.width) / 2);
+        row.items.forEach((it) => {
+          ctx.beginPath();
+          ctx.arc(x + 5, y, 5, 0, Math.PI * 2);
+          ctx.fillStyle = it.color;
+          ctx.fill();
+          ctx.fillStyle = fg;
+          ctx.fillText(it.name, x + 14, y + 0.5);
+          x += it._w;
+        });
+        y += 15;
+      });
+    }
+  }
+
+  /* -------------------------------------------------------------- 交互浮层 */
+
+  _handleMove(e) {
+    const model = this._model;
+    const geo = this._geo;
+    if (!model || !geo) return;
+    const touch = e.touches && e.touches[0];
+    if (e.touches && !touch) return;
+    // 鼠标优先用 offsetX/offsetY：它是相对 canvas 自身盒子的坐标，
+    // 即使外层有 CSS transform（弹层动画等）也不会算偏
+    let x, y;
+    if (!e.touches && typeof e.offsetX === 'number') {
+      x = e.offsetX;
+      y = e.offsetY;
+    } else {
+      const rect = this.canvas.getBoundingClientRect();
+      x = (touch ? touch.clientX : e.clientX) - rect.left;
+      y = (touch ? touch.clientY : e.clientY) - rect.top;
+    }
+    if (x < geo.plot.x - 6 || x > geo.plot.x + geo.plot.w + 6) { this._leaveTip(); return; }
+
+    let index = Math.floor((x - geo.plot.x) / geo.slotW);
+    if (index < 0) index = 0;
+    if (index > geo.slotCount - 1) index = geo.slotCount - 1;
+    if (index !== this._hover) {
+      this._hover = index;
+      this._draw();
+    }
+
+    if (typeof model.tooltip !== 'function') return;
+    const html = model.tooltip(index);
+    if (!html) { this._hideTip(); return; }
+
+    this.tip.innerHTML = html;
+    this.tip.style.display = 'block';
+    const tw = this.tip.offsetWidth;
+    const th = this.tip.offsetHeight;
+
+    let left = x + 14;
+    if (left + tw > geo.cssW - 2) left = x - 14 - tw;
+    if (left < 2) left = 2;
+    if (left + tw > geo.cssW - 2) left = Math.max(2, geo.cssW - tw - 2);
+
+    let top = y - th - 12;
+    if (top < 2) top = y + 16;
+    if (top + th > geo.cssH - 2) top = Math.max(2, geo.cssH - th - 2);
+
+    this.tip.style.left = Math.round(left) + 'px';
+    this.tip.style.top = Math.round(top) + 'px';
+  }
+
+  _hideTip() {
+    if (this.tip) this.tip.style.display = 'none';
+  }
+
+  _leaveTip() {
+    if (this._hover !== -1) {
+      this._hover = -1;
+      this._draw();
+    }
+    this._hideTip();
+  }
+}
+
 class  XiaoshiStateGridInfo extends LitElement {
   static getConfigElement() {
     return document.createElement("xiaoshi-state-grid-editor");
@@ -1723,41 +2258,28 @@ class  XiaoshiStateGridInfo extends LitElement {
     super.disconnectedCallback();
     if (this._balanceRefreshInterval) {
       clearInterval(this._balanceRefreshInterval);
+      this._balanceRefreshInterval = null;
     }
-    // 清理所有定时器
-    if (this._dayChartUpdateTimeout) {
-      clearTimeout(this._dayChartUpdateTimeout);
-      this._dayChartUpdateTimeout = null;
-    }
-    if (this._monthChartUpdateTimeout) {
-      clearTimeout(this._monthChartUpdateTimeout);
-      this._monthChartUpdateTimeout = null;
-    }
-    if (this._dayChartRenderTimeout) {
-      clearTimeout(this._dayChartRenderTimeout);
-      this._dayChartRenderTimeout = null;
-    }
-    if (this._monthChartRenderTimeout) {
-      clearTimeout(this._monthChartRenderTimeout);
-      this._monthChartRenderTimeout = null;
-    }
-    if (this._chart) {
-      this._chart.destroy();
-      this._chart = null;
-    }
+    this._destroyChart();
   }
 
   updated(changedProperties) {
     super.updated(changedProperties);
-    
-    // 监听_selectedBalanceEntity的变化，立即触发更新
-    if (changedProperties.has('_selectedBalanceEntity')) {
-      // 立即请求更新，确保子组件收到新的entity
-      this.requestUpdate();
-      this._renderDayChart();
-      this._renderMonthChart();
-    }    
 
+    // 切换余额实体时让图表缓存失效，保证下一次绘制用的是新实体的数据
+    if (changedProperties.has('_selectedBalanceEntity')) {
+      if (this._chart) this._chart.drawnKey = null;
+      this.requestUpdate();
+    }
+
+    // 面板打开时才绘图；面板关闭时释放图表实例
+    if (this.showPanel === 'dayUsage') {
+      this._renderDayChart();
+    } else if (this.showPanel === 'monthUsage') {
+      this._renderMonthChart();
+    } else {
+      this._destroyChart();
+    }
   }
 
   async _loadBalanceData() {
@@ -1926,7 +2448,7 @@ class  XiaoshiStateGridInfo extends LitElement {
       .balance-time { font-size: 10px; opacity: 0.8; margin-top: -7px; margin-bottom: 4px; text-align: center; }
       .balance-controls-container { display: flex; flex-direction: column; gap: 6px; width: 100%; }
       .balance-info { border-radius: 6px; text-align: center; flex: 0 0 auto; width: 100%; height: 40px; line-height: 20px; cursor: pointer; transition: all 0.2s ease; }
-      .balance-info.active { background: rgba(0, 160, 160, 0.8) !important; color: #00ffff; font-weight: bold; }
+      .balance-info.active { background: rgba(0, 160, 160, 0.8) !important; font-weight: bold; }
       .balance-info:hover { background: rgba(160, 160, 160, 0.6) !important; }
       .balance-info.active:hover { background: rgba(0, 160, 160, 0.6) !important; }
       .balance-amount { font-size: 15px; font-weight: bold; margin-top: 1px; white-space: nowrap; }
@@ -1938,7 +2460,7 @@ class  XiaoshiStateGridInfo extends LitElement {
       .days-label { font-size: 10px; margin-top: -1px; opacity: 0.9; }
       .action-buttons { display: flex; gap: 7px; padding: 0; width: 100%; justify-content: center; }
       .action-button { border-radius: 6px; font-size: 10px; color: white; cursor: pointer; transition: all 0.2s ease; text-align: center; font-weight: 500; flex: 1; max-width: 33.33%; height: 39px; line-height: 39px; white-space: nowrap; }
-      .action-button.active { background: rgba(0, 160, 160, 0.8) !important; color: #00ffff; font-weight: bold; }
+      .action-button.active { background: rgba(0, 160, 160, 0.8) !important; font-weight: bold; }
       .action-button:hover { background: rgba(160, 160, 160, 0.6) !important; }
       .action-button.active:hover { background: rgba(0, 160, 160, 0.6) !important; }
       .panel-section { animation: slideIn 0.3s ease-out; margin-top: 0px; }
@@ -2068,18 +2590,7 @@ class  XiaoshiStateGridInfo extends LitElement {
       .value { font-size: 25px; font-weight: bold; line-height: 1.2; padding: 5px 5px 0 5px; }
       .unit { font-size: 15px; }
       .title { font-size: 13px; padding: 0 5px 0 5px; }
-      #chart-container { grid-area: chart; width: 100%; height: 100%; will-change: transform; transform: translateZ(0); }`;
-  }
-
-  async _loadApexCharts() {
-    if (!window.ApexCharts) {
-      await new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/apexcharts';
-        script.onload = resolve;
-        document.head.appendChild(script);
-      });
-    }
+      #chart-container { grid-area: chart; position: relative; width: 100%; height: 100%; }`;
   }
 
   get _processedDayData() {
@@ -2369,612 +2880,340 @@ class  XiaoshiStateGridInfo extends LitElement {
     }
   }
 
-  _renderDayChart() {
+  /* ================= 图表渲染（自绘 Canvas，不再依赖 ApexCharts） ================= */
+
+  /* 取得（必要时重建）图表实例 */
+  _ensureChart() {
     const container = this.renderRoot.querySelector('#chart-container');
-    if (!container) return;
-    const data = this._processedDayData;
-    if (!data) {
-      if (this._chart) {
-        this._chart.destroy();
-        this._chart = null;
-      }
-      return;
+    if (!container) {
+      this._destroyChart();
+      return null;
     }
-    container.innerHTML = '';
-    if (this._chart) {
-      this._chart.destroy();
-      this._chart = null;
+    // 容器可能是 Lit 新建的节点（例如从"日"切到"月"），此时必须重建实例
+    if (!this._chart || this._chart.container !== container) {
+      this._destroyChart();
+      this._chart = new XsCanvasChart(container);
     }
-
-    // 清理之前的定时器
-    if (this._dayChartRenderTimeout) {
-      clearTimeout(this._dayChartRenderTimeout);
-    }
-    if (this._dayChartUpdateTimeout) {
-      clearTimeout(this._dayChartUpdateTimeout);
-    }
-
-    // 使用 setTimeout 确保 DOM 完全渲染后再创建图表
-    this._dayChartRenderTimeout = setTimeout(() => {
-      if (!container) return;
-
-      // 获取容器的实际宽度
-      const containerWidth = container.offsetWidth || container.parentElement.offsetWidth;
-
-      if (containerWidth > 0) {
-        // 临时设置明确的像素宽度
-        container.style.width = containerWidth + 'px';
-
-        // 创建并渲染图表
-        this._chart = new ApexCharts(container, this._getChartDayConfig(data));
-        this._chart.render();
-
-        // 渲染完成后恢复百分比宽度（用于响应式）
-        this._dayChartUpdateTimeout = setTimeout(() => {
-          // 多重检查：容器存在、图表实例存在、容器仍在DOM中
-          if (container && this._chart && document.body.contains(container)) {
-            try {
-              container.style.width = '100%';
-              this._chart.updateOptions({
-                chart: {
-                  width: '100%'
-                }
-              }, false, true);
-            } catch (error) {
-              console.warn('Day chart updateOptions error:', error);
-            }
-          }
-        }, 2000);
-      }
-    }, 50);
+    return this._chart;
   }
 
-  _renderMonthChart() {
-    const container = this.renderRoot.querySelector('#chart-container');
-    if (!container) return;
-    const data = this._processedMonthData;
-    if (!data) {
-      if (this._chart) {
-        this._chart.destroy();
-        this._chart = null;
-      }
-      return;
-    }
-    container.innerHTML = '';
+  _destroyChart() {
     if (this._chart) {
-      this._chart.destroy();
+      try {
+        this._chart.destroy();
+      } catch (e) {
+        /* 忽略销毁异常 */
+      }
       this._chart = null;
     }
+  }
 
-    // 清理之前的定时器
-    if (this._monthChartRenderTimeout) {
-      clearTimeout(this._monthChartRenderTimeout);
+  /* 数据指纹：数据或主题没有变化时直接跳过重绘，避免每次 hass 刷新都重画 */
+  _chartKey(kind) {
+    const id = this._selectedBalanceEntity || '';
+    const state = (id && this.hass && this.hass.states) ? this.hass.states[id] : null;
+    const attr = (state && state.attributes) ? state.attributes : null;
+    const daylist = (attr && Array.isArray(attr.daylist)) ? attr.daylist : [];
+    const lastDay = daylist.length ? (((daylist[daylist.length - 1] || {}).day) || '') : '';
+    let monthKey = 'none';
+    if (attr) {
+      if (Array.isArray(attr.monthlist)) monthKey = 'arr' + attr.monthlist.length;
+      else if (attr.monthly_summary) monthKey = 'sum' + JSON.stringify(attr.monthly_summary).length;
     }
-    if (this._monthChartUpdateTimeout) {
-      clearTimeout(this._monthChartUpdateTimeout);
+    return [
+      kind, id, this.config && this.config.utility_type, this._evaluateTheme(),
+      this.colorNum, this.colorCost, daylist.length, lastDay, monthKey
+    ].join('|');
+  }
+
+  _renderDayChart(force) {
+    const chart = this._ensureChart();
+    if (!chart) return;
+    const key = this._chartKey('day');
+    if (!force && chart.drawnKey === key) return;
+    chart.drawnKey = key;
+    const data = this._processedDayData;
+    if (!data || !data.categories) {
+      chart.clear();
+      return;
     }
+    chart.render(this._buildDayChartModel(data));
+  }
 
-    // 使用 setTimeout 确保 DOM 完全渲染后再创建图表
-    this._monthChartRenderTimeout = setTimeout(() => {
-      if (!container) return;
-
-      // 获取容器的实际宽度
-      const containerWidth = container.offsetWidth || container.parentElement.offsetWidth;
-
-      if (containerWidth > 0) {
-        // 临时设置明确的像素宽度
-        container.style.width = containerWidth + 'px';
-
-        // 创建并渲染图表
-        this._chart = new ApexCharts(container, this._getChartMonthConfig(data));
-        this._chart.render();
-
-        // 渲染完成后恢复百分比宽度（用于响应式）
-        this._monthChartUpdateTimeout = setTimeout(() => {
-          // 多重检查：容器存在、图表实例存在、容器仍在DOM中
-          if (container && this._chart && document.body.contains(container)) {
-            try {
-              container.style.width = '100%';
-              this._chart.updateOptions({
-                chart: {
-                  width: '100%'
-                }
-              }, false, true);
-            } catch (error) {
-              console.warn('Month chart updateOptions error:', error);
-            }
-          }
-        }, 2000);
-      }
-    }, 50);
-
+  _renderMonthChart(force) {
+    const chart = this._ensureChart();
+    if (!chart) return;
+    const key = this._chartKey('month');
+    if (!force && chart.drawnKey === key) return;
+    chart.drawnKey = key;
+    const data = this._processedMonthData;
+    if (!data || !data.total) {
+      chart.clear();
+      return;
+    }
+    chart.render(this._buildMonthChartModel(data));
   }
 
   _loadData() {
-    // 重新渲染图表，数据会在中通过
-    this._renderDayChart();
-    this._renderMonthChart();
+    this._renderDayChart(true);
+    this._renderMonthChart(true);
   }
-
-
-  _getChartDayConfig(data) {
+  /* 构建"日"图表数据模型（自绘 Canvas） */
+  _buildDayChartModel(data) {
     const theme = this._evaluateTheme();
-    const Color = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-    const BgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
     const uc = this._getUC();
     const colorCost = this.colorCost;
-    const colorNum = this.colorNum;
+    const slotCount = data.categories.length;
+
+    // 上月/预计数据统一使用 40 透明度的同色
+    const withLast = (base, values, isLast) => ({
+      values: values,
+      pointColors: values.map((v, i) => ((isLast && isLast[i]) ? base + '40' : base))
+    });
+
+    const model = {
+      theme: theme,
+      fg: theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)',
+      slotCount: slotCount,
+      slotLabel: (i) => ((i + 1) % 2 === 1 ? String(i + 1) : ''),
+      legend: true,
+      tooltip: (i) => this._buildDayTooltip(data, i)
+    };
 
     if (uc.hasPeakValley) {
-      // ===== 电费：有尖峰平谷 =====
-      // 计算总用电量的最大值
+      // ===== 电费：尖峰平谷堆叠柱 + 日费用折线 =====
       const maxTotal = data.total.length > 0 ? Math.max(...data.total) : 0;
-      const maxTotalIndex = data.total.indexOf(maxTotal);
+      const maxIndex = data.total.indexOf(maxTotal);
 
-      // 尖峰平谷颜色
-      const colorTip = '#FF5252';     // 尖 - 红色
-      const colorPeak = '#FF9800';    // 峰 - 橙色
-      const colorNormal = '#4CAF50';  // 平 - 绿色
-      const colorValley = '#00BCD4';  // 谷 - 青色
-
-      // 上月颜色（带透明度）
-      const colorLastTip = '#FF525240';
-      const colorLastPeak = '#FF980040';
-      const colorLastNormal = '#4CAF5040';
-      const colorLastValley = '#00BCD440';
-      const colorLastCost = this.colorCost + '40';
-
-      // 为每个柱子生成带颜色的数据：上月数据用透明色
-      const valleySeriesData = data.valley.map((y, i) => ({
-        x: data.categories[i],
-        y: y,
-        fillColor: data.valleyIsLast[i] ? colorLastValley : colorValley
-      }));
-      const normalSeriesData = data.normal.map((y, i) => ({
-        x: data.categories[i],
-        y: y,
-        fillColor: data.normalIsLast[i] ? colorLastNormal : colorNormal
-      }));
-      const peakSeriesData = data.peak.map((y, i) => ({
-        x: data.categories[i],
-        y: y,
-        fillColor: data.peakIsLast[i] ? colorLastPeak : colorPeak
-      }));
-      const tipSeriesData = data.tip.map((y, i) => ({
-        x: data.categories[i],
-        y: y,
-        fillColor: data.tipIsLast[i] ? colorLastTip : colorTip
-      }));
-      const costSeriesData = data.cost.map((y, i) => ({
-        x: data.categories[i],
-        y: y,
-        fillColor: data.costIsLast[i] ? colorLastCost : colorCost
-      }));
-
-      return {
+      model.groups = [{
         series: [
-          { name: '谷时段', data: valleySeriesData, type: 'column' },
-          { name: '平时段', data: normalSeriesData, type: 'column' },
-          { name: '峰时段', data: peakSeriesData, type: 'column' },
-          { name: '尖时段', data: tipSeriesData, type: 'column' },
-          { name: `日${uc.typeLabel}`, data: costSeriesData, type: 'line', color: colorCost }
-        ],
-        chart: {
-          type: 'bar', height: 230, width: '100%', foreColor: Color, stacked: true,
-          toolbar: { show: false },
-          animations: { enabled: true, dynamicAnimation: { enabled: true }, easing: 'linear', speed: 1000, initialAnimation: { enabled: true } }
-        },
-        plotOptions: { bar: { horizontal: false, borderRadius: 0, columnWidth: '60%', barHeight: '70%', distributed: false, stacking: 'normal' } },
-        stroke: { width: [0, 0, 0, 0, 2], curve: 'smooth' },
-        markers: { size: 3, strokeWidth: 1, colors: colorCost, strokeColors: "#fff" },
-        dataLabels: { enabled: false },
-        xaxis: {
-          type: 'category', tickAmount: data.categories.length - 1,
-          labels: { rotate: 0, style: { fontSize: '10px' }, hideOverlappingLabels: true, showDuplicates: false,
-            formatter: function(val) { const day = parseInt(val); return day % 2 === 1 ? String(day) : ''; }
-          },
-          tooltip: { enabled: false }
-        },
-        yaxis: {
-          min: 0, max: maxTotal > 0 ? Math.ceil(maxTotal * 1.15 / 5) * 5 : undefined, floating: false,
-          labels: { minWidth: 5, maxWidth: 25, formatter: function(val) { return val.toFixed(0); } }
-        },
-        grid: { show: true, position: 'back', xaxis: { lines: { show: false } }, yaxis: { lines: { show: false } }, row: { colors: [Color, 'transparent'], opacity: 0.1 } },
-        annotations: {
-          points: (() => {
-            const points = [];
-            if (maxTotalIndex >= 0 && maxTotal > 0) {
-              points.push({
-                x: maxTotalIndex, y: maxTotal, seriesIndex: 3, marker: { size: 0 },
-                label: { borderColor: '#ffffff00', offsetY: -5, offsetX: 0, style: { color: Color, background: '#ffffff00', fontSize: '12px', fontWeight: 'bold' }, text: `${maxTotal.toFixed(2)}度` }
-              });
-              points.push({
-                x: maxTotalIndex, y: maxTotal, seriesIndex: 3,
-                marker: { size: 4, offsetX: 0, fillColor: '#fff', strokeColor: colorNum, strokeWidth: 1, shape: "circle" },
-                label: { borderColor: '#fff', offsetY: 0, offsetX: 0, style: { color: Color, fontSize: '12px', fontWeight: 'bold' }, text: ' ' }
-              });
-            }
-            return points;
-          })()
-        },
-        tooltip: {
-          shared: true, intersect: false,
-          custom: function({ series, dataPointIndex }) {
-            const day = dataPointIndex + 1;
-            const now = new Date();
-            const currentMonth = now.getMonth() + 1;
-            const currentYear = now.getFullYear();
-            const isEstimate = day > data.lastDataDay;
-            const formattedDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const dateLabel = isEstimate ? `${formattedDate} 预计` : formattedDate;
-            let tooltipHTML = `<div style="background: ${BgColor};color: ${Color};padding: 8px;border-radius: 4px;border: 1px solid ${Color};"><div style="font-weight: bold; font-size: 12px;color: ${Color};border-bottom: 1px dashed #999;">${dateLabel}</div>`;
-            let totalElectricity = 0;
-            for (let i = 0; i < 4; i++) { totalElectricity += series[i]?.[dataPointIndex] || 0; }
-            if (totalElectricity > 0) {
-              tooltipHTML += `<div style="display: flex;align-items: center;margin: 0;font-size: 12px;border-bottom: 1px dashed #999;font-weight: bold;"><span style="display: inline-block;width: 8px;height: 8px;background: ${colorNum};border-radius: 50%;margin-right: 5px;"></span><span style="color: ${Color}">${uc.totalUsageLabel}: <strong>${totalElectricity.toFixed(2)} ${uc.usageUnit}</strong></span></div>`;
-            }
-            const allInfo = [
-              { name: '尖时段', unit: '度', color: colorTip, idx: 3 },
-              { name: '峰时段', unit: '度', color: colorPeak, idx: 2 },
-              { name: '平时段', unit: '度', color: colorNormal, idx: 1 },
-              { name: '谷时段', unit: '度', color: colorValley, idx: 0 },
-              { name: `日${uc.typeLabel}`, unit: '元', color: colorCost, idx: 4 }
-            ];
-            allInfo.forEach((info) => {
-              const value = series[info.idx]?.[dataPointIndex];
-              if (value !== null && value !== undefined && (value !== 0 || info.unit === '元')) {
-                tooltipHTML += `<div style="display: flex;align-items: center;margin: 0;font-size: 12px;border-bottom: 1px dashed #999;"><span style="display: inline-block;width: 8px;height: 8px;background: ${info.color};border-radius: 50%;margin-right: 5px;"></span><span style="color: ${info.color}">${info.name}: <strong>${value.toFixed(2)} ${info.unit}</strong></span></div>`;
-              }
-            });
-            tooltipHTML += `</div>`;
-            return tooltipHTML;
-          }.bind(this)
-        },
-        legend: {
-          position: 'bottom', showForNullSeries: false, showForZeroSeries: false,
-          formatter: function(seriesName, opts) { const seriesData = opts.w.globals.series[opts.seriesIndex]; return seriesData && seriesData.some(val => val !== 0 && val !== null && val !== undefined) ? seriesName : ''; },
-          markers: { width: 10, height: 10, radius: 5 }, itemMargin: { horizontal: 10 }
-        }
-      };
+          Object.assign({ name: '谷时段', color: '#00BCD4' }, withLast('#00BCD4', data.valley, data.valleyIsLast)),
+          Object.assign({ name: '平时段', color: '#4CAF50' }, withLast('#4CAF50', data.normal, data.normalIsLast)),
+          Object.assign({ name: '峰时段', color: '#FF9800' }, withLast('#FF9800', data.peak, data.peakIsLast)),
+          Object.assign({ name: '尖时段', color: '#FF5252' }, withLast('#FF5252', data.tip, data.tipIsLast))
+        ]
+      }];
+      model.lines = [
+        Object.assign({ name: `日${uc.typeLabel}`, color: colorCost, groupIndex: 0, width: 2 },
+          withLast(colorCost, data.cost, data.costIsLast))
+      ];
+      model.marker = maxTotal > 0 ? {
+        slot: maxIndex, value: maxTotal, text: `${maxTotal.toFixed(2)}${uc.usageUnit}`,
+        color: this.colorNum, groupIndex: 0
+      } : null;
+      model.yMax = maxTotal * 1.15;
     } else {
-      // ===== 水费/燃气：无尖峰平谷 =====
+      // ===== 水费/燃气：单色柱 + 日费用折线 =====
       const maxGas = data.gas.length > 0 ? Math.max(...data.gas) : 0;
-      const maxGasIndex = data.gas.indexOf(maxGas);
+      const maxIndex = data.gas.indexOf(maxGas);
       const maxCost = data.cost.length > 0 ? Math.max(...data.cost) : 0;
 
-      const colorGas = uc.barColor;
-      const colorLastGas = uc.barColorLast;
-      const colorLastCost = this.colorCost + '40';
-
-      const gasSeriesData = data.gas.map((y, i) => ({
-        x: data.categories[i], y: y, fillColor: data.gasIsLast[i] ? colorLastGas : colorGas
-      }));
-      const costSeriesData = data.cost.map((y, i) => ({
-        x: data.categories[i], y: y, fillColor: data.costIsLast[i] ? colorLastCost : colorCost
-      }));
-
-      return {
+      model.groups = [{
         series: [
-          { name: uc.usageSeriesName, data: gasSeriesData, type: 'column' },
-          { name: `日${uc.costSeriesName}`, data: costSeriesData, type: 'line', color: colorCost }
-        ],
-        chart: {
-          type: 'bar', height: 230, width: '100%', foreColor: Color, stacked: true,
-          toolbar: { show: false },
-          animations: { enabled: true, dynamicAnimation: { enabled: true }, easing: 'linear', speed: 1000, initialAnimation: { enabled: true } }
-        },
-        plotOptions: { bar: { horizontal: false, borderRadius: 0, columnWidth: '60%', barHeight: '70%', distributed: false, stacking: 'normal' } },
-        stroke: { width: [0, 2], curve: 'smooth' },
-        markers: { size: 3, strokeWidth: 1, colors: colorCost, strokeColors: "#fff" },
-        dataLabels: { enabled: false },
-        xaxis: {
-          type: 'category', tickAmount: data.categories.length - 1,
-          labels: { rotate: 0, style: { fontSize: '10px' }, hideOverlappingLabels: true, showDuplicates: false,
-            formatter: function(val) { const day = parseInt(val); return day % 2 === 1 ? String(day) : ''; }
-          },
-          tooltip: { enabled: false }
-        },
-        yaxis: {
-          min: 0, max: maxCost > 0 ? Math.ceil(maxCost / 0.5) * 0.5 + 0.5 : undefined, floating: false,
-          labels: { minWidth: 5, maxWidth: 25, formatter: function(val) { return val.toFixed(0); } }
-        },
-        grid: { show: true, position: 'back', xaxis: { lines: { show: false } }, yaxis: { lines: { show: false } }, row: { colors: [Color, 'transparent'], opacity: 0.1 } },
-        annotations: {
-          points: (() => {
-            const points = [];
-            if (maxGasIndex >= 0 && maxGas > 0) {
-              points.push({
-                x: maxGasIndex, y: maxGas, seriesIndex: 0, marker: { size: 0 },
-                label: { borderColor: '#ffffff00', offsetY: -5, offsetX: 0, style: { color: Color, background: '#ffffff00', fontSize: '12px', fontWeight: 'bold' }, text: `${maxGas.toFixed(2)}${uc.usageUnit}` }
-              });
-              points.push({
-                x: maxGasIndex, y: maxGas, seriesIndex: 0,
-                marker: { size: 4, offsetX: 0, fillColor: '#fff', strokeColor: colorNum, strokeWidth: 1, shape: "circle" },
-                label: { borderColor: '#fff', offsetY: 0, offsetX: 0, style: { color: Color, fontSize: '12px', fontWeight: 'bold' }, text: ' ' }
-              });
-            }
-            return points;
-          })()
-        },
-        tooltip: {
-          shared: true, intersect: false,
-          custom: function({ series, dataPointIndex }) {
-            const day = dataPointIndex + 1;
-            const now = new Date();
-            const currentMonth = now.getMonth() + 1;
-            const currentYear = now.getFullYear();
-            const isEstimate = day > data.lastDataDay;
-            const formattedDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const dateLabel = isEstimate ? `${formattedDate} 预计` : formattedDate;
-            let tooltipHTML = `<div style="background: ${BgColor};color: ${Color};padding: 8px;border-radius: 4px;border: 1px solid ${Color};"><div style="font-weight: bold; font-size: 12px;color: ${Color};border-bottom: 1px dashed #999;">${dateLabel}</div>`;
-            const gasValue = series[0]?.[dataPointIndex] || 0;
-            if (gasValue > 0) {
-              tooltipHTML += `<div style="display: flex;align-items: center;margin: 0;font-size: 12px;border-bottom: 1px dashed #999;font-weight: bold;"><span style="display: inline-block;width: 8px;height: 8px;background: ${colorGas};border-radius: 50%;margin-right: 5px;"></span><span style="color: ${Color}">${uc.usageLabel}: <strong>${gasValue.toFixed(2)} ${uc.usageUnit}</strong></span></div>`;
-            }
-            const costValue = series[1]?.[dataPointIndex] || 0;
-            if (costValue > 0) {
-              tooltipHTML += `<div style="display: flex;align-items: center;margin: 0;font-size: 12px;border-bottom: 1px dashed #999;"><span style="display: inline-block;width: 8px;height: 8px;background: ${colorCost};border-radius: 50%;margin-right: 5px;"></span><span style="color: ${colorCost}">日${uc.costSeriesName}: <strong>${costValue.toFixed(2)} 元</strong></span></div>`;
-            }
-            tooltipHTML += `</div>`;
-            return tooltipHTML;
-          }.bind(this)
-        },
-        legend: {
-          position: 'bottom', showForNullSeries: false, showForZeroSeries: false,
-          formatter: function(seriesName, opts) { const seriesData = opts.w.globals.series[opts.seriesIndex]; return seriesData && seriesData.some(val => val !== 0 && val !== null && val !== undefined) ? seriesName : ''; },
-          markers: { width: 10, height: 10, radius: 5 }, itemMargin: { horizontal: 10 }
-        }
-      };
+          Object.assign({ name: uc.usageSeriesName, color: uc.barColor },
+            withLast(uc.barColor, data.gas, data.gasIsLast))
+        ]
+      }];
+      model.lines = [
+        Object.assign({ name: `日${uc.costSeriesName}`, color: colorCost, groupIndex: 0, width: 2 },
+          withLast(colorCost, data.cost, data.costIsLast))
+      ];
+      model.marker = maxGas > 0 ? {
+        slot: maxIndex, value: maxGas, text: `${maxGas.toFixed(2)}${uc.usageUnit}`,
+        color: this.colorNum, groupIndex: 0
+      } : null;
+      model.yMax = Math.max(maxGas, maxCost) * 1.15;
     }
+
+    return model;
   }
 
-  _getChartMonthConfig(data) {
+  /* 构建"日"图表浮层内容 */
+  _buildDayTooltip(data, index) {
     const theme = this._evaluateTheme();
-    const Color = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
-    const BgColor = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    const fg = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const bg = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
     const uc = this._getUC();
-    const colorCost = this.colorCost;
-    const colorNum = this.colorNum;
+    const now = new Date();
+    const day = index + 1;
+    const dateText = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateLabel = day > data.lastDataDay ? `${dateText} 预计` : dateText;
 
-    // 计算最大值
-    const totalValues = data.total.map(item => item.y);
-    const maxTotal = totalValues.length > 0 ? Math.max(...totalValues) : 0;
-    const maxTotalPoint = data.total.find(item => item.y === maxTotal);
-    const costValues = data.cost.map(item => item.y);
-    const maxCost = costValues.length > 0 ? Math.max(...costValues) : 0;
-    const lasttotalValues = data.lasttotal.map(item => item.y);
-    const maxLastTotal = lasttotalValues.length > 0 ? Math.max(...lasttotalValues) : 0;
-    const lastcostValues = data.lastcost.map(item => item.y);
-    const maxLastCost = lastcostValues.length > 0 ? Math.max(...lastcostValues) : 0;
-    const yAxisMax = Math.max(maxTotal, maxCost, maxLastTotal, maxLastCost);
+    const row = (color, text) => `<div style="display:flex;align-items:center;margin:0;font-size:12px;border-bottom:1px dashed #999;"><span style="display:inline-block;width:8px;height:8px;background:${color};border-radius:50%;margin-right:5px;flex:0 0 auto;"></span><span style="color:${color}">${text}</span></div>`;
 
-    const catOffset = -0.175;
+    let html = `<div style="background:${bg};color:${fg};padding:8px;border-radius:4px;border:1px solid ${fg};box-shadow:0 2px 10px rgba(0,0,0,0.18);white-space:nowrap;">`;
+    html += `<div style="font-weight:bold;font-size:12px;color:${fg};border-bottom:1px dashed #999;">${dateLabel}</div>`;
 
     if (uc.hasPeakValley) {
-      // ===== 电费：有尖峰平谷 =====
-      const colorTip = '#FF5252';
-      const colorPeak = '#FF9800';
-      const colorNormal = '#4CAF50';
-      const colorValley = '#00BCD4';
-      const colorLastTip = '#FF525240';
-      const colorLastPeak = '#FF980040';
-      const colorLastNormal = '#4CAF5040';
-      const colorLastValley = '#00BCD440';
-
-      const lasttipOffset = data.lasttip.map(item => ({ x: item.x + catOffset, y: item.y }));
-      const lastpeakOffset = data.lastpeak.map(item => ({ x: item.x + catOffset, y: item.y }));
-      const lastnormalOffset = data.lastnormal.map(item => ({ x: item.x + catOffset, y: item.y }));
-      const lastvalleyOffset = data.lastvalley.map(item => ({ x: item.x + catOffset, y: item.y }));
-      const lastcostOffset = data.lastcost.map(item => ({ x: item.x + catOffset, y: item.y }));
-      const curTipOffset = data.tip.map(item => ({ x: item.x - catOffset, y: item.y }));
-      const curPeakOffset = data.peak.map(item => ({ x: item.x - catOffset, y: item.y }));
-      const curNormalOffset = data.normal.map(item => ({ x: item.x - catOffset, y: item.y }));
-      const curValleyOffset = data.valley.map(item => ({ x: item.x - catOffset, y: item.y }));
-      const curCostOffset = data.cost.map(item => ({ x: item.x - catOffset, y: item.y }));
-
-      const hasDataInSeries = (arr) => arr && arr.some(item => item.y > 0);
-      const seriesList = [];
-      
-      if (hasDataInSeries(lastvalleyOffset)) seriesList.push({ name: '上年谷', data: lastvalleyOffset, type: 'column' });
-      if (hasDataInSeries(lastnormalOffset)) seriesList.push({ name: '上年平', data: lastnormalOffset, type: 'column' });
-      if (hasDataInSeries(lastpeakOffset)) seriesList.push({ name: '上年峰', data: lastpeakOffset, type: 'column' });
-      if (hasDataInSeries(lasttipOffset)) seriesList.push({ name: '上年尖', data: lasttipOffset, type: 'column' });
-      if (hasDataInSeries(curValleyOffset)) seriesList.push({ name: '本年谷', data: curValleyOffset, type: 'column' });
-      if (hasDataInSeries(curNormalOffset)) seriesList.push({ name: '本年平', data: curNormalOffset, type: 'column' });
-      if (hasDataInSeries(curPeakOffset)) seriesList.push({ name: '本年峰', data: curPeakOffset, type: 'column' });
-      if (hasDataInSeries(curTipOffset)) seriesList.push({ name: '本年尖', data: curTipOffset, type: 'column' });
-      if (hasDataInSeries(lastcostOffset)) seriesList.push({ name: `上年${uc.typeLabel}`, data: lastcostOffset, type: 'line', color: '#f3066040' });
-      if (hasDataInSeries(curCostOffset)) seriesList.push({ name: `本年${uc.typeLabel}`, data: curCostOffset, type: 'line', color: colorCost });
-
-      return {
-        series: seriesList,
-        chart: {
-          type: 'bar', height: 230, width: '100%', foreColor: Color, stacked: true,
-          toolbar: { show: false },
-          animations: { enabled: true, dynamicAnimation: { enabled: true }, easing: 'linear', speed: 1000, initialAnimation: { enabled: true } }
-        },
-        colors: seriesList.map(s => {
-          const colorMap = {
-            '上年谷': colorLastValley, '上年平': colorLastNormal, '上年峰': colorLastPeak, '上年尖': colorLastTip,
-            '本年谷': colorValley, '本年平': colorNormal, '本年峰': colorPeak, '本年尖': colorTip,
-            [`上年${uc.typeLabel}`]: '#f3066040', [`本年${uc.typeLabel}`]: colorCost
-          };
-          return colorMap[s.name] || s.color || '#999';
-        }),
-        stroke: { width: seriesList.map(s => s.type === 'line' ? 2 : 0), curve: 'smooth' },
-        markers: { size: 3, strokeWidth: 1, colors: ['#f3066040', colorCost], strokeColors: "#fff" },
-        dataLabels: { enabled: false },
-        xaxis: {
-          min: -0.2,
-          max: 11.9,
-          tickAmount: 12,
-          labels: { style: { fontSize: '10px' }, hideOverlappingLabels: false, formatter: function(val) { const m = Math.round(parseFloat(val)); return (m >= 0 && m <= 11) ? (m + 1) + '月' : ''; } },
-          tooltip: { enabled: false }
-        },
-        yaxis: { min: 0, max: yAxisMax > 0 ? Math.ceil(yAxisMax * 1.15 / 50) * 50 : undefined, floating: false, labels: { minWidth: 10, maxWidth: 30, formatter: function(val) { return val.toFixed(0); } } },
-        grid: { show: true, position: 'back', xaxis: { lines: { show: false } }, yaxis: { lines: { show: false } }, row: { colors: [Color, 'transparent'], opacity: 0.1 } },
-        annotations: {
-          points: (() => {
-            const points = [];
-            const costSeriesIdx = seriesList.findIndex(s => s.name === `本年${uc.typeLabel}费`);
-            if (maxTotalPoint) {
-              points.push({
-                x: maxTotalPoint.x, y: maxTotalPoint.y, seriesIndex: costSeriesIdx >= 0 ? costSeriesIdx : 0, marker: { size: 0 },
-                label: { borderColor: '#ffffff00', offsetY: -5, offsetX: 0, style: { color: Color, background: '#ffffff00', fontSize: '12px', fontWeight: 'bold' }, text: `${maxTotal.toFixed(2)}度` }
-              });
-              points.push({
-                x: maxTotalPoint.x, y: maxTotalPoint.y, seriesIndex: costSeriesIdx >= 0 ? costSeriesIdx : 0,
-                marker: { size: 4, offsetX: 0, fillColor: '#fff', strokeColor: colorNum, strokeWidth: 1, shape: "circle" },
-                label: { borderColor: '#fff', offsetY: 0, offsetX: 0, style: { color: Color, fontSize: '12px', fontWeight: 'bold' }, text: ' ' }
-              });
-            }
-            return points;
-          })()
-        },
-        tooltip: {
-          shared: true, intersect: false,
-          custom: function({ series, seriesIndex, dataPointIndex, w }) {
-            const currentYear = new Date().getFullYear();
-            let hoverX;
-            const seriesNames = w.globals.seriesNames;
-            for (let i = 0; i < seriesNames.length; i++) {
-              if (w.globals.seriesX[i]?.[dataPointIndex] !== undefined) { hoverX = Math.round(w.globals.seriesX[i][dataPointIndex]); break; }
-            }
-            const mIdx = (hoverX !== undefined && hoverX >= 0 && hoverX <= 11) ? hoverX : 0;
-            const displayDate = `${currentYear}-${String(mIdx + 1).padStart(2, '0')}`;
-            const getSeriesIndex = (name) => seriesNames.indexOf(name);
-            const ucType = uc.typeLabel;
-            let tooltipHTML = `<div style="background: ${BgColor};color: ${Color};padding: 8px;border-radius: 4px;border: 1px solid ${Color};"><div style="font-weight: bold; font-size: 12px;color: ${Color};border-bottom: 1px dashed #999;">${displayDate}</div>`;
-            const lastYearIndices = ['上年谷', '上年平', '上年峰', '上年尖'].map(getSeriesIndex).filter(i => i >= 0);
-            let lastTotal = 0; lastYearIndices.forEach(i => { lastTotal += series[i]?.[dataPointIndex] || 0; });
-            const thisYearIndices = ['本年谷', '本年平', '本年峰', '本年尖'].map(getSeriesIndex).filter(i => i >= 0);
-            let currentTotal = 0; thisYearIndices.forEach(i => { currentTotal += series[i]?.[dataPointIndex] || 0; });
-            if (lastTotal > 0) {
-              tooltipHTML += `<div style="display: flex;align-items: center;margin: 0;font-size: 12px;border-bottom: 1px dashed #999;font-weight: bold;"><span style="display: inline-block;width: 8px;height: 8px;background: #f85000;border-radius: 50%;margin-right: 5px;"></span><span style="color: ${Color}">${uc.lastYearUsageLabel}: <strong>${lastTotal.toFixed(2)} ${uc.usageUnit}</strong></span></div>`;
-            }
-            if (currentTotal > 0) {
-              tooltipHTML += `<div style="display: flex;align-items: center;margin: 0;font-size: 12px;border-bottom: 1px dashed #999;font-weight: bold;"><span style="display: inline-block;width: 8px;height: 8px;background: ${colorNum};border-radius: 50%;margin-right: 5px;"></span><span style="color: ${Color}">${uc.thisYearUsageLabel}: <strong>${currentTotal.toFixed(2)} ${uc.usageUnit}</strong></span></div>`;
-            }
-            const allInfo = [
-              { name: '上年尖', unit: '度', color: colorLastTip }, { name: '上年峰', unit: '度', color: colorLastPeak },
-              { name: '上年平', unit: '度', color: colorLastNormal }, { name: '上年谷', unit: '度', color: colorLastValley },
-              { name: `上年${ucType}`, unit: '元', color: '#f3066040' },
-              { name: '本年尖', unit: '度', color: colorTip }, { name: '本年峰', unit: '度', color: colorPeak },
-              { name: '本年平', unit: '度', color: colorNormal }, { name: '本年谷', unit: '度', color: colorValley },
-              { name: `本年${ucType}`, unit: '元', color: colorCost },
-            ];
-            allInfo.forEach((info) => {
-              const idx = getSeriesIndex(info.name);
-              if (idx < 0) return;
-              const value = series[idx]?.[dataPointIndex];
-              if (value !== null && value !== undefined && (value !== 0 || info.unit === '元')) {
-                tooltipHTML += `<div style="display: flex;align-items: center;margin: 0;font-size: 12px;border-bottom: 1px dashed #999;"><span style="display: inline-block;width: 8px;height: 8px;background: ${info.color};border-radius: 50%;margin-right: 5px;"></span><span style="color: ${info.color}">${info.name}: <strong>${value.toFixed(2)} ${info.unit}</strong></span></div>`;
-              }
-            });
-            tooltipHTML += `</div>`;
-            return tooltipHTML;
-          }.bind(this)
-        },
-        legend: {
-          position: 'bottom', showForNullSeries: false, showForZeroSeries: false,
-          formatter: function(seriesName, opts) { const seriesData = opts.w.globals.series[opts.seriesIndex]; return seriesData && seriesData.some(val => val !== 0 && val !== null && val !== undefined) ? seriesName : ''; },
-          markers: { width: 10, height: 10, radius: 5 }, itemMargin: { horizontal: 10 }
-        },
-        plotOptions: { bar: { borderRadius: 0, columnWidth: '30%' } }
-      };
+      const total = (Number(data.tip[index]) || 0) + (Number(data.peak[index]) || 0)
+        + (Number(data.normal[index]) || 0) + (Number(data.valley[index]) || 0);
+      if (total > 0) {
+        html += row(this.colorNum, `${uc.totalUsageLabel}: <strong>${total.toFixed(2)} ${uc.usageUnit}</strong>`);
+      }
+      [
+        { name: '尖时段', color: '#FF5252', value: data.tip[index], unit: uc.usageUnit },
+        { name: '峰时段', color: '#FF9800', value: data.peak[index], unit: uc.usageUnit },
+        { name: '平时段', color: '#4CAF50', value: data.normal[index], unit: uc.usageUnit },
+        { name: '谷时段', color: '#00BCD4', value: data.valley[index], unit: uc.usageUnit },
+        { name: `日${uc.typeLabel}`, color: this.colorCost, value: data.cost[index], unit: '元' }
+      ].forEach((info) => {
+        const value = Number(info.value) || 0;
+        if (value !== 0 || info.unit === '元') {
+          html += row(info.color, `${info.name}: <strong>${value.toFixed(2)} ${info.unit}</strong>`);
+        }
+      });
     } else {
-      // ===== 水费/燃气：无尖峰平谷 =====
-      const colorGas = uc.barColor;
-      const colorLastGas = uc.barColorLast || uc.barColor + '80';
-
-      const lastgasOffset = data.lastgas.map(item => ({ x: item.x + catOffset, y: item.y }));
-      const lastcostOffset = data.lastcost.map(item => ({ x: item.x + catOffset, y: item.y }));
-      const curGasOffset = data.gas.map(item => ({ x: item.x - catOffset, y: item.y }));
-      const curCostOffset = data.cost.map(item => ({ x: item.x - catOffset, y: item.y }));
-
-      const hasDataInSeries = (arr) => arr && arr.some(item => item.y > 0);
-      const seriesList = [];
-      
-      if (hasDataInSeries(lastgasOffset)) seriesList.push({ name: uc.lastUsageSeriesName, data: lastgasOffset, type: 'column' });
-      if (hasDataInSeries(curGasOffset)) seriesList.push({ name: uc.thisUsageSeriesName, data: curGasOffset, type: 'column' });
-      if (hasDataInSeries(lastcostOffset)) seriesList.push({ name: uc.lastCostSeriesName, data: lastcostOffset, type: 'line', color: '#f3066040' });
-      if (hasDataInSeries(curCostOffset)) seriesList.push({ name: uc.thisCostSeriesName, data: curCostOffset, type: 'line', color: colorCost });
-
-      return {
-        series: seriesList,
-        chart: {
-          type: 'bar', height: 230, width: '100%', foreColor: Color, stacked: true,
-          toolbar: { show: false },
-          animations: { enabled: true, dynamicAnimation: { enabled: true }, easing: 'linear', speed: 1000, initialAnimation: { enabled: true } }
-        },
-        colors: seriesList.map(s => {
-          const colorMap = {
-            [uc.lastUsageSeriesName]: colorLastGas, [uc.thisUsageSeriesName]: colorGas,
-            [uc.lastCostSeriesName]: '#f3066040', [uc.thisCostSeriesName]: colorCost
-          };
-          return colorMap[s.name] || s.color || '#999';
-        }),
-        stroke: { width: seriesList.map(s => s.type === 'line' ? 2 : 0), curve: 'smooth' },
-        markers: { size: 3, strokeWidth: 1, colors: ['#f3066040', colorCost], strokeColors: "#fff" },
-        dataLabels: { enabled: false },
-        xaxis: {
-          min: -0.2,
-          max: 11.9,
-          tickAmount: 12,
-          labels: { style: { fontSize: '10px' }, hideOverlappingLabels: false, formatter: function(val) { const m = Math.round(parseFloat(val)); return (m >= 0 && m <= 11) ? (m + 1) + '月' : ''; } },
-          tooltip: { enabled: false }
-        },
-        yaxis: { min: 0, max: Math.max(maxCost, maxLastCost) > 0 ? Math.ceil(Math.max(maxCost, maxLastCost) / 5) * 5 + 5 : undefined, floating: false, labels: { minWidth: 10, maxWidth: 30, formatter: function(val) { return val.toFixed(0); } } },
-        grid: { show: true, position: 'back', xaxis: { lines: { show: false } }, yaxis: { lines: { show: false } }, row: { colors: [Color, 'transparent'], opacity: 0.1 } },
-        annotations: {
-          points: (() => {
-            const points = [];
-            const costSeriesIdx = seriesList.findIndex(s => s.name === uc.thisCostSeriesName);
-            if (maxTotalPoint) {
-              points.push({
-                x: maxTotalPoint.x, y: maxTotalPoint.y, seriesIndex: costSeriesIdx >= 0 ? costSeriesIdx : 0, marker: { size: 0 },
-                label: { borderColor: '#ffffff00', offsetY: -5, offsetX: 0, style: { color: Color, background: '#ffffff00', fontSize: '12px', fontWeight: 'bold' }, text: `${maxTotal.toFixed(2)}${uc.usageUnit}` }
-              });
-              points.push({
-                x: maxTotalPoint.x, y: maxTotalPoint.y, seriesIndex: costSeriesIdx >= 0 ? costSeriesIdx : 0,
-                marker: { size: 4, offsetX: 0, fillColor: '#fff', strokeColor: colorNum, strokeWidth: 1, shape: "circle" },
-                label: { borderColor: '#fff', offsetY: 0, offsetX: 0, style: { color: Color, fontSize: '12px', fontWeight: 'bold' }, text: ' ' }
-              });
-            }
-            return points;
-          })()
-        },
-        tooltip: {
-          shared: true, intersect: false,
-          custom: function({ series, seriesIndex, dataPointIndex, w }) {
-            let hoverX;
-            for (let i = 0; i < w.globals.seriesNames.length; i++) {
-              if (w.globals.seriesX[i]?.[dataPointIndex] !== undefined) { hoverX = Math.round(w.globals.seriesX[i][dataPointIndex]); break; }
-            }
-            const mIdx = (hoverX !== undefined && hoverX >= 0 && hoverX <= 11) ? hoverX : 0;
-            const currentYear2 = new Date().getFullYear();
-            const monthLabel = `${currentYear2}-${String(mIdx + 1).padStart(2, '0')}`;
-            let tooltipHTML = `<div style="background: ${BgColor};color: ${Color};padding: 8px;border-radius: 4px;border: 1px solid ${Color};"><div style="font-weight: bold; font-size: 12px;color: ${Color};border-bottom: 1px dashed #999;">${monthLabel}</div>`;
-            seriesList.forEach((s, idx) => {
-              const value = series[idx]?.[dataPointIndex];
-              const unit = s.name.includes(uc.costSeriesName) ? '元' : uc.usageUnit;
-              if (value !== null && value !== undefined && (value !== 0 || unit === '元')) {
-                const seriesColor = s.color || (s.name.includes('上年') ? colorLastGas : colorGas);
-                tooltipHTML += `<div style="display: flex;align-items: center;margin: 0;font-size: 12px;border-bottom: 1px dashed #999;"><span style="display: inline-block;width: 8px;height: 8px;background: ${seriesColor};border-radius: 50%;margin-right: 5px;"></span><span style="color: ${seriesColor}">${s.name}: <strong>${value.toFixed(2)} ${unit}</strong></span></div>`;
-              }
-            });
-            tooltipHTML += `</div>`;
-            return tooltipHTML;
-          }.bind(this)
-        },
-        legend: {
-          position: 'bottom', showForNullSeries: false, showForZeroSeries: false,
-          formatter: function(seriesName, opts) { const seriesData = opts.w.globals.series[opts.seriesIndex]; return seriesData && seriesData.some(val => val !== 0 && val !== null && val !== undefined) ? seriesName : ''; },
-          markers: { width: 10, height: 10, radius: 5 }, itemMargin: { horizontal: 10 }
-        },
-        plotOptions: { bar: { borderRadius: 0, columnWidth: '30%' } }
-      };
+      const gasValue = Number(data.gas[index]) || 0;
+      if (gasValue > 0) {
+        html += row(uc.barColor, `${uc.usageLabel}: <strong>${gasValue.toFixed(2)} ${uc.usageUnit}</strong>`);
+      }
+      const costValue = Number(data.cost[index]) || 0;
+      if (costValue > 0) {
+        html += row(this.colorCost, `日${uc.costSeriesName}: <strong>${costValue.toFixed(2)} 元</strong>`);
+      }
     }
+
+    return html + '</div>';
+  }
+
+  /* 把 [{x:月份索引, y:值}] 展开成 12 个月定长数组 */
+  _monthsToSlots(list) {
+    const arr = new Array(12).fill(0);
+    (list || []).forEach((item) => {
+      if (!item) return;
+      const i = Math.round(Number(item.x));
+      if (i >= 0 && i < 12) arr[i] = Number(item.y) || 0;
+    });
+    return arr;
+  }
+
+  /* 构建"月"图表数据模型（自绘 Canvas） */
+  _buildMonthChartModel(data) {
+    const theme = this._evaluateTheme();
+    const uc = this._getUC();
+    const colorCost = this.colorCost;
+    const maxOf = (arr) => (arr && arr.length ? Math.max(...arr) : 0);
+
+    const currentTotal = this._monthsToSlots(data.total);
+    const currentCost = this._monthsToSlots(data.cost);
+    const lastYearTotal = this._monthsToSlots(data.lasttotal);
+    const lastYearCost = this._monthsToSlots(data.lastcost);
+
+    const maxTotal = maxOf(currentTotal);
+    const maxIndex = currentTotal.indexOf(maxTotal);
+
+    // 左侧一组 = 上年，右侧一组 = 本年
+    const groups = [];
+    const lines = [];
+
+    if (uc.hasPeakValley) {
+      // ===== 电费：上年/本年各一组尖峰平谷堆叠柱 =====
+      groups.push({
+        series: [
+          { name: '上年谷', color: '#00BCD440', values: this._monthsToSlots(data.lastvalley) },
+          { name: '上年平', color: '#4CAF5040', values: this._monthsToSlots(data.lastnormal) },
+          { name: '上年峰', color: '#FF980040', values: this._monthsToSlots(data.lastpeak) },
+          { name: '上年尖', color: '#FF525240', values: this._monthsToSlots(data.lasttip) }
+        ]
+      });
+      groups.push({
+        series: [
+          { name: '本年谷', color: '#00BCD4', values: this._monthsToSlots(data.valley) },
+          { name: '本年平', color: '#4CAF50', values: this._monthsToSlots(data.normal) },
+          { name: '本年峰', color: '#FF9800', values: this._monthsToSlots(data.peak) },
+          { name: '本年尖', color: '#FF5252', values: this._monthsToSlots(data.tip) }
+        ]
+      });
+      lines.push({ name: `上年${uc.typeLabel}`, color: '#f3066040', values: lastYearCost, groupIndex: 0, width: 2 });
+      lines.push({ name: `本年${uc.typeLabel}`, color: colorCost, values: currentCost, groupIndex: 1, width: 2 });
+    } else {
+      // ===== 水费/燃气：上年/本年各一根柱 =====
+      groups.push({
+        series: [{ name: uc.lastUsageSeriesName, color: uc.barColorLast || (uc.barColor + '80'), values: this._monthsToSlots(data.lastgas) }]
+      });
+      groups.push({
+        series: [{ name: uc.thisUsageSeriesName, color: uc.barColor, values: this._monthsToSlots(data.gas) }]
+      });
+      lines.push({ name: uc.lastCostSeriesName, color: '#f3066040', values: lastYearCost, groupIndex: 0, width: 2 });
+      lines.push({ name: uc.thisCostSeriesName, color: colorCost, values: currentCost, groupIndex: 1, width: 2 });
+    }
+
+    return {
+      theme: theme,
+      fg: theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)',
+      slotCount: 12,
+      slotLabel: (i) => `${i + 1}月`,
+      legend: true,
+      groups: groups,
+      lines: lines,
+      marker: maxTotal > 0 ? {
+        slot: maxIndex, value: maxTotal, text: `${maxTotal.toFixed(2)}${uc.usageUnit}`,
+        color: this.colorNum, groupIndex: 1
+      } : null,
+      yMax: Math.max(maxTotal, maxOf(currentCost), maxOf(lastYearTotal), maxOf(lastYearCost)) * 1.15,
+      tooltip: (i) => this._buildMonthTooltip(data, i)
+    };
+  }
+
+  /* 构建"月"图表浮层内容 */
+  _buildMonthTooltip(data, index) {
+    const theme = this._evaluateTheme();
+    const fg = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
+    const bg = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    const uc = this._getUC();
+    const monthLabel = `${new Date().getFullYear()}-${String(index + 1).padStart(2, '0')}`;
+    const monthValue = (list) => {
+      const item = (list || []).find((it) => Math.round(Number(it.x)) === index);
+      return item ? (Number(item.y) || 0) : 0;
+    };
+    const sumMonths = (keys) => keys.reduce((sum, key) => sum + monthValue(data[key]), 0);
+
+    const row = (color, text) => `<div style="display:flex;align-items:center;margin:0;font-size:12px;border-bottom:1px dashed #999;"><span style="display:inline-block;width:8px;height:8px;background:${color};border-radius:50%;margin-right:5px;flex:0 0 auto;"></span><span style="color:${color}">${text}</span></div>`;
+
+    let html = `<div style="background:${bg};color:${fg};padding:8px;border-radius:4px;border:1px solid ${fg};box-shadow:0 2px 10px rgba(0,0,0,0.18);white-space:nowrap;">`;
+    html += `<div style="font-weight:bold;font-size:12px;color:${fg};border-bottom:1px dashed #999;">${monthLabel}</div>`;
+
+    if (uc.hasPeakValley) {
+      const lastTotal = sumMonths(['lasttip', 'lastpeak', 'lastnormal', 'lastvalley']);
+      const currentTotal = sumMonths(['tip', 'peak', 'normal', 'valley']);
+      if (lastTotal > 0) {
+        html += row('#f85000', `${uc.lastYearUsageLabel}: <strong>${lastTotal.toFixed(2)} ${uc.usageUnit}</strong>`);
+      }
+      if (currentTotal > 0) {
+        html += row(this.colorNum, `${uc.thisYearUsageLabel}: <strong>${currentTotal.toFixed(2)} ${uc.usageUnit}</strong>`);
+      }
+      [
+        { name: '上年尖', color: '#FF525240', key: 'lasttip', unit: uc.usageUnit },
+        { name: '上年峰', color: '#FF980040', key: 'lastpeak', unit: uc.usageUnit },
+        { name: '上年平', color: '#4CAF5040', key: 'lastnormal', unit: uc.usageUnit },
+        { name: '上年谷', color: '#00BCD440', key: 'lastvalley', unit: uc.usageUnit },
+        { name: `上年${uc.typeLabel}`, color: '#f3066040', key: 'lastcost', unit: '元' },
+        { name: '本年尖', color: '#FF5252', key: 'tip', unit: uc.usageUnit },
+        { name: '本年峰', color: '#FF9800', key: 'peak', unit: uc.usageUnit },
+        { name: '本年平', color: '#4CAF50', key: 'normal', unit: uc.usageUnit },
+        { name: '本年谷', color: '#00BCD4', key: 'valley', unit: uc.usageUnit },
+        { name: `本年${uc.typeLabel}`, color: this.colorCost, key: 'cost', unit: '元' }
+      ].forEach((info) => {
+        const value = monthValue(data[info.key]);
+        if (value !== 0 || info.unit === '元') {
+          html += row(info.color, `${info.name}: <strong>${value.toFixed(2)} ${info.unit}</strong>`);
+        }
+      });
+    } else {
+      [
+        { name: uc.lastUsageSeriesName, color: uc.barColorLast || (uc.barColor + '80'), value: monthValue(data.lastgas), unit: uc.usageUnit },
+        { name: uc.thisUsageSeriesName, color: uc.barColor, value: monthValue(data.gas), unit: uc.usageUnit },
+        { name: uc.lastCostSeriesName, color: '#f3066040', value: monthValue(data.lastcost), unit: '元' },
+        { name: uc.thisCostSeriesName, color: this.colorCost, value: monthValue(data.cost), unit: '元' }
+      ].forEach((info) => {
+        const value = Number(info.value) || 0;
+        if (value !== 0 || info.unit === '元') {
+          html += row(info.color, `${info.name}: <strong>${value.toFixed(2)} ${info.unit}</strong>`);
+        }
+      });
+    }
+
+    return html + '</div>';
   }
 
   /*获取当前月份的字符串格式 (YYYY-MM)*/
@@ -3352,21 +3591,17 @@ class  XiaoshiStateGridInfo extends LitElement {
     this._handleClick();
   }
 
-  /*按钮功能函数 - 日用电*/
-  async showDayUsage() {
+  /*按钮功能函数 - 日用电：只切换面板，图表在 updated() 中绘制，确保 DOM 已就绪*/
+  showDayUsage() {
     this.showPanel = this.showPanel === 'dayUsage' ? '' : 'dayUsage';
     this.requestUpdate();
-    await this._loadApexCharts();
-    this._renderDayChart();
     this._handleClick();
   }
 
   /*按钮功能函数 - 月用电*/
-  async showMonthUsage() {
+  showMonthUsage() {
     this.showPanel = this.showPanel === 'monthUsage' ? '' : 'monthUsage';
     this.requestUpdate();
-    await this._loadApexCharts();
-    this._renderMonthChart();
     this._handleClick();
   }
 
@@ -3730,8 +3965,8 @@ class  XiaoshiStateGridInfo extends LitElement {
       const dayContent = html`
         <div>${i}</div>
         ${dayData ? html`
-          <div class="electricity-num" style="color: ${this.colorNum}">${dayData.dayEleNum}${this._getUC().usageUnit === '度' ? '度' : this._getUC().usageUnit}</div>
-          <div class="electricity-cost" style="color: ${this.colorCost}">${dayData.dayEleCost}元</div>
+          <div class="electricity-num" style="color: ${this.colorNum}">${dayData.dayEleNum}${this._getUC().usageUnit === '度' ? '°' : this._getUC().usageUnit}</div>
+          <div class="electricity-cost" style="color: ${this.colorCost}">￥${dayData.dayEleCost}</div>
         ` : ''}
       `;
       if(adjustedFirstDay>0 && i>=1 && i<=7-adjustedFirstDay){
@@ -4122,21 +4357,23 @@ class  XiaoshiStateGridInfo extends LitElement {
 
     const rowStyle = 'display: flex; align-items: center; padding: 6px 8px; font-size: 13px;';
     return html`
-      <div style="background: ${bgColor}; color: ${fgColor}; border-radius: 8px; overflow: hidden;">
-        <div style="${rowStyle} font-weight: 600; border-bottom: 1px solid ${subColor};">
-          <span style="flex: 1.8; white-space: nowrap;">日期</span>
-          <span style="flex: 1; text-align: right;">金额</span>
-          <span style="flex: 2.4; text-align: right;">渠道</span>
-        </div>
-        ${rechargeList.map(item => html`
-          <div style="border-bottom: 1px solid ${isLight ? 'rgb(240,240,240)' : 'rgb(70,70,70)'};">
-            <div style="${rowStyle}">
-              <span style="flex: 1.8; white-space: nowrap;">${item.pay_date || ''}</span>
-              <span style="flex: 1; text-align: right; color: #f30660; font-weight: 600;">￥${item.amount != null ? item.amount : ''}</span>
-              <span style="flex: 2.4; text-align: right;">${item.channel || ''}</span>
-            </div>
+      <div style="padding: 6px 0 0 0;">
+        <div style="background: ${bgColor}; color: ${fgColor}; border-radius: 8px; overflow: hidden;">
+          <div style="${rowStyle} font-weight: 600; border-bottom: 1px solid ${subColor}; padding: 10px 20px;">
+            <span style="flex: 1.8; white-space: nowrap;">日期</span>
+            <span style="flex: 1; text-align: right;">金额</span>
+            <span style="flex: 2.4; text-align: right;">渠道</span>
           </div>
-        `)}
+          ${rechargeList.map(item => html`
+            <div style="border-bottom: 1px solid ${isLight ? 'rgb(240,240,240)' : 'rgb(70,70,70)'};padding: 0 10px;">
+              <div style="${rowStyle}">
+                <span style="flex: 1.8; white-space: nowrap;">${item.pay_date || ''}</span>
+                <span style="flex: 1; text-align: right; color: #f30660; font-weight: 600;">￥${item.amount != null ? item.amount : ''}</span>
+                <span style="flex: 2.4; text-align: right;">${item.channel || ''}</span>
+              </div>
+            </div>
+          `)}
+        </div>
       </div>
     `;
   }
