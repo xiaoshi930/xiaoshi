@@ -22,11 +22,11 @@ window.customCards.push({
 // 弹窗（负责定位）和卡片（负责算可用高度）两处共用，避免两套解析逻辑跑偏。
 const POPUP_DEFAULT_TOP = '20px';
 // 底部固定留白（px）
-const POPUP_BOTTOM_GAP = 20;
+const POPUP_BOTTOM_GAP = 30;
 // 卡片原设计的总高度单位：head 6.5 + 日历 30 + body 6.5×7 + 间距 0.8×8 = 88.4（即原来的 88.4vh）
 const CARD_DESIGN_UNITS = 88.4;
 // 卡片内部 9 个区块各自 padding:2px 与 margin-bottom:-3px 的净差：9×(4-3) = 9px。
-// 算可用高度时先扣掉，卡片才不会比预算高出一截、把底部 20px 挤掉。
+// 算可用高度时先扣掉，卡片才不会比预算高出一截、把底部留白挤掉。
 const CARD_INNER_EXTRA = 9;
 
 function resolvePopupTop(raw) {
@@ -59,7 +59,7 @@ class LunarCalendarPhone extends LitElement {
       .card-container { display: flex; flex-direction: column; gap: 0.8vh; }`;
   }
 
-  // 弹窗内的高度预算：顶部 = popup_top，底部固定 20px，中间全部给卡片主体。
+  // 弹窗内的高度预算：顶部 = popup_top，底部固定 POPUP_BOTTOM_GAP，中间全部给卡片主体。
   // 各段原本写死 6.5 / 30 / 6.5vh（合计 88.4vh），屏幕其实用不满、底部空一大块，
   // popup_top 一大还会被挤出可视区；这里把可用高度按原比例切给各段 —— 只动高度、不动字号。
   _popupLayout() {
@@ -473,7 +473,7 @@ class LunarCalendarPhoneDate extends LitElement {
     this._popupElement = popup;
 
     // 创建卡片
-    // in_popup + popup_top：让卡片按「顶部 = popup_top、底部固定 20px」的剩余空间分配高度
+    // in_popup + popup_top：让卡片按「顶部 = popup_top、底部固定 POPUP_BOTTOM_GAP」的剩余空间分配高度
     const cardConfig = {
       type: 'custom:xiaoshi-lunar-calendar-phone',
       theme: theme,
