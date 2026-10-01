@@ -282,7 +282,7 @@ class XiaoshiRoomCardEditor extends LitElement {
                     <label style="min-width:auto">弹窗宽度</label>
                     <input type="text" name="popup_width" .value="${c.popup_width || ''}" @change="${this._valueChanged}" placeholder="95%" style="max-width:60px" />
                     <label style="min-width:auto">弹窗位置</label>
-                    <input type="text" name="popup_top" .value="${c.popup_top || ''}" @change="${this._valueChanged}" placeholder="20px" style="max-width:60px" />
+                    <input type="text" name="popup_top" .value="${c.popup_top || ''}" @change="${this._valueChanged}" placeholder="20px" title="弹窗距屏幕顶部的距离，支持 20 / 20px / 5vh / 10% / calc(...)；弹窗卡片与人在历史浮层共用" style="max-width:60px" />
                 </div>
 
                 <div class="form-row">
@@ -1425,6 +1425,16 @@ class XiaoshiRoomCard extends LitElement {
         this.hass.callService('popup_card', 'show', serviceData);
     }
 
+    // 弹窗距屏幕顶部的距离（弹窗从顶部开始排布，不做垂直居中）：
+    // 支持 vh / px / % / calc() 等任意 CSS 长度，纯数字按 px 处理
+    //（方便直接填 0 / 20 / -10）；留空则用默认 20px。
+    _resolvePopupTop() {
+        const raw = this.config ? this.config.popup_top : undefined;
+        if (raw === undefined || raw === null || String(raw).trim() === '') return '20px';
+        const value = String(raw).trim();
+        return /^-?\d+(\.\d+)?$/.test(value) ? `${value}px` : value;
+    }
+
     // ===== 人在历史记录 =====
     _togglePersonHistory() {
         if (!this.config.person) return;
@@ -1506,15 +1516,20 @@ class XiaoshiRoomCard extends LitElement {
 
         this._historyFilterPeriod = 24;
 
+        // 弹窗位置由 popup_top 控制：把定位放在 dialog 的 top 上，
+        // 而不是给 overlay 加 padding-top —— 否则「弹窗实际位置 = popup_top + padding」，
+        // 参数就和肉眼看到的位置对不上了。用 top 而非 margin-top，
+        // 是为了让 % 按视口高度解析，与 popup_card 弹窗保持一致。
+        const popupTop = this._resolvePopupTop();
         const overlay = document.createElement('div');
         overlay.className = 'xiaoshi-history-overlay';
-        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;-webkit-backdrop-filter: blur(10px);backdrop-filter: blur(10px);';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;-webkit-backdrop-filter: blur(10px);backdrop-filter: blur(10px);';
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) this._closeHistoryOverlay();
         });
 
         const dialog = document.createElement('div');
-        dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
+        dialog.style.cssText = `position:absolute;top:${popupTop};left:50%;transform:translateX(-50%);background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
 
         const header = document.createElement('div');
         header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
