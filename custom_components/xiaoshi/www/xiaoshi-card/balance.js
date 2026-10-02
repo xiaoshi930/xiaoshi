@@ -541,6 +541,25 @@ const BalanceBaseMixin = (superClass) => class extends superClass {
   _evaluateWarningCondition(value, condition) {
     return evaluateWarningCondition(value, condition);
   }
+
+  // 取实体"生效"的预警条件：实体自身 overrides.warning 优先于 global_warning，
+  // 一旦该实体的 overrides.warning 有效，全局预警就不再作用于它
+  _getEntityWarningCondition(entityId) {
+    if (!this.config) return '';
+    const entities = this.config.entities || [];
+    const entityConfig = entities.find(e => e && e.entity_id === entityId);
+    const overrideWarning = entityConfig && entityConfig.overrides
+      ? entityConfig.overrides.warning
+      : undefined;
+    if (overrideWarning !== undefined && String(overrideWarning).trim() !== '') {
+      return String(overrideWarning).trim();
+    }
+    const globalWarning = this.config.global_warning;
+    if (globalWarning !== undefined && String(globalWarning).trim() !== '') {
+      return String(globalWarning).trim();
+    }
+    return '';
+  }
 };
 
 // ==================== 消逝余额卡编辑器 ====================
@@ -605,7 +624,7 @@ class XiaoshiBalanceCardEditor extends BalanceEditorMixin(LitElement) {
           />
         </div>
         <div class="form-group">
-          <label>全局预警条件：当任一实体满足此条件时触发预警</label>
+          <label>全局预警条件：未单独设置预警的实体满足此条件时触发预警（实体自身预警优先）</label>
           <input
             type="text"
             @change=${this._entityChanged}
@@ -675,6 +694,7 @@ class XiaoshiBalanceCardEditor extends BalanceEditorMixin(LitElement) {
             • 图标重定义：勾选后可自定义图标（如 mdi:phone）<br>
             • 单位重定义：勾选后可自定义单位（如 元、$、kWh 等）<br>
             • 预警条件：勾选后设置预警条件，支持 >10, >=10, <10, <=10, ==10, ==on, ==off, =="hello world" 等<br>
+            • 实体预警优先于全局预警，已配置实体预警的实体不受全局预警影响<br>
             • 未勾选重定义时，将使用实体的原始属性值
           </div>
         </div>
@@ -754,14 +774,10 @@ class XiaoshiBalanceCard extends BalanceBaseMixin(LitElement) {
               html`<div class="no-devices">请配置余额实体</div>` :
               html`
                 ${this._oilPriceData.map(balanceData => {
-                  let isWarning = false;
-                  if (balanceData.warning_threshold && balanceData.warning_threshold.trim() !== '') {
-                    isWarning = this._evaluateWarningCondition(balanceData.value, balanceData.warning_threshold);
-                  } else {
-                    if (this.config.global_warning && this.config.global_warning.trim() !== '') {
-                      isWarning = this._evaluateWarningCondition(balanceData.value, this.config.global_warning);
-                    }
-                  }
+                  const warningCondition = this._getEntityWarningCondition(balanceData.entity_id);
+                  const isWarning = warningCondition
+                    ? this._evaluateWarningCondition(balanceData.value, warningCondition)
+                    : false;
                   return html`
                     <div class="device-item" @click=${() => this._handleEntityClick(balanceData)}>
                       <div class="device-left">
@@ -1039,7 +1055,7 @@ class XiaoshiBalanceButtonEditor extends BalanceEditorMixin(LitElement) {
         </div>
 
         <div class="form-group">
-          <label>全局预警条件：当任一实体满足此条件时触发预警</label>
+          <label>全局预警条件：未单独设置预警的实体满足此条件时触发预警（实体自身预警优先）</label>
           <input
             type="text"
             @change=${this._entityChanged}
@@ -1094,6 +1110,7 @@ class XiaoshiBalanceButtonEditor extends BalanceEditorMixin(LitElement) {
             • 图标重定义：勾选后可自定义图标（如 mdi:phone）<br>
             • 单位重定义：勾选后可自定义单位（如 元、$、kWh 等）<br>
             • 预警条件：勾选后设置预警条件，支持 >10, >=10, <10, <=10, ==10, ==on, ==off, =="hello world" 等<br>
+            • 实体预警优先于全局预警，已配置实体预警的实体不受全局预警影响<br>
             • 未勾选重定义时，将使用实体的原始属性值
           </div>
         </div>
@@ -1352,9 +1369,12 @@ class XiaoshiBalanceButton extends BalanceBaseMixin(LitElement) {
         const minValue = Math.min(...numericValues.map(item => item.value));
         displayValue = minValue;
         displayUnit = '元';
-        if (this.config.global_warning && this.config.global_warning.trim() !== '') {
-          isWarning = this._evaluateWarningCondition(displayValue, this.config.global_warning);
-        }
+        // 逐实体判定：实体预警优先于全局预警，全局预警只作用于没配实体预警的实体；
+        // 任一实体预警，按钮即预警
+        isWarning = numericValues.some(({ value, item }) => {
+          const warningCondition = this._getEntityWarningCondition(item.entity_id);
+          return warningCondition ? this._evaluateWarningCondition(value, warningCondition) : false;
+        });
       } else {
         displayValue = '无有效数值';
         displayUnit = '';
@@ -1369,10 +1389,11 @@ class XiaoshiBalanceButton extends BalanceBaseMixin(LitElement) {
           displayUnit = entity.attributes.unit_of_measurement || '元';
           if (isNaN(displayValue)) {
             displayValue = rawValue;
-          } else {
-            if (this.config.global_warning && this.config.global_warning.trim() !== '') {
-              isWarning = this._evaluateWarningCondition(displayValue, this.config.global_warning);
-            }
+          }
+          // 实体预警优先，无实体预警时才用全局预警
+          const warningCondition = this._getEntityWarningCondition(specificEntityId);
+          if (warningCondition) {
+            isWarning = this._evaluateWarningCondition(displayValue, warningCondition);
           }
         } else {
           displayValue = '实体未找到';
