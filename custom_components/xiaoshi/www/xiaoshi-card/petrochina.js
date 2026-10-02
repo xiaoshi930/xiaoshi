@@ -62,8 +62,8 @@ const editorCommonStyles = css`  .form { display: flex; flex-direction: column; 
   .remove-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; color: #666; }
   .remove-btn:hover { color: #f44336; }`;
 
-const cardCommonStyles = css`  :host { display: block; max-width: 500px; margin: 0 auto; }
-  ha-card { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--bg-color, #fff); border-radius: 12px; }
+const cardCommonStyles = css`  :host { display: block; max-width: 500px; margin: 0 auto;}
+  ha-card { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--bg-color, #fff); border-radius: 12px; border: none;}
   .card-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--bg-color, #fff); border-radius: 12px; }
   .offline-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
   @keyframes pulse {
