@@ -1648,7 +1648,7 @@ customElements.define('xiaoshi-state-grid-editor',  XiaoshiStateGridEditor);
  * model: theme / fg / yMax / yTicks / slotCount / slotLabel / sidePad /
  *        barWidthRatio / groups[{series:[{name,color,values,pointColors}]}] /
  *        lines[{name,color,values,groupIndex,markers,pointColors}] /
- *        marker{slot,value,text,color,groupIndex} / legend / tooltip /
+ *        marker{slot,value,text,color,groupIndex} / depletion{slot,value,text,color} /
  *        animation / animationDuration / animationStagger / animKey
  * ========================================================================== */
 
@@ -1668,6 +1668,30 @@ function xsColor(color) {
     const b = parseInt(t.slice(5, 7), 16);
     const a = parseInt(t.slice(7, 9), 16) / 255;
     return `rgba(${r},${g},${b},${a.toFixed(3)})`;
+  }
+  return t;
+}
+
+/* 给颜色叠加指定透明度，返回 rgba()。
+ * 注意不能简单拼接字符串：配置里的颜色可能是 #RRGGBBAA（如燃气的 #f66f07ff），
+ * 再拼 '40' 会得到 '#f66f07ff40' 这种非法值，Canvas 会静默沿用上一次的填充色。
+ * 支持 #RGB / #RRGGBB / #RRGGBBAA / rgb() / rgba()。 */
+function xsFade(color, alpha) {
+  const a = typeof alpha === 'number' ? Math.max(0, Math.min(1, alpha)) : 0.25;
+  if (typeof color !== 'string') return color;
+  const t = color.trim();
+  let m;
+  if ((m = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(t))) {
+    const c = (s) => parseInt(s + s, 16);
+    return `rgba(${c(m[1])},${c(m[2])},${c(m[3])},${a})`;
+  }
+  if ((m = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(t))) {
+    const h = m[1];
+    return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`;
+  }
+  if ((m = /^rgba?\(([^)]+)\)$/i.exec(t))) {
+    const p = m[1].split(',').map((s) => s.trim());
+    if (p.length >= 3) return `rgba(${p[0]},${p[1]},${p[2]},${a})`;
   }
   return t;
 }
@@ -2117,28 +2141,39 @@ class XsCanvasChart {
           color: line.pointColors && line.pointColors[i] ? xsColor(line.pointColors[i]) : null
         });
       }
-      ctx.strokeStyle = lineColor;
+      // 逐段绘制：每段颜色取终点的 pointColor（预估段自然是淡化色），缺省 lineColor；相邻同色段合并成一条 path
+      let prev = null;
+      let curColor = null;
+      let open = false;
+      const closeSeg = () => { if (open) { ctx.stroke(); open = false; } };
       ctx.lineWidth = line.width || 2;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
-      ctx.beginPath();
-      let started = false;
-      let prev = null;
       for (const pt of points) {
-        if (!pt) { started = false; prev = null; continue; }
+        if (!pt) { closeSeg(); prev = null; curColor = null; continue; }
+        let end = pt;
+        let truncated = false;
         if (pt.x > revealX) {
           // 动画进行中：把最后一段截断在 revealX 上，形成"画出来"的效果
-          if (started && prev) {
-            const k = (revealX - prev.x) / (pt.x - prev.x);
-            ctx.lineTo(revealX, prev.y + (pt.y - prev.y) * k);
-          }
-          started = false;
-          break;
+          if (!prev) break;
+          const k = (revealX - prev.x) / (pt.x - prev.x);
+          end = { x: revealX, y: prev.y + (pt.y - prev.y) * k, color: pt.color };
+          truncated = true;
         }
-        if (!started) { ctx.moveTo(pt.x, pt.y); started = true; } else { ctx.lineTo(pt.x, pt.y); }
+        const c = end.color || lineColor;
+        if (!open || c !== curColor) {
+          closeSeg();
+          ctx.beginPath();
+          ctx.strokeStyle = c;
+          curColor = c;
+          ctx.moveTo(prev ? prev.x : end.x, prev ? prev.y : end.y);
+          open = true;
+        }
+        ctx.lineTo(end.x, end.y);
+        if (truncated) { closeSeg(); break; }
         prev = pt;
       }
-      ctx.stroke();
+      closeSeg();
 
       if (line.markers !== false) {
         points.forEach((pt) => {
@@ -2184,6 +2219,49 @@ class XsCanvasChart {
         let tx = Math.min(Math.max(x, plot.x + tw / 2), plot.x + plot.w - tw / 2);
         ctx.fillText(mk.text, tx, y - 7);
       }
+      ctx.restore();
+    }
+
+    /* ---- 「预计N日耗尽」气泡标签 ---- */
+    const dp = model.depletion;
+    if (dp && dp.text && mkP > 0) {
+      const i = Math.max(0, Math.min(geo.slotCount - 1, xsNum(dp.slot)));
+      const x = this._groupCenter(geo, i, dp.groupIndex || 0);
+      const y = toY(xsNum(dp.value));
+      ctx.save();
+      ctx.globalAlpha = mkP;
+      ctx.font = xsFont(11, 'bold');
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const tw = ctx.measureText(dp.text).width;
+      const padX = 8, bubbleH = 21, arrowH = 6;
+      const bw = Math.ceil(tw) + padX * 2;
+      // 气泡居中在目标柱子上方，箭头尖端指向柱子顶；水平方向不超出绘图区
+      const cx = Math.min(Math.max(x, plot.x + bw / 2), plot.x + plot.w - bw / 2);
+      const bubbleBottom = Math.max(y - arrowH - 2, plot.y + bubbleH);   // 气泡顶不越过绘图区上沿
+      const bubbleTop = bubbleBottom - bubbleH;
+      const bubbleColor = xsColor(dp.color || '#FF8C00');
+      const rr = 6;
+      const l = cx - bw / 2, t = bubbleTop, r = cx + bw / 2, b = bubbleBottom;
+      ctx.beginPath();
+      ctx.moveTo(l + rr, t);
+      ctx.arcTo(r, t, r, b, rr);
+      ctx.arcTo(r, b, l, b, rr);
+      ctx.arcTo(l, b, l, t, rr);
+      ctx.arcTo(l, t, r, t, rr);
+      ctx.closePath();
+      ctx.fillStyle = bubbleColor;
+      ctx.fill();
+      // 下尖角（指向柱子顶）
+      ctx.beginPath();
+      ctx.moveTo(x - 5, b - 0.5);
+      ctx.lineTo(x + 5, b - 0.5);
+      ctx.lineTo(x, b + arrowH);
+      ctx.closePath();
+      ctx.fill();
+      // 文字
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(dp.text, cx, t + bubbleH / 2 + 0.5);
       ctx.restore();
     }
 
@@ -2672,8 +2750,8 @@ class  XiaoshiStateGridInfo extends LitElement {
       /* 日历格子里的用量 / 费用：等宽圆角标签（宽度 = 格子宽 - 左右各 3px），底色用原本的文字色，文字改用主题色 */
       .electricity-num { font-size: 12px; line-height: 13px; width: calc(100% - 2px); text-align: center; border-radius: 3px; white-space: nowrap; overflow: hidden; margin-top: 0; box-sizing: border-box; }
       .electricity-cost { font-size: 12px; line-height: 13px; width: calc(100% - 2px); text-align: center; border-radius: 3px; white-space: nowrap; overflow: hidden; margin-top: 1px; box-sizing: border-box; }
-      .min-usage { background-color: rgba(0, 255, 0, 0.2); }
-      .max-usage { background-color: rgba(255, 0, 0, 0.2); }
+      .min-usage { background-color: rgba(0, 255, 0, 0.4); }
+      .max-usage { background-color: rgba(255, 0, 0, 0.4); }
       .summary-info { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; font-size: 13px; line-height: 16px; font-weight: 500; padding: 0 0 0 30px; white-space: nowrap; }
       /* 日历下方的月/年统计：标签文字在色块外，数值带底色标签，横向一排；月用量靠左、年用量靠右 */
       .calendar-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 0 8px 10px; font-size: 12px; font-weight: 600; }
@@ -2772,26 +2850,76 @@ class  XiaoshiStateGridInfo extends LitElement {
 
     const lastMonthDays = new Date(currentYear, currentMonth, 0).getDate();
 
-    // 辅助函数：根据数据来源生成单条数据
-    const fillDayData = (getField, avgDiff) => {
+    /* ---- 预估模型 -----------------------------------------------------------
+     * 形状取自「上月同日」，水平用「最近 N 天的加权比值」缩放到本月真实水平：
+     *     预估(day) = 上月同日值 × 水平比
+     * 相比旧的「上月同日 + 平均差」（加法）：
+     *   1. 比值法不受量级影响。本月整体是上月的 0.9 倍时，整条曲线等比压到 90%；
+     *      加法只给一个固定偏移，会把高峰压过头、把低谷抬过高，形状被扭曲；
+     *   2. 单日异常只影响当天的比值，不会像平均差那样污染整月；
+     *   3. 权重按 0.85^距今天数 衰减，越近的数据越有话语权，天然跟随趋势（换季、放假）；
+     *   4. 水平比与单日预估都做区间夹逼，月初只有 1~2 天数据时也不会跑飞。
+     * 上月同日没有数据时退化为「近期加权平均」，保证曲线不断档。
+     * ---------------------------------------------------------------------- */
+    const RECENT_WINDOW = 7;      // 参与水平估计的最近天数
+    const RECENT_DECAY = 0.85;    // 每天的权重衰减系数
+    const RATIO_MIN = 0.45;       // 水平比下限
+    const RATIO_MAX = 2.2;        // 水平比上限
+    const ESTIMATE_CAP = 2.5;     // 单日预估上限 = 近期平均 × 该系数
+
+    /* 为某个字段构造预估器（统计最近 N 天的加权水平比 + 近期绝对水平） */
+    const buildEstimator = (getField) => {
+      const start = Math.max(1, lastDataDay - RECENT_WINDOW + 1);
+      let curW = 0, lastW = 0, recentSum = 0, recentWeight = 0, pairCount = 0;
+      for (let d = start; d <= lastDataDay; d++) {
+        const curItem = currentMonthMap[d];
+        if (!curItem) continue;
+        const w = Math.pow(RECENT_DECAY, lastDataDay - d);
+        const curVal = Number(getField(curItem)) || 0;
+        recentSum += curVal * w;
+        recentWeight += w;
+        const lastItem = lastMonthMap[d];
+        const lastVal = lastItem ? (Number(getField(lastItem)) || 0) : 0;
+        // 只把「上月同日有值」的天纳入水平比，避开除零和噪声放大
+        if (lastVal > 0) { curW += curVal * w; lastW += lastVal * w; pairCount++; }
+      }
+      const recentAvg = recentWeight > 0 ? recentSum / recentWeight : 0;
+      // 本月/上月整体水平比；没有可配对样本时按 1:1 沿用上月形状
+      let ratio = lastW > 0 ? curW / lastW : 1;
+      ratio = Math.min(RATIO_MAX, Math.max(RATIO_MIN, ratio));
+      // 样本越少越不敢偏离上月：不足 7 天时把水平比按比例拉回 1:1，
+      // 否则月初一天的偶发波动就会决定整个月的预估值。
+      ratio = 1 + (ratio - 1) * Math.min(1, pairCount / RECENT_WINDOW);
+      const cap = recentAvg > 0 ? recentAvg * ESTIMATE_CAP : Infinity;
+      const estimate = (day) => {
+        const lastItem = lastMonthMap[day];
+        // 上月不足 31 天时（如 9 月）借本月 1 号的量级兜底
+        const overflowDay = day > lastMonthDays ? day - lastMonthDays : null;
+        const overflowItem = overflowDay !== null ? currentMonthMap[overflowDay] : null;
+        let base = lastItem ? (Number(getField(lastItem)) || 0)
+          : (overflowItem ? (Number(getField(overflowItem)) || 0) : 0);
+        if (!(base > 0)) base = recentAvg;
+        return Math.max(0, Math.min(base * ratio, cap));
+      };
+      return { ratio, recentAvg, estimate };
+    };
+
+    /* 组装整月序列：历史取真实值，未来取预估，缺数据的历史日用上月同日值补位 */
+    const fillDayData = (getField) => {
+      const estimator = buildEstimator(getField);
       const dataArr = [], isLastArr = [], isEstimateArr = [];
       for (let day = 1; day <= daysInCurrentMonth; day++) {
         const curItem = currentMonthMap[day];
         const lastItem = lastMonthMap[day];
         const overflowDay = day > lastMonthDays ? day - lastMonthDays : null;
         const overflowItem = overflowDay !== null ? currentMonthMap[overflowDay] : null;
-        const isFuture = day > lastDataDay;
 
         if (curItem && day <= lastDataDay) {
           dataArr.push(Number(getField(curItem)) || 0);
           isLastArr.push(false);
           isEstimateArr.push(false);
-        } else if (isFuture && lastItem) {
-          dataArr.push(Math.max(0, (Number(getField(lastItem)) || 0) + avgDiff));
-          isLastArr.push(true);
-          isEstimateArr.push(true);
-        } else if (isFuture && overflowItem) {
-          dataArr.push(Math.max(0, (Number(getField(overflowItem)) || 0) + avgDiff));
+        } else if (day > lastDataDay) {
+          dataArr.push(estimator.estimate(day));
           isLastArr.push(true);
           isEstimateArr.push(true);
         } else if (lastItem) {
@@ -2811,21 +2939,6 @@ class  XiaoshiStateGridInfo extends LitElement {
       return { dataArr, isLastArr, isEstimateArr };
     };
 
-    // 计算平均差值的辅助函数
-    const calcAvgDiff = (getField) => {
-      let curSum = 0, lastSum = 0, cnt = 0;
-      for (let d = 1; d <= lastDataDay; d++) {
-        const curItem = currentMonthMap[d];
-        const lastItem = lastMonthMap[d];
-        if (curItem) {
-          curSum += Number(getField(curItem)) || 0;
-          if (lastItem) lastSum += Number(getField(lastItem)) || 0;
-          cnt++;
-        }
-      }
-      return cnt > 0 ? (curSum - lastSum) / cnt : 0;
-    };
-
     const categories = [];
     for (let day = 1; day <= daysInCurrentMonth; day++) categories.push(day);
 
@@ -2833,17 +2946,11 @@ class  XiaoshiStateGridInfo extends LitElement {
 
     if (uc.hasPeakValley) {
       // ===== 电费：有尖峰平谷 =====
-      const avgDiffTip = calcAvgDiff(i => i.dayTPq);
-      const avgDiffPeak = calcAvgDiff(i => i.dayPPq);
-      const avgDiffNormal = calcAvgDiff(i => i.dayNPq);
-      const avgDiffValley = calcAvgDiff(i => i.dayVPq);
-      const avgDiffCost = calcAvgDiff(i => i.dayEleCost);
-
-      const tip = fillDayData(i => i.dayTPq, avgDiffTip);
-      const peak = fillDayData(i => i.dayPPq, avgDiffPeak);
-      const normal = fillDayData(i => i.dayNPq, avgDiffNormal);
-      const valley = fillDayData(i => i.dayVPq, avgDiffValley);
-      const cost = fillDayData(i => i.dayEleCost, avgDiffCost);
+      const tip = fillDayData(i => i.dayTPq);
+      const peak = fillDayData(i => i.dayPPq);
+      const normal = fillDayData(i => i.dayNPq);
+      const valley = fillDayData(i => i.dayVPq);
+      const cost = fillDayData(i => i.dayEleCost);
 
       return {
         categories,
@@ -2860,11 +2967,8 @@ class  XiaoshiStateGridInfo extends LitElement {
       };
     } else {
       // ===== 水费/燃气：无尖峰平谷 =====
-      const avgDiffGas = calcAvgDiff(i => i.dayEleNum);
-      const avgDiffCost = calcAvgDiff(i => i.dayEleCost);
-
-      const gas = fillDayData(i => i.dayEleNum, avgDiffGas);
-      const cost = fillDayData(i => i.dayEleCost, avgDiffCost);
+      const gas = fillDayData(i => i.dayEleNum);
+      const cost = fillDayData(i => i.dayEleCost);
 
       return {
         categories,
@@ -3047,6 +3151,8 @@ class  XiaoshiStateGridInfo extends LitElement {
     const attr = (state && state.attributes) ? state.attributes : null;
     const daylist = (attr && Array.isArray(attr.daylist)) ? attr.daylist : [];
     const lastDay = daylist.length ? (((daylist[daylist.length - 1] || {}).day) || '') : '';
+    // 最近 3 天的完整记录也计入指纹：同一天的数据被修正/补录时要重画，否则预估结果不会更新
+    const tail = daylist.length ? JSON.stringify(daylist.slice(0, 3)) : '';
     let monthKey = 'none';
     if (attr) {
       if (Array.isArray(attr.monthlist)) monthKey = 'arr' + attr.monthlist.length;
@@ -3054,7 +3160,7 @@ class  XiaoshiStateGridInfo extends LitElement {
     }
     return [
       kind, id, this.config && this.config.utility_type, this._evaluateTheme(),
-      this.colorNum, this.colorCost, daylist.length, lastDay, monthKey
+      this.colorNum, this.colorCost, daylist.length, lastDay, tail, attr && attr.剩余天数, monthKey
     ].join('|');
   }
 
@@ -3101,10 +3207,15 @@ class  XiaoshiStateGridInfo extends LitElement {
     const colorCost = this.colorCost;
     const slotCount = data.categories.length;
 
-    // 上月/预计数据统一使用 40 透明度的同色
+    // 上月参照 / 预估值统一用同色的淡化版（颜色可能自带 8 位 alpha，必须走 xsFade）
     const withLast = (base, values, isLast) => ({
       values: values,
-      pointColors: values.map((v, i) => ((isLast && isLast[i]) ? base + '40' : base))
+      pointColors: values.map((v, i) => ((isLast && isLast[i]) ? xsFade(base, 0.25) : base))
+    });
+    // 折线用的淡化色稍深一点：2px 细线在 0.25 透明度下会淡到看不清
+    const withLastLine = (base, values, isLast) => ({
+      values: values,
+      pointColors: values.map((v, i) => ((isLast && isLast[i]) ? xsFade(base, 0.45) : base))
     });
 
     const model = {
@@ -3131,7 +3242,7 @@ class  XiaoshiStateGridInfo extends LitElement {
       }];
       model.lines = [
         Object.assign({ name: `日${uc.typeLabel}`, color: colorCost, groupIndex: 0, width: 2 },
-          withLast(colorCost, data.cost, data.costIsLast))
+          withLastLine(colorCost, data.cost, data.costIsLast))
       ];
       model.marker = maxTotal > 0 ? {
         slot: maxIndex, value: maxTotal, text: `${maxTotal.toFixed(2)}${uc.usageUnit}`,
@@ -3152,7 +3263,7 @@ class  XiaoshiStateGridInfo extends LitElement {
       }];
       model.lines = [
         Object.assign({ name: `日${uc.costSeriesName}`, color: colorCost, groupIndex: 0, width: 2 },
-          withLast(colorCost, data.cost, data.costIsLast))
+          withLastLine(colorCost, data.cost, data.costIsLast))
       ];
       model.marker = maxGas > 0 ? {
         slot: maxIndex, value: maxGas, text: `${maxGas.toFixed(2)}${uc.usageUnit}`,
@@ -3161,7 +3272,26 @@ class  XiaoshiStateGridInfo extends LitElement {
       model.yMax = Math.max(maxGas, maxCost) * 1.15;
     }
 
+    // 「预计N日耗尽」气泡（剩余天数落在当月内才显示）
+    model.depletion = this._depletionBubble(data, slotCount);
+
     return model;
+  }
+
+  /* 「预计N日耗尽」气泡：剩余天数落在当月内时，返回耗尽日的槽位与柱顶值，否则 null */
+  _depletionBubble(data, slotCount) {
+    const id = this._selectedBalanceEntity;
+    const attr = (id && this.hass && this.hass.states[id]) ? this.hass.states[id].attributes : null;
+    const remain = attr ? parseInt(attr.剩余天数, 10) : NaN;
+    if (!Number.isFinite(remain) || remain <= 0) return null;
+    const depletionDay = new Date().getDate() + remain;   // 剩余天数从今天起算
+    if (depletionDay > slotCount) return null;            // 能撑到月底之后就不标了
+    const slot = depletionDay - 1;
+    const uc = this._getUC();
+    const value = uc.hasPeakValley
+      ? ((data.total || [])[slot] || 0)
+      : ((data.gas || [])[slot] || 0);
+    return { slot: slot, value: value, text: `预计${depletionDay}日耗尽`, color: '#FF8C00' };
   }
 
   /* 构建"日"图表浮层内容 */
@@ -3265,7 +3395,7 @@ class  XiaoshiStateGridInfo extends LitElement {
     } else {
       // ===== 水费/燃气：上年/本年各一根柱 =====
       groups.push({
-        series: [{ name: uc.lastUsageSeriesName, color: uc.barColorLast || (uc.barColor + '80'), values: this._monthsToSlots(data.lastgas) }]
+        series: [{ name: uc.lastUsageSeriesName, color: uc.barColorLast || xsFade(uc.barColor, 0.5), values: this._monthsToSlots(data.lastgas) }]
       });
       groups.push({
         series: [{ name: uc.thisUsageSeriesName, color: uc.barColor, values: this._monthsToSlots(data.gas) }]
@@ -3337,7 +3467,7 @@ class  XiaoshiStateGridInfo extends LitElement {
       });
     } else {
       [
-        { name: uc.lastUsageSeriesName, color: uc.barColorLast || (uc.barColor + '80'), value: monthValue(data.lastgas), unit: uc.usageUnit },
+        { name: uc.lastUsageSeriesName, color: uc.barColorLast || xsFade(uc.barColor, 0.5), value: monthValue(data.lastgas), unit: uc.usageUnit },
         { name: uc.thisUsageSeriesName, color: uc.barColor, value: monthValue(data.gas), unit: uc.usageUnit },
         { name: uc.lastCostSeriesName, color: '#f3066040', value: monthValue(data.lastcost), unit: '元' },
         { name: uc.thisCostSeriesName, color: this.colorCost, value: monthValue(data.cost), unit: '元' }
