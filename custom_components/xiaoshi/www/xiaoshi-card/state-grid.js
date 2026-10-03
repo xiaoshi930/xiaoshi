@@ -372,8 +372,8 @@ class XiaoshiStateGridButtonEditor extends LitElement {
 
         <div class="form-group">
           <label class="color-input-wrapper">${uc.costLabel}数据颜色：
-            <input type="color" @change=${this._entityChanged} .value=${this.config.color_cost !== undefined ? this.config.color_cost : '#f30660'} name="color_cost" class="color-input" />
-            <input type="text" @change=${this._entityChanged} .value=${this.config.color_cost !== undefined ? this.config.color_cost : '#f30660'} name="color_cost" class="color-text" placeholder="#f30660" />
+            <input type="color" @change=${this._entityChanged} .value=${this.config.color_cost !== undefined ? this.config.color_cost : '#ff3d02'} name="color_cost" class="color-input" />
+            <input type="text" @change=${this._entityChanged} .value=${this.config.color_cost !== undefined ? this.config.color_cost : '#ff3d02'} name="color_cost" class="color-text" placeholder="#ff3d02" />
           </label>
         </div>
 
@@ -1228,17 +1228,17 @@ class XiaoshiStateGridEditor extends LitElement {
             <input 
               type="color" 
               @change=${this._valueChanged}
-              .value=${this.config.color_cost !== undefined ? this.config.color_cost : '#f30660'}
+              .value=${this.config.color_cost !== undefined ? this.config.color_cost : '#ff3d02'}
               name="color_cost"
               class="color-input"
             />
             <input 
               type="text" 
               @change=${this._valueChanged}
-              .value=${this.config.color_cost !== undefined ? this.config.color_cost : '#f30660'}
+              .value=${this.config.color_cost !== undefined ? this.config.color_cost : '#ff3d02'}
               name="color_cost"
               class="color-text"
-              placeholder="#f30660"
+              placeholder="#ff3d02"
             />
           </label>
         </div>
@@ -2426,7 +2426,7 @@ class  XiaoshiStateGridInfo extends LitElement {
     this.monthData = null;
     this.yearData = null;
     this.colorNum = '#07d2ff';
-    this.colorCost = '#f30660';
+    this.colorCost = '#ff3d02';
     this.showPanel = ''; // 初始不显示任何面板
     this._balanceData = [];
     this._balanceLoading = false;
@@ -2743,9 +2743,10 @@ class  XiaoshiStateGridInfo extends LitElement {
       .today-button { cursor: pointer; user-select: none; }
       .weekday { font-size: 13px; }
       .month-day { cursor: pointer; min-width: 0; position: relative; justify-content: flex-start; padding: 10px 2px 2px; box-sizing: border-box; }
-      /* 日期数字：右上角圆形浅灰底（半透明；贴顶摆放，避免压到下方用量标签的文字） */
-      .month-day > .day-num { position: absolute; top: 0; right: 2px; width: 14px; height: 14px; border-radius: 50%;
-        background-color: rgba(150, 150, 150, 0.3); display: flex; align-items: center; justify-content: center;
+      /* 日期数字：右上角圆形底（贴顶、靠右边框摆放，避免压到下方用量标签的文字）
+         底色/文字色按主题在 renderCalendar 里用行内样式给：light = 黑 0.6 + 白字，dark = 白 0.6 + 黑字 */
+      .month-day > .day-num { position: absolute; top: 0; right: 0; width: 14px; height: 14px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
         font-size: 10px; line-height: 1; font-weight: 500; }
       /* 日历格子里的用量 / 费用：等宽圆角标签（宽度 = 格子宽 - 左右各 3px），底色用原本的文字色，文字改用主题色 */
       .electricity-num { font-size: 12px; line-height: 13px; width: calc(100% - 2px); text-align: center; border-radius: 3px; white-space: nowrap; overflow: hidden; margin-top: 0; box-sizing: border-box; }
@@ -3390,7 +3391,7 @@ class  XiaoshiStateGridInfo extends LitElement {
           { name: '本年尖', color: '#FF5252', values: this._monthsToSlots(data.tip) }
         ]
       });
-      lines.push({ name: `上年${uc.typeLabel}`, color: '#f3066040', values: lastYearCost, groupIndex: 0, width: 2 });
+      lines.push({ name: `上年${uc.typeLabel}`, color: '#ff3d0240', values: lastYearCost, groupIndex: 0, width: 2 });
       lines.push({ name: `本年${uc.typeLabel}`, color: colorCost, values: currentCost, groupIndex: 1, width: 2 });
     } else {
       // ===== 水费/燃气：上年/本年各一根柱 =====
@@ -3400,7 +3401,7 @@ class  XiaoshiStateGridInfo extends LitElement {
       groups.push({
         series: [{ name: uc.thisUsageSeriesName, color: uc.barColor, values: this._monthsToSlots(data.gas) }]
       });
-      lines.push({ name: uc.lastCostSeriesName, color: '#f3066040', values: lastYearCost, groupIndex: 0, width: 2 });
+      lines.push({ name: uc.lastCostSeriesName, color: '#ff3d0240', values: lastYearCost, groupIndex: 0, width: 2 });
       lines.push({ name: uc.thisCostSeriesName, color: colorCost, values: currentCost, groupIndex: 1, width: 2 });
     }
 
@@ -3453,7 +3454,7 @@ class  XiaoshiStateGridInfo extends LitElement {
         { name: '上年峰', color: '#FF980040', key: 'lastpeak', unit: uc.usageUnit },
         { name: '上年平', color: '#4CAF5040', key: 'lastnormal', unit: uc.usageUnit },
         { name: '上年谷', color: '#00BCD440', key: 'lastvalley', unit: uc.usageUnit },
-        { name: `上年${uc.typeLabel}`, color: '#f3066040', key: 'lastcost', unit: '元' },
+        { name: `上年${uc.typeLabel}`, color: '#ff3d0240', key: 'lastcost', unit: '元' },
         { name: '本年尖', color: '#FF5252', key: 'tip', unit: uc.usageUnit },
         { name: '本年峰', color: '#FF9800', key: 'peak', unit: uc.usageUnit },
         { name: '本年平', color: '#4CAF50', key: 'normal', unit: uc.usageUnit },
@@ -3469,7 +3470,7 @@ class  XiaoshiStateGridInfo extends LitElement {
       [
         { name: uc.lastUsageSeriesName, color: uc.barColorLast || xsFade(uc.barColor, 0.5), value: monthValue(data.lastgas), unit: uc.usageUnit },
         { name: uc.thisUsageSeriesName, color: uc.barColor, value: monthValue(data.gas), unit: uc.usageUnit },
-        { name: uc.lastCostSeriesName, color: '#f3066040', value: monthValue(data.lastcost), unit: '元' },
+        { name: uc.lastCostSeriesName, color: '#ff3d0240', value: monthValue(data.lastcost), unit: '元' },
         { name: uc.thisCostSeriesName, color: this.colorCost, value: monthValue(data.cost), unit: '元' }
       ].forEach((info) => {
         const value = Number(info.value) || 0;
@@ -3499,6 +3500,51 @@ class  XiaoshiStateGridInfo extends LitElement {
       return `${year - 1}-12`;
     }
     return `${year}-${String(month).padStart(2, '0')}`;
+  }
+
+  /* 获取月阶梯第2/3档起始用量
+   * 优先使用当前月份专属阶梯（「月阶梯峰平谷变动阶梯」可逐月维护），
+   * 缺失时回退到通用的「月阶梯第2/3档起始X量」 */
+  getMonthLadderLevels(billingAttrs, month) {
+    const unit = `起始${this._getUC().ladderUsageKey}量`;
+    const num = (value) => {
+      if (value === undefined || value === null || value === '') return null;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+    const attrs = billingAttrs || {};
+    const second = num(attrs[`${month}月阶梯第2档${unit}`]) ?? num(attrs[`月阶梯第2档${unit}`]);
+    const third = num(attrs[`${month}月阶梯第3档${unit}`]) ?? num(attrs[`月阶梯第3档${unit}`]);
+    return { second, third };
+  }
+
+  /* 计算本月预估费用 = 本月已发生日金额合计 + 剩余天数 × 日均预估金额
+   * 日均预估优先取实体属性「日均消费」，缺失时用最近7天日金额均值
+   * 剩余天数按「本月总天数 - 已有数据的日期数」推算，数据滞后时同样计入预估 */
+  getEstimatedMonthCost(daylist, billingAttrs) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    const monthItems = (daylist || []).filter(item => item && typeof item.day === 'string' && item.day.startsWith(monthPrefix));
+    const actualCost = monthItems.reduce((sum, item) => sum + (Number(item.dayEleCost) || 0), 0);
+
+    let avgDaily = Number(billingAttrs?.日均消费);
+    if (!Number.isFinite(avgDaily) || avgDaily <= 0) {
+      const costs = (daylist || []).slice(0, 7).map(item => Number(item?.dayEleCost) || 0);
+      avgDaily = costs.length ? costs.reduce((a, b) => a + b, 0) / costs.length : 0;
+    }
+
+    const estimatedDays = Math.max(0, daysInMonth - monthItems.length);
+    const total = actualCost + avgDaily * estimatedDays;
+    return {
+      actual: Math.round(actualCost * 100) / 100,
+      avgDaily: Math.round(avgDaily * 100) / 100,
+      estimatedDays,
+      total: Math.round(total * 100) / 100,
+    };
   }
 
   /*分析最近3个月的用电数据，根据尖平谷的用电量判断有哪些类型在使用*/
@@ -3551,7 +3597,7 @@ class  XiaoshiStateGridInfo extends LitElement {
   }
 
   /* 根据计费标准和用电类型获取对应的价格信息
-   * 电费支持6种不同的计费标准：年阶梯峰平谷、年阶梯、月阶梯峰平谷、月阶梯峰平谷变动价格、月阶梯、平均单价
+   * 电费支持7种不同的计费标准：年阶梯峰平谷、年阶梯、月阶梯峰平谷、月阶梯峰平谷变动价格、月阶梯峰平谷变动阶梯、月阶梯、平均单价
    * 水费/燃气仅支持年阶梯和平均单价*/
   getElectricityPrices(billingStandard, currentLevel, electricityTypes) {
     // 使用选中的余额实体而不是固定的this.entity
@@ -3615,14 +3661,15 @@ class  XiaoshiStateGridInfo extends LitElement {
           if (type === 'normal') prices.normal = selectedEntity.attributes.计费标准[`月阶梯第${currentLevel}档平电价`];
           if (type === 'valley') prices.valley = selectedEntity.attributes.计费标准[`月阶梯第${currentLevel}档谷电价`];
           break;
+        // 变动价格 / 变动阶梯：尖峰平用通用档位电价，谷电价按当前月份取
         case '月阶梯峰平谷变动价格':
+        case '月阶梯峰平谷变动阶梯':
           if (type === 'tip') prices.tip = selectedEntity.attributes.计费标准[`月阶梯第${currentLevel}档尖电价`];
           if (type === 'peak') prices.peak = selectedEntity.attributes.计费标准[`月阶梯第${currentLevel}档峰电价`];
           if (type === 'normal') prices.normal = selectedEntity.attributes.计费标准[`月阶梯第${currentLevel}档平电价`];
           if (type === 'valley') {
             const currentMonth = new Date().getMonth() + 1;
-            const monthKey = `${currentMonth}月`;
-            prices.valley = selectedEntity.attributes.计费标准[`${monthKey}阶梯第${currentLevel}档谷电价`];
+            prices.valley = selectedEntity.attributes.计费标准[`${currentMonth}月阶梯第${currentLevel}档谷电价`];
           }
           break;
       }
@@ -4188,6 +4235,10 @@ class  XiaoshiStateGridInfo extends LitElement {
     const fgColor = lockWhiteFg ? 'rgb(255, 255, 255)' : theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const uc = this._getUC();
     const unitText = uc.usageUnit === '度' ? '°' : uc.usageUnit;
+    // 日期数字圆底：按主题取反差配色，light 用黑 0.6 底 + 白字，dark 用白 0.6 底 + 黑字
+    const dayNumStyle = theme === 'light'
+      ? 'background-color: rgba(0, 0, 0, 0.6); color: rgb(255, 255, 255);'
+      : 'background-color: rgba(255, 255, 255, 0.6); color: rgb(0, 0, 0);';
     const fmt = (v) => (Number(v) || 0).toFixed(2);
     const daysInMonth = this.getDaysInMonth(this.year, this.month);
     const firstDayOfMonth = new Date(this.year, this.month - 1, 1).getDay();
@@ -4240,7 +4291,7 @@ class  XiaoshiStateGridInfo extends LitElement {
       const isMaxDay = maxDays.includes(i.toString());
       const dayClass = isMinDay ? 'min-usage' : isMaxDay ? 'max-usage' : '';
       const dayContent = html`
-        <div class="day-num">${i}</div>
+        <div class="day-num" style="${dayNumStyle}">${i}</div>
         ${dayData ? html`
           <div class="electricity-num" style="background-color: ${this.colorNum}; color: ${fgColor}">${dayData.dayEleNum}${this._getUC().usageUnit === '度' ? '°' : this._getUC().usageUnit}</div>
           <div class="electricity-cost" style="background-color: ${this.colorCost}; color: ${fgColor}">￥${dayData.dayEleCost}</div>
@@ -4328,8 +4379,14 @@ class  XiaoshiStateGridInfo extends LitElement {
         const ladderType = isYearLadder ? '年' : '月';
         const ladderTitle = isYearLadder ? `年${this._getUC().typeLabel}阶梯` : `月${this._getUC().typeLabel}阶梯`;
         const currentLevel = selectedEntity.attributes.计费标准?.[`当前${ladderType}阶梯档`]?.replace('第', '').replace('档', '') || '1';
-        const secondLevelStart = selectedEntity.attributes.计费标准?.[`${ladderType}阶梯第2档起始${uc.ladderUsageKey}量`];
-        const thirdLevelStart = selectedEntity.attributes.计费标准?.[`${ladderType}阶梯第3档起始${uc.ladderUsageKey}量`];
+        // 月阶梯：优先使用当前月份专属阶梯（「月阶梯峰平谷变动阶梯」按月维护），缺失时回退通用月度阶梯
+        const monthLadderLevels = this.getMonthLadderLevels(selectedEntity.attributes.计费标准, new Date().getMonth() + 1);
+        const secondLevelStart = isYearLadder
+          ? selectedEntity.attributes.计费标准?.[`年阶梯第2档起始${uc.ladderUsageKey}量`]
+          : (monthLadderLevels.second ?? 180);
+        const thirdLevelStart = isYearLadder
+          ? selectedEntity.attributes.计费标准?.[`年阶梯第3档起始${uc.ladderUsageKey}量`]
+          : (monthLadderLevels.third ?? 280);
         const totalUsage = selectedEntity.attributes.计费标准?.[`${ladderType}阶梯累计用${uc.ladderUsageKey}量`];
         
         let level1Width = 0, level2Width = 0, level3Width = 0;
@@ -4502,6 +4559,8 @@ class  XiaoshiStateGridInfo extends LitElement {
       }
         
     const daydate = normalizedDaylist[0]?.day || selectedEntity.attributes?.daylist?.[0]?.day || '无';
+    // 预付费：本月预估费用 = 本月已发生日金额合计 + 剩余天数 × 日均预估金额
+    const monthCostEstimate = this.getEstimatedMonthCost(normalizedDaylist, selectedEntity.attributes);
     return html`
         <div class="card-main" style="background: ${BgColor}; color: ${Color}">
           <div class="top-section">
@@ -4559,7 +4618,14 @@ class  XiaoshiStateGridInfo extends LitElement {
                   </div>
                   <div class="days-label">预估使用天数</div>
                 </div>
-                ` : html``}
+                ` : html`
+                 <div class="days-info" style="background: ${BgColor2}">
+                  <div class="days-amount">
+                    <span class="currency">￥</span>${monthCostEstimate.total.toFixed(2)}<span class="currency">元</span>
+                  </div>
+                  <div class="days-label">本月预估费用</div>
+                </div>
+                `}
                 
                 <div class="action-buttons">
                   <div class="action-button ${this.showPanel === 'calendar' ? 'active' : ''}" @click="${() => this.showCalendar()}" style="background: ${BgColor2}; color: ${Color}">日历</div>
@@ -4619,7 +4685,7 @@ class  XiaoshiStateGridInfo extends LitElement {
             <div style="border-bottom: 1px solid ${isLight ? 'rgb(240,240,240)' : 'rgb(70,70,70)'};padding: 0 10px;">
               <div style="${rowStyle}">
                 <span style="flex: 1.8; white-space: nowrap;">${item.pay_date || ''}</span>
-                <span style="flex: 1; text-align: right; color: #f30660; font-weight: 600;">￥${item.amount != null ? item.amount : ''}</span>
+                <span style="flex: 1; text-align: right; color: #ff3d02; font-weight: 600;">￥${item.amount != null ? item.amount : ''}</span>
                 <span style="flex: 2.4; text-align: right;">${item.channel || ''}</span>
               </div>
             </div>
