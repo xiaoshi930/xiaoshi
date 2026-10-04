@@ -17,17 +17,7 @@ window.customCards.push({
     description: ''
 });
 
-// ==================== 弹窗高度预算 ====================
-// 弹窗顶部距离：支持 px / vh / % / calc() 等任意 CSS 长度，纯数字按 px；留空用默认。
-// 弹窗（负责定位）和卡片（负责算可用高度）两处共用，避免两套解析逻辑跑偏。
 const POPUP_DEFAULT_TOP = '20px';
-// 底部固定留白（px）
-const POPUP_BOTTOM_GAP = 30;
-// 卡片原设计的总高度单位：head 6.5 + 日历 30 + body 6.5×7 + 间距 0.8×8 = 88.4（即原来的 88.4vh）
-const CARD_DESIGN_UNITS = 88.4;
-// 卡片内部 9 个区块各自 padding:2px 与 margin-bottom:-3px 的净差：9×(4-3) = 9px。
-// 算可用高度时先扣掉，卡片才不会比预算高出一截、把底部留白挤掉。
-const CARD_INNER_EXTRA = 9;
 
 function resolvePopupTop(raw) {
   if (raw === undefined || raw === null || String(raw).trim() === '') return POPUP_DEFAULT_TOP;
@@ -59,7 +49,7 @@ class LunarCalendarPhone extends LitElement {
     this.config = {
       lunar: config?.lunar || 'sensor.lunar_calendar',
       theme: config?.theme || 'system',
-      width: config?.width || '99.5%',
+      width: config?.width || '99%',
       date: config?.date || 'date.lunar_tap_date',
       ...config
     };
@@ -98,8 +88,11 @@ class LunarCalendarPhone extends LitElement {
 
   static get styles() {
     return css`      :host { display: block; max-width:500px; margin: 0 auto; }
-      .card-container { display: flex; flex-direction: column; gap: 0.8vh; }
-      .sub-host { display: block; }
+      .card-container { display: flex; flex-direction: column; }
+      /* min-height:0 + overflow:hidden：flex 子项默认 min-height:auto，
+         内容一多就会把固定 height 顶破 → 卡片总高超出预算 → 滚出纵向滚动条。
+         这里锁死，让内容只能在自己那一段里排布，不会撑大卡片。 */
+      .sub-host { display: block; min-height: 0; overflow: hidden; }
 
       /* ==== LunarCalendar ==== */
       .sub-cal .calendar-grid { border-radius: 10px; display: grid; grid-template-areas: "yearlast year yearnext today monthlast month monthnext" "week1 week2 week3 week4 week5 week6 week7" "id1 id2 id3 id4 id5 id6 id7" "id8 id9 id10 id11 id12 id13 id14" "id15 id16 id17 id18 id19 id20 id21" "id22 id23 id24 id25 id26 id27 id28" "id29 id30 id31 id32 id33 id34 id35" "id36 id37 id38 id39 id40 id41 id42"; grid-template-columns: repeat(7, 1fr); grid-template-rows: 1fr 0.6fr 1fr 1fr 1fr 1fr 1fr 1fr; gap: 1px; padding: 2px; --current-month-color: inherit; --other-month-color: rgb(160,160,160,0.5); user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; margin-bottom: -3px; }
@@ -196,15 +189,6 @@ class LunarCalendarPhone extends LitElement {
       .sub-body7 .direction-container { display: flex; align-items: center; justify-content: center; --mdc-icon-size: 15px; }
       .sub-body7 .direction-icon { transition: transform 0.3s ease; }
 `;
-  }
-
-  _popupLayout() {
-    const top = resolvePopupTop(this.config.popup_top);
-    // % 在 height 的 calc 里是按父元素高度算的，和容器 top 的 % 含义不同，统一换成 vh
-    const topForCalc = /^-?\d+(\.\d+)?%$/.test(top) ? `${parseFloat(top)}vh` : top;
-    const avail = `(100vh - ${topForCalc} - ${POPUP_BOTTOM_GAP + CARD_INNER_EXTRA}px)`;
-    const part = (unit) => `calc(${avail} * ${(unit / CARD_DESIGN_UNITS).toFixed(6)})`;
-    return { head: part(6.5), calendar: part(30), body: part(6.5), gap: part(0.8) };
   }
 
   // ===== 以下方法由原 xiaoshi-lunar-calendar / -head / -bodyX 子卡片移植（逻辑未改）=====
@@ -763,8 +747,7 @@ class LunarCalendarPhone extends LitElement {
     const season = lunarData.老黄历信息?.季节 || '';
     const moonPhase = this.getMoonPhaseWithSymbol(lunarData.老黄历信息?.月相 || '');
     return html`
-      <div export class="calendar"\n
-           style="${style}">
+      <div export class="calendar" style="${style}">
         <div export class="gongli-label">公历</div>
         <div export class="gongli-data">
           ${solarDate}&ensp;
@@ -1043,11 +1026,11 @@ class LunarCalendarPhone extends LitElement {
     if (!this.hass) {
       return html`<div>Loading...</div>`;
     }
-    const layout = this.config.in_popup ? this._popupLayout() : null;
-    const headHeight = layout ? layout.head : '6.5vh';
-    const calendarHeight = layout ? layout.calendar : '30vh';
-    const bodyHeight = layout ? layout.body : '6.5vh';
-    const containerStyle = `width: ${this.config.width};` + (layout ? ` gap: ${layout.gap};` : '');
+    // 固定 vh 口径（不再动态计算）：数值可直接改这里
+    const headHeight = '6.5vh';
+    const calendarHeight = '30vh';
+    const bodyHeight = '6vh';
+    const containerStyle = `width: ${this.config.width}; gap: 0.6vh;`;
     const w = this.config.width;
     return html`
       <div class="card-container" style="${containerStyle}">
@@ -1055,7 +1038,7 @@ class LunarCalendarPhone extends LitElement {
 
         <div class="sub-host sub-cal">${this._renderCalendar(w, calendarHeight)}</div>
 
-        <div class="sub-host sub-body1">${this._renderBody1(w, bodyHeight)}</div>
+        <div class="sub-host sub-body1">${this._renderBody1(w, headHeight)}</div>
 
         <div class="sub-host sub-body2">${this._renderBody2(w, bodyHeight)}</div>
 
@@ -1166,9 +1149,9 @@ class LunarCalendarPhoneDateEditor extends LitElement {
             .value=${this.config.popup_top !== undefined ? String(this.config.popup_top) : ''}
             @change=${this._valueChanged}
             name="popup_top"
-            placeholder="20px（默认）"
+            placeholder="2.5vh（默认）"
           />
-          <span style="font-size:12px;color:#888;">弹窗距屏幕顶部的距离，从顶部往下排布（不垂直居中）。可填 20px / 5vh / 10%，纯数字按 px；留空恢复默认 20px。</span>
+          <span style="font-size:12px;color:#888;">弹窗距屏幕顶部的距离（已自动避让 iOS 状态栏），从顶部往下排布（不垂直居中）。可填 20px / 2.5vh / 10%，纯数字按 px；留空恢复默认 2.5vh。</span>
         </div>
       </div>
     `;
@@ -1176,7 +1159,7 @@ class LunarCalendarPhoneDateEditor extends LitElement {
 
   _valueChanged(e) {
     const { name, value } = e.target;
-    // popup_top 允许清空（清空 = 恢复默认 20px），其余字段沿用旧行为
+    // popup_top 允许清空（清空 = 恢复默认 2.5vh），其余字段沿用旧行为
     if (!value && name !== 'popup_top') return;
 
     let processedValue = value;
@@ -1221,10 +1204,6 @@ class LunarCalendarPhoneDate extends LitElement {
 
   constructor() {
     super();
-    // 弹窗 hass 状态订阅
-    this._popupHassUnsubscribe = null;
-    this._popupUpdatePending = false;
-    this._popupHass = null;
   }
 
   static getConfigElement() {
@@ -1300,7 +1279,7 @@ class LunarCalendarPhoneDate extends LitElement {
 
   // 弹窗距屏幕顶部的距离（弹窗从顶部开始排布，不做垂直居中）：
   // 支持 vh / px / % / calc() 等任意 CSS 长度，纯数字按 px 处理
-  //（方便直接填 0 / 20 / -10）；留空则用默认 20px。
+  //（方便直接填 0 / 20 / -10）；留空则用默认 2.5vh。
   _resolvePopupTop() {
     return resolvePopupTop(this.config ? this.config.popup_top : undefined);
   }
@@ -1315,207 +1294,35 @@ class LunarCalendarPhoneDate extends LitElement {
     this.dispatchEvent(hapticEvent);
   }
 
-  _injectPopupStyles() {
-    if (LunarCalendarPhoneDate._stylesInjected) return;
-    LunarCalendarPhoneDate._stylesInjected = true;
-    const style = document.createElement('style');
-    style.id = 'xiaoshi-phone-popup-style';
-    style.textContent = `
-      @keyframes xiaoshiPhonePopupBottom {
-        from { opacity: 0; transform: translateX(-50%) translateY(100%); }
-        to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-      }
-      @keyframes xiaoshiPhonePopupTop {
-        from { opacity: 0; transform: translateX(-50%) translateY(-100%); }
-        to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-      }
-      @keyframes xiaoshiPhonePopupCenter {
-        from { opacity: 0; transform: translateX(-50%) scale(0.9); }
-        to   { opacity: 1; transform: translateX(-50%) scale(1); }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
   _showPopup() {
     this._handleClick();
-    this._injectPopupStyles();
     const theme = this._evaluateTheme();
-
-    // 获取 hass 对象
-    const haRoot = document.querySelector('home-assistant');
-    const hassObj = haRoot?.hass || haRoot?.shadowRoot?.querySelector('home-assistant-main')?.hass;
-    if (!hassObj) {
-      console.error('[LunarCalendarPhoneDate] 无法获取 hass 对象');
-      return;
-    }
-
-    // 已有弹窗则先关闭
-    if (this._popupOverlay) {
-      this._closePopup();
-    }
-
-    // 创建遮罩层
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 1000;
-      -webkit-backdrop-filter: blur(10px);
-      backdrop-filter: blur(10px);
-      pointer-events: auto;
-    `;
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) this._closePopup();
-    });
-
-    // 创建弹窗容器
-    // 注意：这里不再加 padding —— 容器是透明的，padding 会让「卡片实际位置 = popup_top + padding」，
-    // 参数就对不上肉眼看到的位置了。去掉后 popup_top 直接等于卡片距屏幕顶部的距离。
-    const anim = this.config.popup_animation || 'center';
-    const animNameMap = { bottom: 'xiaoshiPhonePopupBottom', top: 'xiaoshiPhonePopupTop', center: 'xiaoshiPhonePopupCenter' };
-    const animName = animNameMap[anim] || 'xiaoshiPhonePopupBottom';
     const popupTop = this._resolvePopupTop();
-    const popup = document.createElement('div');
-    popup.style.cssText = `
-      position: fixed;
-      top: ${popupTop}; left: 50%;
-      transform: translateX(-50%);
-      z-index: 1005;
-      background: transparent;
-      width: 96vw;
-      animation: ${animName} 0.5s ease-out;
-    `;
 
-    document.body.appendChild(overlay);
-    document.body.appendChild(popup);
-
-    this._popupOverlay = overlay;
-    this._popupElement = popup;
-
-    // 创建卡片
-    // in_popup + popup_top：让卡片按「顶部 = popup_top、底部固定 POPUP_BOTTOM_GAP」的剩余空间分配高度
+    // 卡片配置：弹窗内容为农历日历卡片本体
+    // 高度走固定 vh（见 render()），此处只需透传主题
     const cardConfig = {
       type: 'custom:xiaoshi-lunar-calendar-phone',
-      theme: theme,
-      in_popup: true,
-      popup_top: popupTop
+      theme: theme
     };
-    this._createPopupCard(popup, cardConfig, hassObj);
 
-    // ESC 关闭
-    this._popupEscHandler = (e) => {
-      if (e.key === 'Escape') this._closePopup();
-    };
-    window.addEventListener('keydown', this._popupEscHandler);
+    const serviceData = { card: cardConfig };
+    // 旧实现弹窗宽度为 96vw，此处对齐，避免卡片变宽后内容高度上涨出现滚动条
+    const popupWidth = this.config.popup_width || '95vw';
+    if (popupWidth !== '95vw') serviceData.popup_width = popupWidth;
+    // 无条件下发：popup-card 自身默认是 20px，与本卡默认 5vh 不同，不能靠服务端兜底
+    serviceData.popup_top = popupTop;
+    if (this.config.popup_animation) serviceData.popup_animation = this.config.popup_animation;
+    if (this.config.popup_background === 'transparent') {
+      serviceData.background = 'transparent';
+    } else if (this.config.popup_background === 'theme') {
+      serviceData.background = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    } else if (this.config.popup_background && this.config.popup_background !== '') {
+      serviceData.background = this.config.popup_background;
+    }
+
+    this.hass.callService('popup_card', 'show', serviceData);
   }
 
-  async _createPopupCard(container, cardConfig, hassObj) {
-    try {
-      const helpers = await window.loadCardHelpers?.();
-      if (helpers) {
-        const cardElement = await helpers.createCardElement(cardConfig);
-        cardElement.hass = hassObj;
-        container.appendChild(cardElement);
-        this._popupCardElement = cardElement;
-        // 启动 hass 状态订阅，让弹窗数据持续更新
-        this._startPopupHassWatcher(hassObj);
-      } else {
-        container.innerHTML = '<div style="color:red;padding:20px;">loadCardHelpers 不可用</div>';
-      }
-    } catch (err) {
-      console.error('[LunarCalendarPhoneDate] 创建弹窗卡片失败:', err);
-      container.innerHTML = `<div style="color:red;padding:20px;">加载失败: ${err.message}</div>`;
-    }
-  }
-
-  _closePopup() {
-    if (this._popupOverlay) {
-      this._popupOverlay.remove();
-      this._popupOverlay = null;
-    }
-    if (this._popupElement) {
-      this._popupElement.remove();
-      this._popupElement = null;
-    }
-    this._popupCardElement = null;
-    if (this._popupEscHandler) {
-      window.removeEventListener('keydown', this._popupEscHandler);
-      this._popupEscHandler = null;
-    }
-    // 取消 hass 状态订阅
-    if (this._popupHassUnsubscribe) {
-      this._popupHassUnsubscribe();
-      this._popupHassUnsubscribe = null;
-    }
-    this._popupUpdatePending = false;
-    this._popupHass = null;
-  }
-
-  // ==========================================
-  // 1. 订阅 hass 状态变化
-  // ==========================================
-  _startPopupHassWatcher(hassObj) {
-    if (this._popupHassUnsubscribe) return;
-    this._popupHass = hassObj;
-    if (!hassObj || !hassObj.connection) {
-      setTimeout(() => this._startPopupHassWatcher(hassObj), 500);
-      return;
-    }
-    try {
-      hassObj.connection.subscribeMessage(
-        () => {
-          // 弹窗已关闭，跳过
-          if (!this._popupCardElement) return;
-          // 2. RAF 批处理调度
-          this._schedulePopupUpdate();
-        },
-        { type: 'subscribe_events', event_type: 'state_changed' }
-      ).then((unsub) => {
-        this._popupHassUnsubscribe = unsub;
-      });
-    } catch (err) {
-      console.error('[LunarCalendarPhoneDate] 订阅状态变化失败:', err);
-    }
-  }
-
-  // ==========================================
-  // 2. RAF 批处理调度，每帧最多触发一次更新
-  // ==========================================
-  _schedulePopupUpdate() {
-    if (this._popupUpdatePending) return;
-    this._popupUpdatePending = true;
-    requestAnimationFrame(() => {
-      this._popupUpdatePending = false;
-      // 弹窗已关闭，跳过
-      if (!this._popupCardElement) return;
-      const haRoot = document.querySelector('home-assistant');
-      const newHass = haRoot?.hass || haRoot?.shadowRoot?.querySelector('home-assistant-main')?.hass;
-      if (!newHass) return;
-      // hass 引用未变化时跳过
-      if (newHass === this._popupHass) return;
-      this._popupHass = newHass;
-      this._updatePopupCard();
-    });
-  }
-
-  // ==========================================
-  // 3. 更新弹窗卡片
-  // ==========================================
-  _updatePopupCard() {
-    if (this._popupCardElement && this._popupHass) {
-      try {
-        this._popupCardElement.hass = this._popupHass;
-      } catch (err) {
-        console.warn('[LunarCalendarPhoneDate] 弹窗卡片更新失败:', err.message);
-      }
-    }
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    this._closePopup();
-  }
 }
 customElements.define('xiaoshi-lunar-calendar-phone-date', LunarCalendarPhoneDate);

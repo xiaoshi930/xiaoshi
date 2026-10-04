@@ -1484,10 +1484,6 @@ class LunarCalendarPadDate extends LitElement {
     this._updateInterval = null;
     this._mode = 'A';
     this._theme = 'theme()';
-    // 弹窗 hass 状态订阅
-    this._popupHassUnsubscribe = null;
-    this._popupUpdatePending = false;
-    this._popupHass = null;
   }
 
   setConfig(config) {
@@ -1508,7 +1504,6 @@ class LunarCalendarPadDate extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     clearInterval(this._updateInterval);
-    this._closePopup();
   }
 
   set hass(hass) {
@@ -1517,6 +1512,11 @@ class LunarCalendarPadDate extends LitElement {
     this._lunarState = this._hass.states[lunarEntity];
     this._updateStyles();
     this.requestUpdate();
+  }
+
+  // 统一通过 getter 暴露 hass，避免与 setter 冲突导致 this.hass 为 undefined
+  get hass() {
+    return this._hass;
   }
 
   _updateTime() {
@@ -1742,190 +1742,34 @@ class LunarCalendarPadDate extends LitElement {
     this.dispatchEvent(hapticEvent);
   }
 
-  _injectPopupStyles() {
-    if (LunarCalendarPadDate._stylesInjected) return;
-    LunarCalendarPadDate._stylesInjected = true;
-    const style = document.createElement('style');
-    style.id = 'xiaoshi-pad-popup-style';
-    style.textContent = `
-      @keyframes xiaoshiPadPopupIn {
-        from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
-        to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
   _showPopup() {
     this._handleClick();
-    this._injectPopupStyles();
     const theme = this._evaluateTheme();
 
-    // 获取 hass 对象
-    const haRoot = document.querySelector('home-assistant');
-    const hassObj = haRoot?.hass || haRoot?.shadowRoot?.querySelector('home-assistant-main')?.hass;
-    if (!hassObj) {
-      console.error('[LunarCalendarPadDate] 无法获取 hass 对象');
-      return;
-    }
-
-    // 已有弹窗则先关闭
-    if (this._popupOverlay) {
-      this._closePopup();
-    }
-
-    // 创建遮罩层
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 1000;
-      -webkit-backdrop-filter: blur(10px);
-      backdrop-filter: blur(10px);
-      pointer-events: auto;
-    `;
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) this._closePopup();
-    });
-
-    // 创建弹窗容器
-    const popup = document.createElement('div');
-    popup.style.cssText = `
-      position: fixed;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 1005;
-      background: transparent;
-      padding: 0;
-      max-width: 100vw;
-      max-height: 100vh;
-      overflow: hidden;
-      box-sizing: border-box;
-      animation: xiaoshiPadPopupIn 0.2s ease-out;
-    `;
-
-    document.body.appendChild(overlay);
-    document.body.appendChild(popup);
-
-    this._popupOverlay = overlay;
-    this._popupElement = popup;
-
-    // 创建卡片
+    // 卡片配置：弹窗内容为农历日历卡片本体
     const cardConfig = {
       type: 'custom:xiaoshi-lunar-calendar-pad',
       theme: theme
     };
-    this._createPopupCard(popup, cardConfig, hassObj);
 
-    // ESC 关闭
-    this._popupEscHandler = (e) => {
-      if (e.key === 'Escape') this._closePopup();
-    };
-    window.addEventListener('keydown', this._popupEscHandler);
-  }
+    const serviceData = { card: cardConfig };
+    // 弹窗内容卡片 .grid-container 固定 785x540，popup 默认 95% 会远宽于卡片，
+    // 卡片贴左 -> 视觉不居中。这里让 popup 宽度贴合卡片实际宽度，配合 popup 自身
+    // left:50% + translate 居中，使卡片上下左右都居中；窄屏时不超过 100%。
+    const popupWidth = this.config.popup_width || 'min(785px, 100%)';
+    // 默认 50% -> popup-card 用 translate(-50%,-50%) 实现上下左右居中
+    const popupTop = this.config.popup_top || '50%';
+    serviceData.popup_width = popupWidth;
+    serviceData.popup_top = popupTop;
+    if (this.config.popup_background === 'transparent') {
+      serviceData.background = 'transparent';
+    } else if (this.config.popup_background === 'theme') {
+      serviceData.background = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+    } else if (this.config.popup_background && this.config.popup_background !== '') {
+      serviceData.background = this.config.popup_background;
+    }
 
-  async _createPopupCard(container, cardConfig, hassObj) {
-    try {
-      const helpers = await window.loadCardHelpers?.();
-      if (helpers) {
-        const cardElement = await helpers.createCardElement(cardConfig);
-        cardElement.hass = hassObj;
-        container.appendChild(cardElement);
-        this._popupCardElement = cardElement;
-        // 启动 hass 状态订阅，让弹窗数据持续更新
-        this._startPopupHassWatcher(hassObj);
-      } else {
-        container.innerHTML = '<div style="color:red;padding:20px;">loadCardHelpers 不可用</div>';
-      }
-    } catch (err) {
-      console.error('[LunarCalendarPadDate] 创建弹窗卡片失败:', err);
-      container.innerHTML = `<div style="color:red;padding:20px;">加载失败: ${err.message}</div>`;
-    }
-  }
-
-  _closePopup() {
-    if (this._popupOverlay) {
-      this._popupOverlay.remove();
-      this._popupOverlay = null;
-    }
-    if (this._popupElement) {
-      this._popupElement.remove();
-      this._popupElement = null;
-    }
-    this._popupCardElement = null;
-    if (this._popupEscHandler) {
-      window.removeEventListener('keydown', this._popupEscHandler);
-      this._popupEscHandler = null;
-    }
-    // 取消 hass 状态订阅
-    if (this._popupHassUnsubscribe) {
-      this._popupHassUnsubscribe();
-      this._popupHassUnsubscribe = null;
-    }
-    this._popupUpdatePending = false;
-    this._popupHass = null;
-  }
-
-  // ==========================================
-  // 1. 订阅 hass 状态变化
-  // ==========================================
-  _startPopupHassWatcher(hassObj) {
-    if (this._popupHassUnsubscribe) return;
-    this._popupHass = hassObj;
-    if (!hassObj || !hassObj.connection) {
-      // 重试
-      const timer = setTimeout(() => this._startPopupHassWatcher(hassObj), 500);
-      return;
-    }
-    try {
-      hassObj.connection.subscribeMessage(
-        () => {
-          // 弹窗已关闭，跳过
-          if (!this._popupCardElement) return;
-          // 2. RAF 批处理调度
-          this._schedulePopupUpdate();
-        },
-        { type: 'subscribe_events', event_type: 'state_changed' }
-      ).then((unsub) => {
-        this._popupHassUnsubscribe = unsub;
-      });
-    } catch (err) {
-      console.error('[LunarCalendarPadDate] 订阅状态变化失败:', err);
-    }
-  }
-
-  // ==========================================
-  // 2. RAF 批处理调度，每帧最多触发一次更新
-  // ==========================================
-  _schedulePopupUpdate() {
-    if (this._popupUpdatePending) return;
-    this._popupUpdatePending = true;
-    requestAnimationFrame(() => {
-      this._popupUpdatePending = false;
-      // 弹窗已关闭，跳过
-      if (!this._popupCardElement) return;
-      const haRoot = document.querySelector('home-assistant');
-      const newHass = haRoot?.hass || haRoot?.shadowRoot?.querySelector('home-assistant-main')?.hass;
-      if (!newHass) return;
-      // hass 引用未变化时跳过
-      if (newHass === this._popupHass) return;
-      this._popupHass = newHass;
-      this._updatePopupCard();
-    });
-  }
-
-  // ==========================================
-  // 3. 更新弹窗卡片
-  // ==========================================
-  _updatePopupCard() {
-    if (this._popupCardElement && this._popupHass) {
-      try {
-        this._popupCardElement.hass = this._popupHass;
-      } catch (err) {
-        console.warn('[LunarCalendarPadDate] 弹窗卡片更新失败:', err.message);
-      }
-    }
+    this.hass.callService('popup_card', 'show', serviceData);
   }
 }
 customElements.define('xiaoshi-lunar-calendar-pad-date', LunarCalendarPadDate);
