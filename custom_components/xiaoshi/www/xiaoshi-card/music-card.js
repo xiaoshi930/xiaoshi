@@ -1583,13 +1583,16 @@ class XiaoshiMusicCard extends LitElement {
     overlay.style.justifyContent = 'center';
     if (popupPosition === 'top') {
       overlay.style.alignItems = 'flex-start';
-      overlay.style.paddingTop = '20px';
+      // iOS 状态栏避让：--kiosk-safe-top（主题手动兜底）/ --safe-area-inset-top（HA 变量）/
+      // env()（iOS 硬件真实值）三源取 max，表达式与 xiaoshi/popup-card.js 保持一致。
+      overlay.style.paddingTop = 'calc(20px + max(var(--kiosk-safe-top, 0px), var(--safe-area-inset-top, 0px), env(safe-area-inset-top, 0px)))';
       popup.style.margin = '0 auto';
     }
     if (triggerButton) {
       const r = triggerButton.getBoundingClientRect();
       overlay.style.alignItems = 'flex-start';
-      overlay.style.paddingTop = (r.top + r.height + 8) + 'px';
+      // 按钮定位同样叠加状态栏安全区，避免弹窗被状态栏遮挡
+      overlay.style.paddingTop = 'calc(' + (r.top + r.height + 8) + 'px + max(var(--kiosk-safe-top, 0px), var(--safe-area-inset-top, 0px), env(safe-area-inset-top, 0px)))';
     }
     const renderContent = () => {
       const rendered = typeof content === 'function' ? content() : content;
@@ -2299,7 +2302,7 @@ class XiaoshiMusicCard extends LitElement {
     const closePopup = this.showPopup({
       content: () => container,
       className: 'conversation-bubble',
-      style: 'background:' + (theme.popupBg || '#fff') + ';border-radius:14px;overflow:hidden;display:flex;flex-direction:column;width:' + width + ';max-width:500px;height:' + maxHeight + ';max-height:min(700px,88vh);',
+      style: 'background:' + (theme.popupBg || '#fff') + ';border-radius:14px;overflow:hidden;display:flex;flex-direction:column;width:' + width + ';max-width:500px;height:' + maxHeight + ';max-height:calc(min(700px,88dvh) - max(var(--kiosk-safe-bottom, 0px), var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));',
       showOverlay: true, showBackground: true, overlayBlur: true, popupPosition: 'top',
       onClose: () => { if (this._currentConversationBubbleRef?._targetEl === targetEl) this._currentConversationBubbleRef = null; }
     });
@@ -2522,7 +2525,7 @@ class XiaoshiMusicCard extends LitElement {
         return contentContainer;
       },
       className: 'media-player-popup',
-      style: `background:${tm.bg};backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border-radius:24px;padding:0;overflow:hidden;width:95%;max-width:500px;min-width:320px;height:500px;max-height:min(700px,90vh);display:flex;flex-direction:column;`,
+      style: `background:${tm.bg};backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border-radius:24px;padding:0;overflow:hidden;width:95%;max-width:500px;min-width:320px;height:500px;max-height:calc(min(700px,90dvh) - max(var(--kiosk-safe-bottom, 0px), var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));display:flex;flex-direction:column;`,
       showOverlay: true, showBackground: true, overlayBlur: true, popupPosition: 'top',
     });
 
@@ -6923,7 +6926,7 @@ class XiaoshiMusicCard extends LitElement {
     };
     this._favPopupClose = this.showPopup({
       content: () => renderContent(),
-      style: `background:${t.bg};backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border-radius:24px;padding:0;overflow:hidden;width:95%;max-width:500px;min-width:320px;height:500px;max-height:min(700px,90vh);display:flex;flex-direction:column;`,
+      style: `background:${t.bg};backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border-radius:24px;padding:0;overflow:hidden;width:95%;max-width:500px;min-width:320px;height:500px;max-height:calc(min(700px,90dvh) - max(var(--kiosk-safe-bottom, 0px), var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));display:flex;flex-direction:column;`,
       showOverlay: true, showBackground: true, overlayBlur: true, popupPosition: 'top',
       onClose: () => { this._favPlaying = ''; this._favUpdate = null; },
     });
@@ -7101,7 +7104,7 @@ class XiaoshiMusicCard extends LitElement {
     };
     closePopup = this.showPopup({
       content: () => renderContent(),
-      style: `background:${t.bg};backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border-radius:24px;padding:0;overflow:hidden;width:95%;max-width:500px;min-width:320px;height:500px;max-height:min(700px,90vh);display:flex;flex-direction:column;`,
+      style: `background:${t.bg};backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border-radius:24px;padding:0;overflow:hidden;width:95%;max-width:500px;min-width:320px;height:500px;max-height:calc(min(700px,90dvh) - max(var(--kiosk-safe-bottom, 0px), var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));display:flex;flex-direction:column;`,
       showOverlay: true, showBackground: true, overlayBlur: true, popupPosition: 'top',
       onClose: () => { this._maPlaylistDetail = null; this._maPlaylistTracks = []; this._maExpandedId = null; this._maUpdate = null; this._maPopupClose = null; },
     });
