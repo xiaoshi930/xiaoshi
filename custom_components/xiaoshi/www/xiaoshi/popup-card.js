@@ -187,6 +187,21 @@ window.GlobalPopupController = {
     const top = options.popup_top || '20px';
     const transform = top === '50%' ? 'translate(-50%, -50%)' : 'translateX(-50%)';
 
+    // === iOS 安全区（刘海 / 状态栏 / Home 指示条）避让 ===
+    // 参数 popup_safe_area：'auto'（默认，自动避让）/ 'on'（强制）/ 'off'（关闭，保持旧版全屏贴合）
+    const safeAreaMode = options.popup_safe_area || 'auto';
+    // 取 max(HA变量, env())：HA 的 --safe-area-inset-* 在 App 里可能被覆盖成 0px，
+    // 而 env() 才是 iOS 硬件真实的刘海/状态栏高度，两者取大值才不会漏掉状态栏。
+    // 主题里若显式定义 --kiosk-safe-top / --kiosk-safe-bottom，则以主题值为准（手动兜底入口），
+    // 与 xiaoshi-phone-card 的约定保持一致。
+    const safeTopExpr = 'var(--kiosk-safe-top, max(var(--safe-area-inset-top, 0px), env(safe-area-inset-top, 0px)))';
+    const safeBottomExpr = 'var(--kiosk-safe-bottom, max(var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)))';
+    const safeOn = { auto: true, on: true, off: false }[safeAreaMode] !== false;
+    // 间距统一走 --popup-safe-gap，便于一处调参；--popup-safe-extra-top 给悬浮头部额外留白
+    const safeVars = safeOn
+      ? `--popup-safe-gap: ${safeTopExpr}; --popup-safe-extra-top: ${safeTopExpr}; --popup-safe-bottom: ${safeBottomExpr};`
+      : `--popup-safe-gap: 0px; --popup-safe-extra-top: 0px; --popup-safe-bottom: 0px;`;
+
     // 检测是否为移动端
     const isMobile = window.innerWidth < 768;
 
@@ -214,6 +229,12 @@ window.GlobalPopupController = {
       z-index: ${overlayZIndex};
       -webkit-backdrop-filter: blur(10px);
       backdrop-filter: blur(10px);
+      ${safeVars}
+      box-sizing: border-box;
+      /* 安全区留白放在遮罩层：fixed + 子元素 absolute 不受内边距影响，
+         弹窗按 padding box 起算 → 上下都避开刘海/Home 指示条，且点击留白处仍能关闭 */
+      padding-top: var(--popup-safe-gap);
+      padding-bottom: var(--popup-safe-bottom);
     `;
 
     // 点击遮罩关闭弹窗
@@ -261,10 +282,12 @@ window.GlobalPopupController = {
         background: transparent;
         padding: 0;
         max-width: 100vw;
-        max-height: 95vh;
-        overflow: auto;
+        /* 减去安全区留白，保证卡片整体不越过刘海 / Home 指示条 */
+        max-height: calc(100vh - var(--popup-safe-gap) - var(--popup-safe-bottom));
+        overflow: hidden;
         box-sizing: border-box;
         width: ${width};
+        ${safeVars}
         ${background ? '--card-background-color: ' + background + ';' : ''}
         ${background ? '--ha-card-background: ' + background + ';' : ''}
         ${background ? '--ha-card-border-width:0;' : ''}
@@ -285,11 +308,13 @@ window.GlobalPopupController = {
         border-radius: ${isMobile ? '12px' : '16px'};
         padding: ${headerPadding} ${padding} ${padding} ${padding};
         max-width: 100vw;
-        max-height: 95vh;
+        /* 减去安全区留白，保证卡片整体不越过刘海 / Home 指示条 */
+        max-height: calc(100vh - var(--popup-safe-gap) - var(--popup-safe-bottom));
         overflow: hidden;
         animation: popupFadeIn 0.2s ease-out;
         box-sizing: border-box;
         width: ${width};
+        ${safeVars}
         ${background ? '--card-background-color: ' + background + ';' : ''}
         ${background ? '--ha-card-background: ' + background + ';' : ''}
         ${background ? '--ha-card-border-width:0;' : ''}
@@ -303,7 +328,7 @@ window.GlobalPopupController = {
         titleEl.textContent = title;
         titleEl.style.cssText = `
           position: absolute;
-          top: ${isMobile ? '10px' : '12px'};
+          top: calc(var(--popup-safe-extra-top, 0px) + ${isMobile ? '10px' : '12px'});
           left: 50%;
           transform: translateX(-50%);
           font-size: ${isMobile ? '14px' : '16px'};
@@ -321,7 +346,7 @@ window.GlobalPopupController = {
       closeBtn.textContent = '✕';
       closeBtn.style.cssText = `
         position: absolute;
-        top: ${isMobile ? '8px' : '10px'};
+        top: calc(var(--popup-safe-extra-top, 0px) + ${isMobile ? '8px' : '10px'});
         right: ${isMobile ? '8px' : '12px'};
         width: ${isMobile ? '28px' : '32px'};
         height: ${isMobile ? '28px' : '32px'};
@@ -347,7 +372,7 @@ window.GlobalPopupController = {
     contentContainer.style.cssText = `
       overflow-y: auto;
       overflow-x: visible;
-      max-height: 95vh;
+      max-height: calc(100vh - var(--popup-safe-gap) - var(--popup-safe-bottom));
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
       padding: 0;
@@ -396,7 +421,24 @@ window.GlobalPopupController = {
       contentContainer.innerHTML = `<div style="color: red; padding: 20px;">加载卡片失败: ${err.message}</div>`;
     }
 
-    popup.appendChild(contentContainer);
+    // 再包一层卡片内容容器：
+    //  · hide_header 模式下它承担纵向滚动（外层 overflow:hidden，「视觉容器 == 内容容器」，隐藏 modal 不会延伸出可滚动范围）
+    //  · 它是「视觉容器」本体，在这里加安全区内边距，卡片就整体避开刘海 / Home 指示条
+    const cardBox = document.createElement('div');
+    cardBox.className = 'popup-card-box';
+    const isSquareTop = top === '50%';
+    // 悬浮贴顶（auto）时把「safe-gap - top」补回顶部，让卡片顶边正好落在安全区下沿；
+    // 居中（top === '50%'）与底部贴底（100%）不需要补偿
+    const extraTop = (hide_header && safeOn && !isSquareTop) ? 'max(0px, calc(var(--popup-safe-extra-top) - ' + top + '))' : '0px';
+    cardBox.style.cssText = `
+      width: 100%;
+      box-sizing: border-box;
+      ${hide_header ? 'max-height: calc(100vh - var(--popup-safe-gap) - var(--popup-safe-bottom)); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;' : ''}
+      padding-top: ${extraTop};
+      padding-bottom: var(--popup-safe-bottom);
+    `;
+    cardBox.appendChild(contentContainer);
+    popup.appendChild(cardBox);
     appendTarget.appendChild(popup);
 
     // 将弹窗添加到栈中（保存卡片引用 + 追踪实体 + 缓存配置）
@@ -539,7 +581,8 @@ const interceptCallService = () => {
           background: data.background || '',
           popup_gap: data.popup_gap,
           popup_width: data.popup_width || null,
-          popup_top: data.popup_top || null
+          popup_top: data.popup_top || null,
+          popup_safe_area: data.popup_safe_area || 'auto'
         });
         return Promise.resolve();
       }
@@ -647,6 +690,9 @@ styleSheet.textContent = `
   .popup-card-popup { animation: popupFadeIn 0.2s ease-out; pointer-events: auto !important; box-sizing: border-box; width: 95vw; }
   .popup-card-popup * { pointer-events: auto !important; box-sizing: border-box; }
   .popup-card-content { pointer-events: auto !important; overscroll-behavior: contain; }
+  /* cardBox：hide_header 时是滚动容器，两种模式都承担安全区内边距 */
+  .popup-card-box { pointer-events: auto !important; box-sizing: border-box; }
+  .popup-card-box > .popup-card-content { min-height: 0; }
   .popup-card-overlay { pointer-events: auto !important; }
   .popup-card-content::-webkit-scrollbar { width: 6px; }
   .popup-card-content::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 3px; }
