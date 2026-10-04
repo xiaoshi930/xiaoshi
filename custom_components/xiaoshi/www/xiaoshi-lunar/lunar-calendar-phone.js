@@ -95,7 +95,7 @@ class LunarCalendarPhone extends LitElement {
       .sub-host { display: block; min-height: 0; overflow: hidden; }
 
       /* ==== LunarCalendar ==== */
-      .sub-cal .calendar-grid { border-radius: 10px; display: grid; grid-template-areas: "yearlast year yearnext today monthlast month monthnext" "week1 week2 week3 week4 week5 week6 week7" "id1 id2 id3 id4 id5 id6 id7" "id8 id9 id10 id11 id12 id13 id14" "id15 id16 id17 id18 id19 id20 id21" "id22 id23 id24 id25 id26 id27 id28" "id29 id30 id31 id32 id33 id34 id35" "id36 id37 id38 id39 id40 id41 id42"; grid-template-columns: repeat(7, 1fr); grid-template-rows: 1fr 0.6fr 1fr 1fr 1fr 1fr 1fr 1fr; gap: 1px; padding: 2px; --current-month-color: inherit; --other-month-color: rgb(160,160,160,0.5); user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; margin-bottom: -3px; }
+      .sub-cal .calendar-grid { border-radius: 10px; display: grid; grid-template-areas: "yearlast year yearnext today monthlast month monthnext" "week1 week2 week3 week4 week5 week6 week7" "id1 id2 id3 id4 id5 id6 id7" "id8 id9 id10 id11 id12 id13 id14" "id15 id16 id17 id18 id19 id20 id21" "id22 id23 id24 id25 id26 id27 id28" "id29 id30 id31 id32 id33 id34 id35" "id36 id37 id38 id39 id40 id41 id42"; grid-template-columns: repeat(7, 1fr); grid-template-rows: 1fr 0.6fr 1fr 1fr 1fr 1fr 1fr 1fr; gap: 1px; padding: 2px; --current-month-color: inherit; --other-month-color: rgb(160,160,160,0.5); user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; margin-bottom: 0px; }
       .sub-cal .celltotal { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; cursor: default; font-size: 15px; font-weight: 600; white-space: nowrap; }
       .sub-cal .cell { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; cursor: default; font-size: 12px; line-height: 12px; font-weight: 500; height: 100%; }
       .sub-cal .cell { -webkit-tap-highlight-color: transparent; tap-highlight-color: transparent; }
@@ -141,7 +141,7 @@ class LunarCalendarPhone extends LitElement {
       .sub-cal .selected-day { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 10px; }
 
       /* ==== LunarCalendarHead ==== */
-      .sub-head .calendar { display: grid; grid-template-areas: "gonglilabel gongli" "nonglilabel nongli"; grid-template-columns: 15% 85%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .sub-head .calendar { display: grid; grid-template-areas: "gonglilabel gongli" "nonglilabel nongli"; grid-template-columns: 15% 85%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: 0px; }
       .sub-head .gongli-label, .sub-head .nongli-label { font-size: 15px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
       .sub-head .gongli-label { grid-area: gonglilabel; }
       .sub-head .nongli-label { grid-area: nonglilabel; }
@@ -151,39 +151,39 @@ class LunarCalendarPhone extends LitElement {
       .sub-head .date-diff { font-size: 10px; color: rgb(150,150,150); display: inline-flex; align-items: flex-end; padding-top: 2px; }
 
       /* ==== LunarCalendarBody1 ==== */
-      .sub-body1 .calendar { display: grid; grid-template-areas: "a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12" "b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12"; grid-template-columns: repeat(13, minmax(0, 1fr)); grid-template-rows: 65% 35%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .sub-body1 .calendar { display: grid; grid-template-areas: "a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12" "b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 b10 b11 b12"; grid-template-columns: repeat(13, minmax(0, 1fr)); grid-template-rows: 65% 35%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: 0px; }
       .sub-body1 .time-cell { writing-mode: vertical-rl; text-orientation: mixed; text-align: center; font-size: 13px; white-space: nowrap; overflow: visible; display: flex; width: 100%; height: 100%; justify-content: center; align-items: center; }
       .sub-body1 .luck-cell { text-align: center; font-size: 13px; width: 100%; height: 100%; justify-content: center; align-items: center; }
 
       /* ==== LunarCalendarBody2 ==== */
-      .sub-body2 .calendar { display: grid; grid-template-areas: "a1 b1" "a2 b2"; grid-template-columns: 10% 90%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .sub-body2 .calendar { display: grid; grid-template-areas: "a1 b1" "a2 b2"; grid-template-columns: 10% 90%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: 0px; }
       .sub-body2 .label1 { color: rgb(0,220,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 15px; }
       .sub-body2 .label2 { color: rgb(255,0,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 15px; }
       .sub-body2 .state { word-wrap: break-word; display: flex; align-items: center; line-height: 12px; }
 
       /* ==== LunarCalendarBody3 ==== */
-      .sub-body3 .calendar { display: grid; grid-template-areas: "a1 b1" "a2 b2"; grid-template-columns: 10% 90%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .sub-body3 .calendar { display: grid; grid-template-areas: "a1 b1" "a2 b2"; grid-template-columns: 10% 90%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: 0px; }
       .sub-body3 .label1 { color: rgb(0,220,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
       .sub-body3 .label2 { color: rgb(255,0,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
       .sub-body3 .state { word-wrap: break-word; display: flex; align-items: center; line-height: 13px; }
 
       /* ==== LunarCalendarBody4 ==== */
-      .sub-body4 .calendar { display: grid; grid-template-areas: "a1 b1 a3 b3" "a2 b2 a4 b4"; grid-template-columns: 10% 40% 10% 40%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .sub-body4 .calendar { display: grid; grid-template-areas: "a1 b1 a3 b3" "a2 b2 a4 b4"; grid-template-columns: 10% 40% 10% 40%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: 0px; }
       .sub-body4 .label { color: rgb(255,0,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
       .sub-body4 .state { word-wrap: break-word; display: flex; align-items: center; font-size: 13px; line-height: 13px; }
 
       /* ==== LunarCalendarBody5 ==== */
-      .sub-body5 .calendar { display: grid; grid-template-areas: "a1 b1 a3 b3" "a2 b2 a4 b4"; grid-template-columns: 10% 40% 10% 40%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .sub-body5 .calendar { display: grid; grid-template-areas: "a1 b1 a3 b3" "a2 b2 a4 b4"; grid-template-columns: 10% 40% 10% 40%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: 0px; }
       .sub-body5 .label { color: rgb(0,220,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
       .sub-body5 .state { word-wrap: break-word; display: flex; align-items: center; font-size: 13px; line-height: 13px; }
 
       /* ==== LunarCalendarBody6 ==== */
-      .sub-body6 .calendar { display: grid; grid-template-areas: "a1 b1 a2 b2 b2 b2" "a3 b3 a4 b4 a5 b5"; grid-template-columns: 10% 40% 10% 10% 20% 10%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .sub-body6 .calendar { display: grid; grid-template-areas: "a1 b1 a2 b2 b2 b2" "a3 b3 a4 b4 a5 b5"; grid-template-columns: 10% 40% 10% 10% 20% 10%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: 0px; }
       .sub-body6 .label { color: rgb(0,220,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 13px; }
       .sub-body6 .state { word-wrap: break-word; display: flex; align-items: center; font-size: 13px; line-height: 13px; }
 
       /* ==== LunarCalendarBody7 ==== */
-      .sub-body7 .calendar { display: grid; grid-template-areas: "a1 a2 a3 a4 a5" "b1 b2 b3 b4 b5"; grid-template-columns: 20% 20% 20% 20% 20%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: -3px; }
+      .sub-body7 .calendar { display: grid; grid-template-areas: "a1 a2 a3 a4 a5" "b1 b2 b3 b4 b5"; grid-template-columns: 20% 20% 20% 20% 20%; grid-template-rows: 50% 50%; gap: 1px; padding: 2px; border-radius: 10px; margin-bottom: 0px; }
       .sub-body7 .label { color: rgb(0,220,0); font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 14px; }
       .sub-body7 .state { word-wrap: break-word; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 13px; }
       .sub-body7 .direction-container { display: flex; align-items: center; justify-content: center; --mdc-icon-size: 15px; }
