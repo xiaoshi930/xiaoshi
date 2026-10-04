@@ -1430,9 +1430,12 @@ class XiaoshiRoomCard extends LitElement {
     //（方便直接填 0 / 20 / -10）；留空则用默认 20px。
     _resolvePopupTop() {
         const raw = this.config ? this.config.popup_top : undefined;
-        if (raw === undefined || raw === null || String(raw).trim() === '') return '20px';
-        const value = String(raw).trim();
-        return /^-?\d+(\.\d+)?$/.test(value) ? `${value}px` : value;
+        const base = (raw === undefined || raw === null || String(raw).trim() === '')
+            ? '20px'
+            : (/^-?\d+(\.\d+)?$/.test(String(raw).trim()) ? `${String(raw).trim()}px` : String(raw).trim());
+        // 叠加 iOS 状态栏安全区，避免弹窗被刘海 / 状态栏遮挡
+        const safeTop = 'max(var(--kiosk-safe-top, 0px), var(--safe-area-inset-top, 0px), env(safe-area-inset-top, 0px))';
+        return `calc(${base} + ${safeTop})`;
     }
 
     // ===== 人在历史记录 =====
@@ -1529,7 +1532,7 @@ class XiaoshiRoomCard extends LitElement {
         });
 
         const dialog = document.createElement('div');
-        dialog.style.cssText = `position:absolute;top:${popupTop};left:50%;transform:translateX(-50%);background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
+        dialog.style.cssText = `position:absolute;top:${popupTop};left:50%;transform:translateX(-50%);background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:calc(85dvh - max(var(--kiosk-safe-bottom, 0px), var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
 
         const header = document.createElement('div');
         header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
