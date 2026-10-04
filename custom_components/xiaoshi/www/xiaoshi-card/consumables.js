@@ -1383,36 +1383,14 @@ class XiaoshiConsumablesButton extends ConsumablesBaseMixin(LitElement) {
 
   constructor() {
     super();
-    this._popupOverlay = null;
-    this._popupElement = null;
-    this._popupCardElement = null;
-    this._popupEscHandler = null;
-    this._popupHassUnsubscribe = null;
-    this._popupUpdatePending = false;
-    this._popupHass = null;
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    this._closePopup();
   }
 
   static getConfigElement() {
     return document.createElement("xiaoshi-consumables-button-editor");
-  }
-
-  static _injectPopupStyles() {
-    if (XiaoshiConsumablesButton._stylesInjected) return;
-    XiaoshiConsumablesButton._stylesInjected = true;
-    const style = document.createElement('style');
-    style.id = 'xiaoshi-button-popup-style';
-    style.textContent = `
-      @keyframes xiaoshiButtonPopupIn {
-        from { opacity: 0; scale: 0.95; }
-        to   { opacity: 1; scale: 1; }
-      }
-    `;
-    document.head.appendChild(style);
   }
 
   _handleButtonClick() {
@@ -1458,155 +1436,34 @@ class XiaoshiConsumablesButton extends ConsumablesBaseMixin(LitElement) {
       cards: cards
     };
     
-    this._showNativePopup(popupContent);
+    this._showPopupCardService(popupContent);
     this._handleClick();
   }
-  _showNativePopup(popupContent) {
-    this.constructor._injectPopupStyles();
 
-    const haRoot = document.querySelector('home-assistant');
-    const hassObj = haRoot?.hass || haRoot?.shadowRoot?.querySelector('home-assistant-main')?.hass;
-    if (!hassObj) {
-      console.error('[XiaoshiConsumablesButton] 无法获取 hass 对象');
-      return;
-    }
-
-    if (this._popupOverlay) {
-      this._closePopup();
-    }
-
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 1000;
-      -webkit-backdrop-filter: blur(10px);
-      backdrop-filter: blur(10px);
-      pointer-events: auto;
-    `;
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) this._closePopup();
-    });
-
-    const popupTop = this.config.popup_top || '20px';
-    const popupWidth = this.config.popup_width || '95%';
-    const popupTransform = popupTop === '50%' ? 'translate(-50%, -50%)' : 'translateX(-50%)';
-
-    const popup = document.createElement('div');
-    popup.style.cssText = `
-      position: fixed;
-      top: ${popupTop}; left: 50%;
-      transform: ${popupTransform};
-      z-index: 1005;
-      background: transparent;
-      padding: 0;
-      width: ${popupWidth};
-      max-width: 100vw;
-      max-height: 100vh;
-      overflow: hidden;
-      box-sizing: border-box;
-      animation: xiaoshiButtonPopupIn 0.2s ease-out;
-    `;
-
-    document.body.appendChild(overlay);
-    document.body.appendChild(popup);
-
-    this._popupOverlay = overlay;
-    this._popupElement = popup;
-
-    this._createPopupCard(popup, popupContent, hassObj);
-
-    this._popupEscHandler = (e) => {
-      if (e.key === 'Escape') this._closePopup();
-    };
-    window.addEventListener('keydown', this._popupEscHandler);
-  }
-
-  async _createPopupCard(container, cardConfig, hassObj) {
+  // ===== 点击弹窗：改走 popup_card 服务（与长按弹窗机制统一）=====
+  _showPopupCardService(popupContent) {
     try {
-      const helpers = await window.loadCardHelpers?.();
-      if (helpers) {
-        const cardElement = await helpers.createCardElement(cardConfig);
-        cardElement.hass = hassObj;
-        container.appendChild(cardElement);
-        this._popupCardElement = cardElement;
-        this._startPopupHassWatcher(hassObj);
-      } else {
-        container.innerHTML = '<div style="color:red;padding:20px;">loadCardHelpers 不可用</div>';
+      const h = this._hass || this.hass;
+      if (!h) {
+        console.error('[XiaoshiConsumablesButton] 无法获取 hass 对象');
+        return;
       }
-    } catch (err) {
-      console.error('[XiaoshiConsumablesButton] 创建弹窗卡片失败:', err);
-      container.innerHTML = `<div style="color:red;padding:20px;">加载失败: ${err.message}</div>`;
-    }
-  }
-
-  _closePopup() {
-    if (this._popupOverlay) {
-      this._popupOverlay.remove();
-      this._popupOverlay = null;
-    }
-    if (this._popupElement) {
-      this._popupElement.remove();
-      this._popupElement = null;
-    }
-    this._popupCardElement = null;
-    if (this._popupEscHandler) {
-      window.removeEventListener('keydown', this._popupEscHandler);
-      this._popupEscHandler = null;
-    }
-    if (this._popupHassUnsubscribe) {
-      this._popupHassUnsubscribe();
-      this._popupHassUnsubscribe = null;
-    }
-    this._popupUpdatePending = false;
-    this._popupHass = null;
-  }
-
-  _startPopupHassWatcher(hassObj) {
-    if (this._popupHassUnsubscribe) return;
-    this._popupHass = hassObj;
-    if (!hassObj || !hassObj.connection) {
-      setTimeout(() => this._startPopupHassWatcher(hassObj), 500);
-      return;
-    }
-    try {
-      hassObj.connection.subscribeMessage(
-        () => {
-          if (!this._popupCardElement) return;
-          this._schedulePopupUpdate();
-        },
-        { type: 'subscribe_events', event_type: 'state_changed' }
-      ).then((unsub) => {
-        this._popupHassUnsubscribe = unsub;
-      });
-    } catch (err) {
-      console.error('[XiaoshiConsumablesButton] 订阅状态变化失败:', err);
-    }
-  }
-
-  _schedulePopupUpdate() {
-    if (this._popupUpdatePending) return;
-    this._popupUpdatePending = true;
-    requestAnimationFrame(() => {
-      this._popupUpdatePending = false;
-      if (!this._popupCardElement) return;
-      const haRoot = document.querySelector('home-assistant');
-      const newHass = haRoot?.hass || haRoot?.shadowRoot?.querySelector('home-assistant-main')?.hass;
-      if (!newHass) return;
-      if (newHass === this._popupHass) return;
-      this._popupHass = newHass;
-      this._updatePopupCard();
-    });
-  }
-
-  _updatePopupCard() {
-    if (this._popupCardElement && this._popupHass) {
-      try {
-        this._popupCardElement.hass = this._popupHass;
-      } catch (err) {
-        console.warn('[XiaoshiConsumablesButton] 弹窗卡片更新失败:', err.message);
+      const serviceData = { card: [popupContent] };
+      const popupWidth = this.config.popup_width || '95%';
+      const popupTop = this.config.popup_top || '20px';
+      if (popupWidth !== '95%') serviceData.popup_width = popupWidth;
+      if (popupTop !== '20px') serviceData.popup_top = popupTop;
+      if (this.config.popup_background === 'transparent') {
+        serviceData.background = 'transparent';
+      } else if (this.config.popup_background === 'theme') {
+        const theme = this._evaluateTheme ? this._evaluateTheme() : 'light';
+        serviceData.background = theme === 'light' ? 'rgb(255, 255, 255)' : 'rgb(50, 50, 50)';
+      } else if (this.config.popup_background && this.config.popup_background !== '') {
+        serviceData.background = this.config.popup_background;
       }
+      h.callService('popup_card', 'show', serviceData);
+    } catch (err) {
+      console.error('[XiaoshiConsumablesButton] 弹出 popup_card 失败:', err);
     }
   }
 
