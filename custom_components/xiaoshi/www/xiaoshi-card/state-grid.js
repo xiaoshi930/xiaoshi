@@ -694,7 +694,7 @@ class XiaoshiStateGridButton extends LitElement {
 
   static get styles() {
     return css`      :host { display: block; }
-      .balance-status { width: var(--button-width, 16.8vw); max-width: var(--button-max-width, 90px);height: var(--button-height, 24px); padding: 0; margin: 0; background: var(--bg-color, #fff); color: var(--fg-color, #000); border-radius: 10px; font-size: var(--button-font-size, 11px); font-weight: 500; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 0; cursor: none; transition: background-color 0.2s, transform 0.1s; position: relative; }
+      .balance-status { width: var(--button-width, 16.8vw); max-width: var(--button-max-width, 90px);height: var(--button-height, 25px); padding: 0; margin: 0; background-color: var(--bg-color, #fff); background-image: var(--xs-btn-sheen, none); box-shadow: var(--xs-btn-shadow, none); color: var(--fg-color, #000); border-radius: 10px; font-size: var(--button-font-size, 11px); font-weight: 500; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 0; cursor: none; transition: background-color 0.2s, transform 0.1s; position: relative; }
       .balance-status:active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
       .balance-status.tablet-mode { width: var(--button-width, 16.8vw); padding: 0 10px; white-space: nowrap; justify-content: flex-start; }
       .tablet-balance { display: inline-flex; align-items: center; width: 66.66%; }
@@ -1024,6 +1024,8 @@ class XiaoshiStateGridButton extends LitElement {
     const lockWhiteFg = this.config.lock_white_fg === true;
     const fgColor = lockWhiteFg ? 'rgb(255, 255, 255)' : theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const buttonBgColor = tabletMode ? 'transparent' : transparentBg ? 'transparent' : theme === 'light' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
+    // 按钮美化：渐变叠层 + 投影（透明背景模式不注入，保持完全透明）
+    const buttonSkin = buttonBgColor === 'transparent' ? '' : `background-image: linear-gradient(160deg, rgba(255,255,255,${theme === 'dark' ? 0.14 : 0.55}) 0%, rgba(255,255,255,0) 52%, rgba(0,0,0,${theme === 'dark' ? 0.22 : 0.06}) 100%);--xs-btn-shadow: ${theme === 'dark' ? '0 1px 2px rgba(0,0,0,0.50), 0 3px 7px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.16)' : '0 1px 2px rgba(16,24,40,0.14), 0 3px 6px rgba(16,24,40,0.13), inset 0 1px 0 rgba(255,255,255,0.85)'};`;
 
     const { value: displayValue, unit: displayUnit, isWarning } = this._computeDisplayValue();
 
@@ -1061,7 +1063,7 @@ class XiaoshiStateGridButton extends LitElement {
       const balanceColor = isWarning ? warningColor : tabletFgColor;
 
       return html`
-        <div class="balance-status tablet-mode" style="--fg-color: ${tabletFgColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick} @pointerdown=${this._onHoldStart} @pointerup=${this._onHoldEnd}>
+        <div class="balance-status tablet-mode" style="--fg-color: ${tabletFgColor}; --bg-color: ${buttonBgColor}; ${buttonSkin}" @click=${this._handleButtonClick} @pointerdown=${this._onHoldStart} @pointerup=${this._onHoldEnd}>
           <span class="tablet-balance"><span class="status-emoji">${buttonEmoji}</span><span style="color: ${tabletFgColor};">${uc.balanceLabel}：<span style="color: ${balanceColor};">${balanceValue}元</span></span></span>
           <span class="tablet-days" style="color: ${tabletFgColor};">预计：${daysValue}天</span>
         </div>
@@ -1080,7 +1082,7 @@ class XiaoshiStateGridButton extends LitElement {
     const displayText = formattedDisplayValue !== null && displayUnit ? `${formattedDisplayValue}${displayUnit}` : formattedDisplayValue;
 
     return html`
-      <div class="balance-status" style="--fg-color: ${numberColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick} @pointerdown=${this._onHoldStart} @pointerup=${this._onHoldEnd}>
+      <div class="balance-status" style="--fg-color: ${numberColor}; --bg-color: ${buttonBgColor}; ${buttonSkin}" @click=${this._handleButtonClick} @pointerdown=${this._onHoldStart} @pointerup=${this._onHoldEnd}>
         <span class="status-emoji">${buttonEmoji}</span>
         <span style="color: ${numberColor};">${displayText}</span>
       </div>
@@ -1093,7 +1095,7 @@ class XiaoshiStateGridButton extends LitElement {
     if (config.button_width) {
       this.style.setProperty('--button-max-width', config.button_width);
     }
-    this.style.setProperty('--button-height', config.button_height || '24px');
+    this.style.setProperty('--button-height', config.button_height || '25px');
     this.style.setProperty('--button-font-size', config.button_font_size || '11px');
     this.style.setProperty('--button-icon-size', config.button_icon_size || '13px');
   }

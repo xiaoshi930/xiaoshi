@@ -63,7 +63,7 @@ const editorCommonStyles = css`  .editor-root { padding: 6px 0; }
   .custom-row:last-child { border-bottom:none; }
   .custom-entity-id { font-size:0.75em; color:var(--secondary-text-color); min-width:120px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .custom-input { flex:1; padding:6px 8px; border-radius:4px; border:1px solid var(--divider-color, #ccc); background:var(--card-background-color, #fff); color:var(--primary-text-color); font-size:13px; min-width:0; }
-  .custom-color { width:32px; height:28px; padding:2px; border-radius:4px; border:1px solid var(--divider-color, #ccc); cursor:pointer; flex-shrink:0; }
+  .custom-color { width:32px; height:25px; padding:2px; border-radius:4px; border:1px solid var(--divider-color, #ccc); cursor:pointer; flex-shrink:0; }
   .custom-reset { background:none; border:none; color:var(--secondary-text-color); cursor:pointer; font-size:14px; padding:2px 4px; }
   .merge-config { padding:8px; border-radius:6px; background:var(--secondary-background-color, #f5f5f5); }`;
 
@@ -1267,7 +1267,7 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
     if (config.button_height) {
       this.style.setProperty('--button-height', config.button_height);
     } else {
-      this.style.setProperty('--button-height', '24px');
+      this.style.setProperty('--button-height', '25px');
     }
     if (config.button_font_size) {
       this.style.setProperty('--button-font-size', config.button_font_size);
@@ -1465,6 +1465,8 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
     }
 
     const buttonBgColor = transparentBg ? 'transparent' : theme === 'light' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)';
+    // 按钮美化：渐变叠层 + 投影（透明背景模式不注入，保持完全透明）
+    const buttonSkin = buttonBgColor === 'transparent' ? '' : `background-image: linear-gradient(160deg, rgba(255,255,255,${theme === 'dark' ? 0.14 : 0.55}) 0%, rgba(255,255,255,0) 52%, rgba(0,0,0,${theme === 'dark' ? 0.22 : 0.06}) 100%);--xs-btn-shadow: ${theme === 'dark' ? '0 1px 2px rgba(0,0,0,0.50), 0 3px 7px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.16)' : '0 1px 2px rgba(16,24,40,0.14), 0 3px 6px rgba(16,24,40,0.13), inset 0 1px 0 rgba(255,255,255,0.85)'};`;
     const unit = this._getUnit();
     const unitLower = unit.toLowerCase();
     const buttonUnit = (unitLower === 'µg/m³' || unitLower === 'μg/m³' || unitLower === 'μg/m3' || unitLower === 'ug/m3') ? 'µg' : unit;
@@ -1477,7 +1479,7 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
     iconColor = lockWhiteFg ? 'rgb(255, 255, 255)' : fgColor;
 
     const buttonHtml = html`
-      <div class="chart-status" style="--fg-color: ${numberColor}; --bg-color: ${buttonBgColor};" @click=${this._handleButtonClick} @pointerdown=${this._onHoldStart} @pointerup=${this._onHoldEnd}>
+      <div class="chart-status" style="--fg-color: ${numberColor}; --bg-color: ${buttonBgColor}; ${buttonSkin}" @click=${this._handleButtonClick} @pointerdown=${this._onHoldStart} @pointerup=${this._onHoldEnd}>
       <span class="status-emoji">${buttonIcon}</span>
         <span style="color: ${numberColor};">${buttonValue}${buttonUnit}</span>
       </div>
@@ -1492,7 +1494,7 @@ class XiaoshChartButton extends ChartBaseMixin(LitElement) {
     return [
       cardCommonStyles,
       css`        :host { display: block; }
-        .chart-status { width: var(--button-width, 16.8vw); max-width: var(--button-max-width, 90px); height: var(--button-height, 24px); padding: 0; margin: 0; background: var(--bg-color, #fff); color: var(--fg-color, #000); border-radius: 10px; font-size: var(--button-font-size, 11px); font-weight: 500; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 0; cursor: none; transition: background-color 0.2s, transform 0.1s; position: relative; }
+        .chart-status { width: var(--button-width, 16.8vw); max-width: var(--button-max-width, 90px); height: var(--button-height, 25px); padding: 0; margin: 0; background-color: var(--bg-color, #fff); background-image: var(--xs-btn-sheen, none); box-shadow: var(--xs-btn-shadow, none); color: var(--fg-color, #000); border-radius: 10px; font-size: var(--button-font-size, 11px); font-weight: 500; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 0; cursor: none; transition: background-color 0.2s, transform 0.1s; position: relative; }
         .chart-status:active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
         .status-icon { --mdc-icon-size: var(--button-icon-size, 13px); color: var(--fg-color, #000); margin-right: 3px; }
         .status-emoji { font-size: var(--button-icon-size, 13px); line-height: 1; margin-right: 3px; }

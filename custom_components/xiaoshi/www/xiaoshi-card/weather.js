@@ -3279,7 +3279,7 @@ class XiaoshiWeatherPhoneButton extends LitElement {
 
   static get styles() {
     return css`      :host { display: block; }
-      .weather-button { width: var(--button-width, min(16.8vw, 84px)); max-width: var(--button-max-width, 90px); height: var(--button-height, 24px); padding: 0; margin: 0; background: var(--bg-color, #fff); color: var(--fg-color, #000); border-radius: 10px; font-size: var(--button-font-size, 11px); font-weight: 500; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 2px; cursor: none; transition: background-color 0.2s, transform 0.1s; position: relative; overflow: hidden; }
+      .weather-button { width: var(--button-width, min(16.8vw, 84px)); max-width: var(--button-max-width, 90px); height: var(--button-height, 25px); padding: 0; margin: 0; background-color: var(--bg-color, #fff); background-image: var(--xs-btn-sheen, none); box-shadow: var(--xs-btn-shadow, none); color: var(--fg-color, #000); border-radius: 10px; font-size: var(--button-font-size, 11px); font-weight: 500; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 2px; cursor: none; transition: background-color 0.2s, transform 0.1s; position: relative; overflow: hidden; }
       .weather-button:active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
       .weather-button-icon { width: var(--button-icon-size, 18px); height: var(--button-icon-size, 18px); flex-shrink: 0; object-fit: contain; }
       .weather-button-text { white-space: nowrap; overflow: visible; text-overflow: ellipsis; line-height: 1.2; min-width: 2.5em; text-align: center; }
@@ -3308,7 +3308,7 @@ class XiaoshiWeatherPhoneButton extends LitElement {
     if (config.button_height) {
       this.style.setProperty('--button-height', config.button_height);
     } else {
-      this.style.setProperty('--button-height', '24px');
+      this.style.setProperty('--button-height', '25px');
     }
     if (config.button_font_size) {
       this.style.setProperty('--button-font-size', config.button_font_size);
@@ -3482,11 +3482,13 @@ class XiaoshiWeatherPhoneButton extends LitElement {
     const fgColor = theme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)';
     const transparentBg = this.config.transparent_bg === true;
     const buttonBgColor = transparentBg ? 'transparent' : (theme === 'light' ? 'rgb(255, 255, 255, 0.6)' : 'rgb(83, 83, 83, 0.6)');
+    // 按钮美化：渐变叠层 + 投影（透明背景模式不注入，保持完全透明）
+    const buttonSkin = buttonBgColor === 'transparent' ? '' : `background-image: linear-gradient(160deg, rgba(255,255,255,${theme === 'dark' ? 0.14 : 0.55}) 0%, rgba(255,255,255,0) 52%, rgba(0,0,0,${theme === 'dark' ? 0.22 : 0.06}) 100%);--xs-btn-shadow: ${theme === 'dark' ? '0 1px 2px rgba(0,0,0,0.50), 0 3px 7px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.16)' : '0 1px 2px rgba(16,24,40,0.14), 0 3px 6px rgba(16,24,40,0.13), inset 0 1px 0 rgba(255,255,255,0.85)'};`;
 
     const displayEntity = this._getDisplayEntity();
     if (!displayEntity) {
       return html`
-        <div class="weather-button" style="--bg-color: ${buttonBgColor}; --fg-color: ${fgColor};" @click=${this._handleButtonClick}>
+        <div class="weather-button" style="--bg-color: ${buttonBgColor}; ${buttonSkin} --fg-color: ${fgColor};" @click=${this._handleButtonClick}>
           <span class="weather-button-text" style="color: ${fgColor};">未配置</span>
         </div>
       `;
@@ -3508,7 +3510,7 @@ class XiaoshiWeatherPhoneButton extends LitElement {
     const iconSrc = this._getWeatherIcon(conditionState);
 
     return html`
-      <div class="weather-button" style="--bg-color: ${buttonBgColor}; --fg-color: ${textColor};" @click=${this._handleButtonClick}>
+      <div class="weather-button" style="--bg-color: ${buttonBgColor}; ${buttonSkin} --fg-color: ${textColor};" @click=${this._handleButtonClick}>
         <img class="weather-button-icon" src="${iconSrc}" alt="${condition}" />
         <span class="weather-button-text" style="color: ${textColor};">${condition}${warningCount > 0 ? html` <sup style="color: ${warningColor}; font-size: 0.7em; vertical-align: super; line-height: 0;">⚠${warningCount}</sup>` : ''}</span>
       </div>
