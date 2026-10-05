@@ -527,7 +527,7 @@ class XiaoshiRoomCardEditor extends LitElement {
                             <input type="text"
                                 .value="${dev.icon_size || ''}"
                                 @change="${(e) => this._deviceFieldChanged(i, 'icon_size', e.target.value)}"
-                                placeholder="大小:2.8vh"
+                                placeholder="大小:25" title="图标大小：留空默认 min(5.6vw,25px)；纯数字按 px，也可填 2.8vh 等 CSS 长度"
                                 style="width:80px;flex:none"
                             />
                             <input type="color"
@@ -758,7 +758,7 @@ class XiaoshiRoomCard extends LitElement {
         return css`            
             :host { display: block; height: 100%; min-height: 0; max-width: 240px; }
             ha-card { border: none; box-shadow: none; max-width: 240px; }
-            .card { background: transparent; border-radius: min(3.5vw, 17.5px); position: relative; overflow: hidden; display: flex; height: 100%; min-height: 0; font-family: var(--paper-font-body1_-_font-family); max-width: 240px; /* 悬浮感：同外沿的两层投影（大范围柔光 + 近距贴边），主题色由 --xs-card-shadow 注入 */ box-shadow: var(--xs-card-shadow, 0 6px 18px rgba(0,0,0,0.14), 0 2px 6px rgba(0,0,0,0.08)); }
+            .card { background: transparent; border-radius: min(3.5vw, 17.5px); position: relative; overflow: hidden; display: flex; height: 100%; min-height: 0; font-family: var(--paper-font-body1_-_font-family); max-width: 240px; /* 悬浮感：同外沿的两层投影（大范围柔光 + 近距贴边），主题色由 --xs-card-shadow 注入 */  }
             /* 顶部白色高光：一层柔光做出玻璃质感；垫在按钮/胶囊之下，不冲淡前景颜色 */
             .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: inherit; background: var(--xs-card-sheen, linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.12) 26%, rgba(255,255,255,0) 58%)); pointer-events: none; z-index: 0; }
             /* ===== 左侧区域 ===== */
@@ -787,7 +787,7 @@ class XiaoshiRoomCard extends LitElement {
             .devices-area { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 1.4vh; padding: 1.2vh min(2.5vw, 12.5px) 1.2vh min(1.2vw, 6px); align-content: center; }
             /* 单个设备按钮 */
             .device-btn { position: relative; background: #333; border-radius: min(3vw, 15px); display: flex; align-items: center; justify-content: center; color: #888; cursor: none; transition: background 0.25s, color 0.25s, box-shadow 0.25s; border: none; outline: none; padding: 0; /* 按钮投影：开启时同色柔光、关闭时中性厚度感，由 --xs-btn-shadow 注入 */ box-shadow: var(--xs-btn-shadow, 0 2px 6px rgba(0,0,0,0.22)); }
-            .device-btn ha-icon { --mdc-icon-size: 2.8vh; }
+            .device-btn ha-icon { --mdc-icon-size: min(5.6vw, 25px); }
             .device-btn:not(.empty):active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
             .device-btn.empty { background: transparent; cursor: default; box-shadow: none; }
             @keyframes swingBottom {
@@ -845,7 +845,7 @@ class XiaoshiRoomCard extends LitElement {
             .layout-bl .bl-devices .device-btn { flex: 1; min-height: 0; height: 30%; }
             /* ===== 右上角标 ===== */
             .corner-label-right { position: absolute; top: -1px; right: -1px; width: var(--corner-size, 7.5vh); height: var(--corner-size, 7.5vh); background: var(--xs-corner-bg, linear-gradient(225deg, #3fdcf0 0%, #23badb 50%, #0797c4 100%)); -webkit-clip-path: polygon(0 0, 100% 0, 100% 100%); clip-path: polygon(0 0, 100% 0, 100% 100%); }
-            .corner-text-right { position: absolute; top: calc(var(--corner-size, 7.5vh) * 0.16); right: calc(var(--corner-size, 7.5vh) * 0.11); color: white; font-size: min(3vw, 15px); font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.28); transform: rotate(45deg); transform-origin: center center; white-space: nowrap; }`;
+            .corner-text-right { position: absolute; top: calc(var(--corner-size, 7.5vh) * 0.16); right: calc(var(--corner-size, 7.5vh) * 0.11); color: white; font-size: min(2.5vw, 12.5px); font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.28); transform: rotate(45deg); transform-origin: center center; white-space: nowrap; }`;
     }
 
     static getConfigElement() {
@@ -1334,6 +1334,12 @@ class XiaoshiRoomCard extends LitElement {
         // 角标：只有当有开启的实体时显示
         const showBadge = activeCount > 0;
         const animateClass = (this.config.active_animation !== 'false' && isOn) ? 'anim-' + (this.config.animation_type || 'swing_bottom').replace(/_/g, '-') : '';
+        // 设备图标大小：默认 min(5.6vw, 25px)（跟随屏宽收缩、最大 25px）；
+        // 配置项可填纯数字（按 px）或任意 CSS 长度（2.8vh / min(5.6vw,25px)…）。
+        const iconSizeRaw = device.icon_size;
+        const deviceIconSize = (iconSizeRaw === undefined || iconSizeRaw === null || String(iconSizeRaw).trim() === '')
+            ? 'min(5.6vw, 25px)'
+            : (/^-?\d+(\.\d+)?$/.test(String(iconSizeRaw).trim()) ? `${String(iconSizeRaw).trim()}px` : String(iconSizeRaw).trim());
 
         return html`
             <button
@@ -1343,7 +1349,11 @@ class XiaoshiRoomCard extends LitElement {
                 @pointerdown="${(e) => this._onDeviceHoldStart(e, device)}"
                 @pointerup="${(e) => this._onDeviceHoldEnd(e)}"
             >
-                <ha-icon icon="${icon}" class="${animateClass}" style="--mdc-icon-size:${device.icon_size || 2.8}vh;width:${device.icon_size || 2.8}vh;height:${device.icon_size || 2.8}vh"></ha-icon>
+                <ha-icon icon="${icon}" class="${animateClass}" 
+                  style="--mdc-icon-size:${deviceIconSize};
+                        width:${deviceIconSize};
+                        height:${deviceIconSize}">
+                </ha-icon>
                 ${showBadge ? html`<span class="badge" style="background:${device.badge_color || '#f44336'}">${activeCount}</span>` : html`<span class="badge hidden"></span>`}
             </button>
         `;
