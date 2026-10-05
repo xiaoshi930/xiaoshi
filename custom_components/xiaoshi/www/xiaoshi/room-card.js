@@ -758,11 +758,14 @@ class XiaoshiRoomCard extends LitElement {
         return css`            
             :host { display: block; height: 100%; min-height: 0; max-width: 240px; }
             ha-card { border: none; box-shadow: none; max-width: 240px; }
-            .card { background: transparent; border-radius: min(3.5vw, 17.5px); position: relative; overflow: hidden; display: flex; height: 100%; min-height: 0; font-family: var(--paper-font-body1_-_font-family); max-width: 240px; }
+            .card { background: transparent; border-radius: min(3.5vw, 17.5px); position: relative; overflow: hidden; display: flex; height: 100%; min-height: 0; font-family: var(--paper-font-body1_-_font-family); max-width: 240px; /* 悬浮感：同外沿的两层投影（大范围柔光 + 近距贴边），主题色由 --xs-card-shadow 注入 */ box-shadow: var(--xs-card-shadow, 0 6px 18px rgba(0,0,0,0.14), 0 2px 6px rgba(0,0,0,0.08)); }
+            /* 顶部白色高光：一层柔光做出玻璃质感；垫在按钮/胶囊之下，不冲淡前景颜色 */
+            .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: inherit; background: var(--xs-card-sheen, linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.12) 26%, rgba(255,255,255,0) 58%)); pointer-events: none; z-index: 0; }
             /* ===== 左侧区域 ===== */
             .left { width: 45%; padding: 1.2vh min(1.2vw, 6px) 1.2vh min(2vw, 10px); display: flex; flex-direction: column; position: relative; z-index: 1; box-sizing: border-box; }
-            .corner-label { position: absolute; top: -1px; left: -1px; width: 0; height: 0; border-style: solid; border-width: var(--corner-size, 7.5vh) var(--corner-size, 7.5vh) 0 0; border-color: #00bcd4 transparent transparent transparent; }
-            .corner-text { position: absolute; top: calc(var(--corner-size, 7.5vh) * 0.16); left: calc(var(--corner-size, 7.5vh) * 0.11); color: white; font-size: min(3vw, 15px); font-weight: bold; transform-origin: center center; white-space: nowrap; }
+            /* 斜角：用 clip-path 三角代替 border 三角，才能上渐变 + 高光（几何与原来完全一致） */
+            .corner-label { position: absolute; top: -1px; left: -1px; width: var(--corner-size, 7.5vh); height: var(--corner-size, 7.5vh); background: var(--xs-corner-bg, linear-gradient(135deg, #3fdcf0 0%, #23badb 50%, #0797c4 100%)); -webkit-clip-path: polygon(0 0, 100% 0, 0 100%); clip-path: polygon(0 0, 100% 0, 0 100%); }
+            .corner-text { position: absolute; top: calc(var(--corner-size, 7.5vh) * 0.16); left: calc(var(--corner-size, 7.5vh) * 0.11); color: white; font-size: min(3vw, 15px); font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.28); transform-origin: center center; white-space: nowrap; }
             /* 人在图标 */
             .person-icon { margin-top: var(--chip-h, 2.6vh); margin-left: min(7vw, 35px); color: #ff5722; display: flex; align-items: center; justify-content: center; width: var(--chip-h, 2.6vh); height: var(--chip-h, 2.6vh); cursor: pointer; }
             .person-icon:active { transform: scale(0.9); }
@@ -775,18 +778,18 @@ class XiaoshiRoomCard extends LitElement {
             .person-hidden { display: none; }
             /* 传感器条 */
             .sensor-list { display: flex; flex-direction: column; gap: 0.5vh; margin-top: auto; margin-bottom: 0; }
-            .sensor-chip { border-radius: min(4vw, 20px); padding: 0 min(2vw, 10px); height: calc(var(--chip-h, 2.6vh) * 1.1); color: white; font-size: calc(var(--chip-h, 2.6vh) * 0.5); font-weight: 500; display: flex; align-items: center; position: relative; box-sizing: border-box; cursor: none; }
-            .sensor-chip:active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
+            .sensor-chip { border-radius: min(4vw, 20px); padding: 0 min(2vw, 10px); height: calc(var(--chip-h, 2.6vh) * 1.1); color: white; font-size: calc(var(--chip-h, 2.6vh) * 0.5); font-weight: 500; display: flex; align-items: center; position: relative; box-sizing: border-box; cursor: none; /* 与胶囊同色的柔和投影，颜色按每个传感器的 color 注入 */ /* 内高光（上沿亮线 + 下沿暗线）营造立体胶囊感，外层是同色投影 */ box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 2px rgba(0,0,0,0.12), var(--xs-chip-shadow, 0 2px 6px rgba(0,0,0,0.18)); transition: box-shadow 0.25s; }
+            .sensor-chip:active { transform: scale(0.95); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
             .sensor-icon { display: flex; align-items: center; z-index: 1; }
             .sensor-icon ha-icon { --mdc-icon-size: calc(var(--chip-h, 2.6vh) * 0.6); }
             .sensor-value { flex: 1; text-align: center; }
             /* ===== 设备区域 (中间+右侧两列) ===== */
             .devices-area { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 1.4vh; padding: 1.2vh min(2.5vw, 12.5px) 1.2vh min(1.2vw, 6px); align-content: center; }
             /* 单个设备按钮 */
-            .device-btn { position: relative; background: #333; border-radius: min(3vw, 15px); display: flex; align-items: center; justify-content: center; color: #888; cursor: none; transition: background 0.25s, color 0.25s; border: none; outline: none; padding: 0; }
+            .device-btn { position: relative; background: #333; border-radius: min(3vw, 15px); display: flex; align-items: center; justify-content: center; color: #888; cursor: none; transition: background 0.25s, color 0.25s, box-shadow 0.25s; border: none; outline: none; padding: 0; /* 按钮投影：开启时同色柔光、关闭时中性厚度感，由 --xs-btn-shadow 注入 */ box-shadow: var(--xs-btn-shadow, 0 2px 6px rgba(0,0,0,0.22)); }
             .device-btn ha-icon { --mdc-icon-size: 2.8vh; }
             .device-btn:not(.empty):active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
-            .device-btn.empty { background: transparent; cursor: default; }
+            .device-btn.empty { background: transparent; cursor: default; box-shadow: none; }
             @keyframes swingBottom {
                 0% { transform: rotate(0deg); }
                 15% { transform: rotate(15deg); }
@@ -841,8 +844,8 @@ class XiaoshiRoomCard extends LitElement {
             .layout-bl .bl-devices { display: flex; justify-content: flex-start; align-items: flex-end; gap: 1.4vh; padding: 0 min(2.5vw, 12.5px) 1.2vh min(2.5vw, 12.5px); flex: 1; }
             .layout-bl .bl-devices .device-btn { flex: 1; min-height: 0; height: 30%; }
             /* ===== 右上角标 ===== */
-            .corner-label-right { position: absolute; top: -1px; right: -1px; width: 0; height: 0; border-style: solid; border-width: var(--corner-size, 7.5vh) 0 0 var(--corner-size, 7.5vh); border-color: #00bcd4 transparent transparent transparent; }
-            .corner-text-right { position: absolute; top: calc(var(--corner-size, 7.5vh) * 0.16); right: calc(var(--corner-size, 7.5vh) * 0.11); color: white; font-size: min(3vw, 15px); font-weight: bold; transform: rotate(45deg); transform-origin: center center; white-space: nowrap; }`;
+            .corner-label-right { position: absolute; top: -1px; right: -1px; width: var(--corner-size, 7.5vh); height: var(--corner-size, 7.5vh); background: var(--xs-corner-bg, linear-gradient(225deg, #3fdcf0 0%, #23badb 50%, #0797c4 100%)); -webkit-clip-path: polygon(0 0, 100% 0, 100% 100%); clip-path: polygon(0 0, 100% 0, 100% 100%); }
+            .corner-text-right { position: absolute; top: calc(var(--corner-size, 7.5vh) * 0.16); right: calc(var(--corner-size, 7.5vh) * 0.11); color: white; font-size: min(3vw, 15px); font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.28); transform: rotate(45deg); transform-origin: center center; white-space: nowrap; }`;
     }
 
     static getConfigElement() {
@@ -1125,6 +1128,15 @@ class XiaoshiRoomCard extends LitElement {
             ? (this.config.card_bg_light || defaultBg)
             : (this.config.card_bg_dark || defaultBg);
 
+        // 主卡悬浮投影：三层柔和投影（近距贴边 + 中层 + 大范围环境光），暗色下整体加深
+        const cardShadow = theme === 'dark'
+            ? '0 1px 2px rgba(0,0,0,0.45), 0 8px 20px rgba(0,0,0,0.5), 0 20px 44px rgba(0,0,0,0.42)'
+            : '0 1px 2px rgba(0,0,0,0.06), 0 6px 16px rgba(0,0,0,0.10), 0 18px 40px rgba(0,0,0,0.12)';
+        // 顶部白色高光（玻璃感），暗色主题下减弱以免发灰
+        const cardSheen = theme === 'dark'
+            ? 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 26%, rgba(255,255,255,0) 58%)'
+            : 'linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.12) 26%, rgba(255,255,255,0) 58%)';
+
         const cardStyle = [
             cardWidth ? `width:${cardWidth}` : '',
             cardHeight ? `height:${cardHeight}` : '',
@@ -1132,13 +1144,19 @@ class XiaoshiRoomCard extends LitElement {
             'border-radius:min(3.5vw, 17.5px)',
             `--chip-h:${chipH}px`,
             `--corner-size:${cardHeightPx * 0.4}px`,
+            `--xs-card-shadow:${cardShadow}`,
+            `--xs-card-sheen:${cardSheen}`,
         ].filter(Boolean).join(';');
 
         const layout = this.config.device_layout || 'right_top';
 
+        // 青绿斜角：三段渐变 + 斜向高光（左下 / 右下两种朝向）
+        const cornerBg = this._cornerBg(this.config.name_color, false);
+        const cornerBgRight = this._cornerBg(this.config.name_color, true);
+
         // 传感器渲染公共片段
         const sensorHtml = sensorItems.map(s => html`
-            <div class="sensor-chip" style="background:${s.color};"
+            <div class="sensor-chip" style="background:${this._chipBg(s.color)};--xs-chip-shadow:0 3px 9px ${this._alpha(s.color, 0.42)}, 0 1px 2px rgba(0,0,0,0.10);"
                 @click="${() => s.popup ? this._showSensorPopup(s.popup) : null}"
                 @pointerdown="${(e) => s.holdPopup ? this._onSensorHoldStart(e, s.holdPopup) : null}"
                 @pointerup="${(e) => s.holdPopup ? this._onSensorHoldEnd(e) : null}">
@@ -1163,7 +1181,7 @@ class XiaoshiRoomCard extends LitElement {
                     <div class="card ${layoutClass}" style="${cardStyle}">
                         ${isBR ? html`
                             <!-- 左上角标 -->
-                            <div class="corner-label" style="border-color:${this.config.name_color || '#00bcd4'} transparent transparent transparent"></div>
+                            <div class="corner-label" style="--xs-corner-bg:${cornerBg}"></div>
                             <div class="corner-text" style="transform:rotate(-45deg);${this.config.name_size ? 'font-size:' + this.config.name_size + 'vw' : ''}">${name}</div>
                             <!-- 右上传感器 -->
                             <div class="br-sensors">${sensorHtml}</div>
@@ -1177,7 +1195,7 @@ class XiaoshiRoomCard extends LitElement {
                             </div>
                         ` : html`
                             <!-- 右上角标 -->
-                            <div class="corner-label-right" style="border-color:${this.config.name_color || '#00bcd4'} transparent transparent transparent"></div>
+                            <div class="corner-label-right" style="--xs-corner-bg:${cornerBgRight}"></div>
                             <div class="corner-text-right" style="transform:rotate(45deg);${this.config.name_size ? 'font-size:' + this.config.name_size + 'vw' : ''}">${name}</div>
                             <!-- 左上传感器 -->
                             <div class="bl-sensors">${sensorHtml}</div>
@@ -1200,7 +1218,7 @@ class XiaoshiRoomCard extends LitElement {
             <ha-card style="${cardStyle}">
                 <div class="card" style="${cardStyle}">
                     <div class="left">
-                        <div class="corner-label" style="border-color:${this.config.name_color || '#00bcd4'} transparent transparent transparent"></div>
+                        <div class="corner-label" style="--xs-corner-bg:${cornerBg}"></div>
                         <div class="corner-text" style="transform:rotate(-45deg);${this.config.name_size ? 'font-size:' + this.config.name_size + 'vw' : ''}">${name}</div>
                         <!-- 人在图标：有人时闪烁，没人时显示off图标 -->
                         ${personHtml}
@@ -1229,6 +1247,71 @@ class XiaoshiRoomCard extends LitElement {
         `;
     }
 
+    /**
+     * 解析颜色为 [r, g, b]；无法解析（CSS 变量、颜色关键字等）返回 null。
+     * 支持 #rgb / #rgba / #rrggbb / #rrggbbaa / rgb() / rgba()（含百分比）。
+     */
+    _toRgb(color) {
+        if (!color || typeof color !== 'string') return null;
+        const c = color.trim();
+        const hex = c.match(/^#([0-9a-f]{3,8})$/i);
+        if (hex) {
+            let h = hex[1];
+            if (h.length === 3 || h.length === 4) h = h.slice(0, 3).split('').map(ch => ch + ch).join('');
+            if (h.length !== 6 && h.length !== 8) return null;
+            return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+        }
+        const rgb = c.match(/^rgba?\(([^)]+)\)$/i);
+        if (!rgb) return null;
+        const parts = rgb[1].split(/[\s,\/]+/).filter(s => s !== '');
+        if (parts.length < 3) return null;
+        const num = (v) => (v.indexOf('%') >= 0 ? Math.round(parseFloat(v) * 2.55) : parseFloat(v));
+        const out = [num(parts[0]), num(parts[1]), num(parts[2])];
+        return out.some(v => isNaN(v)) ? null : out;
+    }
+
+    /**
+     * 把颜色转成带指定透明度的 rgba()，用于「同色阴影 / 渐变边缘渐隐」。
+     * 无法解析时原样返回（此时退化为纯色，不会报错）。
+     */
+    _alpha(color, alpha) {
+        const rgb = this._toRgb(color);
+        if (!rgb) return color;
+        return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+    }
+
+    /**
+     * 调亮 / 调暗颜色，用于生成渐变的另外两段。
+     * amount > 0 朝白色靠（变亮），amount < 0 朝黑色靠（变暗），取值 0 ~ 1。
+     */
+    _shade(color, amount) {
+        const rgb = this._toRgb(color);
+        if (!rgb) return color;
+        const target = amount > 0 ? 255 : 0;
+        const k = Math.min(Math.abs(amount), 1);
+        return 'rgb(' + rgb.map(v => Math.round(v + (target - v) * k)).join(', ') + ')';
+    }
+
+    /**
+     * 斜角三角形的背景：三段渐变 + 斜向高光（高光层在上）。
+     * 默认青绿用指定色阶 #3fdcf0 → #0797c4；自定义颜色时按明暗自动派生三段。
+     */
+    _cornerBg(color, mirrored) {
+        const base = ((color === undefined || color === null ? '' : color) + '').trim().toLowerCase();
+        const isDefault = base === '' || base === '#00bcd4' || base === 'rgb(0, 188, 212)' || base === 'rgb(0,188,212)';
+        const trio = isDefault
+            ? ['#3fdcf0', '#23badb', '#0797c4']
+            : [this._shade(base, 0.3), base, this._shade(base, -0.25)];
+        const deg = mirrored ? 225 : 135;
+        return `linear-gradient(${deg}deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.10) 32%, rgba(255,255,255,0) 64%), `
+            + `linear-gradient(${deg}deg, ${trio[0]} 0%, ${trio[1]} 50%, ${trio[2]} 100%)`;
+    }
+
+    /** 传感器胶囊：三段渐变（上亮 → 本色 → 下暗） */
+    _chipBg(color) {
+        return `linear-gradient(180deg, ${this._shade(color, 0.32)} 0%, ${color} 52%, ${this._shade(color, -0.22)} 100%)`;
+    }
+
     _renderDevice(device) {
         if (!device) return html`<div class="device-btn empty"></div>`;
 
@@ -1241,6 +1324,13 @@ class XiaoshiRoomCard extends LitElement {
         const defaultOffIcon = theme === 'light' ? 'rgb(80,80,80)' : 'rgb(230,230,230)';
         const bgColor = isOn ? onColor : (device.off_color || defaultOffBg);
         const iconColor = isOn ? (device.icon_color || 'white') : defaultOffIcon;
+        // 径向渐变：中心实色 → 边缘留一点透明度（轻微立体感）。
+        // 三处色标位置固定，开关切换时浏览器可直接对渐变色做插值，颜色过渡依旧平滑。
+        const bgStyle = `radial-gradient(circle at 50% 42%, ${bgColor} 0%, ${bgColor} 58%, ${this._alpha(bgColor, 0.78)} 100%)`;
+        // 按钮阴影：开启时同色柔光（有「亮起来」的悬浮感），关闭时只用中性投影
+        const btnShadow = isOn
+            ? `0 3px 8px ${this._alpha(bgColor, 0.38)}, 0 1px 2px rgba(0,0,0,0.16)`
+            : `0 2px 6px rgba(0,0,0,${theme === 'light' ? '0.14' : '0.38'})`;
         // 角标：只有当有开启的实体时显示
         const showBadge = activeCount > 0;
         const animateClass = (this.config.active_animation !== 'false' && isOn) ? 'anim-' + (this.config.animation_type || 'swing_bottom').replace(/_/g, '-') : '';
@@ -1248,7 +1338,7 @@ class XiaoshiRoomCard extends LitElement {
         return html`
             <button
                 class="device-btn ${isOn ? 'active' : ''}"
-                style="background:${bgColor}; color:${iconColor}"
+                style="background:${bgStyle}; color:${iconColor}; --xs-btn-shadow:${btnShadow}"
                 @click="${() => this._onDeviceClick(device)}"
                 @pointerdown="${(e) => this._onDeviceHoldStart(e, device)}"
                 @pointerup="${(e) => this._onDeviceHoldEnd(e)}"
