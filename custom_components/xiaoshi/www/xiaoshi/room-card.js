@@ -282,7 +282,7 @@ class XiaoshiRoomCardEditor extends LitElement {
                     <label style="min-width:auto">弹窗宽度</label>
                     <input type="text" name="popup_width" .value="${c.popup_width || ''}" @change="${this._valueChanged}" placeholder="95%" style="max-width:60px" />
                     <label style="min-width:auto">弹窗位置</label>
-                    <input type="text" name="popup_top" .value="${c.popup_top || ''}" @change="${this._valueChanged}" placeholder="20px" title="弹窗距屏幕顶部的距离，支持 20 / 20px / 5vh / 10% / calc(...)；弹窗卡片与人在历史浮层共用" style="max-width:60px" />
+                    <input type="text" name="popup_top" .value="${c.popup_top || ''}" @change="${this._valueChanged}" placeholder="20px" title="弹窗卡片距屏幕顶部的距离，支持 20 / 20px / 5vh / 10% / calc(...)" style="max-width:60px" />
                 </div>
 
                 <div class="form-row">
@@ -783,7 +783,7 @@ class XiaoshiRoomCard extends LitElement {
             /* ===== 设备区域 (中间+右侧两列) ===== */
             .devices-area { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 1.4vh; padding: 1.2vh min(2.5vw, 12.5px) 1.2vh min(1.2vw, 6px); align-content: center; }
             /* 单个设备按钮 */
-            .device-btn { position: relative; background: #333; border-radius: min(2vw, 10px); display: flex; align-items: center; justify-content: center; color: #888; cursor: none; transition: background 0.25s, color 0.25s; border: none; outline: none; padding: 0; }
+            .device-btn { position: relative; background: #333; border-radius: min(3vw, 15px); display: flex; align-items: center; justify-content: center; color: #888; cursor: none; transition: background 0.25s, color 0.25s; border: none; outline: none; padding: 0; }
             .device-btn ha-icon { --mdc-icon-size: 2.8vh; }
             .device-btn:not(.empty):active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
             .device-btn.empty { background: transparent; cursor: default; }
@@ -1425,19 +1425,6 @@ class XiaoshiRoomCard extends LitElement {
         this.hass.callService('popup_card', 'show', serviceData);
     }
 
-    // 弹窗距屏幕顶部的距离（弹窗从顶部开始排布，不做垂直居中）：
-    // 支持 vh / px / % / calc() 等任意 CSS 长度，纯数字按 px 处理
-    //（方便直接填 0 / 20 / -10）；留空则用默认 20px。
-    _resolvePopupTop() {
-        const raw = this.config ? this.config.popup_top : undefined;
-        const base = (raw === undefined || raw === null || String(raw).trim() === '')
-            ? '20px'
-            : (/^-?\d+(\.\d+)?$/.test(String(raw).trim()) ? `${String(raw).trim()}px` : String(raw).trim());
-        // 叠加 iOS 状态栏安全区，避免弹窗被刘海 / 状态栏遮挡
-        const safeTop = 'max(var(--kiosk-safe-top, 0px), var(--safe-area-inset-top, 0px), env(safe-area-inset-top, 0px))';
-        return `calc(${base} + ${safeTop})`;
-    }
-
     // ===== 人在历史记录 =====
     _togglePersonHistory() {
         if (!this.config.person) return;
@@ -1519,20 +1506,18 @@ class XiaoshiRoomCard extends LitElement {
 
         this._historyFilterPeriod = 24;
 
-        // 弹窗位置由 popup_top 控制：把定位放在 dialog 的 top 上，
-        // 而不是给 overlay 加 padding-top —— 否则「弹窗实际位置 = popup_top + padding」，
-        // 参数就和肉眼看到的位置对不上了。用 top 而非 margin-top，
-        // 是为了让 % 按视口高度解析，与 popup_card 弹窗保持一致。
-        const popupTop = this._resolvePopupTop();
+        // 位置口径与其余历史记录弹窗（xiaoshi-card / xiaoshi-pad / xiaoshi-phone）完全一致：
+        // 定位交给 overlay 的 padding-top —— 固定 20px 基准 + iOS 状态栏安全区（三源取 max），
+        // dialog 作为 flex 子项在流内排布，不再受 popup_top 参数控制。
         const overlay = document.createElement('div');
         overlay.className = 'xiaoshi-history-overlay';
-        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;-webkit-backdrop-filter: blur(10px);backdrop-filter: blur(10px);';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:calc(20px + max(var(--kiosk-safe-top, 0px), var(--safe-area-inset-top, 0px), env(safe-area-inset-top, 0px)));-webkit-backdrop-filter: blur(10px);backdrop-filter: blur(10px);';
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) this._closeHistoryOverlay();
         });
 
         const dialog = document.createElement('div');
-        dialog.style.cssText = `position:absolute;top:${popupTop};left:50%;transform:translateX(-50%);background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:calc(85dvh - max(var(--kiosk-safe-bottom, 0px), var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
+        dialog.style.cssText = `background:${bgColor};border-radius:16px;width:95vw;max-width:500px;max-height:calc(85dvh - max(var(--kiosk-safe-bottom, 0px), var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px)));display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.25);`;
 
         const header = document.createElement('div');
         header.style.cssText = `display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin:0 20px;border-bottom:1px solid ${borderColor};`;
@@ -1543,10 +1528,8 @@ class XiaoshiRoomCard extends LitElement {
         closeBtn.style.cssText = `width:36px;height:36px;border-radius:50%;border:none;background:${btnBg};cursor:default;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;`;
         closeBtn.innerHTML = `<ha-icon icon="mdi:close" style="--mdc-icon-size:20px;color:${btnIconColor};"></ha-icon>`;
         closeBtn.addEventListener('click', () => this._closeHistoryOverlay());
-      closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
-      closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
-    closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
-    closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
+        closeBtn.addEventListener('mouseenter', () => { closeBtn.style.opacity = '0.85'; closeBtn.style.transform = 'scale(1.05)'; });
+        closeBtn.addEventListener('mouseleave', () => { closeBtn.style.opacity = '1'; closeBtn.style.transform = 'scale(1)'; });
         header.appendChild(title);
         header.appendChild(closeBtn);
 
