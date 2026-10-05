@@ -317,9 +317,9 @@ class XiaoshiDynamicCard extends LitElement {
         return css`
             :host { display: block; height: 100%; max-width: 400px; }
             .areas-grid { display: flex; gap: min(2.5vw, 12.5px); padding: 0 min(2.5vw, 12.5px) 1vh min(2.5vw, 12.5px); width: 100%; height: 100%; box-sizing: border-box; align-items: flex-end; }
-            .area-tile { position: relative; border-radius: 8px; flex-shrink: 0; height: 80%; aspect-ratio: 1 / 1; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: none; transition: background-color 0.35s ease, transform 0.2s ease, box-shadow 0.2s ease; overflow: visible; }
+            .area-tile { position: relative; border-radius: 8px; flex-shrink: 0; height: 80%; aspect-ratio: 1 / 1; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: none; transition: background-color 0.35s ease, transform 0.2s ease, box-shadow 0.2s ease; overflow: visible; /* 同色柔光投影：颜色按瓷砖底色（开=on_color / 关=off_color）由 --xs-tile-shadow 注入；写成变量而非常量，:active 的按下反馈才不会被压死 */ box-shadow: var(--xs-tile-shadow, 0 2px 6px rgba(0,0,0,0.18)); }
             .area-tile:active { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.4); }
-            .area-icon { --mdc-icon-size: 80%; display: flex; align-items: center; justify-content: center; width: 80%; height: 80%; color: rgba(255,255,255,0.9); filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); }
+            .area-icon { --mdc-icon-size: 80%; display: flex; align-items: center; justify-content: center; width: 80%; height: 80%; color: rgba(255,255,255,0.95); /* 图标投影同样取瓷砖底色的加深版，与背景同色系 */ filter: drop-shadow(var(--xs-icon-shadow, 0 1px 2px rgba(0,0,0,0.3))); }
             .area-name { font-size: 11px; color: rgba(255,255,255,0.85); margin-top: 4px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); text-align: center; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
             .area-badge { position: absolute; top: calc(-20% + 2px); right: calc(-20% + 2px); background: #f57c00; color: #fff; font-size: 10px; font-weight: bold; width: 45%; height: 45%; border-radius: 50%; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.4); display: none; }
             .area-badge.show { display: flex; }
@@ -544,6 +544,25 @@ class XiaoshiDynamicCard extends LitElement {
         return this._colorWithAlpha(baseColor, 0.6);
     }
 
+    // 瓷砖视觉：渐变叠层 + 同色投影 + 图标同色投影
+    // 渐变写成「半透明叠加层 + 纯色底」而不是不透明色标：
+    // 这样 background-color 仍是原来的 rgba(base,0.6)，开启↔关闭切换时
+    // 原有的 transition: background-color 0.35s 照常插值，不会退化成瞬变。
+    _getTileStyle(area, activeCount) {
+        const baseColor = activeCount > 0 ? (area.on_color || '#f57c00') : (area.off_color || '#666666');
+        const isDark = this._evaluateTheme() === 'dark';
+        const sheenA = isDark ? 0.10 : 0.24;
+        const shadeA = isDark ? 0.20 : 0.12;
+        // 瓷砖投影：同色柔光（近距贴边 + 小范围外扩；范围刻意收窄，避免大范围光晕糊成一片）
+        const tileShadow = isDark
+            ? `0 1px 3px rgba(0,0,0,0.48), 0 5px 12px ${this._colorWithAlpha(baseColor, 0.40)}`
+            : `0 1px 2px rgba(16,24,40,0.10), 0 2px 5px ${this._colorWithAlpha(baseColor, 0.26)}, 0 6px 13px ${this._colorWithAlpha(baseColor, 0.15)}`;
+        // 图标投影：底色的加深版，保证白图标在浅色瓷砖上也压得住
+        const iconShadow = `0 1px 2px ${this._colorWithAlpha(this._darkenColor(baseColor, 0.35), isDark ? 0.62 : 0.45)}`;
+        return `background:linear-gradient(158deg, rgba(255,255,255,${sheenA}) 0%, rgba(255,255,255,0) 52%, rgba(0,0,0,${shadeA}) 100%), ${this._getAreaBgColor(area, activeCount)};`
+            + `--xs-tile-shadow:${tileShadow};--xs-icon-shadow:${iconShadow};`;
+    }
+
     render() {
         if (!this.hass || !this.config) return html``;
 
@@ -560,14 +579,13 @@ class XiaoshiDynamicCard extends LitElement {
         const areasHtml = areasWithCount.map(({ area, i, activeCount }) => {
             // 自动隐藏：开启数量为0时隐藏
             if (area.auto_hide === 'true' && activeCount === 0) return html``;
-            const bg = this._getAreaBgColor(area, activeCount);
             const icon = area.icon || 'mdi:lightbulb';
             const showBadge = activeCount > 0;
             const animateClass = (this.config.active_animation !== 'false' && activeCount > 0) ? 'anim-' + (this.config.animation_type || 'swing_bottom').replace(/_/g, '-') : '';
 
             return html`
                 <div class="area-tile"
-                    style="background:${bg};"
+                    style="${this._getTileStyle(area, activeCount)}"
                     @click="${() => this._onAreaClick(area)}"
                     @pointerdown="${(e) => this._onHoldStart(e, area)}"
                     @pointerup="${this._onHoldEnd}">
