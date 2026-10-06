@@ -3,7 +3,7 @@
  * --------------------------------------------------------------------------
  * 数据源：
  *   - 电 / 气 / 水：任意"金额"实体（国网集成或自建 mock sensor 都可以）
- *   - 房贷 / 车贷 / 消费贷 / 物业费 / 租赁房屋 / 租赁车位 / 取暖费 / 出租房屋 / 出租车位
+ *   - 房贷 / 车位 / 车贷 / 消费贷 / 物业费 / 租赁房屋 / 租赁车位 / 取暖费 / 出租房屋 / 出租车位
  *     ：household_expenses 集成里对应的传感器
  * 只要某个类型在配置里填了实体，表格里就出现该格；没填的自动不显示。
  * 点击格子 = 把该类型从「日历 / 日图表 / 月图表」里剔除或恢复（默认全部参与）。
@@ -53,6 +53,8 @@ const HE_SLOT_DEFS = [
   { key: 'water',            label: '水',      dir: 'expense', icon: 'mdi:water',                color: '#29B6F6' },
   { key: 'mortgage',         label: '房贷',    dir: 'expense', icon: 'mdi:home-city',            color: '#7E57C2', part: 'primary' },
   { key: 'mortgage_payment', label: '房款',    dir: 'expense', icon: 'mdi:home-currency-usd',    color: '#B39DDB', part: 'secondary', source: 'mortgage',      derived: true },
+  { key: 'parking',          label: '车位',    dir: 'expense', icon: 'mdi:parking',              color: '#5E35B1', part: 'primary' },
+  { key: 'parking_payment',  label: '车位贷款', dir: 'expense', icon: 'mdi:garage',               color: '#9575CD', part: 'secondary', source: 'parking',      derived: true },
   { key: 'car_loan',         label: '车贷',    dir: 'expense', icon: 'mdi:car',                  color: '#26A69A', part: 'primary' },
   { key: 'car_payment',      label: '车款',    dir: 'expense', icon: 'mdi:car-2-plus',           color: '#80CBC4', part: 'secondary', source: 'car_loan',      derived: true },
   { key: 'consumer_loan',    label: '消费贷',  dir: 'expense', icon: 'mdi:cash-clock',           color: '#EC407A', part: 'primary' },
@@ -2923,7 +2925,7 @@ class XiaoshiHouseholdExpensesEditor extends LitElement {
             <input type="checkbox" data-toggle="split" .checked=${this._splitPayment()}
               @change=${(e) => this._toggleSplit(e.target.checked)} />
             <span>
-              拆分贷款金额：房贷 → <b>房贷</b>(月供) + <b>房款</b>(首付款)，车贷 / 消费贷同理。
+              拆分贷款金额：房贷 → <b>房贷</b>(月供) + <b>房款</b>(首付款)，车位 → <b>车位</b> + <b>车位贷款</b>，车贷 / 消费贷同理。
               取消勾选则合并成一格显示合计。这里是<b>默认值</b>，单个实体可在下面单独覆盖。
             </span>
           </label>
