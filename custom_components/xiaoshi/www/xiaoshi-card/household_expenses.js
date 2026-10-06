@@ -51,10 +51,10 @@ const HE_SLOT_DEFS = [
   { key: 'electric',         label: '电',      dir: 'expense', icon: 'mdi:flash',                color: '#FFB300' },
   { key: 'gas',              label: '气',      dir: 'expense', icon: 'mdi:fire',                 color: '#FF7043' },
   { key: 'water',            label: '水',      dir: 'expense', icon: 'mdi:water',                color: '#29B6F6' },
-  { key: 'mortgage',         label: '房贷',    dir: 'expense', icon: 'mdi:home-city',            color: '#7E57C2', part: 'primary' },
-  { key: 'mortgage_payment', label: '房款',    dir: 'expense', icon: 'mdi:home-currency-usd',    color: '#B39DDB', part: 'secondary', source: 'mortgage',      derived: true },
-  { key: 'parking',          label: '车位',    dir: 'expense', icon: 'mdi:parking',              color: '#5E35B1', part: 'primary' },
-  { key: 'parking_payment',  label: '车位贷款', dir: 'expense', icon: 'mdi:garage',               color: '#9575CD', part: 'secondary', source: 'parking',      derived: true },
+  { key: 'mortgage',         label: '房贷',    dir: 'expense', icon: 'mdi:home-city',            color: '#00ACC1', part: 'primary' },
+  { key: 'mortgage_payment', label: '房款',    dir: 'expense', icon: 'mdi:home-currency-usd',    color: '#4DD0E1', part: 'secondary', source: 'mortgage',      derived: true },
+  { key: 'parking',          label: '车位',    dir: 'expense', icon: 'mdi:parking',              color: '#1E88E5', part: 'primary' },
+  { key: 'parking_payment',  label: '车位贷款', dir: 'expense', icon: 'mdi:garage',               color: '#64B5F6', part: 'secondary', source: 'parking',      derived: true },
   { key: 'car_loan',         label: '车贷',    dir: 'expense', icon: 'mdi:car',                  color: '#26A69A', part: 'primary' },
   { key: 'car_payment',      label: '车款',    dir: 'expense', icon: 'mdi:car-2-plus',           color: '#80CBC4', part: 'secondary', source: 'car_loan',      derived: true },
   { key: 'consumer_loan',    label: '消费贷',  dir: 'expense', icon: 'mdi:cash-clock',           color: '#EC407A', part: 'primary' },
@@ -81,7 +81,7 @@ function heNum(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-/* '#7E57C2' → 'rgba(126, 87, 194, a)'；解析失败退回中性灰。
+/* '#00ACC1' → 'rgba(0, 172, 193, a)'；解析失败退回中性灰。
  * 表格改成按钮后，每个类型靠「同色浅底 + 同色文字」保留原来的颜色区分（原点已去掉）。 */
 function heAlpha(hex, a) {
   const m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex || '').trim());
@@ -1559,9 +1559,8 @@ class XiaoshiHouseholdExpenses extends LitElement {
 
   /* 划掉态（不参与日历 / 图表）的描边颜色 = 该类型的主题色加半透明。
      旧版把「未划掉的底色」压成不透明当描边（13% / 22% 混进主题底色），
-     实测跟列区域的浅底几乎同色 —— 深色系类型（房贷紫 #7E57C2 / 物业费棕
-     #8D6E63 混出来 ≈ rgb(67,58,82)，列底 ≈ rgb(72,72,72)）描边直接隐身，
-     表现为「划掉后部分格子没有边框」。
+     实测跟列区域的浅底几乎同色 —— 偏深的类型色（如物业费棕 #8D6E63）混出来
+     的描边几乎隐身，表现为「划掉后部分格子没有边框」。
      现在直接用类型色本体加透明度：所有类型都看得出边框，且仍跟格子同色系。 */
   _slotBorder(hex) {
     return heAlpha(hex, this._evaluateTheme() === 'light' ? 0.5 : 0.55);
