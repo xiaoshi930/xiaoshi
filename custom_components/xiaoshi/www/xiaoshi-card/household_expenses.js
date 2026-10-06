@@ -7,6 +7,18 @@
  *     ：household_expenses 集成里对应的传感器
  * 只要某个类型在配置里填了实体，表格里就出现该格；没填的自动不显示。
  * 点击格子 = 把该类型从「日历 / 日图表 / 月图表」里剔除或恢复（默认全部参与）。
+ *
+ * 单个实体可以再带两个选项（entities.<类型> 的每一项都支持）：
+ *   name          —— 改这一格显示的名字（不写 = 用类型默认名，如 房贷 / 电）
+ *   split_payment —— 只对贷款类有效：这一块表是否拆成「月供 / 首付款」两格
+ *                    （不写 = 跟随卡片级 split_payment）
+ * 例：
+ *   entities:
+ *     mortgage:
+ *       - entity: sensor.household_expenses_mortgage
+ *         name: 车位
+ *         split_payment: false
+ *       - sensor.household_expenses_mortgage_2
  * ========================================================================== */
 
 const whenDefined = (t) => customElements.whenDefined(t);
@@ -156,19 +168,26 @@ function heYearCost(item, part) {
   return heCostOf(item, 'year', part || 'both');
 }
 
-/* 配置里取实体：支持 'sensor.x' / { entity: 'sensor.x' } / { entity_id: ... } */
+/* 配置里取实体：支持 'sensor.x' / { entity: 'sensor.x' } / { entity_id: ... }
+ *（`entiy` 是常见手误，一并容忍） */
 function heEntityId(value) {
   if (!value) return '';
   if (typeof value === 'string') return value.trim();
   if (typeof value === 'object') {
-    return String(value.entity || value.entity_id || '').trim();
+    return String(value.entity || value.entity_id || value.entiy || '').trim();
   }
   return '';
 }
 
 /* 把一个「值」统一成实体项列表（同一类型下可挂多个实体，求和用）。
  * 支持：'sensor.a' | ['sensor.a', 'sensor.b'] | { entity: 'sensor.a' }
- *      | { entities: ['sensor.a', 'sensor.b'] } */
+ *      | { entities: ['sensor.a', 'sensor.b'] }
+ * 每一项还可以带两个 per-entity 覆盖（都可省略）：
+ *   name          —— 重命名：卡片里该格显示的名字，替代类型默认标签
+ *   split_payment —— 只对贷款类有效：该实体是否拆成「月供 / 首付款」两格；
+ *                    不写 = 跟随卡片级 split_payment
+ * 例：mortgage: [{ entity: sensor.m1, name: 车位, split_payment: false }, sensor.m2]
+ * `entiy` 是常见手误，一并容忍。 */
 function heEntityItems(value) {
   if (!value) return [];
   if (typeof value === 'string') {
@@ -184,7 +203,15 @@ function heEntityItems(value) {
     if (Array.isArray(value.entities)) return heEntityItems(value.entities);
     const id = heEntityId(value);
     if (!id) return [];
-    return [{ entityId: id, name: String(value.name || '').trim() }];
+    const raw = value.split_payment !== undefined ? value.split_payment : value.splitPayment;
+    return [{
+      entityId: id,
+      name: String(value.name || '').trim(),
+      // 只认显式布尔：字符串 'false'（从 YAML/编辑器手输）也当 false
+      splitPayment: raw === undefined || raw === null
+        ? undefined
+        : !(raw === false || raw === 'false' || raw === 0 || raw === '0')
+    }];
   }
   return [];
 }
@@ -1235,28 +1262,38 @@ class XiaoshiHouseholdExpenses extends LitElement {
   }
 
   /* ====================== 槽位 ====================== */
-  /* 一个类型 = 一个槽位，可以挂多个实体（多块表求和）。
+  /* 一个类型 = 一个槽位，可以挂多个实体（多块表各自独立成一格）。
      配置了实体、且至少一个实体当前存在的才显示；没配置 / 全部不存在的自动不显示。
 
      贷款类拆成两格：
        房贷(月供) + 房款(首付款) / 车贷 + 车款 / 消费贷 + 消费款
      两格共用同一个（或同一组）实体，只是各取一个金额分量。
-     split_payment: false 时不拆 —— 派生格不出现，主格直接显示两分量之和。 */
+     拆不拆按「实体级 > 卡片级」取：
+       - 实体项里写了 split_payment: false → 该实体不拆，派生格不出现，主格显示两分量之和；
+       - 实体项里没写 → 跟随卡片级 split_payment: false。
+     实体项里还可以写 name 重命名该格（替代类型默认标签）。 */
   _slots() {
     const out = [];
     const states = this.hass && this.hass.states ? this.hass.states : {};
-    const split = this.splitPayment !== false;
+    const globalSplit = this.splitPayment !== false;
     HE_SLOT_DEFS.forEach((def) => {
-      if (def.derived && !split) return;              // 不拆分 → 不产生派生格
       const sourceKey = def.source || def.key;         // 派生格从主槽位取实体配置
       const items = heSlotEntityItems(this.config, sourceKey)
-        .map((it) => ({ entityId: it.entityId, name: it.name, state: states[it.entityId] }))
+        .map((it) => ({
+          entityId: it.entityId,
+          name: it.name,
+          splitPayment: it.splitPayment,               // per-entity 覆盖，可省略
+          state: states[it.entityId]
+        }))
         .filter((it) => it.state);
       if (!items.length) return;
-      let part = def.part || 'both';
-      if (part === 'primary' && !split) part = 'both'; // 不拆分 → 主格合并显示
       // 一个类型挂了多块表 → 每块表**独立成一格**（不再求和成一个「×N」格子）
       items.forEach((it) => {
+        // 是否拆分按「实体级 > 卡片级」取：实体上没写就跟随卡片的 split_payment
+        const split = it.splitPayment === undefined ? globalSplit : it.splitPayment;
+        if (def.derived && !split) return;             // 该实体不拆分 → 不产生派生格
+        let part = def.part || 'both';
+        if (part === 'primary' && !split) part = 'both'; // 不拆分 → 主格合并显示
         out.push({
           key: items.length > 1 ? `${def.key}#${it.entityId}` : def.key,
           baseKey: def.key,
@@ -1265,6 +1302,7 @@ class XiaoshiHouseholdExpenses extends LitElement {
           icon: def.icon,
           color: def.color,
           part,
+          split,
           sourceKey,
           derived: !!def.derived,
           items: [it],
@@ -1334,16 +1372,34 @@ class XiaoshiHouseholdExpenses extends LitElement {
     return 0;
   }
 
-  /* 某槽位某天的金额：优先日明细；只有月明细时按「月金额 ÷ 当月天数」均摊
-     （household_expenses 的房贷 / 车贷 / 消费贷 / 物业费就是这个口径） */
-  _slotDayValue(ser, year, month, day) {
+  /* 某槽位某天的金额：优先日明细；只有「这个月一条日明细都没有」时，
+     才按「月金额 ÷ 当月天数」均摊
+     （household_expenses 的房贷 / 车贷 / 消费贷 / 物业费就是这个口径 ——
+     后端不吐 daylist，只能前端现场摊）。
+
+     注意：电 / 气 / 水这类**有日明细**的数据源，daylist 天然只到最新结算日
+     （state_grid_info 会把「晚于今天」和「今天全 0」的占位日剔除）。
+     若这里再无脑兜底均摊，本月 7~31 号每天都会被填上一个「月均摊值」，
+     日历和日柱状图就会出现未来日期的鬼数据 —— 所以只要该月存在任意一条
+     日明细，缺失的日期一律按 0 处理。
+     allowMonthSpread=false → 不允许均摊兜底，直接返回 0。 */
+  _slotDayValue(ser, year, month, day, allowMonthSpread) {
     const key = `${year}-${hePad2(month)}-${hePad2(day)}`;
     if (ser.days[key] !== undefined) return ser.days[key];
+    if (allowMonthSpread === false) return 0;
     const monthKey = `${year}-${hePad2(month)}`;
     if (ser.months[monthKey] !== undefined) {
       return ser.months[monthKey] / heDaysInMonth(year, month);
     }
     return 0;
+  }
+
+  /* 该槽位在指定年月里有没有真实日明细（决定要不要走「月均摊」兜底）。
+     有 → 缺失的日期是真的没有数据（未来的日子 / 未结算日），必须留空；
+     没有 → 属于只出月明细的类型（房贷等），继续按天摊。 */
+  _hasDailyInMonth(ser, year, month) {
+    const prefix = `${year}-${hePad2(month)}-`;
+    return Object.keys(ser.days || {}).some((key) => key.indexOf(prefix) === 0);
   }
 
   /* ====================== 日历 / 图表的合计数据 ====================== */
@@ -1359,8 +1415,11 @@ class XiaoshiHouseholdExpenses extends LitElement {
     const monthPrefix = `${this.year}-${hePad2(this.month)}`;
     this._calSlots().forEach((slot) => {
       const ser = this._slotSeries(slot);
+      // 只有「该月完全没有日明细」的类型（房贷 / 车贷 / 消费贷 / 物业费）
+      // 才允许按天均摊；电 / 气 / 水有日明细，缺失的日期留空。
+      const spread = !this._hasDailyInMonth(ser, this.year, this.month);
       for (let d = 1; d <= dim; d++) {
-        const value = this._slotDayValue(ser, this.year, this.month, d);
+        const value = this._slotDayValue(ser, this.year, this.month, d, spread);
         if (!value) continue;
         const key = `${monthPrefix}-${hePad2(d)}`;
         days[key] = (days[key] || 0) + value;
@@ -1403,11 +1462,13 @@ class XiaoshiHouseholdExpenses extends LitElement {
 
     const build = (list) => list.map((slot) => {
       const ser = this._slotSeries(slot);
+      // 与日历同口径：有日明细的类型缺失日期按 0，不做月均摊（否则未来日期会长出柱子）
+      const spread = !this._hasDailyInMonth(ser, this.year, this.month);
       return {
         key: slot.key,
         name: slot.label,
         color: slot.color,
-        values: categories.map((d) => this._slotDayValue(ser, this.year, this.month, d))
+        values: categories.map((d) => this._slotDayValue(ser, this.year, this.month, d, spread))
       };
     });
     const sum = (series, i) => series.reduce((acc, s) => acc + (s.values[i] || 0), 0);
@@ -1468,7 +1529,7 @@ class XiaoshiHouseholdExpenses extends LitElement {
       '点击切换是否参与日历 / 日 / 月视图'
     ].filter(Boolean).join(' · ');
     // 按钮底色 = 该类型颜色的浅底（原来靠行首圆点做区分的，圆点已去掉）
-    // 划掉（不参与视图）时**不要底色**，改用与未划掉底色同色的描边 + 数值删除线来区分
+    // 划掉（不参与视图）时**不要底色**，改用类型色半透明描边 + 数值删除线来区分
     const bg = heAlpha(slot.color, theme === 'light' ? 0.13 : 0.22);
     return html`
       <div class="he-cell ${off ? 'off' : 'on'}"
@@ -1494,19 +1555,14 @@ class XiaoshiHouseholdExpenses extends LitElement {
     return this._colBg('month');
   }
 
-  /* 划掉态（不参与日历 / 图表）的描边颜色 = 「未划掉的底色」在卡片上的实色。
-     跟底色是同一个颜色，只是压成不透明：半透明色当 1px 描边用，
-     叠在列区域浅底上几乎看不见（13% 的线 ≈ 浅底本身）。 */
+  /* 划掉态（不参与日历 / 图表）的描边颜色 = 该类型的主题色加半透明。
+     旧版把「未划掉的底色」压成不透明当描边（13% / 22% 混进主题底色），
+     实测跟列区域的浅底几乎同色 —— 深色系类型（房贷紫 #7E57C2 / 物业费棕
+     #8D6E63 混出来 ≈ rgb(67,58,82)，列底 ≈ rgb(72,72,72)）描边直接隐身，
+     表现为「划掉后部分格子没有边框」。
+     现在直接用类型色本体加透明度：所有类型都看得出边框，且仍跟格子同色系。 */
   _slotBorder(hex) {
-    const theme = this._evaluateTheme();
-    const a = theme === 'light' ? 0.13 : 0.22;
-    const base = theme === 'light' ? [255, 255, 255] : [50, 50, 50];
-    const m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex || '').trim());
-    if (!m) return 'rgba(150, 150, 150, 0.45)';
-    const n = parseInt(m[1], 16);
-    const mix = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
-      .map((v, i) => Math.round(base[i] * (1 - a) + v * a));
-    return `rgb(${mix[0]}, ${mix[1]}, ${mix[2]})`;
+    return heAlpha(hex, this._evaluateTheme() === 'light' ? 0.5 : 0.55);
   }
 
   /* 一组（支出 / 收入）：左侧竖排标签 + 「月」浅底区 + 「年」浅底区。
@@ -2368,9 +2424,10 @@ class XiaoshiHouseholdExpenses extends LitElement {
       .he-head-num { font-weight: 700; font-size: 11px; }
       .he-tag { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
         letter-spacing: 2px; writing-mode: vertical-rl; padding: 4px 0; }
-      /* 每项 = 一个按钮：圆角 + 同色浅底；描边常驻（透明）以免切换状态时尺寸跳动 */
+      /* 每项 = 一个按钮：圆角 + 同色浅底；描边常驻（透明）以免切换状态时尺寸跳动。
+         1.5px：划掉态靠描边撑识别度，1px 太细（用户要求整体加粗一档） */
       .he-cell { min-height: 42px; padding: 4px 3px; border-radius: 8px; text-align: center; cursor: pointer; user-select: none;
-        border: 1px solid transparent; box-sizing: border-box;
+        border: 1.5px solid transparent; box-sizing: border-box;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         transition: background-color 0.15s ease, border-color 0.15s ease; }
       .he-cell:hover { background-color: rgba(160, 160, 160, 0.28) !important; }
@@ -2538,6 +2595,20 @@ class XiaoshiHouseholdExpensesEditor extends LitElement {
         color: var(--secondary-text-color); }
       .chip-remove:hover { color: var(--error-color, #f44336); }
 
+      /* 已选实体：一行一个（可改名 / 可单独设拆分），不再只用胶囊显示实体 ID */
+      .ent-list { display: flex; flex-direction: column; gap: 6px; }
+      .ent-row { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 8px;
+        background: var(--secondary-background-color, rgba(150, 150, 150, 0.16)); }
+      .ent-main { flex: 1; min-width: 0; font-size: 12px; color: var(--primary-text-color);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .ent-name { flex: 0 0 auto; width: 100px; box-sizing: border-box; padding: 5px 8px; font-size: 12px;
+        border: 1px solid var(--divider-color); border-radius: 6px;
+        background: var(--card-background-color); color: var(--primary-text-color); outline: none; }
+      .ent-name:focus { border-color: var(--primary-color); }
+      .ent-split { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px; font-size: 12px;
+        white-space: nowrap; color: var(--primary-text-color); cursor: pointer; }
+      .ent-split input { margin: 0; }
+
       /* 颜色选择：色块 + 十六进制文本框（对齐电费卡片的写法） */
       .color-row { display: flex; align-items: center; gap: 8px; font-size: 13px;
         color: var(--primary-text-color); }
@@ -2603,40 +2674,69 @@ class XiaoshiHouseholdExpensesEditor extends LitElement {
     this._emit(config);
   }
 
-  _ids(key) {
-    return heSlotEntityItems(this._config, key).map((it) => it.entityId);
+  /* 该类型下已配置的实体项（含 per-entity 的 name / split_payment） */
+  _items(key) {
+    return heSlotEntityItems(this._config, key);
   }
 
-  /* 1 个实体写成字符串、多个写成数组 —— YAML 更干净，且向后兼容。
-     配置里已经带了自定义名字（{ entity, name }）的实体，回写时把名字带上。 */
-  _write(key, ids) {
+  _ids(key) {
+    return this._items(key).map((it) => it.entityId);
+  }
+
+  /* 回写实体列表：1 个直接写、多个写成数组 —— YAML 更干净，且向后兼容。
+     每一项只在**真的配了** name / split_payment 时才升成
+     { entity, name?, split_payment? }，没配的还是纯字符串。 */
+  _writeItems(key, items) {
     const config = Object.assign({}, this._config);
     const entities = Object.assign({}, config.entities || {});
-    const names = {};
-    heSlotEntityItems(config, key).forEach((it) => { if (it.name) names[it.entityId] = it.name; });
-    if (ids.length === 0) {
-      delete entities[key];
-    } else {
-      const items = ids.map((id) => (names[id] ? { entity: id, name: names[id] } : id));
-      entities[key] = items.length === 1 ? items[0] : items;
-    }
+    const list = (items || []).filter((it) => it && it.entityId).map((it) => {
+      const name = String(it.name || '').trim();
+      const hasSplit = it.splitPayment !== undefined && it.splitPayment !== null;
+      if (!name && !hasSplit) return it.entityId;
+      const out = { entity: it.entityId };
+      if (name) out.name = name;
+      if (hasSplit) out.split_payment = it.splitPayment;
+      return out;
+    });
+    if (!list.length) delete entities[key];
+    else entities[key] = list.length === 1 ? list[0] : list;
     if (Object.keys(entities).length) config.entities = entities;
     else delete config.entities;
     this._emit(config);
   }
 
+  /* 改某一项的字段（name / splitPayment），按 entityId 定位 */
+  _patchItem(key, entityId, patch) {
+    this._writeItems(key, this._items(key).map((it) => (
+      it.entityId === entityId ? Object.assign({}, it, patch) : it
+    )));
+  }
+
+  /* 重命名：留空 = 恢复类型默认标签（回写时 name 键自然被删掉） */
+  _setEntityName(key, entityId, value) {
+    this._patchItem(key, entityId, { name: String(value || '').trim() });
+  }
+
+  /* 单个实体的拆分开关：勾选且卡片级本来就是「拆」→ 删掉该键（跟随卡片级，配置最干净）；
+     卡片级是「不拆」时勾选 → 显式写 true；取消勾选 → 显式写 false。 */
+  _setEntitySplit(key, entityId, checked) {
+    this._patchItem(key, entityId, {
+      splitPayment: checked && this._splitPayment() ? undefined : !!checked
+    });
+  }
+
   _addEntity(key, entityId) {
     const id = String(entityId || '').trim();
     if (!id) return;
-    const ids = this._ids(key);
-    if (!ids.includes(id)) ids.push(id);
+    const items = this._items(key);
+    if (!items.some((it) => it.entityId === id)) items.push({ entityId: id, name: '' });
     this._openKey = '';
     this._term = '';
-    this._write(key, ids);
+    this._writeItems(key, items);
   }
 
   _removeEntity(key, entityId) {
-    this._write(key, this._ids(key).filter((id) => id !== entityId));
+    this._writeItems(key, this._items(key).filter((it) => it.entityId !== entityId));
   }
 
   /* ---------------- 搜索 ---------------- */
@@ -2692,7 +2792,7 @@ class XiaoshiHouseholdExpensesEditor extends LitElement {
   /* ---------------- 渲染 ---------------- */
 
   _renderSlot(def) {
-    const ids = this._ids(def.key);
+    const items = this._items(def.key);
     const open = this._openKey === def.key;
     const cands = open ? this._candidates(def.key) : [];
     return html`
@@ -2700,11 +2800,11 @@ class XiaoshiHouseholdExpensesEditor extends LitElement {
         <div class="slot-head">
           <ha-icon icon="${def.icon}" style="--mdc-icon-size: 18px;"></ha-icon>
           <span>${def.label}</span>
-          <span class="slot-count">${ids.length ? `已选 ${ids.length} 个` : '未选择'}</span>
+          <span class="slot-count">${items.length ? `已选 ${items.length} 个` : '未选择'}</span>
         </div>
         <div class="slot-search-wrap">
           <input class="slot-search" type="text" autocomplete="off"
-            placeholder="搜索或输入实体 ID，回车添加（可多选，多个实体金额相加）"
+            placeholder="搜索或输入实体 ID，回车添加（可多选，每个实体独立成一格）"
             .value=${open ? this._term : ''}
             @focus=${() => this._onFocus(def.key)}
             @input=${(e) => this._onSearch(def.key, e)}
@@ -2727,21 +2827,37 @@ class XiaoshiHouseholdExpensesEditor extends LitElement {
             </div>
           ` : ''}
         </div>
-        ${ids.length ? html`
-          <div class="chips">
-            ${ids.map((id) => html`
-              <span class="chip">
-                <span class="chip-text">${this._friendly(id)}</span>
+        ${items.length ? html`
+          <div class="ent-list">
+            ${items.map((it) => html`
+              <div class="ent-row">
+                <span class="ent-main" title="${it.entityId}">${this._friendly(it.entityId)}</span>
+                <input class="ent-name" type="text" autocomplete="off"
+                  placeholder="${def.label}" title="这一格显示的名字（留空 = 用「${def.label}」）"
+                  .value=${it.name || ''}
+                  @change=${(e) => this._setEntityName(def.key, it.entityId, e.target.value)} />
+                ${def.part === 'primary' ? html`
+                  <label class="ent-split" title="这一块表是否拆成「月供」+「首付款」两格；不勾 = 合并成一格">
+                    <input type="checkbox" .checked=${this._entitySplit(it)}
+                      @change=${(e) => this._setEntitySplit(def.key, it.entityId, e.target.checked)} />
+                    <span>拆分</span>
+                  </label>
+                ` : ''}
                 <button class="chip-remove" title="移除"
-                        @click=${() => this._removeEntity(def.key, id)}>
+                        @click=${() => this._removeEntity(def.key, it.entityId)}>
                   <ha-icon icon="mdi:close" style="--mdc-icon-size: 14px;"></ha-icon>
                 </button>
-              </span>
+              </div>
             `)}
           </div>
         ` : ''}
       </div>
     `;
+  }
+
+  /* 编辑器里某一项的「拆分」勾选状态：没写 = 跟随卡片级 split_payment */
+  _entitySplit(item) {
+    return item.splitPayment === undefined ? this._splitPayment() : item.splitPayment !== false;
   }
 
   /* 贷款类拆分开关（房贷→房贷+房款 等）。配置里不写 split_payment 就是开启。 */
@@ -2798,7 +2914,8 @@ class XiaoshiHouseholdExpensesEditor extends LitElement {
 
         <div class="hint">
           只填需要展示的类型，没填的格子不会出现；点击格子可以把它从日历 / 日 / 月图表里剔除。<br>
-          同一类型可以加多个实体，金额会相加（例如两块电表）。
+          同一类型可以加多个实体，每个实体独立成一格（例如两块电表 → 「电」两格）。<br>
+          每个实体可以单独<b>改名</b>（留空则用类型名），贷款类还可以单独设<b>拆分</b>。
         </div>
 
         <div class="toggles">
@@ -2807,7 +2924,7 @@ class XiaoshiHouseholdExpensesEditor extends LitElement {
               @change=${(e) => this._toggleSplit(e.target.checked)} />
             <span>
               拆分贷款金额：房贷 → <b>房贷</b>(月供) + <b>房款</b>(首付款)，车贷 / 消费贷同理。
-              取消勾选则合并成一格显示合计。
+              取消勾选则合并成一格显示合计。这里是<b>默认值</b>，单个实体可在下面单独覆盖。
             </span>
           </label>
           <label class="split-row">
