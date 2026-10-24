@@ -3,7 +3,7 @@ await Promise.race([whenDefined("ha-card"), whenDefined("ha-panel-lovelace")]);
 const LitElement = window.LitElement || Object.getPrototypeOf(customElements.get("ha-card"));
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
-import { yamlToJson } from '../function/function.js';
+import { yamlToJson, jsonToYaml } from '../function/function.js';
 
 window.customCards = window.customCards || [];
 window.customCards.push({
@@ -57,7 +57,11 @@ class XiaoshiPadCardEditor extends LitElement {
             .glow-row label { font-weight: bold; white-space: nowrap; min-width: 50px; font-size: 12px; }
             .glow-row input, .glow-row select { flex: 1; padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
             .state-colors-textarea { width: 100%; min-height: 40px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; font-family: monospace; resize: vertical; }
-            .add-glow-btn { background: var(--primary-color, #03a9f4); color: #fff; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 13px; }`;
+            .add-glow-btn { background: var(--primary-color, #03a9f4); color: #fff; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+            .lock-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+            .lock-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--secondary-background-color, #eee); border: 1px solid #ddd; border-radius: 12px; padding: 2px 8px; font-size: 12px; }
+            .lock-chip-remove { background: none; border: none; cursor: pointer; color: var(--error-color, #db4437); font-size: 11px; padding: 0 2px; }
+            .lock-entity-picker { flex: 1; }`;
     }
 
     constructor() {
@@ -209,6 +213,73 @@ class XiaoshiPadCardEditor extends LitElement {
 
     _weatherAnimationChanged(e) {
         this.config = { ...this.config, weather_animation: e.target.checked };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    // ========== 自动锁屏（顶层配置，不随楼层） ==========
+    _updateLockConfig(key, value) {
+        this.config = { ...this.config, [key]: value };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this.config },
+            bubbles: true,
+            composed: true
+        }));
+    }
+
+    _lockScreenChanged(e) {
+        this._updateLockConfig('enable_lock_screen', e.target.checked);
+    }
+
+    _lockEntityPicked(e) {
+        const value = e.detail && e.detail.value;
+        if (!value) return;
+        const list = [...this._getLockEntities()];
+        if (!list.includes(value)) list.push(value);
+        this._updateLockConfig('lock_trigger_entities', list);
+        e.target.value = '';
+    }
+
+    _removeLockEntity(index) {
+        const list = [...this._getLockEntities()];
+        list.splice(index, 1);
+        this._updateLockConfig('lock_trigger_entities', list);
+    }
+
+    // 兼容两种写法：单个实体字符串 / 逗号分隔字符串 / 数组
+    _getLockEntities() {
+        const v = this.config && this.config.lock_trigger_entities;
+        if (!v) return [];
+        if (Array.isArray(v)) return v.filter(Boolean);
+        return String(v).split(',').map(s => s.trim()).filter(Boolean);
+    }
+
+    // ========== 其他卡片 other_card（参照 picture-elements） ==========
+    _cardsToYaml(cards) {
+        if (!cards || !cards.length) return '';
+        try {
+            return jsonToYaml(cards);
+        } catch (e) {
+            try { return JSON.stringify(cards, null, 2); } catch (e2) { return ''; }
+        }
+    }
+
+    _otherCardChanged(e) {
+        const yamlStr = e.target.value;
+        let cards = [];
+        if (yamlStr && yamlStr.trim()) {
+            try {
+                const parsed = yamlToJson(yamlStr);
+                cards = Array.isArray(parsed) ? parsed : [];
+            } catch (err) {
+                console.error('[XiaoshiPadCardEditor] other_card 解析失败:', err);
+                return;
+            }
+        }
+        this.config = { ...this.config, other_card: cards };
         this.dispatchEvent(new CustomEvent('config-changed', {
             detail: { config: this.config },
             bubbles: true,
@@ -469,6 +540,59 @@ class XiaoshiPadCardEditor extends LitElement {
                     </select>
                 </div>
                 ` : ''}
+                <div class="form-row">
+                    <label style="font-weight:bold;font-size:13px;white-space:nowrap;display:flex;align-items:center;gap:4px;">
+                        <input type="checkbox" name="enable_lock_screen" .checked="${c.enable_lock_screen === true}" @change="${this._lockScreenChanged}"> 启用自动锁屏
+                    </label>
+                </div>
+                ${c.enable_lock_screen ? html`
+                <div class="card-section">
+                    <div class="card-section-title">自动锁屏</div>
+                    <div class="glow-row">
+                        <label>触发实体</label>
+                        <ha-entity-picker class="lock-entity-picker" .hass="${this.hass}" .value="${''}" .allowCustomEntity="${true}" @value-changed="${this._lockEntityPicked}"></ha-entity-picker>
+                    </div>
+                    ${(this._getLockEntities()).length ? html`
+                    <div class="lock-chips">
+                        ${(this._getLockEntities()).map((eid, i) => html`
+                            <span class="lock-chip">${eid}<button class="lock-chip-remove" @click="${() => this._removeLockEntity(i)}">✕</button></span>
+                        `)}
+                    </div>
+                    ` : ''}
+                    <div class="glow-row">
+                        <label>触发规则</label>
+                        <select @change="${(e) => this._updateLockConfig('lock_trigger_rule', e.target.value)}">
+                            <option value="or" ?selected="${(c.lock_trigger_rule || 'or') === 'or'}">或（任一实体触发）</option>
+                            <option value="and" ?selected="${c.lock_trigger_rule === 'and'}">且（全部实体触发）</option>
+                        </select>
+                    </div>
+                    <div class="glow-row">
+                        <label>条件</label>
+                        <select @change="${(e) => this._updateLockConfig('lock_trigger_condition_mode', e.target.value)}">
+                            <option value="" ?selected="${!c.lock_trigger_condition_mode}">预置</option>
+                            <option value="append" ?selected="${c.lock_trigger_condition_mode === 'append'}">新增</option>
+                            <option value="override" ?selected="${c.lock_trigger_condition_mode === 'override'}">覆盖</option>
+                        </select>
+                    </div>
+                    ${c.lock_trigger_condition_mode ? html`
+                    <div class="glow-row">
+                        <label>条件值</label>
+                        <input type="text" .value="${c.lock_trigger_conditions || ''}" @change="${(e) => this._updateLockConfig('lock_trigger_conditions', e.target.value)}" placeholder="on,home,有人">
+                    </div>
+                    ` : ''}
+                    <div class="glow-row">
+                        <label>时间制式</label>
+                        <select @change="${(e) => this._updateLockConfig('lock_time_format', e.target.value)}">
+                            <option value="24" ?selected="${(c.lock_time_format || '24') === '24'}">24 小时</option>
+                            <option value="12" ?selected="${c.lock_time_format === '12'}">12 小时（AM/PM）</option>
+                        </select>
+                    </div>
+                </div>
+                ` : ''}
+                <div class="card-section">
+                    <div class="card-section-title">其他卡片 (other_card)</div>
+                    <textarea class="state-colors-textarea" style="min-height:110px;" .value="${this._cardsToYaml(c.other_card)}" @change="${this._otherCardChanged}" placeholder="参照 picture-elements，可放多个卡片：&#10;- type: custom:button-card&#10;  entity: light.xxx&#10;  style:&#10;    left: 140px&#10;    top: 120px"></textarea>
+                </div>
                 <div class="card-section">
                     <div class="card-section-title">灯光按钮</div>
                     ${(data.light_buttons || []).map((btn, i) => html`
@@ -815,7 +939,27 @@ class XiaoshiPadCard extends LitElement {
       .person-hidden { display: none; }
       .device-icon-item { position: absolute; z-index: 6; cursor: pointer; display: flex; align-items: center; justify-content: center; transform: translate(-50%, -50%); padding: 0; border: none; background: transparent; }
       .device-icon-item:active { transform: translate(-50%, -50%) scale(0.92); }
-      .device-icon-item img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }`;
+      .device-icon-item img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+      .other-card-item { position: absolute; z-index: 15; transform: translate(-50%, -50%); }
+      .other-card-item > * { display: block; }
+      .lock-screen { display: flex; align-items: center; justify-content: center; background: #000000; overflow: hidden; cursor: pointer; }
+      .flip-clock { display: flex; align-items: center; gap: 20px; }
+      .flip-card { position: relative; width: 248px; height: 248px; background: #151515; border-radius: 16px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 800; font-size: 202px; color: #bdbdbd; letter-spacing: 2px; }
+      .flip-card::after { content: ''; position: absolute; left: 0; top: 50%; width: 100%; height: 1px; background: #0a0a0a; z-index: 3; }
+      .flip-upper, .flip-lower, .flip-front, .flip-back { position: absolute; left: 0; width: 100%; height: 50%; overflow: hidden; }
+      .flip-upper, .flip-front { top: 0; border-radius: 16px 16px 0 0; }
+      .flip-lower, .flip-back { bottom: 0; border-radius: 0 0 16px 16px; }
+      .flip-upper span, .flip-lower span, .flip-front span, .flip-back span { position: absolute; left: 0; width: 100%; height: 248px; display: flex; align-items: center; justify-content: center; transform: translateY(-24px) scaleX(0.835); }
+      .flip-upper span, .flip-front span { top: 0; }
+      .flip-lower span, .flip-back span { bottom: 0; }
+      .flip-front, .flip-back { background: #151515; backface-visibility: hidden; z-index: 2; }
+      .flip-front { transform-origin: center bottom; }
+      .flip-back { transform: rotateX(90deg); transform-origin: center top; }
+      .flip-card.flipping .flip-front { animation: padFlipFront 0.3s ease-in forwards; }
+      .flip-card.flipping .flip-back { animation: padFlipBack 0.3s 0.3s ease-out forwards; }
+      @keyframes padFlipFront { from { transform: rotateX(0); } to { transform: rotateX(-90deg); } }
+      @keyframes padFlipBack { from { transform: rotateX(90deg); } to { transform: rotateX(0); } }
+      .flip-ampm { position: absolute; left: 26px; bottom: 24px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 700; letter-spacing: 0; color: #bdbdbd; z-index: 4; }`;
   }
 
   static getConfigElement() {
@@ -852,6 +996,12 @@ class XiaoshiPadCard extends LitElement {
     this._historyOverlayEl = null;
     this._historyBodyEl = null;
     this._historyFilterPeriod = 24;
+    this._lockClockTimer = null;
+    this._lockClockStr = '';
+    this._lockDismissed = false;
+    this._lockRecheckTimer = null;
+    this._otherCardEls = [];
+    this._otherCardSig = '';
   }
 
   connectedCallback() {
@@ -865,6 +1015,14 @@ class XiaoshiPadCard extends LitElement {
     this._stopWeatherAnimation();
     this._closeLightPopup();
     this._applyKioskMode(false);
+    if (this._lockClockTimer) {
+      clearInterval(this._lockClockTimer);
+      this._lockClockTimer = null;
+    }
+    if (this._lockRecheckTimer) {
+      clearTimeout(this._lockRecheckTimer);
+      this._lockRecheckTimer = null;
+    }
   }
 
   // ========== 多楼层 ==========
@@ -969,6 +1127,15 @@ class XiaoshiPadCard extends LitElement {
       this._applyKioskMode(isKiosk);
     }
     this._updateWeatherAnimation();
+    // 自动锁屏时钟
+    const lockEnabled = this.config && this.config.enable_lock_screen === true;
+    if (lockEnabled && !this._lockClockTimer) {
+      this._updateLockClock();
+      this._lockClockTimer = setInterval(() => this._updateLockClock(), 1000);
+    } else if (!lockEnabled && this._lockClockTimer) {
+      clearInterval(this._lockClockTimer);
+      this._lockClockTimer = null;
+    }
   }
 
   // ========== Kiosk模式（移植自phone-card） ==========
@@ -1225,6 +1392,13 @@ class XiaoshiPadCard extends LitElement {
       weather_animation: config.weather_animation === true,
       weather_entity: config.weather_entity || '',
       enable_multi_floor: config.enable_multi_floor === true,
+      enable_lock_screen: config.enable_lock_screen === true,
+      lock_trigger_entities: config.lock_trigger_entities || [],
+      lock_trigger_rule: config.lock_trigger_rule || 'or',
+      lock_trigger_condition_mode: config.lock_trigger_condition_mode || '',
+      lock_trigger_conditions: config.lock_trigger_conditions || '',
+      lock_time_format: config.lock_time_format === '12' ? '12' : '24',
+      other_card: this._parseOtherCard(config.other_card),
       hold_popup_cards: config.hold_popup_cards || '',
       popup_width: config.popup_width || '95%',
       popup_top: config.popup_top || '20px',
@@ -1244,10 +1418,12 @@ class XiaoshiPadCard extends LitElement {
       })),
     };
     this._currentFloorIdx = (this.config.enable_multi_floor && this.config.floors && this.config.floors.length > 0) ? 0 : (config.active_floor_idx || 0);
+    this._buildOtherCards();
   }
 
   set hass(hass) {
     this._hass = hass;
+    if (this._otherCardEls) this._otherCardEls.forEach(el => { if (el) el.hass = hass; });
     this.requestUpdate();
   }
 
@@ -2463,6 +2639,34 @@ class XiaoshiPadCard extends LitElement {
   }
 
   render() {
+    // 自动锁屏：放在最上面判断，锁屏时只渲染锁屏界面
+    const lockTriggered = this._evalLockTrigger();
+    if (!lockTriggered && this._lockDismissed) {
+      // 条件已转为有人在，无需重检
+      this._lockDismissed = false;
+      if (this._lockRecheckTimer) {
+        clearTimeout(this._lockRecheckTimer);
+        this._lockRecheckTimer = null;
+      }
+    }
+    if (lockTriggered && !this._lockDismissed) {
+      return html`
+      <div class="lock-screen" style="width:${this.config.width || '1024px'};height:${this.config.height || '768px'};" @click="${this._unlockScreen}">
+        <div class="flip-clock">
+          ${[0, 1, 2].map(i => html`
+            <div class="flip-card" data-idx="${i}">
+              ${(this.config.lock_time_format === '12') && i === 0 ? html`<span class="flip-ampm"></span>` : ''}
+              <div class="flip-upper"><span></span></div>
+              <div class="flip-lower"><span></span></div>
+              <div class="flip-front"><span></span></div>
+              <div class="flip-back"><span></span></div>
+            </div>
+          `)}
+        </div>
+      </div>
+      `;
+    }
+
     const theme = this._evaluateTheme();
     const autoColor = this.config.auto_color !== false;
     let bgColor = this.config.bg_color || 'rgb(150,70,70)';
@@ -2523,6 +2727,9 @@ class XiaoshiPadCard extends LitElement {
         ${this._renderLightButtons()}
         ${this._renderPersonIcons()}
         ${this._renderDeviceIcons()}
+        ${(this.config.other_card || []).map((item, i) => html`
+          <div class="other-card-item" style="${this._otherCardStyleToCss(item && item.style)}">${this._otherCardEls[i] || ''}</div>
+        `)}
         <div class="btn-area" style="left: ${this.config.btn_area_left || '20px'};">
           <button class="ctrl-btn" style="color: #fff; --btn-bg: ${btnBg}" @click="${this._handleFullscreen}" title="全屏切换">
             <ha-icon icon="${this._kioskOn ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'}"></ha-icon>
@@ -2545,6 +2752,198 @@ class XiaoshiPadCard extends LitElement {
 
   getCardSize() {
     return 1;
+  }
+
+  // ========== 自动锁屏 ==========
+  // 兼容三种写法：单个实体字符串 / 逗号分隔字符串 / 数组
+  _getLockEntities() {
+    const v = this.config && this.config.lock_trigger_entities;
+    if (!v) return [];
+    if (Array.isArray(v)) return v.filter(Boolean);
+    return String(v).split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  _getLockConditions() {
+    const conditionMode = this.config.lock_trigger_condition_mode || '';
+    if (conditionMode === 'override') {
+      return (this.config.lock_trigger_conditions || '')
+        .split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+    } else if (conditionMode === 'append') {
+      const preset = PRESET_ON_STATES.map(s => s.toLowerCase());
+      const custom = (this.config.lock_trigger_conditions || '')
+        .split(',').map(s => s.trim().toLowerCase()).filter(s => s);
+      return [...new Set([...preset, ...custom])];
+    }
+    return PRESET_ON_STATES.map(s => s.toLowerCase());
+  }
+
+  _evalLockTrigger() {
+    if (!this.config || this.config.enable_lock_screen !== true) return false;
+    const entities = this._getLockEntities();
+    if (!entities.length) return false;
+    const conditions = this._getLockConditions();
+    const results = entities.map(eid => {
+      const stateObj = this.hass && this.hass.states[eid];
+      if (!stateObj) return false;
+      const state = (stateObj.state || '').toLowerCase();
+      return state && conditions.some(c => state.includes(c) || c.includes(state));
+    });
+    // 条件匹配 = 有人在 → 不锁屏；条件不匹配 = 无人 → 锁屏
+    // 或：任一实体有人在 → 不锁屏；且：全部实体有人在 → 不锁屏
+    const matched = this.config.lock_trigger_rule === 'and'
+      ? results.every(Boolean)
+      : results.some(Boolean);
+    return !matched;
+  }
+
+  _unlockScreen() {
+    this._lockDismissed = true;
+    // 60秒后重新检测实体状态，无人则再次锁屏
+    if (this._lockRecheckTimer) clearTimeout(this._lockRecheckTimer);
+    this._lockRecheckTimer = setTimeout(() => {
+      this._lockRecheckTimer = null;
+      this._lockDismissed = false;
+      this.requestUpdate();
+    }, 60000);
+    this.requestUpdate();
+  }
+
+  // ========== 其他卡片 other_card（参照 picture-elements） ==========
+  // 支持 YAML 字符串或数组；每项支持两种写法：
+  // 1. 平铺（同 picture-elements）：{ type, entity, ..., style: {left, top} }
+  // 2. 嵌套：{ style: {left, top}, card: { type, entity, ... } }
+  _parseOtherCard(v) {
+    if (!v) return [];
+    if (Array.isArray(v)) return v;
+    if (typeof v === 'string') {
+      try {
+        const parsed = yamlToJson(v);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        console.error('[xiaoshi-pad-card] other_card 解析失败:', e);
+        return [];
+      }
+    }
+    return [];
+  }
+
+  _otherCardStyleToCss(style) {
+    if (!style) return '';
+    if (typeof style === 'string') return style.endsWith(';') ? style : style + ';';
+    if (typeof style === 'object') {
+      return Object.entries(style)
+        .map(([k, v]) => k.replace(/[A-Z]/g, m => '-' + m.toLowerCase()) + ':' + v)
+        .join(';');
+    }
+    return '';
+  }
+
+  _getOtherCardConfig(item) {
+    if (!item) return null;
+    // 嵌套写法：{ style, card }
+    if (item.card && typeof item.card === 'object') return item.card;
+    // 平铺写法：style 与卡片配置同级，定位用 style 从卡片配置中剥离
+    const { style, ...cardConfig } = item;
+    return cardConfig.type ? cardConfig : null;
+  }
+
+  async _createCardElementAsync(cardConfig) {
+    if (!cardConfig || !cardConfig.type) return null;
+    try {
+      // 同步方式：优先直接创建
+      const tag = cardConfig.type;
+      if (customElements.get(tag)) {
+        const el = document.createElement(tag);
+        el.setConfig(cardConfig);
+        if (this._hass) el.hass = this._hass;
+        return el;
+      }
+      // 异步方式：通过 HA helpers 加载
+      if (window.loadCardHelpers) {
+        const helpers = await window.loadCardHelpers();
+        const el = await helpers.createCardElement(cardConfig);
+        if (this._hass) el.hass = this._hass;
+        return el;
+      }
+      const el = document.createElement('hui-error-card');
+      el.setConfig({ type: 'error', error: 'Unknown card type: ' + tag, cardConfig });
+      return el;
+    } catch (e) {
+      console.error('[xiaoshi-pad-card] 创建卡片失败:', e, cardConfig);
+      try {
+        const el = document.createElement('hui-error-card');
+        el.setConfig({ type: 'error', error: '创建卡片失败: ' + e.message, cardConfig });
+        return el;
+      } catch (e2) {
+        return null;
+      }
+    }
+  }
+
+  async _buildOtherCards() {
+    const items = (this.config && this.config.other_card) || [];
+    const sig = JSON.stringify(items);
+    if (sig === this._otherCardSig) return;
+    this._otherCardSig = sig;
+    this._otherCardEls = await Promise.all(
+      items.map(item => this._createCardElementAsync(this._getOtherCardConfig(item)))
+    );
+    this.requestUpdate();
+  }
+
+  _updateLockClock() {
+    const now = new Date();
+    const pad = (v) => String(v).padStart(2, '0');
+    // 时间制式：默认 24 小时；12 小时制时 AM/PM 始终显示
+    const is12h = this.config && this.config.lock_time_format === '12';
+    const hours24 = now.getHours();
+    const ampm = hours24 >= 12 ? 'PM' : 'AM';
+    let hours = hours24;
+    if (is12h) {
+      hours = hours24 % 12;
+      if (hours === 0) hours = 12;
+    }
+    const groups = [pad(hours), pad(now.getMinutes()), pad(now.getSeconds())];
+    this._lockClockStr = groups.join(':') + (is12h ? ' ' + ampm : '');
+    this.requestUpdate();
+    // 翻页时钟：命令式更新数字（骨架由 Lit 渲染，数字由这里驱动）
+    const root = this.shadowRoot;
+    if (!root) return;
+    const cards = root.querySelectorAll('.flip-card');
+    if (!cards.length) return;
+    for (let i = 0; i < cards.length && i < groups.length; i++) {
+      this._setFlipDigit(cards[i], groups[i]);
+    }
+    if (is12h) {
+      const ampmEl = root.querySelector('.flip-ampm');
+      if (ampmEl) ampmEl.textContent = ampm;
+    }
+  }
+
+  _setFlipDigit(cardEl, value) {
+    if (!cardEl) return;
+    const upper = cardEl.querySelector('.flip-upper span');
+    const lower = cardEl.querySelector('.flip-lower span');
+    const front = cardEl.querySelector('.flip-front span');
+    const back = cardEl.querySelector('.flip-back span');
+    if (!upper || upper.textContent === value) return;
+    const oldValue = upper.textContent;
+    if (!oldValue) {
+      // 首次填充：直接显示，不做翻页动画
+      upper.textContent = value;
+      lower.textContent = value;
+      front.textContent = value;
+      back.textContent = value;
+      return;
+    }
+    // 翻页动画：上半页显示新值，下半页暂保持旧值，前板翻下后显示新值
+    upper.textContent = value;
+    lower.textContent = oldValue;
+    front.textContent = oldValue;
+    back.textContent = value;
+    cardEl.classList.remove('flipping');
+    void cardEl.offsetWidth; // 强制 reflow 重启动画
+    cardEl.classList.add('flipping');
   }
 
   // ========== 人在历史记录（参照room-card） ==========
